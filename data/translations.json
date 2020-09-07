@@ -1,0 +1,25 @@
+[
+    {
+        "message_key" : "role_created",
+        "translation": "Okay. role has been created with name **{role.name}** and color **{role.color}**"
+    },
+    {
+        "message_key" : "birthday_announcement",
+        "translation": "Everyone wish **{member.mention}** a happy birthday!"
+    },
+    {
+        "message_key": "attr_added",
+        "translation": "Okay. Your {name} has been set to **{value}**."
+    },
+    {
+        "message_key": "attr_removed",
+        "translation": "Okay. Your {name} has been removed."
+    },
+    {
+        "message_key": "date_of_birth",
+        "translation": "date of birth"
+    }
+    
+    
+
+]

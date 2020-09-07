@@ -1,0 +1,414 @@
+import asyncio
+import datetime
+import re
+
+import discord
+
+class ConversionFailed(Exception): pass
+class Skipped(Exception): pass
+
+def _get_id_match(argument):
+    return re.compile(r'([0-9]{15,21})$').match(argument)
+
+
+
+# class ConversionInstruction:
+#     def __init__(self):
+#         pass
+
+#     def __get__(self, instance, cls):
+#         pass
+
+#     def __set__(self, instance,  value):
+#         pass
+
+class Waiter:
+    __slots__ = ("verbose")
+    def __init__(self, verbose = True):
+        self.verbose = verbose
+
+
+class MessageWaiter(Waiter):
+    __slots__ = ("ctx","prompt", "end_prompt", "timeout", "members", "channels", "converted", "max_words", "skippable", "skip_command")
+
+    def __init__(self,
+    ctx,
+    only_author = True,
+    prompt = None,
+    end_prompt = None,
+    timeout = 360,
+    members = [],
+    channels = [],
+    max_words = 1,
+    skippable = False,
+    skip_command = ">>skip",
+    **kwargs):
+        super().__init__(**kwargs)
+        self.ctx = ctx
+        self.prompt = prompt
+        self.end_prompt = end_prompt
+        self.timeout = timeout
+        self.members = members
+        self.channels = channels
+        self.max_words = max_words
+
+        self.skippable = skippable
+        self.skip_command = skip_command
+
+        self.channels.append(ctx.channel)
+
+        
+
+        if only_author:
+            self.members.append(ctx.author)
+
+    def __init_subclass__(cls):
+        if not hasattr(cls, "convert"):
+            raise Exception("This class needs the convert method.")
+
+    def _send(self, channel, *args, **kwargs):
+        loop = asyncio.get_event_loop()
+        coro = channel.send(*args, **kwargs)
+        loop.create_task(coro)
+
+    def convert(self, argument):
+        raise NotImplementedError()
+
+    def check(self, message):
+
+        if self.members and message.author.id not in [x.id for x in self.members]:
+            return False
+
+        if message.channel in [x.id for x in self.channels]:
+            return False
+
+        if self.skippable and message.content == self.skip_command:
+            raise Skipped()
+
+        if self.max_words is None:
+            words = message.content.split()
+        else:
+            words = message.content.split()[:self.max_words]
+
+        try:            
+            self.converted = self.convert(" ".join(words))
+        except ConversionFailed as e:
+            self._send(message.channel, e)
+            return False
+
+        return True
+
+    async def wait(self, raw = False, timeout_crash = False):
+        
+        prompt = None
+
+        if self.skippable:
+            prompt = f"This is skippable by typing '{self.skip_command}'"
+
+            if self.prompt is not None:
+                prompt = self.prompt + "\n" + prompt
+        else:
+            prompt = self.prompt
+
+        if prompt is not None:
+            await self.ctx.channel.send(prompt)
+
+        try:
+            message = await self.ctx.bot.wait_for("message", timeout=self.timeout, check = self.check)
+        except asyncio.TimeoutError:
+            if self.verbose:
+                await self.ctx.send("Timed out.")
+            if timeout_crash:
+                raise
+            return None
+        else:
+            if self.end_prompt is not None:
+                await message.channel.send(self.end_prompt.format(value = self.converted))
+
+            if not raw:
+                return self.converted
+            else:
+                return message
+
+
+class IntWaiter(MessageWaiter):
+
+    __slots__ = ("range", "min", "max")
+
+    def __init__(self, ctx, range = None, min = None, max = None, **kwargs):
+        super().__init__(ctx, **kwargs)
+        self.range = range
+
+        if self.range is not None:
+            self.min = self.range.start
+            self.max = self.range.stop-1
+        else:
+            self.min   = min
+            self.max   = max
+
+    def check(self, message):
+        if not super().check(message):
+            return False
+
+        if self.min is not None and self.converted < self.min:
+            return False
+
+        if self.max is not None and self.converted > self.max:
+            return False
+
+        return True
+
+    def convert(self, argument):
+        try:
+            return int(argument)
+        except ValueError:
+            raise ConversionFailed("Message needs to be a number.")
+
+
+
+class StrWaiter(MessageWaiter):
+    __slots__ = ("allowed_words", "case_sensitive", "min_length", "max_length")
+
+    def __init__(self, ctx, allowed_words = [], case_sensitive = True, min_length = 1, max_length = 2000, **kwargs):
+        super().__init__(ctx, **kwargs)
+        self.allowed_words  = allowed_words
+        self.case_sensitive = case_sensitive
+        self.min_length     = min_length
+        self.max_length     = max_length
+
+
+    def check(self, message):
+        if not super().check(message):
+            return False        
+
+        content = message.content if self.case_sensitive else message.content.lower()
+
+        if self.allowed_words and content not in self.allowed_words:
+            return False
+
+        if len(content) > self.max_length:
+            return False
+
+        if len(content) < self.min_length:
+            return False
+
+        return True
+
+    def convert(self, argument):
+        return argument
+
+
+
+class BoolWaiter(StrWaiter):
+
+    def __init__(self, ctx, **kwargs):
+        super().__init__(ctx, allowed_words = ('yes', 'y', 'n', 'no'), case_sensitive=False, **kwargs)
+
+    def convert(self, argument):
+        lowered = argument.lower()
+
+        if lowered in ("yes","y"):
+            return True
+        elif lowered in ("no", "n"):
+            return False
+
+        raise ConversionFailed("Message needs to be yes/no")
+
+
+class MemberWaiter(MessageWaiter):
+
+    def convert(self, argument):
+        match = re.match(r'<@!?([0-9]+)>$', argument)
+        if match:
+            id = int(match.group(1))
+            return self.ctx.guild.get_member(id)
+
+        raise ConversionFailed("Message needs to be a @mention")
+
+    # def check(self, message):
+    #     if not super().check(message):
+    #         return False
+
+    #     if len(message.mentions) == 0:
+    #         return False
+        
+    #     return True
+
+
+
+class TextChannelWaiter(MessageWaiter):
+
+    def convert(self, argument):
+        match = re.match(r'<#([0-9]+)>$', argument)
+        if match:
+            id = int(match.group(1))
+            return self.ctx.guild.get_channel(id)
+
+        raise ConversionFailed("Message needs to be a #mention")
+
+
+class RoleWaiter(MessageWaiter):
+
+    def convert(self, argument):
+        guild = self.ctx.guild
+
+        match = _get_id_match(argument) or re.match(r'<@&([0-9]+)>$', argument)
+        if match:
+            result = guild.get_role(int(match.group(1)))
+        else:
+            result = discord.utils.get(guild._roles.values(), name=argument)
+
+        if result is None:
+            raise ConversionFailed("Role not found")
+        return result
+
+
+class TimeWaiter(MessageWaiter):
+    __slots__ = ("before", "after")
+
+    def __init__(self, ctx, before = None, after =None, **kwargs):
+        super().__init__(ctx, **kwargs)
+
+        self.before = before
+        self.after  = after
+
+    def convert(self, argument):
+
+        missing_count = 8 - len(argument)
+        if missing_count > 0:
+            for i in range(len(argument)+1, 9):
+                if i % 3 == 0:
+                    argument += ":"
+                else:
+                    argument += "0"
+
+        try:
+            hours, minutes, seconds = [int(x) for x in argument.split(":")]
+        except:
+            raise ConversionFailed("Needs to be HH:MM:SS")
+
+        return datetime.time(hours, minutes, seconds)
+
+
+
+
+class DateWaiter(StrWaiter):
+
+    __slots__ = ("before", "after")
+
+    def __init__(self, ctx, before = None, after =None, **kwargs):
+        super().__init__(ctx, min_length = len("1-1-1"), max_length = len("06-02-1994"), **kwargs)
+
+        self.before = before
+        self.after  = after
+
+    def convert(self, argument):
+        try:
+            year,month,day = argument.split("-")
+            year = year.zfill(4)
+            month = month.zfill(2)
+            day = day.zfill(2)
+            return datetime.datetime.strptime(year + month + day,"%Y%m%d").date()
+        except ValueError:
+            raise ConversionFailed("Message needs to be a date: YYYY-MM-DD")
+
+
+    def check(self, message):
+        if not super().check(message):
+            return False
+
+        if self.before is not None and self.converted >= self.before:
+            return False
+
+        if self.after is not None and self.converted <= self.after:
+            return False
+
+        return True
+
+
+class TimeDeltaWaiter(MessageWaiter):
+
+    def convert(self, argument):
+        amount, time = argument.split()
+
+        if not amount.isdigit():
+            raise ConversionFailed("Needs to be a number. example: **2** hours")
+        
+        amount = int(amount)
+
+        if not time.endswith("s"):
+            time = time + "s"
+        
+        possible_values = ("days", "seconds", "microseconds", "milliseconds", "minutes", "hours", "weeks", "months", "years")
+
+        conversions =\
+        {
+            "months" : lambda x : x * 4.348214155,
+            "years"  : lambda x : x * 52.17856986008
+        }
+
+        if time in conversions:
+            amount = conversions[time](amount)
+            time = "weeks"
+
+
+        if time not in possible_values:
+            raise ConversionFailed("Time can only be: " + ", ".join(possible_values) + "\nExample: 2 **days**")
+
+        return datetime.timedelta(**{time : amount })
+
+
+waiter_mapping = \
+{
+    str                 : StrWaiter,
+    int                 : IntWaiter,
+    bool                : BoolWaiter,
+    datetime.date       : DateWaiter,
+    discord.Member      : MemberWaiter,
+    discord.TextChannel : TextChannelWaiter    
+}
+
+class ReactionWaiter(Waiter):
+    pass
+# class ReactionWaiter(Waiter):
+#     def __init__(self,
+#     ctx,
+#     message
+#     only_author = True,
+#     prompt = None,
+#     end_prompt = None,
+#     timeout = 360,
+#     members = [],
+#     channels = [],
+#     max_words = 1,
+#     skippable = False,
+#     skip_command = ">>skip",
+#     **kwargs):
+#         super().__init__(**kwargs)
+#         self.ctx = ctx
+#         self.prompt = prompt
+#         self.end_prompt = end_prompt
+#         self.timeout = timeout
+#         self.members = members
+#         self.channels = channels
+#         self.max_words = max_words
+
+#         self.skippable = skippable
+#         self.skip_command = skip_command
+
+#         self.channels.append(ctx.channel)
+
+        
+
+#     async def wait(self, timeout = 15):
+#         reaction, user = await self.ctx.bot.wait_for(
+#             'reaction_add',
+#             timeout=timeout,
+#             check=self.check)
+    
+#     def check(self, reaction, user):
+#         pass
+# lambda r,u: u.id not in [x.id for x in players] and str(r.emoji) == emoji and not u.bot and u.id != self.game_starter.id)
+
+
+
