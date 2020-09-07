@@ -1,0 +1,17 @@
+{
+    "name": "Start on Heroku: Discordbot",
+    "description": "A barebones Python app, which can easily be deployed to Heroku.",
+    "image": "heroku/python",
+    "repository": "https://github.com/Norup2020/heroku_discordPy/",
+    "keywords": ["python", "discord" ],
+    "env": {
+      "discord_token": {
+        "description": "Your discord bot's token.",
+        "value": "Enter your token"
+      },
+          "prefix":{
+        "description": "custom prefix",
+        "value": "."
+      }
+    }
+}
