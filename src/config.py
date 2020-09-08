@@ -2,6 +2,8 @@ from getpass import getuser
 import pathlib
 from enum import Enum
 import argparse
+import os
+import json
 
 class Mode(Enum):
     production = 1
@@ -27,17 +29,27 @@ print(f"Mode={mode.name}")
 print(f"Path={path}")
 print("--------------------")
 
-mysql = \
-{
-    "user"      : "Claderoki",
-    "password"  : "V9nx4NS23ZYAyj",
-    "port"      : 3306,
-    "host"      : "84.28.180.239"
-}
+if production:
+    envs = os.environ
+else:
+    try:
+        with open(path + "/envs.json") as f:
+            envs = json.loads(f.read())
+    except:
+        with open(path + "/envs.json", "w") as f:
+            envs = {}
+            for var in ("mysql_user", "mysql_password", "mysql_port", "mysql_host", "discord_token", "owm_key"):
+                envs[var] = ""
+            json.dump(envs, f, indent = 4)
+        raise Exception("Please fill in envs.json.")
 
-token = "NzQyMzY1OTIyMjQ0OTUyMDk1.XzFEJA.CmH62ICHvPcQPk_Vav7OQKgCEDE"
-owm_key = "ab9a9e95335043c2afb67f9a576c38b4"
 
+mysql = {}
+for var in ("user", "password", "port", "host"):
+    mysql[var] = envs["mysql_" + var]
+
+token = envs["discord_token"]
+owm_key = envs["owm_key"]
 
 xp_timeout = 120
 
