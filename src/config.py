@@ -20,6 +20,7 @@ pi = getuser() == "pi"
 
 bot = None
 
+print("--- User ---")
 print(getuser())
 
 if pi:
