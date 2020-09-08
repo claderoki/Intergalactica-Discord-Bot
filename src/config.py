@@ -12,13 +12,11 @@ parser.add_argument('--mode', default="development", choices=("development", "pr
 args = parser.parse_args()
 mode = Mode[args.mode]
 
+production = mode == Mode.production
 bot_name = "lotus"
 
 # data_folder = f"{pathlib.Path.home()}/.discord_data/" + bot_name
 path = __file__.replace("/src/config.py", "")
-
-
-pi = getuser() == "pi"
 
 bot = None
 

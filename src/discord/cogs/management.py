@@ -22,7 +22,7 @@ class Management(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if not config.pi:
+        if not config.production:
             return
 
         if message.author.bot:
@@ -36,7 +36,7 @@ class Management(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        if not config.pi:
+        if not config.production:
             return
 
         emoji = payload.emoji

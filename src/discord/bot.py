@@ -25,7 +25,7 @@ class Locus(commands.Bot):
     )
 
     def __init__(self, prefix = "/"):
-        if config.mode != config.Mode.production:
+        if not config.production:
             prefix = "."
 
         super().__init__(command_prefix = prefix)

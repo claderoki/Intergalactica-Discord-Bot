@@ -5,7 +5,6 @@ from emoji import emojize
 import discord
 from discord.ext import commands, tasks
 
-# from src.utils import get_number_ending
 from src.discord.helpers.waiters import *
 from src.models import Poll, Vote, Option
 import src.config as config
@@ -22,14 +21,14 @@ class PollCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        # if config.pi or config.debug_mode:
+        if config.production:
             self.poll.start()
 
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        # if not config.pi:
-        #     return
+        if not config.production:
+            return
 
         emoji = payload.emoji
         member = payload.member
