@@ -46,7 +46,13 @@ else:
 
 mysql = {}
 for var in ("user", "password", "port", "host"):
-    mysql[var] = envs["mysql_" + var]
+    value = envs["mysql_" + var]
+    
+    if var == "port":
+        value = int(value)
+    
+    mysql[var] = value
+    
 
 token = envs["discord_token"]
 owm_key = envs["owm_key"]
