@@ -1,4 +1,5 @@
-
+import pymysql
+pymysql.install_as_MySQLdb()
 
 from src.discord.bot import Locus
 import src.config as config
