@@ -1,1 +1,1 @@
-worker: python -m src
+worker: python -m src --mode=development

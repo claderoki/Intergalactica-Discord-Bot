@@ -30,7 +30,7 @@ class Locus(commands.Bot):
 
         super().__init__(command_prefix = prefix)
 
-        pathlib.Path(config.data_folder).mkdir(parents=True, exist_ok=True)
+        # pathlib.Path(config.data_folder).mkdir(parents=True, exist_ok=True)
 
         self.load_translations()
 
