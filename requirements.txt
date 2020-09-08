@@ -1,5 +1,5 @@
 peewee
-discord.py
+discord
 timezonefinder
 geopy
 requests
