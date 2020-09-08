@@ -8,3 +8,4 @@ measurement
 emoji
 pycountry
 python-dateutil
+pymysql
