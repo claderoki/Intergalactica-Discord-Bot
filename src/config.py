@@ -20,10 +20,12 @@ pi = getuser() == "pi"
 
 bot = None
 
+print(getuser())
+
 if pi:
     mode = Mode.production
 else:
-    mode = Mode.dev_home
+    mode = Mode.dev_remote
 
 hosts = {
     Mode.production : "127.0.0.1",
