@@ -7,3 +7,4 @@ pytz
 measurement
 emoji
 pycountry
+python-dateutil
