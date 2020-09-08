@@ -28,6 +28,8 @@ class Locus(commands.Bot):
         if not config.production:
             prefix = "."
 
+        print(f"Prefix={prefix}")
+
         super().__init__(command_prefix = prefix)
 
         # pathlib.Path(config.data_folder).mkdir(parents=True, exist_ok=True)
