@@ -1,10 +1,11 @@
 import re
+import json
 
 import discord
 from discord.ext import commands
 
 import src.config as config
-from src.models import Rule, Settings, EmojiUsage, database as db
+from src.models import Rule, Settings, EmojiUsage, NamedEmbed, database as db
 
 emoji_match = lambda x : [int(x) for x in re.findall(r'<a?:[a-zA-Z0-9\_]+:([0-9]+)>', x)]
 
@@ -74,6 +75,25 @@ class Management(discord.ext.commands.Cog):
             await ctx.send(embed = embed)
 
 
+    @commands.command()
+    @commands.has_guild_permissions(administrator = True)
+    async def addembed(self, ctx, name):
+        attachment = ctx.message.attachments[0]
+        data = json.loads(await attachment.read())
+
+        embed_data = data["embeds"][0]
+        embed = discord.Embed.from_dict(embed_data)
+        await ctx.send(embed = embed)
+
+        named_embed, _ = NamedEmbed.get_or_create(name = name)
+        named_embed.data = embed_data
+        named_embed.save()
+
+    @commands.command()
+    @commands.has_guild_permissions(administrator = True)
+    async def showembed(self, ctx, name):
+        named_embed = NamedEmbed.get(name = name)
+        await ctx.send(embed = named_embed.embed)
 
     @commands.command()
     @commands.has_guild_permissions(administrator = True)
@@ -86,90 +106,29 @@ class Management(discord.ext.commands.Cog):
 
 
     @commands.command()
-    async def guidelines(self, ctx):
-        if ctx.guild is None:
-            guild = ctx.bot.get_guild(742146159711092757)
-        else:
-            guild = ctx.guild
+    async def guidelines(self, ctx, numbers : commands.Greedy[int] = None):
+        with db:
+            rules_named_embed = NamedEmbed.get(name = "guidelines")
+            data = rules_named_embed.data
 
+        if numbers is not None:
+            rules_named_embed.select_fields([x-1 for x in numbers])
 
-        embed = discord.Embed(color = discord.Color.purple())
-        embed.set_author(name = guild.name + " Guidelines", icon_url = guild.icon_url)
-        # embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/705361372179070987/750809414977454180/Guidelines.png")
-
-        guidelines = \
-        [
-            "Please stay active! Notify mods if you intend to have a break since there will be purges of inactives every 4 weeks.",
-            "You are responsible for your own actions. It is on you to recognise when to stop; take a break from or leave a discussion.",
-            "This is not a dating server. You will be warned if you cause any unnecessary and consistent discomfort.",
-            "Be respectful and non-toxic. We're all humans, remember that."
-        ]
-
-        i = 1
-        for guideline in guidelines:
-            embed.add_field(name = "#" + str(i), value = guideline, inline = False)
-            i += 1
-
-        # embed.set_footer(text="note: not following these rules will result in a warning/ban")
+        embed = discord.Embed.from_dict(data)
         await ctx.send(embed = embed)
 
 
-    @commands.group()
+    @commands.command()
     async def rules(self, ctx, numbers : commands.Greedy[int] = None):
+        with db:
+            rules_named_embed = NamedEmbed.get(name = "rules")
+            data = rules_named_embed.data
+
         if numbers is not None:
-            numbers = [x-1 for x in numbers]
+            rules_named_embed.select_fields([x-1 for x in numbers])
 
-        with db:
-            settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
-            await ctx.send(embed = settings.get_rules_embed(orders = numbers))
-
-
-    @commands.group()
-    async def rule(self, ctx):
-        pass
-
-    @rule.command()
-    @commands.has_permissions(manage_guild = True)
-    async def add(self, ctx,*, text):
-        with db:
-            settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
-            order = 0
-            last_rule = settings.rules.order_by(Rule.order.desc()).first()
-            if last_rule is not None:
-                order = last_rule.order + 1
-
-            Rule.create(settings = settings, text = text, order = order)
-            await ctx.send("OK")
-
-
-    @rule.command()
-    @commands.has_permissions(manage_guild = True)
-    async def edit(self, ctx,  number : int, *, text):
-        with db:
-            rule = Rule.get(order = number-1)
-            rule.text = text
-            rule.save()
-            await ctx.send("OK")
-
-
-    @rule.command()
-    @commands.has_permissions(manage_guild = True)
-    async def remove(self,  number : int, ctx):
-        with db:
-            rule = Rule.get(order = number-1)
-            rule.delete_instance()
-            
-            settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
-
-            i = 0
-            for rule in list(settings.rules.order_by(Rule.order)):
-                rule.order = i
-                rule.save()
-                i += 1
- 
-            await ctx.send("OK")
-
-
+        embed = discord.Embed.from_dict(data)
+        await ctx.send(embed = embed)
 
 
 def setup(bot):

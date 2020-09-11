@@ -43,31 +43,30 @@ class Settings(BaseModel):
     def guild(self):
         return self.bot.get_guild(self.guild_id)
 
+    # def get_rules_embed(self, orders = None):
+    #     embed = discord.Embed(color = discord.Color.purple())
+    #     selected_one = orders and len(orders) == 1
 
-    def get_rules_embed(self, orders = None):
-        embed = discord.Embed(color = discord.Color.purple())
-        selected_one = orders and len(orders) == 1
+    #     if orders is None:
+    #         rules = self.rules.order_by(Rule.order)
+    #     else:
+    #         orders.sort()
+    #         rules = [Rule.get(order = order) for order in orders]
 
-        if orders is None:
-            rules = self.rules.order_by(Rule.order)
-        else:
-            orders.sort()
-            rules = [Rule.get(order = order) for order in orders]
-
-        if selected_one:
-            author_name = "Rule #" + str(rules[0].order+1)
-            embed.description = rules[0].text
-        else:
-            author_name = self.guild.name + " Rules"
-            for rule in rules:
-                embed.add_field(name = "#" + str(rule.order + 1), value = rule.text, inline = False)
-            embed.set_footer(text="note: not following these rules will result in a warning/ban")
+    #     if selected_one:
+    #         author_name = "Rule #" + str(rules[0].order+1)
+    #         embed.description = rules[0].text
+    #     else:
+    #         author_name = self.guild.name + " Rules"
+    #         for rule in rules:
+    #             embed.add_field(name = "#" + str(rule.order + 1), value = rule.text, inline = False)
+    #         embed.set_footer(text="note: not following these rules will result in a warning/ban")
 
 
-        embed.set_author(name = author_name, icon_url = self.guild.icon_url)
+    #     embed.set_author(name = author_name, icon_url = self.guild.icon_url)
         # embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/705361372179070987/747523730292342915/Space_Background_3_no_edges_rules.png")
 
-        return embed
+        # return embed
 
 class Rule(BaseModel):
     order = peewee.IntegerField()
