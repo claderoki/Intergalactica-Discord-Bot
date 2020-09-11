@@ -150,7 +150,6 @@ class PollCog(commands.Cog):
 
     @tasks.loop(minutes=5)
     async def poll(self):
-        print("Polling...")
         with db:
             for poll in Poll.select().where(Poll.ended == False):
                 if poll.due_date_passed:

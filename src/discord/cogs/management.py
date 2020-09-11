@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 
 import src.config as config
-from src.models import Rule, Settings, EmojiUsage, NamedEmbed, database as db
+from src.models import Settings, EmojiUsage, NamedEmbed, database as db
 
 emoji_match = lambda x : [int(x) for x in re.findall(r'<a?:[a-zA-Z0-9\_]+:([0-9]+)>', x)]
 

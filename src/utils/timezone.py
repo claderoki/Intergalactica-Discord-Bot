@@ -1,14 +1,13 @@
 import datetime
-
 import requests
 from timezonefinder import TimezoneFinder
 from geopy.geocoders import Nominatim
 import pytz
 
-import src.config as config
+user_agent = "timezone_locator"
 
 class Timezone:
-    geolocator = Nominatim(user_agent=config.bot_name)
+    geolocator = Nominatim(user_agent=user_agent)
 
     __slots__ = ("name", "tz", "country_code", "country")
 
