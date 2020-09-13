@@ -57,7 +57,7 @@ class Conversions(discord.ext.commands.Cog):
     @discord.ext.commands.Cog.listener()
     async def on_message(self, message):
 
-        if message.author.bot or config.mode != config.Mode.production:
+        if message.author.bot or not self.bot.production:
             return
 
         color = discord.Color(0xbcff00)

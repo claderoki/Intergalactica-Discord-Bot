@@ -2,17 +2,22 @@ import pathlib
 import json
 import asyncio
 import random
+import os
+from enum import Enum
 
 import emoji
 import discord
-
-import src.config as config
-from src.models import Translation
-from src.wrappers.openweathermap import OpenWeatherMapApi
-
 from discord.ext import commands
 
+import src.config as config
+from src.wrappers.openweathermap import OpenWeatherMapApi
+
 class Locus(commands.Bot):
+
+    class Mode(Enum):
+        production = 1
+        development = 2
+
     sendables = \
     (
         commands.errors.BotMissingPermissions,
@@ -24,25 +29,47 @@ class Locus(commands.Bot):
         commands.errors.CommandNotFound
     )
 
-    def __init__(self, prefix = "/"):
-        if not config.production:
+    def __init__(self, mode, prefix = "/", ):
+        self.mode = mode
+        self.production = mode == self.Mode.production
+
+        if not self.production:
             prefix = "."
 
-        print(f"Prefix={prefix}")
+        self.setup_environmental_variables()
 
         super().__init__(command_prefix = prefix)
 
-        # pathlib.Path(config.data_folder).mkdir(parents=True, exist_ok=True)
+        self.owm_api = OpenWeatherMapApi(os.environ["owm_key"])
 
         self.load_translations()
-
         self.load_all_cogs()
-
-        self.owm_api = OpenWeatherMapApi(config.owm_key)
 
         self.before_invoke(self.before_any_command)
 
+    def print_info(self):
+        print("--------------------")
+        print(f"Mode={self.mode.name}")
+        print(f"Path={config.path}")
+        print(f"Prefix={self.command_prefix}")
+        print("--------------------")
 
+
+    def setup_environmental_variables(self):
+        if not self.production:
+            try:
+                with open(config.path + "/env") as f:
+                    for line in f.read().splitlines():
+                        key, value = line.split("=")
+                        os.environ[key] = value
+            except FileNotFoundError:
+                with open(config.path + "/env", "w") as f:
+                    lines = []
+                    for var in ("mysql_user", "mysql_password", "mysql_port", "mysql_host", "discord_token", "owm_key"):
+                        lines.append(f"{var}=")
+                    f.write("\n".join(lines))
+                raise Exception("Please fill in the 'env' file.")
+    
 
     def load_cog(self, name):
         self.load_extension("src.discord.cogs." + name)
@@ -75,11 +102,6 @@ class Locus(commands.Bot):
         await message.add_reaction("⬆️")
         await message.add_reaction("⬇️")
 
-        # for unicode_name in ("up_arrow", "down_arrow"):
-        #     reaction = emoji.emojize(f":{unicode_name}:")
-        #     await message.add_reaction(reaction)
-
-
     async def before_any_command(self, ctx):
 
         ctx.translate = self.translate
@@ -103,6 +125,7 @@ class Locus(commands.Bot):
         raise exception
 
     async def on_ready(self):
+        self.print_info()
         print("Ready")
 
 

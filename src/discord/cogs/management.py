@@ -23,7 +23,7 @@ class Management(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if not config.production:
+        if not self.bot.production:
             return
 
         if message.author.bot:
@@ -37,7 +37,7 @@ class Management(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        if not config.production:
+        if not self.bot.production:
             return
 
         emoji = payload.emoji
@@ -129,6 +129,8 @@ class Management(discord.ext.commands.Cog):
 
         embed = discord.Embed.from_dict(data)
         await ctx.send(embed = embed)
+
+
 
 
 def setup(bot):

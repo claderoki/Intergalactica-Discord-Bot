@@ -21,13 +21,17 @@ class PollCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if config.production:
+        if self.bot.production:
             self.poll.start()
+
+    @commands.command()
+    async def results(self, ctx, poll : Poll):
+        await ctx.send(embed = poll.result_embed)
 
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        if not config.production:
+        if not self.bot.production:
             return
 
         emoji = payload.emoji
