@@ -24,13 +24,6 @@ class Poll(BaseModel):
     channel         = ChannelField           (null = True)
     ended           = peewee.BooleanField    (default = False)
 
-
-
-    @classmethod
-    async def convert(cls, ctx, argument):
-        return cls.get(id = int(argument))
-
-
     @property
     def due_date_passed(self) -> bool:
         current_date = datetime.datetime.now()
@@ -61,7 +54,8 @@ class Poll(BaseModel):
 
         return msg
 
-    async def send_results(self):
+    @property
+    def result_embed(self):
         options = list(self.options)
 
         votes = sorted(
@@ -77,14 +71,21 @@ class Poll(BaseModel):
         lines = []
 
         total = sum([v for k,v in votes])
-
+    
         for vote, count in votes:
-            percentage = (count / total ) * 100
+            if total > 0:
+                percentage = (count / total ) * 100
+            else:
+                percentage = 0
+
             lines.append(f"{vote}: {percentage}% ({count}) votes")
 
         embed.add_field(name = self.question, value = "\n".join(lines))
+        return embed
 
-        await self.channel.send(embed = embed)
+
+    async def send_results(self):
+        await self.channel.send(embed = self.result_embed)
 
 
 class Option(BaseModel):
