@@ -17,11 +17,11 @@ class Poll(BaseModel):
 
     question        = peewee.TextField       ()
     due_date        = peewee.DateTimeField   (default = lambda : datetime.datetime.now() + datetime.timedelta(days = 2))
-    guild           = GuildField             ()
-    author          = UserField              ()
+    guild_id        = peewee.BigIntegerField ()
+    author_id       = peewee.BigIntegerField ()
     type            = peewee.TextField       (default = "single")
     message_id      = peewee.BigIntegerField (null = True)
-    channel         = ChannelField           (null = True)
+    channel_id      = peewee.BigIntegerField (null = True)
     ended           = peewee.BooleanField    (default = False)
 
     @property
@@ -29,6 +29,9 @@ class Poll(BaseModel):
         current_date = datetime.datetime.now()
         return current_date >= self.due_date
 
+    @property
+    def author(self):
+        return self.guild.get_member(self.author_id)
 
     @property
     def embed(self):
@@ -83,7 +86,6 @@ class Poll(BaseModel):
         embed.add_field(name = self.question, value = "\n".join(lines))
         return embed
 
-
     async def send_results(self):
         await self.channel.send(embed = self.result_embed)
 
@@ -94,7 +96,7 @@ class Option(BaseModel):
     reaction = EmojiField             ()
 
 class Vote(BaseModel):
-    user     = UserField              ()
+    user_id  = peewee.BigIntegerField ()
     option   = peewee.ForeignKeyField (Option, backref = "votes")
 
 

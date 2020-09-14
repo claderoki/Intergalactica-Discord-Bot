@@ -14,6 +14,23 @@ class BaseModel(peewee.Model):
     async def convert(cls, ctx, argument):
         return cls.get(id = int(argument))
 
+    @property
+    def guild(self):
+        return self.bot.get_guild(self.guild_id)
+    
+    @property
+    def user(self):
+        return self.bot.get_user(self.user_id)
+
+    @property
+    def member(self):
+        return self.guild.get_member(self.user_id)
+
+    @property
+    def channel(self):
+        return self.guild.get_channel(self.channel_id)
+
+
 
     class Meta:
         database = peewee.MySQLDatabase(

@@ -30,6 +30,9 @@ class DiscordField(peewee.BigIntegerField):
         return config.bot
 
     def db_value(self, value):
+        if isinstance(value, int):
+            return value
+            
         return value.id
 
 
