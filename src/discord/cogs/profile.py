@@ -206,8 +206,6 @@ class Profile(commands.Cog):
 
         if hour == 24:
             hour = 0
-        
-        print(hour)
 
         timezone = Timezone.from_hour(int(hour))
 
@@ -243,7 +241,7 @@ class Profile(commands.Cog):
 
         with db:
             human, _ = Human.get_or_create_for_member(ctx.author)
-            new = human.personal_role_id is None
+            new = human.personal_role_id is None or human.personal_role is None
 
             if new:
                 first_human = Human.select().where(Human.personal_role_id != None).limit(1).first()
@@ -266,7 +264,17 @@ class Profile(commands.Cog):
 
     @commands.group()
     async def role(self, ctx):
-        pass
+
+        with db:
+            human, _ = Human.get_or_create_for_member(ctx.author)
+            rank_role = human.rank_role
+
+        allowed = rank_role is not None or ctx.author.is_nitro_booster()
+
+        if allowed is None:
+            await ctx.send("You are not allowed to run this command yet.")
+            raise Exception()
+
 
     @role.command(aliases = ["colour"])
     async def color(self, ctx, color : discord.Color = None):
@@ -274,6 +282,21 @@ class Profile(commands.Cog):
             color = self.bot.get_random_color()
 
         await self.edit_personal_role(ctx, color = color)
+
+    @commands.is_owner()
+    @role.command()
+    async def link(self, ctx, role : discord.Role):
+        members = role.members
+
+        if len(members) > 3:
+            await ctx.send("Too many people have this role.")
+        else:
+            for member in role.members:
+                human, _ = Human.get_or_create_for_member(ctx.author)
+                human.personal_role_id = role.id
+                human.save()
+
+            await ctx.send("All done.")
 
     @role.command()
     async def name(self, ctx, *, name : str):
