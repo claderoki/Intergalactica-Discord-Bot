@@ -77,23 +77,25 @@ class Management(discord.ext.commands.Cog):
 
     @commands.command()
     @commands.has_guild_permissions(administrator = True)
-    async def addembed(self, ctx, name):
-        attachment = ctx.message.attachments[0]
-        data = json.loads(await attachment.read())
+    async def embed(self, ctx, name):
+        if len(ctx.message.attachments) > 0:
+            attachment = ctx.message.attachments[0]
+            data = json.loads(await attachment.read())
 
-        embed_data = data["embeds"][0]
-        embed = discord.Embed.from_dict(embed_data)
-        await ctx.send(embed = embed)
+            embed_data = data["embeds"][0]
+            embed = discord.Embed.from_dict(embed_data)
+            await ctx.send(embed = embed)
 
-        named_embed, _ = NamedEmbed.get_or_create(name = name)
-        named_embed.data = embed_data
-        named_embed.save()
-
-    @commands.command()
-    @commands.has_guild_permissions(administrator = True)
-    async def showembed(self, ctx, name):
-        named_embed = NamedEmbed.get(name = name)
-        await ctx.send(embed = named_embed.embed)
+            named_embed, _ = NamedEmbed.get_or_create(name = name)
+            named_embed.data = embed_data
+            named_embed.save()
+        else:
+            try:
+                named_embed = NamedEmbed.get(name = name)
+            except NamedEmbed.DoesNotExist:
+                await ctx.send("This embed does not exist")
+            else:
+                await ctx.send(embed = named_embed.embed)
 
     @commands.command()
     @commands.has_guild_permissions(administrator = True)
@@ -129,6 +131,22 @@ class Management(discord.ext.commands.Cog):
 
         embed = discord.Embed.from_dict(data)
         await ctx.send(embed = embed)
+
+
+    # @commands.is_owner()
+    # @commands.command()
+    # async def clearperms(self, ctx):
+    #     for role in ctx.guild.roles:
+
+    #         if role.id not in (742246061388726272, 742245976731025459, 744687672831770656, 742178843372027934):
+    #             await role.edit(permissions = discord.Permissions.none() )
+    #             print("cleared", role.name, role.id)
+    #         else:
+    #             print("ignored", role.name, role.id)
+                
+
+    #         if role.id in (742245305772146778,):
+    #             break
 
 
 
