@@ -64,7 +64,7 @@ class PollCog(commands.Cog):
                     for vote in _option.votes.where(Vote.user_id == member.id):
                         vote.delete_instance()
 
-                Vote.create(option = option, user_id = member)
+                Vote.create(option = option, user_id = member.id)
 
             elif poll.type == "multi":
                 Vote.get_or_create(option = option, user_id = member.id)
