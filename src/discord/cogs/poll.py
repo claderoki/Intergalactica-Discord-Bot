@@ -61,13 +61,13 @@ class PollCog(commands.Cog):
 
             if poll.type == "bool" or poll.type == "single":
                 for _option in poll.options:
-                    for vote in _option.votes.where(Vote.user == member):
+                    for vote in _option.votes.where(Vote.user_id == member.id):
                         vote.delete_instance()
 
                 Vote.create(option = option, user = member)
 
             elif poll.type == "multi":
-                Vote.get_or_create(option = option, user = member)
+                Vote.get_or_create(option = option, user_id = member.id)
             
 
 
@@ -76,8 +76,8 @@ class PollCog(commands.Cog):
     async def selfiepoll(self, ctx, member : discord.Member):
         poll = Poll(
             question = f"Should {member} get selfie perms?",
-            author = self.bot.user,
-            guild = ctx.guild,
+            author_id = self.bot.user.id,
+            guild_id = ctx.guild.id,
             type = "bool"
         )
 
@@ -106,7 +106,7 @@ class PollCog(commands.Cog):
 
     @commands.command(name = "createpoll")
     async def create_poll(self, ctx, *, question):
-        poll = Poll(question = question, author = ctx.author, guild = ctx.guild)
+        poll = Poll(question = question, author_id = ctx.author.id, guild_id = ctx.guild.id)
 
         waiter = StrWaiter(
             ctx,
@@ -137,7 +137,7 @@ class PollCog(commands.Cog):
         poll.due_date = datetime.datetime.now() + delta
 
         waiter = TextChannelWaiter(ctx, prompt = "What channel will the poll be sent to?")
-        poll.channel = await waiter.wait()
+        poll.channel_id = (await waiter.wait()).id
 
         with db:
             poll.save()

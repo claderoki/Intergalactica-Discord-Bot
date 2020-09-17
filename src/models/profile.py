@@ -27,10 +27,6 @@ class RankRole(BaseModel):
     required_experience = peewee.BigIntegerField  (null = False)
 
     @property
-    def guild(self):
-        return self.bot.get_guild(self.guild_id)
-
-    @property
     def role(self):
         return self.guild.get_role(self.role_id)
 
@@ -38,10 +34,6 @@ class RankRole(BaseModel):
 class Settings(BaseModel):
     guild_id                            = peewee.BigIntegerField  (null = False)
     min_rank_required_for_personal_role = peewee.ForeignKeyField  (RankRole, null = True)
-
-    @property
-    def guild(self):
-        return self.bot.get_guild(self.guild_id)
 
 class GlobalHuman(BaseModel):
     user_id               = peewee.BigIntegerField  (null = False)
@@ -66,6 +58,20 @@ class Human(BaseModel):
             .order_by(RankRole.required_experience.desc())\
             .limit(1)\
             .first()
+
+    @property
+    def rank_role(self):
+        ranks = [
+            748494880229163021,
+            748494888844132442,
+            748494890127851521,
+            748494890169794621,
+            748494891419697152,
+            748494891751047183
+        ]
+        for role in self.member.roles:
+            if role.id in ranks:
+                return role
 
 
     @property
@@ -142,11 +148,6 @@ class Human(BaseModel):
             values.append("N/A")
 
         return {"name" : name, "value" : "\n".join(values), "inline" : True}
-
-
-    @property
-    def guild(self):
-        return self.bot.get_guild(self.guild_id)
 
     @property
     def member(self):
