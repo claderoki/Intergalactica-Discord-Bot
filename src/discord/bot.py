@@ -98,6 +98,31 @@ class Locus(commands.Bot):
         return random_color
 
 
+    async def spell_reaction(self, message, text):
+
+        if len(set(text)) != len(text):
+            raise Exception("Not possible")
+
+        text = text.lower()
+
+        emojis = []
+
+        for char in text:
+            if char.isdigit():
+                emoji_format = ":keycap_{char}:"
+            elif char == "-":
+                emoji_format = ":heavy_minus_sign:"
+            elif char == ".":
+                emoji_format = ":black_small_square:"
+            else:
+                emoji_format = ":regional_indicator_symbol_letter_{char}:"
+
+            emojis.append(emoji.emojize(emoji_format.format(char = char), use_aliases=True))
+        
+        for reaction in emojis:
+            await message.add_reaction(reaction)
+
+
     async def vote_for(self, message):
         await message.add_reaction("⬆️")
         await message.add_reaction("⬇️")

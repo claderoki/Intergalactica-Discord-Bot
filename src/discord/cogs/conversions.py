@@ -80,11 +80,21 @@ class Conversions(discord.ext.commands.Cog):
                     value = getattr(measurement, other)
                     values.append(clean_measurement(value, other))
                 if len(measurements) == 1 and len(values) == 1:
-                    return await message.channel.send(embed = discord.Embed(title = f"{clean_measurement(measurement)} = {values[0]}", color = color))
+                    try:
+                        await self.bot.spell_reaction(message, f"{values[0].replace('°', '')}")
+                    except Exception as e:
+                        await message.channel.send(embed = discord.Embed(title = f"{clean_measurement(measurement)} = {values[0]}", color = color))
+                    return
+
                 else:
                     embed.add_field(name = clean_measurement(measurement), value = "\n".join(values) )
 
             await message.channel.send(embed = embed)
+
+
+    @discord.ext.commands.command()
+    async def testreaction(self, ctx, *, text):
+        await ctx.bot.spell_reaction(ctx.message, text)
 
 
 def setup(bot):
