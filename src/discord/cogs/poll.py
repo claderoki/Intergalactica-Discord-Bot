@@ -64,7 +64,7 @@ class PollCog(commands.Cog):
                     for vote in _option.votes.where(Vote.user_id == member.id):
                         vote.delete_instance()
 
-                Vote.create(option = option, user = member)
+                Vote.create(option = option, user_id = member)
 
             elif poll.type == "multi":
                 Vote.get_or_create(option = option, user_id = member.id)
@@ -157,9 +157,9 @@ class PollCog(commands.Cog):
         with db:
             for poll in Poll.select().where(Poll.ended == False):
                 if poll.due_date_passed:
+                    await poll.send_results()
                     poll.ended = True
                     poll.save()
-                    await poll.send_results()
 
 
 
