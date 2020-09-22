@@ -48,7 +48,12 @@ class Human(BaseModel):
     timezone              = peewee.TextField        (null = True)
     date_of_birth         = peewee.DateField        (null = True)
     city                  = peewee.TextField        (null = True)
+    last_active           = peewee.DateTimeField    (null = True)
 
+    @property
+    def inactive(self):
+        last_active = self.last_active or self.member.join_date
+        return (last_active + config.inactive_delta) < datetime.datetime.now()
 
     @property
     def rank_role_should_have(self):
@@ -148,13 +153,6 @@ class Human(BaseModel):
             values.append("N/A")
 
         return {"name" : name, "value" : "\n".join(values), "inline" : True}
-
-    @property
-    def member(self):
-        if not hasattr(self, "_member"):
-            self._member = self.guild.get_member(self.user_id)
-
-        return self._member
 
     @property
     def personal_role(self):

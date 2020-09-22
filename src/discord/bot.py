@@ -75,7 +75,13 @@ class Locus(commands.Bot):
         self.load_extension("src.discord.cogs." + name)
 
     def load_all_cogs(self):
-        cogs = ("profile", "conversions", "management", "poll")
+        cogs = (
+            "profile",
+            "conversions",
+            "management",
+            "poll",
+            "inactive"
+        )
 
         for cog in cogs:
             self.load_cog(cog)
