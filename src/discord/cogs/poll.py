@@ -68,40 +68,6 @@ class PollCog(commands.Cog):
 
             elif poll.type == "multi":
                 Vote.get_or_create(option = option, user_id = member.id)
-            
-
-
-
-    @commands.command()
-    async def selfiepoll(self, ctx, member : discord.Member):
-        poll = Poll(
-            question = f"Should {member} get selfie perms?",
-            author_id = self.bot.user.id,
-            guild_id = ctx.guild.id,
-            type = "bool"
-        )
-
-        options = []
-        for i, reaction in enumerate((emojize(":white_heavy_check_mark:"), emojize(":prohibited:"))):
-            option = Option(value = ("Yes","No")[i], reaction = reaction)
-            options.append(option)
-
-        poll.due_date = datetime.datetime.now() + datetime.timedelta(minutes = 2)
-
-        poll.channel = ctx.guild.get_channel(750067502352171078)
-
-        with db:
-            poll.save()
-
-            for option in options:
-                option.poll = poll
-                option.save()
-
-            message = await poll.send()
-            poll.message_id = message.id
-
-            poll.save()
-
 
 
     @commands.command(name = "createpoll")

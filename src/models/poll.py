@@ -15,14 +15,17 @@ from .base import BaseModel
 class Poll(BaseModel):
     anonymous = True
 
-    question        = peewee.TextField       ()
-    due_date        = peewee.DateTimeField   (default = lambda : datetime.datetime.now() + datetime.timedelta(days = 2))
-    guild_id        = peewee.BigIntegerField ()
-    author_id       = peewee.BigIntegerField ()
-    type            = peewee.TextField       (default = "single")
-    message_id      = peewee.BigIntegerField (null = True)
-    channel_id      = peewee.BigIntegerField (null = True)
-    ended           = peewee.BooleanField    (default = False)
+    question            = peewee.TextField       ()
+    due_date            = peewee.DateTimeField   (default = lambda : datetime.datetime.now() + datetime.timedelta(days = 2))
+    guild_id            = peewee.BigIntegerField ()
+    author_id           = peewee.BigIntegerField ()
+    type                = peewee.TextField       (default = "single")
+    message_id          = peewee.BigIntegerField (null = True)
+    channel_id          = peewee.BigIntegerField (null = True)
+    result_channel_id   = peewee.BigIntegerField (null = True)
+    ended               = peewee.BooleanField    (default = False)
+
+
 
     @property
     def due_date_passed(self) -> bool:
@@ -35,7 +38,7 @@ class Poll(BaseModel):
 
     @property
     def embed(self):
-        embed = discord.Embed(title = self.question, color = discord.Color.purple() )
+        embed = discord.Embed(title = self.question, color = self.bot.get_dominant_color(self.guild) )
 
         if self.type != "bool":
             embed.add_field(name = "\uFEFF", value = "\n".join([f"#{i+1}: {x.value}" for i, x in enumerate(self.options)]))
@@ -43,6 +46,8 @@ class Poll(BaseModel):
         footer = []
 
         footer.append(f"Due at: {self.due_date.replace(microsecond=0).isoformat(sep=' ')}")
+
+        footer.append(f"type = {self.type}")
 
         embed.set_footer(text = "\n".join(footer))
 
@@ -87,7 +92,12 @@ class Poll(BaseModel):
         return embed
 
     async def send_results(self):
-        await self.channel.send(embed = self.result_embed)
+        if self.result_channel_id is not None:
+            channel = self.guild.get_channel(self.result_channel_id)
+        else:
+            channel = self.channel
+
+        await channel.send(embed = self.result_embed)
 
 
 class Option(BaseModel):
