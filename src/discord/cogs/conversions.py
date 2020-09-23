@@ -92,11 +92,5 @@ class Conversions(discord.ext.commands.Cog):
 
             await message.channel.send(embed = embed)
 
-
-    @discord.ext.commands.command()
-    async def testreaction(self, ctx, *, text):
-        await ctx.bot.spell_reaction(ctx.message, text)
-
-
 def setup(bot):
     bot.add_cog(Conversions(bot))
