@@ -173,7 +173,8 @@ class Locus(commands.Bot):
         ctx.success = lambda: ctx.message.add_reaction("✅")
         ctx.error = lambda: ctx.message.add_reaction("❌")
 
-        ctx.guild_color = self.get_dominant_color(ctx.guild)
+        if ctx.guild is not None:
+            ctx.guild_color = self.get_dominant_color(ctx.guild)
 
 
     async def on_command_error(self, ctx, exception):
