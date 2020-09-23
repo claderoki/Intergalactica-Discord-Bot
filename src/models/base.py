@@ -30,8 +30,6 @@ class BaseModel(peewee.Model):
     def channel(self):
         return self.guild.get_channel(self.channel_id)
 
-
-
     class Meta:
         database = peewee.MySQLDatabase(
             "locus_db", 
