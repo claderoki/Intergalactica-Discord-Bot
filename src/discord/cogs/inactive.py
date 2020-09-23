@@ -44,15 +44,23 @@ class Inactive(discord.ext.commands.Cog):
 
     def iter_inactives(self):
         for human in Human:
+            if human.guild is None or human.member is None:
+                continue
             if human.inactive:
                 yield human
 
     @commands.has_guild_permissions(administrator = True)
     @commands.command()
     async def inactives(self, ctx):
-        print("--inactives--")
+        embed = discord.Embed(title = "Inactives", color = ctx.guild_color )
+        lines = []
         for human in self.iter_inactives():
             print(human.user_id)
+            lines.append( str(human.member) )
+
+        embed.description = "\n".join(lines)
+        await ctx.send(embed = embed)
+            
 
     # @tasks.loop(hours = 5)
     # async def poll(self):
