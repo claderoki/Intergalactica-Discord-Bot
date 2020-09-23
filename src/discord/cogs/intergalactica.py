@@ -13,6 +13,11 @@ class Intergalactica(commands.Cog):
     async def on_ready(self):
         self.guild = self.bot.get_guild(742146159711092757)
 
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if "clark" in message.content.lower():
+            await message.channel.trigger_typing() 
+
     def member_is_legal(self, member):
         age_roles       = [748606669902053387,748606823229030500,748606893387153448,748606902363095206]
         gender_roles    = [742301620062388226, 742301646004027472, 742301672918745141]
@@ -69,20 +74,6 @@ class Intergalactica(commands.Cog):
             coros.append( ctx.send(embed = embed) )
 
         asyncio.gather(*coros)
-
-
-    @commands.command()
-    @commands.dm_only()
-    async def concern(self, ctx, *, concern):
-        guild = self.guild
-        channel = guild.get_channel(758296826549108746)
-
-        embed = discord.Embed(color = self.bot.get_dominant_color(guild) )
-        embed.set_author(name = "Anonymous concern", icon_url=guild.icon_url)
-        embed.description = concern
-        await channel.send(embed = embed)
-
-        await ctx.success()
 
 
 
