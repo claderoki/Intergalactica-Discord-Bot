@@ -1,17 +1,106 @@
 import asyncio
+import datetime
 
+from emoji import emojize
 import discord
 from discord.ext import commands
 
+from src.models import Poll, Option, database as db
+
 class Intergalactica(commands.Cog):
+
+    _role_ids = \
+    {
+        "selfies" : 748566253534445568,
+        "nova"    : 748494888844132442
+    }
+
+    _channel_ids = \
+    {
+        "selfies"      : 744703465086779393,
+        "concerns"     : 758296826549108746,
+        "staff_chat"   : 750067502352171078,
+        "bot_commands" : 754056523277271170
+    }
+
+    selfie_poll_question = "Should {member} get selfie perms?"
 
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
+        self.guild_id = 742146159711092757
+
+
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.guild = self.bot.get_guild(742146159711092757)
+        self.guild = self.bot.get_guild(self.guild_id)
+
+
+    def create_selfie_poll(self, member):
+        guild = member.guild
+
+        poll = Poll(
+            question = self.selfie_poll_question.format(member = str(member)),
+            author_id = self.bot.user.id,
+            guild_id = guild.id,
+            type = "bool"
+        )
+
+        options = []
+        for i, reaction in enumerate((emojize(":white_heavy_check_mark:"), emojize(":prohibited:"))):
+            option = Option(value = ("Yes","No")[i], reaction = reaction)
+            options.append(option)
+
+        poll.due_date = datetime.datetime.now() + datetime.timedelta(days = 2)
+
+        selfie_channel = guild.get_channel(self._channel_ids["bot_commands"])
+        result_channel = guild.get_channel(self._channel_ids["staff_chat"])
+
+        poll.channel_id = selfie_channel.id
+        poll.result_channel_id = result_channel.id
+
+        with db:
+            poll.save()
+
+            for option in options:
+                option.poll = poll
+                option.save()
+        
+        return poll
+
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before, after):
+        if len(after.roles) > len(before.roles):
+            if after.guild.id != self.guild_id:
+                return
+            
+            return
+
+            added_role = None
+            has_selfie_perms = None
+
+            for role in after.roles:
+                if role not in before.roles:
+                    added_role = role
+                if role.id == self._role_ids["selfies"]:
+                    has_selfie_perms = True
+            
+            if added_role.id == self._role_ids["nova"] and not has_selfie_perms:
+                with db:
+                    try:
+                        poll = Poll.get(question = self.selfie_poll_question.format(member = str(after), ended = False))
+                    except Poll.DoesNotExist:
+                        poll = self.create_selfie_poll(after)
+
+                        message = await poll.send()
+                        poll.message_id = message.id
+                        poll.save()
+
+                        await message.pin()
+
+
 
     @commands.Cog.listener()
     async def on_message(self, message):
