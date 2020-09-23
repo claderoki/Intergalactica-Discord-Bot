@@ -70,5 +70,21 @@ class Intergalactica(commands.Cog):
 
         asyncio.gather(*coros)
 
+
+    @commands.command()
+    @commands.dm_only()
+    async def concern(self, ctx, *, concern):
+        guild = self.guild
+        channel = guild.get_channel(758296826549108746)
+
+        embed = discord.Embed(color = self.bot.get_dominant_color(guild) )
+        embed.set_author(name = "Anonymous concern", icon_url=guild.icon_url)
+        embed.description = concern
+        await channel.send(embed = embed)
+
+
+
+
+
 def setup(bot):
     bot.add_cog(Intergalactica(bot))
