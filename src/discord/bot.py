@@ -175,6 +175,8 @@ class Locus(commands.Bot):
 
         if ctx.guild is not None:
             ctx.guild_color = self.get_dominant_color(ctx.guild)
+        else:
+            ctx.guild_color = discord.Color.white()
 
 
     async def on_command_error(self, ctx, exception):
