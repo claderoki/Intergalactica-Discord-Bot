@@ -13,6 +13,7 @@ from discord.ext import commands
 
 import src.config as config
 from src.wrappers.openweathermap import OpenWeatherMapApi
+from src.wrappers.color_thief import ColorThief
 
 class Locus(commands.Bot):
     _dominant_colors = {}
@@ -36,6 +37,8 @@ class Locus(commands.Bot):
     def __init__(self, mode, prefix = "/", ):
         self.mode = mode
         self.production = mode == self.Mode.production
+
+        self.dominant_color = None
 
         if not self.production:
             prefix = "."
@@ -74,28 +77,23 @@ class Locus(commands.Bot):
                     f.write("\n".join(lines))
                 raise Exception("Please fill in the 'env' file.")
     
-    def calculate_dominant_color(self, guild):
-        size = 16
+    def calculate_dominant_color(self, image_url, animated = False):
+        color_thief = ColorThief(requests.get(image_url, stream=True).raw)
+        dominant_color = color_thief.get_color(quality=1)
+        return discord.Color.from_rgb(*dominant_color)
 
-        url = guild.icon_url_as(format='png', static_format='png', size=size)
 
-        image = Image.open(requests.get(url, stream=True).raw)
-
-        img = image.copy()
-        img.convert("RGB")
-
-        if guild.is_icon_animated():
-            margin = 2
-            img = img.crop((0+margin,0+margin,size-margin,size-margin))
-
-        img.resize((1, 1), resample=0)
-        dominant_color = img.getpixel((0, 0))
-
-        return discord.Color.from_rgb(*dominant_color[:3])
 
     def get_dominant_color(self, guild):
+        if guild is None:
+            if self.dominant_color is None:
+                url = self.user.avatar_url_as(format='png', static_format='png', size=16)
+                self.dominant_color = self.calculate_dominant_color(url, self.user.is_avatar_animated() )
+            return self.dominant_color
+
         if guild.id not in self._dominant_colors:
-            self._dominant_colors[guild.id] = self.calculate_dominant_color(guild)
+            url = guild.icon_url_as(format='png', static_format='png', size=16)
+            self._dominant_colors[guild.id] = self.calculate_dominant_color(image_url = url, animated = guild.is_icon_animated() )
         
         return self._dominant_colors[guild.id]
 
@@ -198,10 +196,7 @@ class Locus(commands.Bot):
         ctx.success = lambda: ctx.message.add_reaction("✅")
         ctx.error = lambda: ctx.message.add_reaction("❌")
 
-        if ctx.guild is not None:
-            ctx.guild_color = self.get_dominant_color(ctx.guild)
-        else:
-            ctx.guild_color = discord.Color.default()
+        ctx.guild_color = self.get_dominant_color(ctx.guild)
 
 
     async def on_command_error(self, ctx, exception):
