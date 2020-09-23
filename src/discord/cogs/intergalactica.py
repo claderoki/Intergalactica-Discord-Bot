@@ -3,9 +3,6 @@ import asyncio
 import discord
 from discord.ext import commands
 
-# from src.models import Human, database as db
-# import src.config as config
-
 class Intergalactica(commands.Cog):
 
     def __init__(self, bot):
@@ -14,8 +11,42 @@ class Intergalactica(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        # self.poll.start()
-        pass
+        self.guild = self.bot.get_guild(742146159711092757)
+
+    def member_is_legal(self, member):
+        age_roles       = [748606669902053387,748606823229030500,748606893387153448,748606902363095206]
+        gender_roles    = [742301620062388226, 742301646004027472, 742301672918745141]
+
+        has_age_role = False
+        has_gender_role = False
+
+        for role in member.roles:
+            if role.id in age_roles:
+                has_age_role = True
+            elif role.id in gender_roles:
+                has_gender_role = True
+
+        return has_age_role and has_gender_role
+
+    def illegal_member_iterator(self):
+        for member in self.guild.members:
+            if member.bot:
+                continue
+
+            if not self.member_is_legal(member):
+                yield member
+
+    @commands.command()
+    async def mandatorycheck(self, ctx):
+        embed = discord.Embed(color = ctx.guild_color, title = "Members without mandatory roles")
+
+        lines = []
+        for member in self.illegal_member_iterator():
+            lines.append(member.mention)
+
+        embed.description = "\n".join(lines)
+
+        await ctx.send(embed = embed)
 
     @commands.command()
     @commands.has_guild_permissions(administrator = True)
@@ -38,8 +69,6 @@ class Intergalactica(commands.Cog):
             coros.append( ctx.send(embed = embed) )
 
         asyncio.gather(*coros)
-            
-
 
 def setup(bot):
     bot.add_cog(Intergalactica(bot))
