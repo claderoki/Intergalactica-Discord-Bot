@@ -24,7 +24,8 @@ class Locus(commands.Bot):
     sendables = \
     (
         commands.errors.BotMissingPermissions,
-        commands.errors.MissingRequiredArgument
+        commands.errors.MissingRequiredArgument,
+        commands.errors.MissingPermissions
     )
 
     ignorables = \
@@ -98,20 +99,44 @@ class Locus(commands.Bot):
         
         return self._dominant_colors[guild.id]
 
+    def mutual_guilds_with(self, user):
+        return (x for x in self.guilds if x.get_member(user.id) is not None)
+
+    async def guild_choice_for(self, user):
+        guilds = list(self.mutual_guilds_with(user))
+
+        if len(guilds) == 1:
+            return guilds[0]
+        
+        for guild in guilds:
+            if guild.name == "Intergalactica":
+                return guild
+
+        lines = ["Select the server."]
+
+        i = 1
+        for guild in guilds:
+            lines.append(f"{guild.name}")
+            i += 1
+    
+
 
 
     def load_cog(self, name):
         self.load_extension("src.discord.cogs." + name)
 
     def load_all_cogs(self):
-        cogs = (
+        cogs = [
             "profile",
             "conversions",
             "management",
             "poll",
             "inactive",
-            "intergalactica"
-        )
+            "staff_communication"
+        ]
+
+        if True:
+            cogs.append("intergalactica")
 
         for cog in cogs:
             self.load_cog(cog)
