@@ -82,6 +82,8 @@ class Intergalactica(commands.Cog):
         embed.description = concern
         await channel.send(embed = embed)
 
+        await ctx.success()
+
 
 
 
