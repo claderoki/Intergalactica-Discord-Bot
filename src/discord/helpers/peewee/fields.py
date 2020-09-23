@@ -14,6 +14,17 @@ class JsonField(peewee.TextField):
     def python_value(self, value):
         return json.loads(value)
 
+class EnumField(peewee.TextField):
+    def __init__(self, enum, **kwargs):
+        self.enum = enum
+        super().__init__(**kwargs)
+
+    def db_value(self, value):
+        return value.name
+
+    def python_value(self, value):
+        return self.enum[value]
+    
 
 class EmojiField(peewee.TextField):
 
