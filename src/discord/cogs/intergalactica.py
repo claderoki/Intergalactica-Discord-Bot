@@ -33,7 +33,13 @@ class Intergalactica(commands.Cog):
 
                 await message.delete()
 
+        if len(coros) == 0:
+            embed = discord.Embed(title ="Nothing to purge.", color = ctx.guild_color)
+            coros.append( ctx.send(embed = embed) )
+
         asyncio.gather(*coros)
+            
+
 
 def setup(bot):
     bot.add_cog(Intergalactica(bot))
