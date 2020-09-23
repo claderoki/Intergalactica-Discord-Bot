@@ -9,3 +9,4 @@ emoji
 pycountry
 python-dateutil
 pymysql
+Pillow

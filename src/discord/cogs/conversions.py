@@ -60,7 +60,7 @@ class Conversions(discord.ext.commands.Cog):
         if message.author.bot or not self.bot.production:
             return
 
-        color = discord.Color(0xbcff00)
+        color = self.bot.get_dominant_color(message.guild)
 
         matches = re.findall(self.global_pattern, message.content.lower())
         if matches:

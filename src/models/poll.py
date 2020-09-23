@@ -68,7 +68,7 @@ class Poll(BaseModel):
 
         embed = discord.Embed(
             title = f"Poll #{self.id} results",
-            color = discord.Color.purple()
+            color = self.bot.get_dominant_color(self.guild)
             )
 
         lines = []

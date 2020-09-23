@@ -66,7 +66,7 @@ class Management(discord.ext.commands.Cog):
                     if emoji.id not in emoji_ids:
                         emoji_usages.append( EmojiUsage.create(guild_id = ctx.guild.id, emoji_id = emoji.id) )
 
-            embed = discord.Embed(color = discord.Color.purple())
+            embed = discord.Embed(color = ctx.guild_color )
             embed.description = ""
 
             for usage in emoji_usages[-10:-1]:

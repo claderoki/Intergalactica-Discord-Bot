@@ -37,6 +37,7 @@ class Settings(BaseModel):
 
 class GlobalHuman(BaseModel):
     user_id               = peewee.BigIntegerField  (null = False)
+    # blacklisted           = peewee.BooleanField     (default = False)
 
 class Human(BaseModel):
     user_id               = peewee.BigIntegerField  (null = False)
@@ -52,7 +53,11 @@ class Human(BaseModel):
 
     @property
     def inactive(self):
-        last_active = self.last_active or self.member.join_date
+        date_implemented = datetime.datetime(2020,9,21, 0,0,0,0)
+        member = self.member
+
+        # last_active = self.last_active or member.joined_at
+        last_active = self.last_active or date_implemented
         return (last_active + config.inactive_delta) < datetime.datetime.now()
 
     @property
@@ -109,7 +114,7 @@ class Human(BaseModel):
     @property
     def base_embed(self):
         member = self.member
-        embed = discord.Embed(color = member.color or discord.Color.red() )
+        embed = discord.Embed(color = member.color or self.bot.get_dominant_color(self.guild) )
         embed.set_author(name = self.member.display_name, icon_url = self.member.icon_url)
         return embed
 
@@ -118,8 +123,8 @@ class Human(BaseModel):
         name = self.member.display_name
         values = []
 
-        values.append(f"Experience {self.experience} / {self.experience_needed_for_next_level}")
-        values.append(f"Level {self.level}")
+        # values.append(f"Experience {self.experience} / {self.experience_needed_for_next_level}")
+        # values.append(f"Level {self.level}")
 
         if self.date_of_birth is not None:
             days_until_birthday = self.days_until_birthday

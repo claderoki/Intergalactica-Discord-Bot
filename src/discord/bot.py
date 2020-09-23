@@ -5,6 +5,8 @@ import random
 import os
 from enum import Enum
 
+from PIL import Image
+import requests
 import emoji
 import discord
 from discord.ext import commands
@@ -13,6 +15,7 @@ import src.config as config
 from src.wrappers.openweathermap import OpenWeatherMapApi
 
 class Locus(commands.Bot):
+    _dominant_colors = {}
 
     class Mode(Enum):
         production = 1
@@ -70,6 +73,32 @@ class Locus(commands.Bot):
                     f.write("\n".join(lines))
                 raise Exception("Please fill in the 'env' file.")
     
+    def calculate_dominant_color(self, guild):
+        size = 16
+
+        url = guild.icon_url_as(format='png', static_format='png', size=size)
+
+        image = Image.open(requests.get(url, stream=True).raw)
+
+        img = image.copy()
+        img.convert("RGB")
+
+        if guild.is_icon_animated():
+            margin = 2
+            img = img.crop((0+margin,0+margin,size-margin,size-margin))
+
+        img.resize((1, 1), resample=0)
+        dominant_color = img.getpixel((0, 0))
+
+        return discord.Color.from_rgb(*dominant_color[:3])
+
+    def get_dominant_color(self, guild):
+        if guild.id not in self._dominant_colors:
+            self._dominant_colors[guild.id] = self.calculate_dominant_color(guild)
+        
+        return self._dominant_colors[guild.id]
+
+
 
     def load_cog(self, name):
         self.load_extension("src.discord.cogs." + name)
@@ -80,7 +109,8 @@ class Locus(commands.Bot):
             "conversions",
             "management",
             "poll",
-            "inactive"
+            "inactive",
+            "intergalactica"
         )
 
         for cog in cogs:
@@ -143,6 +173,7 @@ class Locus(commands.Bot):
         ctx.success = lambda: ctx.message.add_reaction("✅")
         ctx.error = lambda: ctx.message.add_reaction("❌")
 
+        ctx.guild_color = self.get_dominant_color(ctx.guild)
 
 
     async def on_command_error(self, ctx, exception):
