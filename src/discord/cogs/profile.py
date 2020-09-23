@@ -88,7 +88,7 @@ class Profile(commands.Cog):
 
                 if rank_role.role not in message.author.roles:
                     await message.author.add_roles(rank_role.role)
-                    await message.channelsend(self.bot.translate("new_rank_achieved").format(role = rank_role.role))
+                    await message.channel.send(self.bot.translate("new_rank_achieved").format(role = rank_role.role))
 
 
 
@@ -235,7 +235,7 @@ class Profile(commands.Cog):
         attr_value = kwargs[attr_name]
 
         if attr_name == "name":
-            kwargs["color"] = discord.Color.red()
+            kwargs["color"] = ctx.guild_color
         elif attr_name == "color":
             kwargs["name"] = ctx.author.display_name
 

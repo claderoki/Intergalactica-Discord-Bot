@@ -17,7 +17,7 @@ class BaseModel(peewee.Model):
     @property
     def guild(self):
         return self.bot.get_guild(self.guild_id)
-    
+
     @property
     def user(self):
         return self.bot.get_user(self.user_id)
