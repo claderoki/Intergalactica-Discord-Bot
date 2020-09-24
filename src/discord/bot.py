@@ -77,7 +77,7 @@ class Locus(commands.Bot):
                     f.write("\n".join(lines))
                 raise Exception("Please fill in the 'env' file.")
     
-    def calculate_dominant_color(self, image_url, animated = False):
+    def calculate_dominant_color(self, image_url):
         color_thief = ColorThief(requests.get(image_url, stream=True).raw)
         dominant_color = color_thief.get_color(quality=1)
         return discord.Color.from_rgb(*dominant_color)
@@ -88,12 +88,12 @@ class Locus(commands.Bot):
         if guild is None:
             if self.dominant_color is None:
                 url = self.user.avatar_url_as(format='png', static_format='png', size=16)
-                self.dominant_color = self.calculate_dominant_color(url, self.user.is_avatar_animated() )
+                self.dominant_color = self.calculate_dominant_color(url)
             return self.dominant_color
 
         if guild.id not in self._dominant_colors:
             url = guild.icon_url_as(format='png', static_format='png', size=16)
-            self._dominant_colors[guild.id] = self.calculate_dominant_color(image_url = url, animated = guild.is_icon_animated() )
+            self._dominant_colors[guild.id] = self.calculate_dominant_color(url)
         
         return self._dominant_colors[guild.id]
 
