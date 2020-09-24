@@ -39,7 +39,7 @@ class Ticket(BaseModel):
 
         embed.set_author(name = f"{self.type.name.title()} by: {author_name}", icon_url=guild.icon_url)
         embed.description = f"**{self.text}**\n\uFEFF"
-        embed.set_footer(text = f"ID: {self.id}")
+        embed.set_footer(text = f"Use \"/reply {self.id} <response>\" to reply.")
 
         for reply in self.replies:
             icon_name = ":small_{color}_diamond:"
@@ -78,8 +78,3 @@ class Reply(BaseModel):
     anonymous       = peewee.BooleanField    (null = False, default = True)
     user_id         = peewee.BigIntegerField (null = False)
     replied_at      = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.now() )
-
-
-
-class StaffChat(BaseModel):
-    pass
