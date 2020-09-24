@@ -68,8 +68,9 @@ class StaffCommunication(commands.Cog):
                 raise commands.errors.MissingPermissions(["administrator"])
             type = Reply.Type.staff
 
-        if len(ctx.attachments) > 0:
-            for attachment in ctx.attachments:
+        attachments = ctx.message.attachments
+        if len(attachments) > 0:
+            for attachment in attachments:
                 response += f"\n{attachment.url}"
 
 
