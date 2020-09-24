@@ -102,10 +102,10 @@ class Intergalactica(commands.Cog):
 
 
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if "clark" in message.content.lower():
-            await message.channel.trigger_typing() 
+    # @commands.Cog.listener()
+    # async def on_message(self, message):
+    #     if "clark" in message.content.lower():
+    #         await message.channel.trigger_typing() 
 
     def member_is_legal(self, member):
         age_roles       = [748606669902053387,748606823229030500,748606893387153448,748606902363095206]
