@@ -80,7 +80,7 @@ class PollCog(commands.Cog):
             allowed_words=("single", "multi", "bool"),
             case_sensitive=False)
 
-        poll.type = await waiter.wait()
+        poll.type = (await waiter.wait()).lower()
 
         options = []
 
