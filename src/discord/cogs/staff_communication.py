@@ -51,7 +51,7 @@ class StaffCommunication(commands.Cog):
 
         anonymous = True
         with db:
-            ticket = Ticket.create(text = concern, user_id = member.id, anonymous = anonymous, type = Ticket.Type.concern, guild_id = guild.id)
+            ticket = Ticket.create(text = concern, user_id = member.id, channel_id = channel.id, anonymous = anonymous, type = Ticket.Type.concern, guild_id = guild.id)
             await ticket.sync_message(channel)
 
     @commands.command()
@@ -67,6 +67,11 @@ class StaffCommunication(commands.Cog):
             if not ctx.author.guild_permissions.administrator:
                 raise commands.errors.MissingPermissions(["administrator"])
             type = Reply.Type.staff
+
+        if len(ctx.attachments) > 0:
+            for attachment in ctx.attachments:
+                response += f"\n{attachment.url}"
+
 
         with db:
             reply = Reply.create(anonymous = ticket.anonymous, user_id = ctx.author.id, text = response, ticket = ticket, type = type)
