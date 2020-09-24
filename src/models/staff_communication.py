@@ -54,15 +54,19 @@ class Ticket(BaseModel):
 
     async def sync_message(self, channel = None):
         embed = self.embed
+        channel = self.channel
 
         if self.message_id is not None:
-            message = await self.channel.fetch_message(self.message_id)
-            await message.edit(embed = embed)
-        else:
-            message = await channel.send(embed = embed)
-            self.message_id = message.id
-            self.channel_id = channel.id
-            self.save()
+            try:
+                message = await channel.fetch_message(self.message_id)
+                await message.delete()
+            except:
+                pass
+
+        message = await channel.send(embed = embed)
+        self.message_id = message.id
+        self.channel_id = channel.id
+        self.save()
 
         await self.member.send(embed = embed)
 
