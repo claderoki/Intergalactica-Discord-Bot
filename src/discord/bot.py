@@ -82,20 +82,27 @@ class Locus(commands.Bot):
         dominant_color = color_thief.get_color(quality=1)
         return discord.Color.from_rgb(*dominant_color)
 
+    def _get_icon_url(self, obj):
+        options = {"format": "png", "static_format": "png", "size": 16}
+        if isinstance(obj, (discord.User, discord.ClientUser)):
+            return obj.avatar_url_as(**options)
+        elif isinstance(obj, discord.Guild):
+            return obj.icon_url_as(**options)
 
 
     def get_dominant_color(self, guild):
         if guild is None:
-            if self.dominant_color is None:
-                url = self.user.avatar_url_as(format='png', static_format='png', size=16)
-                self.dominant_color = self.calculate_dominant_color(url)
-            return self.dominant_color
+            obj = self.user
+        else:
+            obj = guild
 
-        if guild.id not in self._dominant_colors:
-            url = guild.icon_url_as(format='png', static_format='png', size=16)
-            self._dominant_colors[guild.id] = self.calculate_dominant_color(url)
+        if obj.id not in self._dominant_colors:
+            url = self._get_icon_url(obj)
+            if not url:
+                return self.get_dominant_color(None)
+            self._dominant_colors[obj.id] = self.calculate_dominant_color(url)
         
-        return self._dominant_colors[guild.id]
+        return self._dominant_colors[obj.id]
 
     def mutual_guilds_with(self, user):
         return (x for x in self.guilds if x.get_member(user.id) is not None)
