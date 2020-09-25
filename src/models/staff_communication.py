@@ -6,8 +6,7 @@ import discord
 import emoji
 
 import src.config as config
-from .base import BaseModel
-from src.discord.helpers.peewee import EnumField
+from .base import BaseModel, EnumField
 
 class Ticket(BaseModel):
     class Type(Enum):

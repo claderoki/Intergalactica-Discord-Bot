@@ -14,13 +14,10 @@ from discord.ext import commands
 import src.config as config
 from src.wrappers.openweathermap import OpenWeatherMapApi
 from src.wrappers.color_thief import ColorThief
+from src.models import Settings, database
 
 class Locus(commands.Bot):
     _dominant_colors = {}
-
-    class Mode(Enum):
-        production = 1
-        development = 2
 
     sendables = \
     (
@@ -36,14 +33,14 @@ class Locus(commands.Bot):
 
     def __init__(self, mode, prefix = "/", ):
         self.mode = mode
-        self.production = mode == self.Mode.production
+        self.production = mode == config.Mode.production
 
         self.dominant_color = None
 
         if not self.production:
             prefix = "."
 
-        self.setup_environmental_variables()
+        # self.setup_environmental_variables()
 
         super().__init__(command_prefix = prefix)
 
@@ -61,22 +58,6 @@ class Locus(commands.Bot):
         print(f"Prefix={self.command_prefix}")
         print("--------------------")
 
-
-    def setup_environmental_variables(self):
-        if not self.production:
-            try:
-                with open(config.path + "/env") as f:
-                    for line in f.read().splitlines():
-                        key, value = line.split("=")
-                        os.environ[key] = value
-            except FileNotFoundError:
-                with open(config.path + "/env", "w") as f:
-                    lines = []
-                    for var in ("mysql_user", "mysql_password", "mysql_port", "mysql_host", "discord_token", "owm_key"):
-                        lines.append(f"{var}=")
-                    f.write("\n".join(lines))
-                raise Exception("Please fill in the 'env' file.")
-    
     def calculate_dominant_color(self, image_url):
         color_thief = ColorThief(requests.get(image_url, stream=True).raw)
         dominant_color = color_thief.get_color(quality=1)
@@ -91,10 +72,7 @@ class Locus(commands.Bot):
 
 
     def get_dominant_color(self, guild):
-        if guild is None:
-            obj = self.user
-        else:
-            obj = guild
+        obj = guild if guild is not None else self.user
 
         if obj.id not in self._dominant_colors:
             url = self._get_icon_url(obj)
@@ -163,14 +141,7 @@ class Locus(commands.Bot):
         random_color = discord.Colour(0).from_rgb(r, g, b)
         return random_color
 
-
-    async def spell_reaction(self, message, text):
-
-        if len(set(text)) != len(text):
-            raise Exception("Not possible")
-
-        text = text.lower()
-
+    def text_to_emojis(self, text):
         emojis = []
 
         for char in text:
@@ -185,9 +156,7 @@ class Locus(commands.Bot):
 
             emojis.append(emoji.emojize(emoji_format.format(char = char), use_aliases=True))
         
-        for reaction in emojis:
-            await message.add_reaction(reaction)
-
+        return emojis
 
     async def vote_for(self, message):
         await message.add_reaction("⬆️")
@@ -214,6 +183,13 @@ class Locus(commands.Bot):
         if isinstance(exception, self.ignorables):
             return
 
+        if isinstance(exception, commands.errors.CommandInvokeError):
+            if isinstance(exception.original, Settings.DoesNotExist):
+                with database:
+                    Settings.get_or_create(guild_id = ctx.guild.id)
+                await ctx.reinvoke()
+                return
+
         raise exception
 
     async def on_ready(self):
@@ -221,19 +197,20 @@ class Locus(commands.Bot):
         print("Ready")
 
 
-    # def translate(self, key, locale = "en_US"):
-    #     try:
-    #         translation = Translation.get(locale = locale, message_key = key)
-    #         return translation.translation
-    #     except Translation.DoesNotExist:
-    #         return key
-
     def translate(self, key, locale = "en_US"):
-        for translation in self.translations:
-            if key == translation["message_key"]:
-                return translation["translation"]
+        with database:
+            try:
+                translation = Translation.get(locale = locale, message_key = key)
+                return translation.value
+            except Translation.DoesNotExist:
+                return key
 
-        return key
+    # def translate(self, key, locale = "en_US"):
+    #     for translation in self.translations:
+    #         if key == translation["message_key"]:
+    #             return translation["translation"]
+
+    #     return key
 
 
 

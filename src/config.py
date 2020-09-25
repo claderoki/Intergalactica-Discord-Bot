@@ -1,4 +1,11 @@
 import datetime
+from enum import Enum
+
+
+class Mode(Enum):
+    production = 1
+    development = 2
+
 
 path = __file__.replace("/src/config.py", "")
 path = path.replace("\\src\\config.py", "")

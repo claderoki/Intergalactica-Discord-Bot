@@ -110,26 +110,26 @@ class Management(discord.ext.commands.Cog):
     @commands.command()
     async def guidelines(self, ctx, numbers : commands.Greedy[int] = None):
         with db:
-            rules_named_embed = NamedEmbed.get(name = "guidelines")
-            data = rules_named_embed.data
-
+            named_embed = NamedEmbed.get(name = "guidelines")
+            
         if numbers is not None:
-            rules_named_embed.select_fields([x-1 for x in numbers])
+            embed = named_embed.get_embed_only_selected_fields([x-1 for x in numbers])
+        else:
+            embed = named_embed.embed
 
-        embed = discord.Embed.from_dict(data)
         await ctx.send(embed = embed)
 
 
     @commands.command()
     async def rules(self, ctx, numbers : commands.Greedy[int] = None):
         with db:
-            rules_named_embed = NamedEmbed.get(name = "rules")
-            data = rules_named_embed.data
+            named_embed = NamedEmbed.get(name = "rules")
 
         if numbers is not None:
-            rules_named_embed.select_fields([x-1 for x in numbers])
+            embed = named_embed.get_embed_only_selected_fields([x-1 for x in numbers])
+        else:
+            embed = named_embed.embed
 
-        embed = discord.Embed.from_dict(data)
         await ctx.send(embed = embed)
 
 

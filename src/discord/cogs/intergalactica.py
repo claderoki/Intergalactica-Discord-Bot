@@ -5,7 +5,8 @@ from emoji import emojize
 import discord
 from discord.ext import commands
 
-from src.models import Poll, Option, database as db
+# from src.models import Poll, Option, Settings, NamedEmbed, NamedChannel, database as db
+from src.models import Poll, Option, Settings, NamedEmbed, database as db
 
 class Intergalactica(commands.Cog):
 
@@ -35,6 +36,44 @@ class Intergalactica(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.guild = self.bot.get_guild(self.guild_id)
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        guild = member.guild
+
+        welcome_channel = guild.system_channel
+
+        text = "Welcome space cadet {member.mention}!"
+
+
+        # embed = discord.Embed(color = self.bot.get_dominant_color(guild))
+        # embed.set_author(name = f"Welcome space cadet {member}!", icon_url = guild.icon_url )
+# 
+        await welcome_channel.send(text.format(member = member))
+
+        # with db:
+        #     settings = Settings.get(guild_id = member.guild.id)
+        #     embed = settings.embeds.where(NamedEmbed.name == "member_join").first()
+        #     print(embed)
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+        guild = member.guild
+
+        welcome_channel = guild.system_channel
+
+        text = "Goodbye space cadet {member.mention}!"
+        
+        await welcome_channel.send(text.format(member = member))
+
+        # embed = discord.Embed(color = self.bot.get_dominant_color(guild))
+        # embed.set_author(name = f"Goodbye space cadet {member}!", icon_url = guild.icon_url )
+
+        # await welcome_channel.send(embed = embed)
+        # with db:
+        #     settings = Settings.get(guild_id = member.guild.id)
+        #     embed = settings.embeds.where(NamedEmbed.name == "member_leave").first()
+        #     print(embed)
 
 
     def create_selfie_poll(self, member):
@@ -76,6 +115,8 @@ class Intergalactica(commands.Cog):
             if after.guild.id != self.guild_id:
                 return
             
+            if self.bot.production:
+                return
             return
 
             added_role = None
@@ -92,13 +133,17 @@ class Intergalactica(commands.Cog):
                     try:
                         poll = Poll.get(question = self.selfie_poll_question.format(member = str(after), ended = False))
                     except Poll.DoesNotExist:
-                        poll = self.create_selfie_poll(after)
+                        
+                        channel = guild.get_channel(self._channel_ids["bot_commands"])
+                        await channel.send("Would send a selfie poll here")
 
-                        message = await poll.send()
-                        poll.message_id = message.id
-                        poll.save()
+                        # poll = self.create_selfie_poll(after)
 
-                        await message.pin()
+                        # message = await poll.send()
+                        # poll.message_id = message.id
+                        # poll.save()
+
+                        # await message.pin()
 
 
 
@@ -136,7 +181,7 @@ class Intergalactica(commands.Cog):
 
         lines = []
         for member in self.illegal_member_iterator():
-            lines.append(member.mention)
+            lines.append(f"{member.mention} joined: {member.joined_at.date().isoformat()}")
 
         embed.description = "\n".join(lines)
 

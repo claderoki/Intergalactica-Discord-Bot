@@ -79,7 +79,7 @@ class MessageWaiter(Waiter):
         if self.members and message.author.id not in [x.id for x in self.members]:
             return False
 
-        if message.channel in [x.id for x in self.channels]:
+        if message.channel.id not in [x.id for x in self.channels]:
             return False
 
         if self.skippable and message.content == self.skip_command:

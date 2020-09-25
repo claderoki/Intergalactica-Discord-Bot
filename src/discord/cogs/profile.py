@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands, tasks
 import emoji
 
-from src.models import Human, RankRole
+from src.models import Human
 from src.discord.helpers.converters import convert_to_date
 import src.config as config
 from src.utils.timezone import Timezone
@@ -78,48 +78,17 @@ class Profile(commands.Cog):
                 human.last_experience_given = datetime.datetime.now()
                 human.save()
 
-                rank_role = human.rank_role_should_have
+                # rank_role = human.rank_role_should_have
 
-                if not rank_role:
-                    return
+                # if not rank_role:
+                #     return
 
-                roles_to_remove = [x.role for x in RankRole.select().where(RankRole.guild_id == message.guild.id) if x.role in message.author.roles and x.role != rank_role.role]
-                await message.author.remove_roles(*roles_to_remove)
+                # roles_to_remove = [x.role for x in RankRole.select().where(RankRole.guild_id == message.guild.id) if x.role in message.author.roles and x.role != rank_role.role]
+                # await message.author.remove_roles(*roles_to_remove)
 
-                if rank_role.role not in message.author.roles:
-                    await message.author.add_roles(rank_role.role)
-                    await message.channel.send(self.bot.translate("new_rank_achieved").format(role = rank_role.role))
-
-
-
-
-    @commands.command()
-    async def examples(self, ctx):
-        embed = discord.Embed()
-        
-        
-        embed.add_field(
-            name = f"{ctx.prefix}dateofbirth",
-            value = f"```\n{ctx.prefix}dateofbirth = 1994/02/17\n{ctx.prefix}dateofbirth delete```",
-            inline = False)
-        
-
-        embed.add_field(
-            name = f"{ctx.prefix}timezone",
-            value = f"```\n{ctx.prefix}timezone = Europe/Amsterdam\n{ctx.prefix}timezone city Munstergeleen\n{ctx.prefix}timezone delete```",
-            inline = False)
-        
-        embed.add_field(
-            name = f"{ctx.prefix}city",
-            value = f"```\n{ctx.prefix}city = Munstergeleen\n{ctx.prefix}city delete```",
-            inline = False)
-
-        embed.add_field(
-            name = f"{ctx.prefix}role",
-            value = f"```\n{ctx.prefix}role color #ffffff\n{ctx.prefix}role name Booger\n{ctx.prefix}role delete```",
-            inline = False)
-
-        await ctx.send(embed = embed)
+                # if rank_role.role not in message.author.roles:
+                #     await message.author.add_roles(rank_role.role)
+                #     await message.channel.send(self.bot.translate("new_rank_achieved").format(role = rank_role.role))
 
 
     @commands.command()
@@ -218,7 +187,7 @@ class Profile(commands.Cog):
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
 
 
-    @timezone.command(name = "delet")
+    @timezone.command(name = "delete")
     async def delete_timezone(self, ctx):
         with db:
             human, _ = Human.get_or_create_for_member(ctx.author)
