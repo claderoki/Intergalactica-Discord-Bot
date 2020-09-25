@@ -73,7 +73,6 @@ class StaffCommunication(commands.Cog):
             for attachment in attachments:
                 response += f"\n{attachment.url}"
 
-
         with db:
             reply = Reply.create(anonymous = ticket.anonymous, user_id = ctx.author.id, text = response, ticket = ticket, type = type)
             await ticket.sync_message()
