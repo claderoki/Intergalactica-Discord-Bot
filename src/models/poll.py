@@ -7,8 +7,7 @@ import playhouse.pool
 from emoji import emojize
 
 import src.config as config
-from src.discord.helpers.peewee import EmojiField
-from .base import BaseModel
+from .base import BaseModel, EmojiField
 
 # db = playhouse.pool.PooledMySQLDatabase("polls_db", max_connections=32, stale_timeout=300, **config.mysql)
 

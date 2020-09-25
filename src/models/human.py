@@ -11,30 +11,6 @@ import src.config as config
 
 emojize = lambda x : emoji.emojize(x, use_aliases=True)
 
-
-class EmojiUsage(BaseModel):
-    guild_id    = peewee.BigIntegerField  (null = False)
-    emoji_id    = peewee.BigIntegerField  (null = False)
-    total_uses  = peewee.IntegerField     (default = 0)
-
-    @property
-    def emoji(self):
-        return self.bot.get_emoji(self.emoji_id)
-
-class RankRole(BaseModel):
-    role_id             = peewee.BigIntegerField  (null = False)
-    guild_id            = peewee.BigIntegerField  (null = False)
-    required_experience = peewee.BigIntegerField  (null = False)
-
-    @property
-    def role(self):
-        return self.guild.get_role(self.role_id)
-
-
-class Settings(BaseModel):
-    guild_id                            = peewee.BigIntegerField  (null = False)
-    min_rank_required_for_personal_role = peewee.ForeignKeyField  (RankRole, null = True)
-
 class GlobalHuman(BaseModel):
     user_id               = peewee.BigIntegerField  (null = False)
     # blacklisted           = peewee.BooleanField     (default = False)
@@ -43,8 +19,8 @@ class Human(BaseModel):
     user_id               = peewee.BigIntegerField  (null = False)
     guild_id              = peewee.BigIntegerField  (null = False)
     personal_role_id      = peewee.BigIntegerField  (null = True)
-    experience            = peewee.BigIntegerField  (default = 0)
-    last_experience_given = peewee.DateTimeField    (default = lambda : datetime.datetime.now())
+    experience            = peewee.BigIntegerField  (null = False, default = 0)
+    last_experience_given = peewee.DateTimeField    (null = False, default = lambda : datetime.datetime.now())
     global_human          = peewee.ForeignKeyField  (GlobalHuman)
     timezone              = peewee.TextField        (null = True)
     date_of_birth         = peewee.DateField        (null = True)
@@ -59,15 +35,6 @@ class Human(BaseModel):
         # last_active = self.last_active or member.joined_at
         last_active = self.last_active or date_implemented
         return (last_active + config.inactive_delta) < datetime.datetime.now()
-
-    @property
-    def rank_role_should_have(self):
-        return RankRole\
-            .select()\
-            .where( (RankRole.guild_id == self.guild_id) & (RankRole.required_experience <= self.experience) )\
-            .order_by(RankRole.required_experience.desc())\
-            .limit(1)\
-            .first()
 
     @property
     def rank_role(self):
@@ -122,9 +89,6 @@ class Human(BaseModel):
 
         name = self.member.display_name
         values = []
-
-        # values.append(f"Experience {self.experience} / {self.experience_needed_for_next_level}")
-        # values.append(f"Level {self.level}")
 
         if self.date_of_birth is not None:
             days_until_birthday = self.days_until_birthday
