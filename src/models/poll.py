@@ -81,9 +81,11 @@ class Poll(BaseModel):
     
         for vote, count in votes:
             if total > 0:
-                percentage = round((count / total ) * 100, 2)
+                percentage = (count / total ) * 100
             else:
                 percentage = 0
+
+            percentage = round(percentage, 2)
 
             lines.append(f"{vote}: {percentage}% ({count}) votes")
 
