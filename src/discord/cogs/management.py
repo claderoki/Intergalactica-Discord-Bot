@@ -57,7 +57,7 @@ class Management(discord.ext.commands.Cog):
 
     @commands.command()
     async def leastemoji(self, ctx):
-        emoji_usages = list(EmojiUsage.select().where(EmojiUsage.guild_id == ctx.guild.id).order_by(EmojiUsage.total_uses.desc()) )
+        emoji_usages = [x for x in EmojiUsage.select().where(EmojiUsage.guild_id == ctx.guild.id).order_by(EmojiUsage.total_uses.desc()) if x.emoji is not None]
         emoji_ids = [x.emoji_id for x in emoji_usages]
 
         with db:
@@ -78,24 +78,27 @@ class Management(discord.ext.commands.Cog):
     @commands.command()
     @commands.has_guild_permissions(administrator = True)
     async def embed(self, ctx, name):
-        if len(ctx.message.attachments) > 0:
-            attachment = ctx.message.attachments[0]
-            data = json.loads(await attachment.read())
+        with db:
+            settings = Settings.get(guild_id = ctx.guild.id)
 
-            embed_data = data["embeds"][0]
-            embed = discord.Embed.from_dict(embed_data)
-            await ctx.send(embed = embed)
+            if len(ctx.message.attachments) > 0:
+                attachment = ctx.message.attachments[0]
+                data = json.loads(await attachment.read())
 
-            named_embed, _ = NamedEmbed.get_or_create(name = name)
-            named_embed.data = embed_data
-            named_embed.save()
-        else:
-            try:
-                named_embed = NamedEmbed.get(name = name)
-            except NamedEmbed.DoesNotExist:
-                await ctx.send("This embed does not exist")
+                embed_data = data["embeds"][0]
+                embed = discord.Embed.from_dict(embed_data)
+                await ctx.send(embed = embed)
+
+                named_embed, _ = NamedEmbed.get_or_create(name = name, settings = settings)
+                named_embed.data = embed_data
+                named_embed.save()
             else:
-                await ctx.send(embed = named_embed.embed)
+                try:
+                    named_embed = NamedEmbed.get(name = name, settings = settings)
+                except NamedEmbed.DoesNotExist:
+                    await ctx.send("This embed does not exist")
+                else:
+                    await ctx.send(embed = named_embed.embed)
 
     @commands.command()
     @commands.has_guild_permissions(administrator = True)
