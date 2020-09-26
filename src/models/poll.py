@@ -81,7 +81,7 @@ class Poll(BaseModel):
     
         for vote, count in votes:
             if total > 0:
-                percentage = (count / total ) * 100
+                percentage = round((count / total ) * 100, 2)
             else:
                 percentage = 0
 
