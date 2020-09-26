@@ -19,5 +19,4 @@ with database:
     database.create_tables([Ticket, Reply])
     database.create_tables([Poll, Option, Vote])
 
-# from .migration import migrate_members
-# migrate_members()
+
