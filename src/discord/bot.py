@@ -14,7 +14,7 @@ from discord.ext import commands
 import src.config as config
 from src.wrappers.openweathermap import OpenWeatherMapApi
 from src.wrappers.color_thief import ColorThief
-from src.models import Settings, database
+from src.models import Settings, Translation, database
 
 class Locus(commands.Bot):
     _dominant_colors = {}
@@ -46,7 +46,6 @@ class Locus(commands.Bot):
 
         self.owm_api = OpenWeatherMapApi(os.environ["owm_key"])
 
-        self.load_translations()
         self.load_all_cogs()
 
         self.before_invoke(self.before_any_command)
@@ -124,11 +123,6 @@ class Locus(commands.Bot):
         for cog in cogs:
             self.load_cog(cog)
 
-    def load_translations(self):
-        with open(config.path + "/data/translations.json") as f:
-            self.translations = json.loads(f.read())
-
-
     def get_random_color(self, start_range=80, end_range=255):
         # from 80 to 255 because most people use the dark theme, and anything under 80 is too bright to be comfortably visible.
         if end_range > 255:
@@ -187,7 +181,7 @@ class Locus(commands.Bot):
             if isinstance(exception.original, Settings.DoesNotExist):
                 with database:
                     Settings.get_or_create(guild_id = ctx.guild.id)
-                await ctx.reinvoke()
+                await ctx.reinvoke(restart = True)
                 return
 
         raise exception
@@ -204,15 +198,6 @@ class Locus(commands.Bot):
                 return translation.value
             except Translation.DoesNotExist:
                 return key
-
-    # def translate(self, key, locale = "en_US"):
-    #     for translation in self.translations:
-    #         if key == translation["message_key"]:
-    #             return translation["translation"]
-
-    #     return key
-
-
 
 class Embed:
     @classmethod
