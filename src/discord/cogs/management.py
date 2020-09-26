@@ -110,32 +110,6 @@ class Management(discord.ext.commands.Cog):
         await channel.delete()
 
 
-    @commands.command()
-    async def guidelines(self, ctx, numbers : commands.Greedy[int] = None):
-        with db:
-            named_embed = NamedEmbed.get(name = "guidelines")
-            
-        if numbers is not None:
-            embed = named_embed.get_embed_only_selected_fields([x-1 for x in numbers])
-        else:
-            embed = named_embed.embed
-
-        await ctx.send(embed = embed)
-
-
-    @commands.command()
-    async def rules(self, ctx, numbers : commands.Greedy[int] = None):
-        with db:
-            named_embed = NamedEmbed.get(name = "rules")
-
-        if numbers is not None:
-            embed = named_embed.get_embed_only_selected_fields([x-1 for x in numbers])
-        else:
-            embed = named_embed.embed
-
-        await ctx.send(embed = embed)
-
-
     # @commands.is_owner()
     # @commands.command()
     # async def clearperms(self, ctx):

@@ -8,6 +8,8 @@ from discord.ext import commands
 # from src.models import Poll, Option, Settings, NamedEmbed, NamedChannel, database as db
 from src.models import Poll, Option, Settings, NamedEmbed, database as db
 
+print( [x.name for x in NamedEmbed.select(NamedEmbed.name).where(NamedEmbed.settings == 2) ])
+
 class Intergalactica(commands.Cog):
 
     _role_ids = \
@@ -39,41 +41,25 @@ class Intergalactica(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        guild = member.guild
+        if not self.bot.production:
+            return
 
-        welcome_channel = guild.system_channel
+        welcome_channel = member.guild.system_channel
 
-        text = "Welcome space cadet {member} {member.mention}!"
-
-
-        # embed = discord.Embed(color = self.bot.get_dominant_color(guild))
-        # embed.set_author(name = f"Welcome space cadet {member}!", icon_url = guild.icon_url )
-# 
+        text = self.bot.translate("member_join")
+  
         await welcome_channel.send(text.format(member = member))
-
-        # with db:
-        #     settings = Settings.get(guild_id = member.guild.id)
-        #     embed = settings.embeds.where(NamedEmbed.name == "member_join").first()
-        #     print(embed)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        guild = member.guild
+        if not self.bot.production:
+            return
 
-        welcome_channel = guild.system_channel
+        welcome_channel = member.guild.system_channel
 
-        text = "Goodbye space cadet {member} {member.mention}!"
-        
+        text = self.bot.translate("member_leave")
+
         await welcome_channel.send(text.format(member = member))
-
-        # embed = discord.Embed(color = self.bot.get_dominant_color(guild))
-        # embed.set_author(name = f"Goodbye space cadet {member}!", icon_url = guild.icon_url )
-
-        # await welcome_channel.send(embed = embed)
-        # with db:
-        #     settings = Settings.get(guild_id = member.guild.id)
-        #     embed = settings.embeds.where(NamedEmbed.name == "member_leave").first()
-        #     print(embed)
 
 
     def create_selfie_poll(self, member):
@@ -146,12 +132,6 @@ class Intergalactica(commands.Cog):
                         # await message.pin()
 
 
-
-    # @commands.Cog.listener()
-    # async def on_message(self, message):
-    #     if "clark" in message.content.lower():
-    #         await message.channel.trigger_typing() 
-
     def member_is_legal(self, member):
         age_roles       = [748606669902053387,748606823229030500,748606893387153448,748606902363095206]
         gender_roles    = [742301620062388226, 742301646004027472, 742301672918745141]
@@ -210,7 +190,21 @@ class Intergalactica(commands.Cog):
         asyncio.gather(*coros)
 
 
+    def embed_from_name(self, name, indexes):
+        with db:
+            named_embed = NamedEmbed.get(name = name)
+            
+        if indexes is not None:
+            embed = named_embed.get_embed_only_selected_fields([x-1 for x in indexes])
+        else:
+            embed = named_embed.embed
+        
+        return embed
 
+    @commands.command(aliases = [ x.name for x in NamedEmbed.select(NamedEmbed.name).where(NamedEmbed.settings == 2) ] )
+    async def stinkyembed(self, ctx, numbers : commands.Greedy[int] = None):
+        embed = self.embed_from_name(ctx.invoked_with, numbers)
+        await ctx.send(embed = embed)
 
 
 def setup(bot):
