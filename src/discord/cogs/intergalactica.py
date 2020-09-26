@@ -43,7 +43,7 @@ class Intergalactica(commands.Cog):
 
         welcome_channel = guild.system_channel
 
-        text = "Welcome space cadet {member.mention}!"
+        text = "Welcome space cadet {member} {member.mention}!"
 
 
         # embed = discord.Embed(color = self.bot.get_dominant_color(guild))
@@ -62,7 +62,7 @@ class Intergalactica(commands.Cog):
 
         welcome_channel = guild.system_channel
 
-        text = "Goodbye space cadet {member.mention}!"
+        text = "Goodbye space cadet {member} {member.mention}!"
         
         await welcome_channel.send(text.format(member = member))
 
