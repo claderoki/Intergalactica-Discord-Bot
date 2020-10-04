@@ -22,7 +22,7 @@ class Inactive(discord.ext.commands.Cog):
         if member.bot:
             return
 
-        now = datetime.datetime.now()
+        now = datetime.datetime.utcnow()
 
         with db:
             human, created = Human.get_or_create_for_member(member)
