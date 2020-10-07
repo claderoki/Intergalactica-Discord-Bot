@@ -153,7 +153,10 @@ class Poll(BaseModel):
 
         plt.ylim(0,20)
 
-        ax.set_title(self.generate_question(mention = False))
+        if len(self.changes) > 0:
+            ax.set_title(self.generate_question(mention = False))
+        else:
+            ax.set_title(self.question)
 
         ax.margins(0.3)
         ax.axis('tight')
