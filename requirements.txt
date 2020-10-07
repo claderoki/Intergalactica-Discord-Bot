@@ -10,3 +10,5 @@ pycountry
 python-dateutil
 pymysql
 Pillow
+matplotlib
+numpy
