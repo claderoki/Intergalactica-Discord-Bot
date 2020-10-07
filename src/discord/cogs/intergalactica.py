@@ -85,6 +85,7 @@ class Intergalactica(commands.Cog):
                     has_selfie_perms = True
 
             if added_role.id == self._role_ids["nova"] and not has_selfie_perms:
+                pass
                 # await self.log("bot_commands", f"DMed **{after}** {after.mention} has achieved Nova!.")
                 # with db:
                 #     try:
@@ -117,11 +118,40 @@ class Intergalactica(commands.Cog):
         embed = self.embed_from_name(ctx.invoked_with, numbers)
         await ctx.send(embed = embed)
 
-    async def introductions_to_purge(self):
-        async for message in self.get_channel("introductions").history(limit=200):
-            return
-            if not isinstance(message.author, discord.Member):
-                yield message
+    # async def introductions_to_purge(self):
+    #     async for message in self.get_channel("introductions").history(limit=200):
+    #         pass
+
+            # if not isinstance(message.author, discord.Member):
+            #     yield message
+
+    @commands.command()
+    async def intros(self, ctx):
+        return
+        async for message in self.get_channel("bot_commands").history(limit=200):
+            if len(message.embeds) > 0 and message.author.bot:
+                embed = message.embeds[0]
+                try:
+                    author = embed.title.replace("Introduction by ", "")
+                except:
+                    continue
+                if author != embed.title:
+                    try:
+                        member = await commands.MemberConverter().convert(ctx, author)
+                    except:
+                        continue
+                    introduction = embed.description
+
+                    try:
+                        await member.send(f"Due to a bug, all introductions were removed... Sorry for the inconvenience. Here is your old introduction:\n\n```\n{introduction}```")
+                        print(f"sent {introduction[:10]}... to {member}")
+                    except Exception as e:
+                        print(e)
+
+        print("done i guess")
+
+                    # print(member.id, introduction)
+
 
     def illegal_member_iterator(self):
         for member in self.guild.members:
@@ -134,6 +164,12 @@ class Intergalactica(commands.Cog):
     @tasks.loop(hours = 3)
     async def poller(self):
         pass
+        # async for message in self.get_channel("introductions").history(limit=200):
+        #     print(type(message.author))
+
+
+
+
         # async for introduction in self.introductions_to_purge():
         #     embed = discord.Embed(
         #         color = self.bot.get_dominant_color(self.guild),

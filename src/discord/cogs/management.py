@@ -82,6 +82,11 @@ class Management(discord.ext.commands.Cog):
 
 
     @commands.is_owner()
+    @commands.command()
+    async def stop(self, ctx):
+        quit()
+
+    @commands.is_owner()
     @commands.group()
     async def translation(self, ctx):
         pass
