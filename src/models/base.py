@@ -16,25 +16,43 @@ class BaseModel(peewee.Model):
     async def convert(cls, ctx, argument):
         return cls.get(id = int(argument))
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._member = None
+        self._guild = None
+        self._user = None
+        self._channel = None
+
+
     @property
     def guild(self):
-        return self.bot.get_guild(self.guild_id)
+        if self._guild is None:
+            self._guild = self.bot.get_guild(self.guild_id)
+        return self._guild
+
 
     @property
     def user(self):
-        return self.bot.get_user(self.user_id)
+        if self._user is None:
+            self._user = self.bot.get_user(self.user_id)
+        return self._user
 
     @property
     def member(self):
-        return self.guild.get_member(self.user_id)
+        print(self._guild, self._member, self.user_id)
+        if self._member is None:
+            self._member = self.guild.get_member(self.user_id)
+        return self._member
 
     @property
     def channel(self):
-        return self.guild.get_channel(self.channel_id)
+        if self._channel is None:
+            self._channel = self.guild.get_channel(self.channel_id)
+        return self._channel
 
     class Meta:
         database = peewee.MySQLDatabase(
-            "locus_db", 
+            "locus_db",
             user     = os.environ["mysql_user"],
             password = os.environ["mysql_password"],
             host     = os.environ["mysql_host"],
