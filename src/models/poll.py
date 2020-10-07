@@ -258,6 +258,11 @@ class Vote(BaseModel):
     option   = peewee.ForeignKeyField (Option, backref = "votes", on_delete = "CASCADE")
     voted_on = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow())
 
+    class Meta:
+        indexes = (
+            (('user_id', 'option'), True),
+        )
+
 class PollTemplate(BaseModel):
     name                    = peewee.CharField       (null = False, max_length = 100)
     guild_id                = peewee.BigIntegerField (null = False)

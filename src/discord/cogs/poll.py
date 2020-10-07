@@ -55,7 +55,17 @@ class PollCog(commands.Cog):
                 first_vote = user_votes[0]
                 first_vote.delete_instance()
 
-            Vote.get_or_create(option = option, user_id = member.id)
+            if poll.role_id_needed_to_vote is not None:
+                role = member.guild.get_role(poll.role_id_needed_to_vote)
+
+                if role not in member.roles:
+                    return await member.send(f"To vote for this poll you need the **{role}** role.")
+
+            vote, created = Vote.get_or_create(option = option, user_id = member.id)
+
+            if created:
+                pass
+                # await member.send(f"You have successfully voted for option {} ")
 
 
     async def setup_poll(self, ctx, poll):
