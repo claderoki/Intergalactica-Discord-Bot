@@ -81,7 +81,7 @@ class Human(BaseModel):
     @property
     def is_eligible_for_xp(self):
         difference_in_seconds = ( datetime.datetime.utcnow() - self.last_experience_given).seconds
-        return  difference_in_seconds >= config.xp_timeout
+        return difference_in_seconds >= config.xp_timeout
 
 
     @property
@@ -105,7 +105,6 @@ class Human(BaseModel):
             values.append(value)
         elif show_all:
             values.append("🎂 N/A")
-
 
         if self.timezone is not None:
             timezone = Timezone(self.timezone)
@@ -157,7 +156,7 @@ class Human(BaseModel):
         if self.date_of_birth is None:
             return False
 
-        current_date = datetime.datetime.utcnow().date()
+        current_date = datetime.datetime.utcnow()
         return self.date_of_birth.day == current_date.day and self.date_of_birth.month == current_date.month
 
     @property
@@ -165,7 +164,7 @@ class Human(BaseModel):
         if self.date_of_birth is None:
             return None
 
-        current_date = datetime.datetime.utcnow().date()
+        current_date = datetime.datetime.utcnow()
 
         if current_date.month >= self.date_of_birth.month and current_date.day >= self.date_of_birth.day:
             return datetime.datetime(current_date.year + 1, self.date_of_birth.month, self.date_of_birth.day)

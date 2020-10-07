@@ -116,7 +116,6 @@ class Management(discord.ext.commands.Cog):
                 missing_translations.remove(key)
 
             await ctx.send("OK, created")
-                
 
     @commands.command()
     @commands.has_guild_permissions(administrator = True)

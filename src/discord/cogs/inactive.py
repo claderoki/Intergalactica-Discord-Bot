@@ -45,9 +45,6 @@ class Inactive(discord.ext.commands.Cog):
 
     def iter_inactives(self, guild):
         for human in Human.select().where(Human.guild_id == guild.id):
-            member = guild.get_member(human.user_id)
-            print(human.member, human.guild, member)
-
             if human.guild is None or human.member is None:
                 continue
             if human.inactive and not human.member.bot:

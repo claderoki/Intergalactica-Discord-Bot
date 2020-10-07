@@ -41,7 +41,9 @@ class Locus(commands.Bot):
         if not self.production:
             prefix = "."
 
-        super().__init__(command_prefix = prefix)
+        intents = discord.Intents.default()
+        intents.members = True
+        super().__init__(intents = intents, command_prefix = prefix)
 
         self.owm_api = OpenWeatherMapApi(os.environ["owm_key"])
 
@@ -113,7 +115,7 @@ class Locus(commands.Bot):
 
         if len(guilds) == 1:
             return guilds[0]
-        
+
         for guild in guilds:
             if guild.id == 742146159711092757: #intergalactica
                 return guild

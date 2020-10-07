@@ -39,7 +39,6 @@ class BaseModel(peewee.Model):
 
     @property
     def member(self):
-        print(self._guild, self._member, self.user_id)
         if self._member is None:
             self._member = self.guild.get_member(self.user_id)
         return self._member

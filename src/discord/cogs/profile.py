@@ -109,7 +109,6 @@ class Profile(commands.Cog):
             embed = discord.Embed(color = ctx.author.color)
             for member in members:
                 human, _ = Human.get_or_create_for_member(member)
-
                 embed.add_field(**human.get_embed_field(show_all = len(members) > 1))
 
             await ctx.send(embed = embed)
@@ -127,7 +126,6 @@ class Profile(commands.Cog):
 
         with db:
             human, _ = Human.get_or_create_for_member(ctx.author)
-
             human.date_of_birth = date_of_birth
             human.save()
 
@@ -137,7 +135,6 @@ class Profile(commands.Cog):
     async def delete_date_of_birth(self, ctx):
         with db:
             human, _ = Human.get_or_create_for_member(member)
-
             human.date_of_birth = None
             human.save()
 
@@ -154,7 +151,6 @@ class Profile(commands.Cog):
 
         with db:
             human, _ = Human.get_or_create_for_member(ctx.author)
-
             human.timezone = timezone.name
             human.save()
 
@@ -167,7 +163,6 @@ class Profile(commands.Cog):
 
         with db:
             human, _ = Human.get_or_create_for_member(ctx.author)
-
             human.timezone = timezone.name
             human.save()
 
@@ -209,7 +204,6 @@ class Profile(commands.Cog):
 
     async def edit_personal_role(self, ctx, **kwargs):
         attr_name = ctx.command.name
-
         attr_value = kwargs[attr_name]
 
         if attr_name == "name":
@@ -220,11 +214,9 @@ class Profile(commands.Cog):
         with db:
             human, _ = Human.get_or_create_for_member(ctx.author)
             new = human.personal_role_id is None or human.personal_role is None
-
             if new:
                 first_human = Human.select().where(Human.personal_role_id != None).limit(1).first()
                 position = first_human.personal_role.position if first_human else 0
-
                 role = await ctx.guild.create_role(**kwargs)
                 await role.edit(position = position)
                 human.personal_role = role
@@ -233,9 +225,7 @@ class Profile(commands.Cog):
                 await ctx.author.add_roles(role)
             else:
                 role = human.personal_role
-
                 await role.edit(**{attr_name : attr_value})
-                
                 msg = ctx.bot.translate(f"attr_added").format(name = "role's " + attr_name, value = attr_value)
                 embed = discord.Embed(color = role.color, title = msg)
                 await ctx.send(embed = embed)
@@ -333,39 +323,39 @@ class Profile(commands.Cog):
         await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
 
 
-    @commands.command()
-    async def addrankrole(self, ctx, role : discord.Role, required_experience : int):
-        RankRole.create(role_id = role.id, required_experience = required_experience, guild_id = ctx.guild.id)
-        await ctx.send("rank_role_added")
+    # @commands.command()
+    # async def addrankrole(self, ctx, role : discord.Role, required_experience : int):
+    #     RankRole.create(role_id = role.id, required_experience = required_experience, guild_id = ctx.guild.id)
+    #     await ctx.send("rank_role_added")
 
-    @commands.has_guild_permissions(manage_roles = True)
-    @commands.group()
-    async def xp(self, ctx):
-        pass
+    # @commands.has_guild_permissions(manage_roles = True)
+    # @commands.group()
+    # async def xp(self, ctx):
+    #     pass
 
-    @xp.command(name="+")
-    async def addxp(self, ctx, member : discord.Member, xp : int):
-        """Adds an amount of xp from a member."""
+    # @xp.command(name="+")
+    # async def addxp(self, ctx, member : discord.Member, xp : int):
+    #     """Adds an amount of xp from a member."""
 
-        with db:
-            human, _ = Human.get_or_create_for_member(member)
+    #     with db:
+    #         human, _ = Human.get_or_create_for_member(member)
 
-            human.experience += xp
-            human.save()
+    #         human.experience += xp
+    #         human.save()
 
-        await ctx.send(ctx.bot.translate("xp_added"))
+    #     await ctx.send(ctx.bot.translate("xp_added"))
 
-    @xp.command(name="-")
-    async def removexp(self, ctx, member : discord.Member, xp : int):
-        """Adds an amount of xp from a member."""
+    # @xp.command(name="-")
+    # async def removexp(self, ctx, member : discord.Member, xp : int):
+    #     """Adds an amount of xp from a member."""
 
-        with db:
-            human, _ = Human.get_or_create_for_member(member)
+    #     with db:
+    #         human, _ = Human.get_or_create_for_member(member)
 
-            human.experience -= xp
-            human.save()
+    #         human.experience -= xp
+    #         human.save()
 
-        await ctx.send(ctx.bot.translate("xp_removed"))
+    #     await ctx.send(ctx.bot.translate("xp_removed"))
 
 
     async def cog_before_invoke(self, ctx):
