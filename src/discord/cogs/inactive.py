@@ -15,42 +15,9 @@ class Inactive(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        pass
         # self.poll.start()
 
-        return
-        humans = {}
-        for human in Human.select().where(Human.guild_id == 742146159711092757):
-            if human.user_id not in humans:
-                humans[human.user_id] = []
-
-            humans[human.user_id].append(human)
-
-        for user_id, _humans in humans.items():
-            if len(_humans) > 1:
-                human1 = _humans[0]
-                human2 = _humans[1]
-
-                if human1.last_active == None and human2.last_active == None:
-                    human1.delete_instance()
-                    continue
-
-                if human1.last_active != None and human2.last_active == None:
-                    human2.delete_instance()
-                    continue
-
-                if human1.last_active == None and human2.last_active != None:
-                    human1.delete_instance()
-                    continue
-
-                if human1.last_active > human2.last_active:
-                    print("to delete human 2")
-                    human2.delete_instance()
-
-                elif human2.last_active > human1.last_active:
-                    print("to delete human 1")
-                    human1.delete_instance()
-
-                print(user_id)
 
     def set_active_or_create(self, member):
         if member.bot:
@@ -78,6 +45,9 @@ class Inactive(discord.ext.commands.Cog):
 
     def iter_inactives(self, guild):
         for human in Human.select().where(Human.guild_id == guild.id):
+            member = guild.get_member(human.user_id)
+            print(human.member, human.guild, member)
+
             if human.guild is None or human.member is None:
                 continue
             if human.inactive and not human.member.bot:
