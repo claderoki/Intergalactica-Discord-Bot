@@ -7,6 +7,11 @@ from .base import BaseModel, JsonField, EnumField
 class Locale(BaseModel):
     name = peewee.CharField(primary_key = True, max_length = 5)
 
+    @classmethod
+    async def convert(cls, ctx, argument):
+        return cls.get(name = argument)
+
+
 class Translation(BaseModel):
     message_key = peewee.BigIntegerField  (null = False)
     locale      = peewee.ForeignKeyField(Locale, column_name = "locale", default = "en_US")

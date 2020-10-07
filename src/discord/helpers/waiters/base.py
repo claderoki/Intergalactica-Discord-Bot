@@ -57,10 +57,13 @@ class MessageWaiter(Waiter):
 
         self.channels.append(ctx.channel)
 
-        
 
         if only_author:
             self.members.append(ctx.author)
+
+    @property
+    def instructions(self):
+        pass
 
     def __init_subclass__(cls):
         if not hasattr(cls, "convert"):
@@ -98,20 +101,26 @@ class MessageWaiter(Waiter):
 
         return True
 
-    async def wait(self, raw = False, timeout_crash = False):
-        
-        prompt = None
 
+    @property
+    def embed(self):
+        embed = self.ctx.bot.base_embed(description = self.prompt)
+
+        footer = []
+        instructions = self.instructions
+        if instructions is not None:
+            footer.append(instructions) 
         if self.skippable:
-            prompt = f"This is skippable by typing '{self.skip_command}'"
+            footer.append(f"This can be skipped with '{self.skip_command}'")
 
-            if self.prompt is not None:
-                prompt = self.prompt + "\n" + prompt
-        else:
-            prompt = self.prompt
+        if len(footer) > 0:
+            embed.set_footer( text = "\n".join(footer))
+        
+        return embed
 
-        if prompt is not None:
-            await self.ctx.channel.send(prompt)
+
+    async def wait(self, raw = False, timeout_crash = False):
+        await self.ctx.channel.send(embed = self.embed)
 
         try:
             message = await self.ctx.bot.wait_for("message", timeout=self.timeout, check = self.check)
@@ -134,6 +143,19 @@ class MessageWaiter(Waiter):
 class IntWaiter(MessageWaiter):
 
     __slots__ = ("range", "min", "max")
+
+    @property
+    def instructions(self):
+        if self.min is None and self.max is None:
+            return None
+
+        instructions = []
+        if self.min is not None:
+            instructions.append(f"min={self.min}")
+        if self.max is not None:
+            instructions.append(f"max={self.max}")
+
+        return ", ".join(instructions)
 
     def __init__(self, ctx, range = None, min = None, max = None, **kwargs):
         super().__init__(ctx, **kwargs)
@@ -179,7 +201,7 @@ class StrWaiter(MessageWaiter):
 
     def check(self, message):
         if not super().check(message):
-            return False        
+            return False
 
         content = message.content if self.case_sensitive else message.content.lower()
 
@@ -198,8 +220,31 @@ class StrWaiter(MessageWaiter):
         return argument
 
 
+class EnumWaiter(StrWaiter):
+    def __init__(self, ctx, enum, **kwargs):
+        super().__init__(ctx, **kwargs)
+        self.enum = enum
+        self.allowed_words = [x.name for x in enum]
+        self.case_sensitive = False
+
+    @property
+    def instructions(self):
+        split = "'"
+        sep = ","
+        return f"allowed words: {split}" + (f"{split}{sep} {split}".join(self.allowed_words)) + split
+
+    def convert(self, argument):
+        try:
+            return self.enum[argument.lower()]
+        except:
+            raise ConversionFailed("Message needs to be yes/no")
+
 
 class BoolWaiter(StrWaiter):
+
+    @property
+    def instructions(self):
+        return "yes / no"
 
     def __init__(self, ctx, **kwargs):
         super().__init__(ctx, allowed_words = ('yes', 'y', 'n', 'no'), case_sensitive=False, **kwargs)
@@ -216,6 +261,10 @@ class BoolWaiter(StrWaiter):
 
 
 class MemberWaiter(MessageWaiter):
+
+    @property
+    def instructions(self):
+        return "@mention"
 
     def convert(self, argument):
         match = re.match(r'<@!?([0-9]+)>$', argument)
@@ -237,6 +286,10 @@ class MemberWaiter(MessageWaiter):
 
 
 class TextChannelWaiter(MessageWaiter):
+
+    @property
+    def instructions(self):
+        return "#mention"
 
     def convert(self, argument):
         match = re.match(r'<#([0-9]+)>$', argument)
@@ -328,17 +381,22 @@ class DateWaiter(StrWaiter):
 
 class TimeDeltaWaiter(MessageWaiter):
 
-    def convert(self, argument):
+    @property
+    def instructions(self):
+        return "Examples: '2 days', '1 hour', '10 weeks'"
+
+    @staticmethod
+    def _convert(argument):
         amount, time = argument.split()
 
         if not amount.isdigit():
             raise ConversionFailed("Needs to be a number. example: **2** hours")
-        
+
         amount = int(amount)
 
         if not time.endswith("s"):
             time = time + "s"
-        
+
         possible_values = ("days", "seconds", "microseconds", "milliseconds", "minutes", "hours", "weeks", "months", "years")
 
         conversions =\
@@ -357,6 +415,9 @@ class TimeDeltaWaiter(MessageWaiter):
 
         return datetime.timedelta(**{time : amount })
 
+    def convert(self, argument):
+        return self._convert(argument)
+
 
 waiter_mapping = \
 {
@@ -365,7 +426,8 @@ waiter_mapping = \
     bool                : BoolWaiter,
     datetime.date       : DateWaiter,
     discord.Member      : MemberWaiter,
-    discord.TextChannel : TextChannelWaiter    
+    discord.TextChannel : TextChannelWaiter,
+    discord.Role        : RoleWaiter,
 }
 
 class ReactionWaiter(Waiter):

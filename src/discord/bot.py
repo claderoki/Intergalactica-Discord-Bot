@@ -4,8 +4,8 @@ import asyncio
 import random
 import os
 from enum import Enum
+import io
 
-from PIL import Image
 import requests
 import emoji
 import discord
@@ -23,7 +23,9 @@ class Locus(commands.Bot):
     (
         commands.errors.BotMissingPermissions,
         commands.errors.MissingRequiredArgument,
-        commands.errors.MissingPermissions
+        commands.errors.MissingPermissions,
+        commands.errors.PrivateMessageOnly,
+        commands.errors.NoPrivateMessage
     )
 
     ignorables = \
@@ -34,13 +36,10 @@ class Locus(commands.Bot):
     def __init__(self, mode, prefix = "/", ):
         self.mode = mode
         self.production = mode == config.Mode.production
-
-        self.dominant_color = None
+        self.missing_translations = {}
 
         if not self.production:
             prefix = "."
-
-        # self.setup_environmental_variables()
 
         super().__init__(command_prefix = prefix)
 
@@ -57,7 +56,32 @@ class Locus(commands.Bot):
         print(f"Prefix={self.command_prefix}")
         print("--------------------")
 
-    def calculate_dominant_color(self, image_url):
+    def base_embed(self, **kwargs) -> discord.Embed:
+        user = self.user
+        embed = discord.Embed(color = self.get_dominant_color(None), **kwargs)
+        return embed.set_author(name = user.name, icon_url = user.avatar_url)
+
+
+
+    async def store_file(self, file, filename) -> str:
+        """This function stores a file in the designated storage channel, it returns the url of the newly stored image."""
+
+        storage_channel = (await self.application_info()).owner
+        # storage_channel = self.get_channel(755895328745455746)
+
+        if isinstance(file, io.BytesIO):
+            f = file
+        else:
+            f = io.BytesIO(file)
+
+        msg = await storage_channel.send(file=discord.File(fp=f, filename=filename))
+
+        return msg.attachments[0].url
+
+
+
+
+    def calculate_dominant_color(self, image_url, normalize = False):
         color_thief = ColorThief(requests.get(image_url, stream=True).raw)
         dominant_color = color_thief.get_color(quality=1)
         return discord.Color.from_rgb(*dominant_color)
@@ -77,7 +101,7 @@ class Locus(commands.Bot):
             url = self._get_icon_url(obj)
             if not url:
                 return self.get_dominant_color(None)
-            self._dominant_colors[obj.id] = self.calculate_dominant_color(url)
+            self._dominant_colors[obj.id] = self.calculate_dominant_color(url, normalize = True)
         
         return self._dominant_colors[obj.id]
 
@@ -91,7 +115,7 @@ class Locus(commands.Bot):
             return guilds[0]
         
         for guild in guilds:
-            if guild.name == "Intergalactica":
+            if guild.id == 742146159711092757: #intergalactica
                 return guild
 
         lines = ["Select the server."]
@@ -100,9 +124,6 @@ class Locus(commands.Bot):
         for guild in guilds:
             lines.append(f"{guild.name}")
             i += 1
-    
-
-
 
     def load_cog(self, name):
         self.load_extension("src.discord.cogs." + name)
@@ -114,7 +135,7 @@ class Locus(commands.Bot):
             "management",
             "poll",
             "inactive",
-            "staff_communication"
+            "staff_communication",
         ]
 
         if True:
@@ -136,6 +157,7 @@ class Locus(commands.Bot):
         return random_color
 
     def text_to_emojis(self, text):
+        text = str(text)
         emojis = []
 
         for char in text:
@@ -192,11 +214,19 @@ class Locus(commands.Bot):
 
 
     def translate(self, key, locale = "en_US"):
+        if locale not in self.missing_translations:
+            self.missing_translations[locale] = set()
+        
+        missing_translations = self.missing_translations[locale]
+
         with database:
             try:
                 translation = Translation.get(locale = locale, message_key = key)
+                if key in missing_translations:
+                    missing_translations.remove(key)
                 return translation.value
             except Translation.DoesNotExist:
+                missing_translations.add(key)
                 return key
 
 class Embed:

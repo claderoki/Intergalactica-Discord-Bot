@@ -3,104 +3,74 @@ import datetime
 
 from emoji import emojize
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 # from src.models import Poll, Option, Settings, NamedEmbed, NamedChannel, database as db
 from src.models import Poll, Option, Settings, NamedEmbed, database as db
 
-print( [x.name for x in NamedEmbed.select(NamedEmbed.name).where(NamedEmbed.settings == 2) ])
 
 class Intergalactica(commands.Cog):
 
     _role_ids = \
     {
         "selfies" : 748566253534445568,
-        "nova"    : 748494888844132442
+        "nova"    : 748494888844132442,
+        "age"     : {},
+        "gender"  : {}
     }
 
     _channel_ids = \
     {
-        "selfies"      : 744703465086779393,
-        "concerns"     : 758296826549108746,
-        "staff_chat"   : 750067502352171078,
-        "bot_commands" : 754056523277271170
+        "selfies"       : 744703465086779393,
+        "concerns"      : 758296826549108746,
+        "staff_chat"    : 750067502352171078,
+        "bot_commands"  : 754056523277271170,
+        "introductions" : 742567349613232249,
+        "tabs"          : 757961433911787592
     }
 
     selfie_poll_question = "Should {member} get selfie perms?"
+
+    def get_channel(self, name):
+        return self.bot.get_channel(self._channel_ids[name])
 
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
         self.guild_id = 742146159711092757
 
-
-
     @commands.Cog.listener()
     async def on_ready(self):
         self.guild = self.bot.get_guild(self.guild_id)
+        self.bot.get_dominant_color(self.guild)
+        self.poller.start()
+
+
+    async def log(self, channel_name, content = None, **kwargs):
+        channel = self.get_channel(channel_name)
+        await channel.send(content = content, **kwargs)
+
+    async def on_member_leave_or_join(self, member, type):
+        if not self.bot.production:
+            return
+        welcome_channel = member.guild.system_channel
+        text = self.bot.translate("member_" + type)
+        await welcome_channel.send(text.format(member = member))
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        if not self.bot.production:
-            return
-
-        welcome_channel = member.guild.system_channel
-
-        text = self.bot.translate("member_join")
-  
-        await welcome_channel.send(text.format(member = member))
+        await self.on_member_leave_or_join(member, "join")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        if not self.bot.production:
-            return
-
-        welcome_channel = member.guild.system_channel
-
-        text = self.bot.translate("member_leave")
-
-        await welcome_channel.send(text.format(member = member))
-
-
-    def create_selfie_poll(self, member):
-        guild = member.guild
-
-        poll = Poll(
-            question = self.selfie_poll_question.format(member = str(member)),
-            author_id = self.bot.user.id,
-            guild_id = guild.id,
-            type = "bool"
-        )
-
-        options = []
-        for i, reaction in enumerate((emojize(":white_heavy_check_mark:"), emojize(":prohibited:"))):
-            option = Option(value = ("Yes","No")[i], reaction = reaction)
-            options.append(option)
-
-        poll.due_date = datetime.datetime.now() + datetime.timedelta(days = 2)
-
-        selfie_channel = guild.get_channel(self._channel_ids["bot_commands"])
-        result_channel = guild.get_channel(self._channel_ids["staff_chat"])
-
-        poll.channel_id = selfie_channel.id
-        poll.result_channel_id = result_channel.id
-
-        with db:
-            poll.save()
-
-            for option in options:
-                option.poll = poll
-                option.save()
-        
-        return poll
-
+        await self.on_member_leave_or_join(member, "leave")
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         if len(after.roles) > len(before.roles):
             if after.guild.id != self.guild_id:
                 return
-            
+
             if self.bot.production:
                 return
             return
@@ -113,15 +83,16 @@ class Intergalactica(commands.Cog):
                     added_role = role
                 if role.id == self._role_ids["selfies"]:
                     has_selfie_perms = True
-            
+
             if added_role.id == self._role_ids["nova"] and not has_selfie_perms:
-                with db:
-                    try:
-                        poll = Poll.get(question = self.selfie_poll_question.format(member = str(after), ended = False))
-                    except Poll.DoesNotExist:
+                pass
+                # with db:
+                #     try:
+                #         poll = Poll.get(question = self.selfie_poll_question.format(member = str(after), ended = False))
+                #     except Poll.DoesNotExist:
                         
-                        channel = guild.get_channel(self._channel_ids["bot_commands"])
-                        await channel.send("Would send a selfie poll here")
+                #         channel = guild.get_channel(self._channel_ids["bot_commands"])
+                #         await channel.send("Would send a selfie poll here")
 
                         # poll = self.create_selfie_poll(after)
 
@@ -132,79 +103,76 @@ class Intergalactica(commands.Cog):
                         # await message.pin()
 
 
-    def member_is_legal(self, member):
-        age_roles       = [748606669902053387,748606823229030500,748606893387153448,748606902363095206]
-        gender_roles    = [742301620062388226, 742301646004027472, 742301672918745141]
+    def embed_from_name(self, name, indexes):
+        with db:
+            named_embed = NamedEmbed.get(name = name)
+        if indexes is not None:
+            embed = named_embed.get_embed_only_selected_fields([x-1 for x in indexes])
+        else:
+            embed = named_embed.embed
+        return embed
 
-        has_age_role = False
-        has_gender_role = False
+    @commands.command(aliases = [ x.name for x in NamedEmbed.select(NamedEmbed.name).where(NamedEmbed.settings == 2) ])
+    async def getembed(self, ctx, numbers : commands.Greedy[int] = None):
+        embed = self.embed_from_name(ctx.invoked_with, numbers)
+        await ctx.send(embed = embed)
 
-        for role in member.roles:
-            if role.id in age_roles:
-                has_age_role = True
-            elif role.id in gender_roles:
-                has_gender_role = True
-
-        return has_age_role and has_gender_role
+    async def introductions_to_purge(self):
+        async for message in self.get_channel("introductions").history(limit=200):
+            if not isinstance(message.author, discord.Member):
+                yield message
 
     def illegal_member_iterator(self):
         for member in self.guild.members:
             if member.bot:
                 continue
 
-            if not self.member_is_legal(member):
+            if not member_is_legal(member):
                 yield member
 
-    @commands.command()
-    async def mandatorycheck(self, ctx):
-        embed = discord.Embed(color = ctx.guild_color, title = "Members without mandatory roles")
+    @tasks.loop(hours = 3)
+    async def poller(self):
+        async for introduction in self.introductions_to_purge():
+            embed = discord.Embed(
+                color = self.bot.get_dominant_color(self.guild),
+                title = f"Introduction by {introduction.author}",
+                description = introduction.content)
+            await self.log("bot_commands", embed = embed)
+            await introduction.delete()
 
-        lines = []
         for member in self.illegal_member_iterator():
-            lines.append(f"{member.mention} joined: {member.joined_at.date().isoformat()}")
-
-        embed.description = "\n".join(lines)
-
-        await ctx.send(embed = embed)
-
-    @commands.command()
-    @commands.has_guild_permissions(administrator = True)
-    async def purgeintros(self, ctx):
-        channel = ctx.guild.get_channel(742567349613232249)
-
-        coros = []
-        async for message in channel.history(limit=200):
-            if not isinstance(message.author, discord.Member):
-                embed = discord.Embed(
-                    color = ctx.guild_color,
-                    title = f"Introduction by {message.author}",
-                    description = message.content)
-                coros.append( ctx.send(embed = embed) )
-
-                await message.delete()
-
-        if len(coros) == 0:
-            embed = discord.Embed(title ="Nothing to purge.", color = ctx.guild_color)
-            coros.append( ctx.send(embed = embed) )
-
-        asyncio.gather(*coros)
+            if member.id != 120566758091259906:
+                continue
+            days = (datetime.datetime.utcnow() - member.joined_at).days
+            if days > 1:
+                try:
+                    await member.send(content = f"Hello. In the **{self.guild.name}**  server, both the gender role and the age role are mandatory. Please pick these roles up.")
+                except discord.Forbidden:
+                    await self.log("bot_commands", f"**{member}** {member.mention} is missing one or more of the mandatory roles. Unable to DM.")
+                else:
+                    await self.log("tabs", f"DMed **{member}** {member.mention} to ask them to pick up mandatory roles.")
+                # embed = self.embed_from_name("rules", [7])
 
 
-    def embed_from_name(self, name, indexes):
-        with db:
-            named_embed = NamedEmbed.get(name = name)
-            
-        if indexes is not None:
-            embed = named_embed.get_embed_only_selected_fields([x-1 for x in indexes])
-        else:
-            embed = named_embed.embed
-        
-        return embed
 
-    @commands.command(aliases = [ x.name for x in NamedEmbed.select(NamedEmbed.name).where(NamedEmbed.settings == 2) ] )
-    async def stinkyembed(self, ctx, numbers : commands.Greedy[int] = None):
-        embed = self.embed_from_name(ctx.invoked_with, numbers)
-        await ctx.send(embed = embed)
+
+def member_is_legal(member):
+    age_roles       = [748606669902053387,748606823229030500,748606893387153448,748606902363095206]
+    gender_roles    = [742301620062388226, 742301646004027472, 742301672918745141]
+
+    has_age_role = False
+    has_gender_role = False
+
+    for role in member.roles:
+        if role.id in age_roles:
+            has_age_role = True
+        elif role.id in gender_roles:
+            has_gender_role = True
+
+    return has_age_role and has_gender_role
+
+
+
 
 
 def setup(bot):

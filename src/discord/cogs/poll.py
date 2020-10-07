@@ -1,116 +1,169 @@
+import typing
 import datetime
-import asyncio
 
-from emoji import emojize
 import discord
 from discord.ext import commands, tasks
+from emoji import emojize
+import peewee
 
 from src.discord.helpers.waiters import *
-from src.models import Poll, Vote, Option
 import src.config as config
-
-db = Poll._meta.database
+from src.models import Change, Parameter, Poll, PollTemplate, Vote, database
 
 class PollCog(commands.Cog):
-
 
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
 
-
     @commands.Cog.listener()
     async def on_ready(self):
-        if self.bot.production:
-            self.poll.start()
-
-    @commands.command()
-    async def results(self, ctx, poll : Poll):
-        await ctx.send(embed = poll.result_embed)
-
+        self.poller.start()
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        if not self.bot.production:
-            return
+        # if not self.bot.production:
+        #     return
 
-        emoji = payload.emoji
+        emoji = str(payload.emoji)
         member = payload.member
 
         if member.bot:
             return
-        with db:
+
+        with database:
             try:
                 poll = Poll.get(message_id = payload.message_id, ended = False)
             except Poll.DoesNotExist:
                 return
 
-            channel = self.bot.get_channel(payload.channel_id)
-            message = await channel.fetch_message(payload.message_id)
-
             allowed_reactions = {x.reaction:x for x in poll.options}
 
-            emoji = str(emoji)
             if emoji not in allowed_reactions:
                 return
 
             if poll.anonymous:
+                channel = self.bot.get_channel(payload.channel_id)
+                message = await channel.fetch_message(payload.message_id)
                 await message.remove_reaction(emoji, member)
 
             option = allowed_reactions[emoji]
 
-            if poll.type == "bool" or poll.type == "single":
-                for _option in poll.options:
-                    for vote in _option.votes.where(Vote.user_id == member.id):
-                        vote.delete_instance()
+            user_votes = [list(x.votes.where(Vote.user_id == member.id)) for x in poll.options]
 
-                Vote.create(option = option, user_id = member.id)
+            if len(user_votes) == poll.max_votes_per_user:
+                first_vote = user_votes[0]
+                first_vote.delete_instance()
 
-            elif poll.type == "multi":
-                Vote.get_or_create(option = option, user_id = member.id)
+            Vote.get_or_create(option = option, user_id = member.id)
 
 
-    @commands.command(name = "createpoll")
-    async def create_poll(self, ctx, *, question):
-        poll = Poll(question = question, author_id = ctx.author.id, guild_id = ctx.guild.id)
+    async def setup_poll(self, ctx, poll):
+        prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
+        cls = poll.__class__
 
-        waiter = StrWaiter(
-            ctx,
-            prompt = "What type will the poll have?\n**single** = One vote per person\n**multi** = Multiple votes per person\n**bool** = Yes/No only (one vote per person)",
-            allowed_words=("single", "multi", "bool"),
-            case_sensitive=False)
+        if poll.type is None:
+            waiter = EnumWaiter(ctx, Poll.Type, prompt = prompt("type"), skippable = cls.type.null)
+            try:
+                poll.type = await waiter.wait()
+            except Skipped: pass
 
-        poll.type = (await waiter.wait()).lower()
+        if poll.channel_id is None:
+            waiter = TextChannelWaiter(ctx, prompt = prompt("channel_id"), skippable = cls.channel_id.null)
+            try:
+                poll.channel_id = (await waiter.wait()).id
+            except Skipped: pass
 
-        options = []
+        if poll.result_channel_id is None:
+            waiter = TextChannelWaiter(ctx, prompt = prompt("result_channel_id"), skippable = cls.result_channel_id.null)
+            try:
+                poll.result_channel_id = (await waiter.wait()).id
+            except Skipped: pass
 
-        if poll.type == "bool":
-            for i, reaction in enumerate((emojize(":white_heavy_check_mark:"), emojize(":prohibited:"))):
-                option = Option(value = ("Yes","No")[i], reaction = reaction)
-                options.append(option)
-        else:
-            waiter = IntWaiter(ctx, prompt = "How many options will the poll have? 2-4", range = range(2, 5) )
+        if poll.anonymous is None:
+            waiter = BoolWaiter(ctx, prompt = prompt("anonymous"), skippable = cls.anonymous.null)
+            try:
+                poll.anonymous = await waiter.wait()
+            except Skipped: pass
 
-            for i in range(await waiter.wait()):
-                waiter = StrWaiter(ctx, prompt = f"What will be option #{i+1}?", max_words = None)
-                option = Option(value = await waiter.wait(), reaction = emojize(f":keycap_{i+1}:"))
-                options.append(option)
+        if poll.type == Poll.Type.bool:
+            poll.max_votes_per_user = 1
+        if poll.max_votes_per_user is None:
+            waiter = IntWaiter(ctx, prompt = prompt("max_votes_per_user"), skippable = cls.max_votes_per_user.null)
+            try:
+                poll.max_votes_per_user = await waiter.wait()
+            except Skipped: pass
+
+        if poll.role_id_needed_to_vote is None:
+            waiter = RoleWaiter(ctx, prompt = prompt("role_id_needed_to_vote"), skippable = cls.role_id_needed_to_vote.null)
+            try:
+                poll.role_id_needed_to_vote = (await waiter.wait()).id
+            except Skipped: pass
+
+        if poll.vote_percentage_to_pass is None and poll.type == Poll.Type.bool:
+            waiter = IntWaiter(ctx, range = range(0,101), prompt = prompt("vote_percentage_to_pass"), skippable = cls.vote_percentage_to_pass.null)
+            try:
+                poll.vote_percentage_to_pass = await waiter.wait()
+            except Skipped: pass
+
+        return poll
 
 
-        waiter = TimeDeltaWaiter(ctx, prompt = "When will the poll results be sent? Examples: `2 days` OR `1 hour` OR `10 weeks`", max_words = 2)
-        delta = await waiter.wait()
+    @commands.group(name = "poll")
+    async def poll_group(self, ctx):
+        pass
 
-        poll.due_date = datetime.datetime.now() + delta
+    @poll_group.command()
+    async def template(self, ctx, name):
+        prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
+        with database:
+            template, _ = PollTemplate.get_or_create(name = name, guild_id = ctx.guild.id)
+            poll = await self.setup_poll(ctx, template)
 
-        waiter = TextChannelWaiter(ctx, prompt = "What channel will the poll be sent to?")
-        poll.channel_id = (await waiter.wait()).id
+            waiter = TimeDeltaWaiter(ctx, prompt = prompt("due_date"), max_words = 2)
+            message = await waiter.wait(raw = True)
+            poll.delta = message.content
 
-        with db:
             poll.save()
 
-            for option in options:
-                option.poll = poll
-                option.save()
+        await ctx.send("OK")
+
+
+
+    @poll_group.command(name = "create")
+    async def create_poll(self, ctx, template_name):
+        prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
+
+        template       = PollTemplate.get(name = template_name, guild_id = ctx.guild.id)
+
+        poll           = Poll.from_template(template)
+        poll.author_id = ctx.author.id
+
+        waiter = StrWaiter(ctx, prompt = prompt("question"), max_words = None)
+        poll.question = await waiter.wait()
+
+        await self.setup_poll(ctx, poll)
+
+        if poll.type == Poll.Type.custom:
+            options = []
+            option_range = range(2, 5)
+            waiter = IntWaiter(ctx, range = option_range, prompt = ctx.translate("option_count_prompt") )
+            for i in range(await waiter.wait()):
+                waiter = StrWaiter(ctx, max_words = None, prompt = ctx.translate("option_value_prompt").format(index = i+1))
+                options.append(await waiter.wait())
+
+        if poll.due_date is None:
+            waiter = TimeDeltaWaiter(ctx, prompt = prompt("due_date"), max_words = 2)
+            delta = await waiter.wait()
+            poll.due_date = datetime.datetime.utcnow() + delta
+
+        with database:
+            poll.save()
+
+            if poll.type == Poll.Type.bool:
+                poll.create_bool_options()
+            else:
+                poll.create_options(options)
 
             message = await poll.send()
             poll.message_id = message.id
@@ -118,16 +171,68 @@ class PollCog(commands.Cog):
             poll.save()
 
 
-    @tasks.loop(minutes=5)
-    async def poll(self):
-        with db:
+    @poll_group.group(name = "change")
+    async def change(self, ctx):
+        pass
+
+    @change.command("delete")
+    async def change_delete(self, ctx, discordObject : typing.Union[discord.TextChannel, discord.Role] ):
+        poll_channel = ctx.channel
+
+        with database:
+            template       = PollTemplate.get(name = "change", guild_id = ctx.guild.id)
+            poll           = Poll.from_template(template)
+            poll.author_id = ctx.author.id
+            poll.type      = Poll.Type.bool
+            poll.save()
+
+            poll.create_bool_options()
+
+            change = Change.create(poll = poll, action = "delete", type = Change.Type[discordObject.__class__.__name__.lower()])
+            Parameter.create(change = change, key = "id",   value = discordObject.id)
+
+            poll.question = poll.generate_question()
+
+            message = await poll.send()
+            poll.message_id = message.id
+            poll.save()
+
+    @change.command("create")
+    async def change_create(self, ctx, type : str,  name : str):
+        with database:
+            template       = PollTemplate.get(name = "change", guild_id = ctx.guild.id)
+            poll           = Poll.from_template(template)
+            poll.author_id = ctx.author.id
+            poll.type      = Poll.Type.bool
+            poll.save()
+
+            poll.create_bool_options()
+
+            await self.setup_poll(ctx, poll)
+            change = Change.create(action = "create", poll = poll, type = Change.Type[type.lower()])
+            change.create_param("name", name)
+
+            poll.question = poll.generate_question()
+
+            message = await poll.send()
+            poll.message_id = message.id
+            poll.save()
+
+    @tasks.loop(minutes=2)
+    async def poller(self):
+        with database:
             for poll in Poll.select().where(Poll.ended == False):
                 if poll.due_date_passed:
+
+                    if poll.type == Poll.Type.bool and poll.passed:
+                        for change in poll.changes:
+                            await change.implement()
+                            change.implemented = True
+                            change.save()
+
                     await poll.send_results()
                     poll.ended = True
                     poll.save()
-
-
 
 
 def setup(bot):

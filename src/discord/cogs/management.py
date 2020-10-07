@@ -5,12 +5,13 @@ import discord
 from discord.ext import commands
 
 import src.config as config
-from src.models import Settings, EmojiUsage, NamedEmbed, database as db
+from src.models import Settings, EmojiUsage, NamedEmbed, Translation, Locale, database
+from src.discord.helpers.waiters import *
 
 emoji_match = lambda x : [int(x) for x in re.findall(r'<a?:[a-zA-Z0-9\_]+:([0-9]+)>', x)]
 
 def increment_emoji(guild, emoji):
-    with db:
+    with database:
         usage, _ = EmojiUsage.get_or_create(guild_id = guild.id, emoji_id = emoji.id)
         usage.total_uses += 1
         usage.save()
@@ -56,11 +57,16 @@ class Management(discord.ext.commands.Cog):
         increment_emoji(member.guild, emoji)
 
     @commands.command()
-    async def leastemoji(self, ctx):
-        emoji_usages = [x for x in EmojiUsage.select().where(EmojiUsage.guild_id == ctx.guild.id).order_by(EmojiUsage.total_uses.desc()) if x.emoji is not None]
+    async def emojis(self, ctx, order = "least"):
+
+        if order == "least":
+            emoji_usages = [x for x in EmojiUsage.select().where(EmojiUsage.guild_id == ctx.guild.id).order_by(EmojiUsage.total_uses.desc()) if x.emoji is not None]
+        else:
+            emoji_usages = [x for x in EmojiUsage.select().where(EmojiUsage.guild_id == ctx.guild.id).order_by(EmojiUsage.total_uses.asc()) if x.emoji is not None]
+
         emoji_ids = [x.emoji_id for x in emoji_usages]
 
-        with db:
+        with database:
             for emoji in ctx.guild.emojis:
                 if emoji.id is not None:
                     if emoji.id not in emoji_ids:
@@ -75,10 +81,42 @@ class Management(discord.ext.commands.Cog):
             await ctx.send(embed = embed)
 
 
+    @commands.is_owner()
+    @commands.group()
+    async def translation(self, ctx):
+        pass
+
+    @translation.command(name = "add")
+    async def add_translation(self, ctx, key, *, value):
+        with database:
+            try:
+                Translation.create(message_key = key, value = value)
+            except:
+                await ctx.error()
+            else:
+                await ctx.success()
+
+    @translation.command()
+    async def spoonfeed(self, ctx, locale : Locale):
+        missing_translations = self.bot.missing_translations.get(locale.name, [])
+
+        for key in [x for x in missing_translations]:
+            waiter = StrWaiter(ctx, prompt = f"Translate: {key}", max_words = None, skippable = True)
+            try:
+                value = await waiter.wait()
+            except Skipped:
+                return
+            else:
+                Translation.create(message_key = key, value = value, locale = locale)
+                missing_translations.remove(key)
+
+            await ctx.send("OK, created")
+                
+
     @commands.command()
     @commands.has_guild_permissions(administrator = True)
     async def embed(self, ctx, name):
-        with db:
+        with database:
             settings = Settings.get(guild_id = ctx.guild.id)
 
             if len(ctx.message.attachments) > 0:
@@ -108,25 +146,6 @@ class Management(discord.ext.commands.Cog):
 
         await channel.clone()
         await channel.delete()
-
-
-    # @commands.is_owner()
-    # @commands.command()
-    # async def clearperms(self, ctx):
-    #     for role in ctx.guild.roles:
-
-    #         if role.id not in (742246061388726272, 742245976731025459, 744687672831770656, 742178843372027934):
-    #             await role.edit(permissions = discord.Permissions.none() )
-    #             print("cleared", role.name, role.id)
-    #         else:
-    #             print("ignored", role.name, role.id)
-                
-
-    #         if role.id in (742245305772146778,):
-    #             break
-
-
-
 
 def setup(bot):
     bot.add_cog(Management(bot))

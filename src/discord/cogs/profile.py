@@ -39,6 +39,15 @@ class WeirdFont:
 
         return "".join(new)
     
+
+    @classmethod
+    def from_full_alphabet(cls, text):
+        pass
+
+    @classmethod
+    def regional(cls):
+        return cls("🇦🇧🇨🇩🇪🇫🇬🇭🇯🇮🇰🇱🇲🇳🇴🇵🇶🇷🇸🇹🇺🇻🇼🇽🇾🇿")
+
     @classmethod
     def italica(cls):
         return cls("𝘢𝘣𝘤𝘥𝘦𝘧𝘨𝘩𝘪𝘫𝘬𝘭𝘮𝘯𝘰𝘱𝘲𝘳𝘴𝘵𝘶𝘷𝘸𝘲𝘺𝘻𝘈𝘉𝘊𝘋𝘌𝘍𝘎𝘏𝘐𝘑𝘒𝘓𝘔𝘕𝘖𝘗𝘘𝘙𝘚𝘛𝘜𝘝𝘞𝘘𝘠𝘟")
@@ -75,7 +84,7 @@ class Profile(commands.Cog):
 
             if human.is_eligible_for_xp:
                 human.experience += random.randint(config.min_xp, config.max_xp)
-                human.last_experience_given = datetime.datetime.now()
+                human.last_experience_given = datetime.datetime.utcnow()
                 human.save()
 
                 # rank_role = human.rank_role_should_have
@@ -285,9 +294,9 @@ class Profile(commands.Cog):
 
                 await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
 
-    @commands.command()
+    @role.command(name = "reset")
     @commands.is_owner()
-    async def resethumans(self, ctx):
+    async def reset_roles(self, ctx):
         for human in Human:
             if human.personal_role_id is not None:
                 role = human.personal_role

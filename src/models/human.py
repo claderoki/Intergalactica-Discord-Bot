@@ -20,12 +20,17 @@ class Human(BaseModel):
     guild_id              = peewee.BigIntegerField  (null = False)
     personal_role_id      = peewee.BigIntegerField  (null = True)
     experience            = peewee.BigIntegerField  (null = False, default = 0)
-    last_experience_given = peewee.DateTimeField    (null = False, default = lambda : datetime.datetime.now())
+    last_experience_given = peewee.DateTimeField    (null = False, default = lambda : datetime.datetime.utcnow())
     global_human          = peewee.ForeignKeyField  (GlobalHuman)
     timezone              = peewee.TextField        (null = True)
     date_of_birth         = peewee.DateField        (null = True)
     city                  = peewee.TextField        (null = True)
     last_active           = peewee.DateTimeField    (null = True)
+
+    class Meta:
+        indexes = (
+            (('user_id', 'guild_id'), True),
+        )
 
     @property
     def inactive(self):
@@ -34,7 +39,8 @@ class Human(BaseModel):
 
         # last_active = self.last_active or member.joined_at
         last_active = self.last_active or date_implemented
-        return (last_active + config.inactive_delta) < datetime.datetime.now()
+        print(last_active)
+        return (last_active + config.inactive_delta) < datetime.datetime.utcnow()
 
     @property
     def rank_role(self):
@@ -74,7 +80,7 @@ class Human(BaseModel):
 
     @property
     def is_eligible_for_xp(self):
-        difference_in_seconds = ( datetime.datetime.now() - self.last_experience_given).seconds
+        difference_in_seconds = ( datetime.datetime.utcnow() - self.last_experience_given).seconds
         return  difference_in_seconds >= config.xp_timeout
 
 
@@ -139,8 +145,8 @@ class Human(BaseModel):
     @property
     def age_delta(self):
         if self.date_of_birth is not None:
-            return relativedelta(datetime.datetime.today(), self.date_of_birth)
-    
+            return relativedelta(datetime.datetime.utcnow(), self.date_of_birth)
+
     @property
     def age(self):
         if self.date_of_birth is not None:
@@ -150,8 +156,8 @@ class Human(BaseModel):
     def birthday(self):
         if self.date_of_birth is None:
             return False
-        
-        current_date = datetime.date.today()
+
+        current_date = datetime.date.utcnow()
         return self.date_of_birth.day == current_date.day and self.date_of_birth.month == current_date.month
 
     @property
@@ -159,7 +165,7 @@ class Human(BaseModel):
         if self.date_of_birth is None:
             return None
 
-        current_date = datetime.date.today()
+        current_date = datetime.date.utcnow()
 
         if current_date.month >= self.date_of_birth.month and current_date.day >= self.date_of_birth.day:
             return datetime.datetime(current_date.year + 1, self.date_of_birth.month, self.date_of_birth.day)
@@ -168,11 +174,11 @@ class Human(BaseModel):
 
     @property
     def minutes_until_birthday(self):
-        return abs((datetime.datetime.now() - self.next_birthday).minutes)
+        return abs((datetime.datetime.utcnow() - self.next_birthday).minutes)
 
     @property
     def days_until_birthday(self):
-        return abs((datetime.datetime.now() - self.next_birthday).days)
+        return abs((datetime.datetime.utcnow() - self.next_birthday).days)
 
     @classmethod
     def get_or_create_for_member(cls, member):

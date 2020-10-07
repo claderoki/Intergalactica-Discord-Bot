@@ -16,7 +16,41 @@ class Inactive(discord.ext.commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         # self.poll.start()
-        pass
+
+        return
+        humans = {}
+        for human in Human.select().where(Human.guild_id == 742146159711092757):
+            if human.user_id not in humans:
+                humans[human.user_id] = []
+
+            humans[human.user_id].append(human)
+
+        for user_id, _humans in humans.items():
+            if len(_humans) > 1:
+                human1 = _humans[0]
+                human2 = _humans[1]
+
+                if human1.last_active == None and human2.last_active == None:
+                    human1.delete_instance()
+                    continue
+
+                if human1.last_active != None and human2.last_active == None:
+                    human2.delete_instance()
+                    continue
+
+                if human1.last_active == None and human2.last_active != None:
+                    human1.delete_instance()
+                    continue
+
+                if human1.last_active > human2.last_active:
+                    print("to delete human 2")
+                    human2.delete_instance()
+
+                elif human2.last_active > human1.last_active:
+                    print("to delete human 1")
+                    human1.delete_instance()
+
+                print(user_id)
 
     def set_active_or_create(self, member):
         if member.bot:
@@ -42,11 +76,11 @@ class Inactive(discord.ext.commands.Cog):
         if joined:
             self.set_active_or_create(member)
 
-    def iter_inactives(self):
-        for human in Human:
+    def iter_inactives(self, guild):
+        for human in Human.select().where(Human.guild_id == guild.id):
             if human.guild is None or human.member is None:
                 continue
-            if human.inactive:
+            if human.inactive and not human.member.bot:
                 yield human
 
     @commands.has_guild_permissions(administrator = True)
@@ -54,13 +88,13 @@ class Inactive(discord.ext.commands.Cog):
     async def inactives(self, ctx):
         embed = discord.Embed(title = "Inactives", color = ctx.guild_color )
         lines = []
-        for human in self.iter_inactives():
-            print(human.user_id)
-            lines.append( str(human.member) )
+        for human in self.iter_inactives(ctx.guild):
+            if human.member.premium_since is None:
+                lines.append( str(human.member) )
 
         embed.description = "\n".join(lines)
         await ctx.send(embed = embed)
-            
+
 
     # @tasks.loop(hours = 5)
     # async def poll(self):

@@ -17,3 +17,5 @@ inactive_delta = datetime.timedelta(weeks = 2)
 
 min_xp = 10
 max_xp = 20
+
+br = "\uFEFF"

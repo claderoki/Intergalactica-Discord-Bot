@@ -84,7 +84,7 @@ class Conversions(discord.ext.commands.Cog):
                         raise Exception()
                         await self.bot.spell_reaction(message, f"{values[0].replace('°', '')}")
                     except Exception as e:
-                        await message.channel.send(embed = discord.Embed(title = f"{clean_measurement(measurement)} = {values[0]}", color = color))
+                        await message.channel.send(embed = discord.Embed(description = f"{clean_measurement(measurement)} = {values[0]}", color = color))
                     return
 
                 else:
