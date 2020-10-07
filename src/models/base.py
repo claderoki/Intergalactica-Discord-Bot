@@ -38,11 +38,8 @@ class BaseModel(peewee.Model):
             user     = os.environ["mysql_user"],
             password = os.environ["mysql_password"],
             host     = os.environ["mysql_host"],
-            port     = int(os.environ["mysql_port"]),
-            
-            )
-        # database = peewee.SqliteDatabase(config.data_folder + "/" + "lotus_db.sqlite")
-
+            port     = int(os.environ["mysql_port"])
+        )
 
 class JsonField(peewee.TextField):
 

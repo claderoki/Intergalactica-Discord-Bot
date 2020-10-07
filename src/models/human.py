@@ -132,7 +132,7 @@ class Human(BaseModel):
     @property
     def personal_role(self):
         return self.guild.get_role(self.personal_role_id)
-    
+
     @personal_role.setter
     def personal_role(self, value):
         self.personal_role_id = value.id
@@ -157,7 +157,7 @@ class Human(BaseModel):
         if self.date_of_birth is None:
             return False
 
-        current_date = datetime.date.utcnow()
+        current_date = datetime.datetime.utcnow().date()
         return self.date_of_birth.day == current_date.day and self.date_of_birth.month == current_date.month
 
     @property
@@ -165,7 +165,7 @@ class Human(BaseModel):
         if self.date_of_birth is None:
             return None
 
-        current_date = datetime.date.utcnow()
+        current_date = datetime.datetime.utcnow().date()
 
         if current_date.month >= self.date_of_birth.month and current_date.day >= self.date_of_birth.day:
             return datetime.datetime(current_date.year + 1, self.date_of_birth.month, self.date_of_birth.day)
