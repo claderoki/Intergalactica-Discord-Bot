@@ -247,9 +247,9 @@ class Profile(commands.Cog):
             human, _ = Human.get_or_create_for_member(ctx.author)
             rank_role = human.rank_role
 
-        allowed = rank_role is not None or ctx.author.is_nitro_booster()
+        allowed = rank_role is not None or ctx.author.premium_since is not None
 
-        if allowed is None:
+        if not allowed:
             await ctx.send("You are not allowed to run this command yet.")
             raise Exception()
 

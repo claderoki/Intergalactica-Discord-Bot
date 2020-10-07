@@ -22,7 +22,7 @@ with database:
     # database.drop_tables([Ticket, Reply])
     database.create_tables([Ticket, Reply])
 
-    # database.drop_tables   ([Change, Parameter, Poll, PollTemplate, Option, Vote])
-    database.create_tables ([Change, Parameter, Poll, PollTemplate, Option, Vote])
+    # database.drop_tables([Change, Parameter, Poll, PollTemplate, Option, Vote])
+    database.create_tables([Change, Parameter, Poll, PollTemplate, Option, Vote])
 
 

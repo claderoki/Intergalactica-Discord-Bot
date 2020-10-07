@@ -108,7 +108,7 @@ class PollCog(commands.Cog):
 
         return poll
 
-
+    @commands.has_guild_permissions(administrator = True)
     @commands.group(name = "poll")
     async def poll_group(self, ctx):
         pass

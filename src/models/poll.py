@@ -27,9 +27,6 @@ def calculate_percentage(part, total):
 
 
 class Poll(BaseModel):
-    class Meta:
-        table_name = "_poll"
-
     class Type(Enum):
         custom = 1
         bool   = 2
@@ -192,8 +189,6 @@ class Change(BaseModel):
         delete = 2
         edit   = 3
 
-    class Meta:
-        table_name = "_change"
 
     action      = peewee.TextField       (null = False)
     implemented = peewee.BooleanField    (null = False, default = False)
@@ -246,31 +241,21 @@ class Change(BaseModel):
             return self.poll.guild.get_channel(int(parameters["id"]))
 
 class Parameter(BaseModel):
-    class Meta:
-        table_name = "_parameter"
     key    = peewee.TextField(null = False)
     value  = peewee.TextField(null = False)
     change = peewee.ForeignKeyField(Change, backref = "parameters_select", null = False, on_delete = "CASCADE")
 
 class Option(BaseModel):
-    class Meta:
-        table_name = "_option"
     poll     = peewee.ForeignKeyField (Poll, backref = "options", on_delete = "CASCADE")
     value    = peewee.TextField       ()
     reaction = EmojiField             ()
 
 class Vote(BaseModel):
-    class Meta:
-        table_name = "_vote"
-
     user_id  = peewee.BigIntegerField ()
     option   = peewee.ForeignKeyField (Option, backref = "votes", on_delete = "CASCADE")
     voted_on = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow())
 
 class PollTemplate(BaseModel):
-    class Meta:
-        table_name = "_poll_template"
-
     name                    = peewee.CharField       (null = False, max_length = 100)
     guild_id                = peewee.BigIntegerField (null = False)
 
