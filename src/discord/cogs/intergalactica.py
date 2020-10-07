@@ -85,12 +85,12 @@ class Intergalactica(commands.Cog):
                     has_selfie_perms = True
 
             if added_role.id == self._role_ids["nova"] and not has_selfie_perms:
-                pass
+                # await self.log("bot_commands", f"DMed **{after}** {after.mention} has achieved Nova!.")
                 # with db:
                 #     try:
                 #         poll = Poll.get(question = self.selfie_poll_question.format(member = str(after), ended = False))
                 #     except Poll.DoesNotExist:
-                        
+
                 #         channel = guild.get_channel(self._channel_ids["bot_commands"])
                 #         await channel.send("Would send a selfie poll here")
 
@@ -119,6 +119,7 @@ class Intergalactica(commands.Cog):
 
     async def introductions_to_purge(self):
         async for message in self.get_channel("introductions").history(limit=200):
+            return
             if not isinstance(message.author, discord.Member):
                 yield message
 
@@ -132,25 +133,26 @@ class Intergalactica(commands.Cog):
 
     @tasks.loop(hours = 3)
     async def poller(self):
-        async for introduction in self.introductions_to_purge():
-            embed = discord.Embed(
-                color = self.bot.get_dominant_color(self.guild),
-                title = f"Introduction by {introduction.author}",
-                description = introduction.content)
-            await self.log("bot_commands", embed = embed)
-            await introduction.delete()
+        pass
+        # async for introduction in self.introductions_to_purge():
+        #     embed = discord.Embed(
+        #         color = self.bot.get_dominant_color(self.guild),
+        #         title = f"Introduction by {introduction.author}",
+        #         description = introduction.content)
+        #     await self.log("bot_commands", embed = embed)
+        #     await introduction.delete()
 
-        for member in self.illegal_member_iterator():
-            if member.id != 120566758091259906:
-                continue
-            days = (datetime.datetime.utcnow() - member.joined_at).days
-            if days > 1:
-                try:
-                    await member.send(content = f"Hello. In the **{self.guild.name}**  server, both the gender role and the age role are mandatory. Please pick these roles up.")
-                except discord.Forbidden:
-                    await self.log("bot_commands", f"**{member}** {member.mention} is missing one or more of the mandatory roles. Unable to DM.")
-                else:
-                    await self.log("tabs", f"DMed **{member}** {member.mention} to ask them to pick up mandatory roles.")
+        # for member in self.illegal_member_iterator():
+        #     if member.id != 120566758091259906:
+        #         continue
+        #     days = (datetime.datetime.utcnow() - member.joined_at).days
+        #     if days > 1:
+        #         try:
+        #             await member.send(content = f"Hello. In the **{self.guild.name}**  server, both the gender role and the age role are mandatory. Please pick these roles up.")
+        #         except discord.Forbidden:
+        #             await self.log("bot_commands", f"**{member}** {member.mention} is missing one or more of the mandatory roles. Unable to DM.")
+        #         else:
+        #             await self.log("tabs", f"DMed **{member}** {member.mention} to ask them to pick up mandatory roles.")
                 # embed = self.embed_from_name("rules", [7])
 
 
@@ -170,10 +172,6 @@ def member_is_legal(member):
             has_gender_role = True
 
     return has_age_role and has_gender_role
-
-
-
-
 
 def setup(bot):
     bot.add_cog(Intergalactica(bot))
