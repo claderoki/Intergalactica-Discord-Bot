@@ -6,6 +6,7 @@ from discord.ext import commands, tasks
 
 from src.models import Human, database as db
 import src.config as config
+from src.discord.helpers.waiters import BoolWaiter
 
 class Inactive(discord.ext.commands.Cog):
 
@@ -16,21 +17,16 @@ class Inactive(discord.ext.commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         pass
-        # self.poll.start()
-
 
     def set_active_or_create(self, member):
         if member.bot:
             return
 
-        now = datetime.datetime.utcnow()
-
         with db:
             human, created = Human.get_or_create_for_member(member)
             if not created:
-                human.last_active = now
+                human.last_active = datetime.datetime.utcnow()
                 human.save()
-
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -55,12 +51,21 @@ class Inactive(discord.ext.commands.Cog):
     async def inactives(self, ctx):
         embed = discord.Embed(title = "Inactives", color = ctx.guild_color )
         lines = []
+
+        inactive_members = []
         for human in self.iter_inactives(ctx.guild):
             if human.member.premium_since is None:
+                inactive_members.append(human.member)
                 lines.append( str(human.member) )
 
         embed.description = "\n".join(lines)
         await ctx.send(embed = embed)
+
+        waiter = BoolWaiter(ctx, prompt = "Kick?")
+        to_kick = await waiter.wait()
+        if to_kick:
+            for member in inactive_members:
+                await member.kick(reason = "Inactivity")
 
 
     # @tasks.loop(hours = 5)
