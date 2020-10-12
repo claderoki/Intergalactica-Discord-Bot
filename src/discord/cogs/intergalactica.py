@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands, tasks
 
 # from src.models import Poll, Option, Settings, NamedEmbed, NamedChannel, database as db
-from src.models import Poll, Option, Settings, NamedEmbed, database as db
+from src.models import Poll, Option, Settings, NamedEmbed, Human, database
 
 
 class Intergalactica(commands.Cog):
@@ -26,7 +26,8 @@ class Intergalactica(commands.Cog):
         "staff_chat"    : 750067502352171078,
         "bot_commands"  : 754056523277271170,
         "introductions" : 742567349613232249,
-        "tabs"          : 757961433911787592
+        "tabs"          : 757961433911787592,
+        "logs"          : 745010147083944099
     }
 
     selfie_poll_question = "Should {member} get selfie perms?"
@@ -87,7 +88,7 @@ class Intergalactica(commands.Cog):
             if added_role.id == self._role_ids["nova"] and not has_selfie_perms:
                 pass
                 # await self.log("bot_commands", f"DMed **{after}** {after.mention} has achieved Nova!.")
-                # with db:
+                # with database:
                 #     try:
                 #         poll = Poll.get(question = self.selfie_poll_question.format(member = str(after), ended = False))
                 #     except Poll.DoesNotExist:
@@ -105,7 +106,7 @@ class Intergalactica(commands.Cog):
 
 
     def embed_from_name(self, name, indexes):
-        with db:
+        with database:
             named_embed = NamedEmbed.get(name = name)
         if indexes is not None:
             embed = named_embed.get_embed_only_selected_fields([x-1 for x in indexes])
@@ -118,40 +119,10 @@ class Intergalactica(commands.Cog):
         embed = self.embed_from_name(ctx.invoked_with, numbers)
         await ctx.send(embed = embed)
 
-    # async def introductions_to_purge(self):
-    #     async for message in self.get_channel("introductions").history(limit=200):
-    #         pass
-
-            # if not isinstance(message.author, discord.Member):
-            #     yield message
-
-    @commands.command()
-    async def intros(self, ctx):
-        return
-        async for message in self.get_channel("bot_commands").history(limit=200):
-            if len(message.embeds) > 0 and message.author.bot:
-                embed = message.embeds[0]
-                try:
-                    author = embed.title.replace("Introduction by ", "")
-                except:
-                    continue
-                if author != embed.title:
-                    try:
-                        member = await commands.MemberConverter().convert(ctx, author)
-                    except:
-                        continue
-                    introduction = embed.description
-
-                    try:
-                        await member.send(f"Due to a bug, all introductions were removed... Sorry for the inconvenience. Here is your old introduction:\n\n```\n{introduction}```")
-                        print(f"sent {introduction[:10]}... to {member}")
-                    except Exception as e:
-                        print(e)
-
-        print("done i guess")
-
-                    # print(member.id, introduction)
-
+    async def introductions_to_purge(self):
+        async for message in self.get_channel("introductions").history(limit=200):
+            if isinstance(message.author, discord.User):
+                yield message
 
     def illegal_member_iterator(self):
         for member in self.guild.members:
@@ -161,35 +132,34 @@ class Intergalactica(commands.Cog):
             if not member_is_legal(member):
                 yield member
 
-    @tasks.loop(hours = 3)
+
+    @tasks.loop(hours = 12)
     async def poller(self):
-        pass
-        # async for message in self.get_channel("introductions").history(limit=200):
-        #     print(type(message.author))
+        async for introduction in self.introductions_to_purge():
+            embed = discord.Embed(
+                color = self.bot.get_dominant_color(self.guild),
+                title = f"Purged: Introduction by {introduction.author}",
+                description = introduction.content)
+            await self.log("logs", embed = embed)
+            await introduction.delete()
 
 
-
-
-        # async for introduction in self.introductions_to_purge():
-        #     embed = discord.Embed(
-        #         color = self.bot.get_dominant_color(self.guild),
-        #         title = f"Introduction by {introduction.author}",
-        #         description = introduction.content)
-        #     await self.log("bot_commands", embed = embed)
-        #     await introduction.delete()
-
-        # for member in self.illegal_member_iterator():
-        #     if member.id != 120566758091259906:
-        #         continue
-        #     days = (datetime.datetime.utcnow() - member.joined_at).days
-        #     if days > 1:
-        #         try:
-        #             await member.send(content = f"Hello. In the **{self.guild.name}**  server, both the gender role and the age role are mandatory. Please pick these roles up.")
-        #         except discord.Forbidden:
-        #             await self.log("bot_commands", f"**{member}** {member.mention} is missing one or more of the mandatory roles. Unable to DM.")
-        #         else:
-        #             await self.log("tabs", f"DMed **{member}** {member.mention} to ask them to pick up mandatory roles.")
+        for member in self.illegal_member_iterator():
+            days = (datetime.datetime.utcnow() - member.joined_at).days
+            if days > 1:
+                await self.log("bot_commands", f"**{member}** {member.mention} is missing one or more of the mandatory roles.")
+                continue
+                # try:
+                #     await member.send(content = f"Hello. In the **{self.guild.name}**  server, both the gender role and the age role are mandatory. Please pick these roles up.")
+                # except discord.Forbidden:
+                # else:
+                #     await self.log("tabs", f"DMed **{member}** {member.mention} to ask them to pick up mandatory roles.")
                 # embed = self.embed_from_name("rules", [7])
+
+        with database:
+            for human in Human.select().where( (Human.guild_id == self.guild_id) & (Human.date_of_birth != None) ):
+                if human.birthday:
+                    await self.log("bot_commands", f"**{human.member}** {human.member.mention} Should be celebrating their birthday today.")
 
 
 
