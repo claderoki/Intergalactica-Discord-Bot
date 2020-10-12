@@ -115,7 +115,7 @@ class MessageWaiter(Waiter):
 
         if len(footer) > 0:
             embed.set_footer( text = "\n".join(footer))
-        
+
         return embed
 
 
@@ -431,46 +431,44 @@ waiter_mapping = \
 }
 
 class ReactionWaiter(Waiter):
-    pass
-# class ReactionWaiter(Waiter):
-#     def __init__(self,
-#     ctx,
-#     message
-#     only_author = True,
-#     prompt = None,
-#     end_prompt = None,
-#     timeout = 360,
-#     members = [],
-#     channels = [],
-#     max_words = 1,
-#     skippable = False,
-#     skip_command = ">>skip",
-#     **kwargs):
-#         super().__init__(**kwargs)
-#         self.ctx = ctx
-#         self.prompt = prompt
-#         self.end_prompt = end_prompt
-#         self.timeout = timeout
-#         self.members = members
-#         self.channels = channels
-#         self.max_words = max_words
+    def __init__(self, ctx, message, emojis, members = [], channels = [] ):
+        self.ctx = ctx
+        self.message = message
+        self.emojis = emojis
+        self.members = members
+        self.channels = channels
 
-#         self.skippable = skippable
-#         self.skip_command = skip_command
+    async def add_reactions(self):
+        for emoji in self.emojis:
+            await self.message.add_reaction(emoji)
 
-#         self.channels.append(ctx.channel)
+    async def remove_reactions(self):
+        pass
 
-        
+    async def wait(self, raw = False, timeout = 45):
+        reaction, user = await self.ctx.bot.wait_for(
+            'reaction_add',
+            timeout = timeout,
+            check   = self.check)
 
-#     async def wait(self, timeout = 15):
-#         reaction, user = await self.ctx.bot.wait_for(
-#             'reaction_add',
-#             timeout=timeout,
-#             check=self.check)
-    
-#     def check(self, reaction, user):
-#         pass
-# lambda r,u: u.id not in [x.id for x in players] and str(r.emoji) == emoji and not u.bot and u.id != self.game_starter.id)
+        if raw:
+            return reaction, user
+        else:
+            return str(reaction.emoji)
 
+    def check(self, reaction, user):
+        if reaction.message.id != self.message.id:
+            return False
 
+        if self.channels:
+            if reaction.message.channel.id not in [x.id for x in self.channels]:
+                return False
 
+        if self.members:
+            if user.id not in [x.id for x in self.members]:
+                return False
+
+        if str(reaction.emoji) not in self.emojis:
+            return False
+
+        return True
