@@ -136,8 +136,10 @@ class Locus(commands.Bot):
             "conversions",
             "management",
             "poll",
+            "games",
             "inactive",
             "staff_communication",
+            "assassins",
         ]
 
         if True:
@@ -182,7 +184,13 @@ class Locus(commands.Bot):
 
     async def before_any_command(self, ctx):
 
-        ctx.translate = self.translate
+        if ctx.guild is None:
+            locale_name = "en_US"
+        else:
+            with database:
+                ctx.settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
+                locale_name = ctx.settings.locale.name
+        ctx.translate = lambda x: self.translate(x, locale_name)
 
         ar = lambda x: ctx.message.add_reaction(x)
 
@@ -191,7 +199,6 @@ class Locus(commands.Bot):
         ctx.error = lambda: ctx.message.add_reaction("❌")
 
         ctx.guild_color = self.get_dominant_color(ctx.guild)
-
 
     async def on_command_error(self, ctx, exception):
 
