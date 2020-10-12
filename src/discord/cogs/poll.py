@@ -22,8 +22,8 @@ class PollCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        # if not self.bot.production:
-        #     return
+        if not self.bot.production:
+            return
 
         emoji = str(payload.emoji)
         member = payload.member
@@ -71,26 +71,27 @@ class PollCog(commands.Cog):
     async def setup_poll(self, ctx, poll):
         prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
         cls = poll.__class__
+        is_template = isinstance(poll, PollTemplate)
 
-        if poll.type is None:
+        if poll.type is None or is_template:
             waiter = EnumWaiter(ctx, Poll.Type, prompt = prompt("type"), skippable = cls.type.null)
             try:
                 poll.type = await waiter.wait()
             except Skipped: pass
 
-        if poll.channel_id is None:
+        if poll.channel_id is None or is_template:
             waiter = TextChannelWaiter(ctx, prompt = prompt("channel_id"), skippable = cls.channel_id.null)
             try:
                 poll.channel_id = (await waiter.wait()).id
             except Skipped: pass
 
-        if poll.result_channel_id is None:
+        if poll.result_channel_id is None or is_template:
             waiter = TextChannelWaiter(ctx, prompt = prompt("result_channel_id"), skippable = cls.result_channel_id.null)
             try:
                 poll.result_channel_id = (await waiter.wait()).id
             except Skipped: pass
 
-        if poll.anonymous is None:
+        if poll.anonymous is None or is_template:
             waiter = BoolWaiter(ctx, prompt = prompt("anonymous"), skippable = cls.anonymous.null)
             try:
                 poll.anonymous = await waiter.wait()
@@ -98,19 +99,19 @@ class PollCog(commands.Cog):
 
         if poll.type == Poll.Type.bool:
             poll.max_votes_per_user = 1
-        if poll.max_votes_per_user is None:
+        elif poll.max_votes_per_user is None or is_template:
             waiter = IntWaiter(ctx, prompt = prompt("max_votes_per_user"), skippable = cls.max_votes_per_user.null)
             try:
                 poll.max_votes_per_user = await waiter.wait()
             except Skipped: pass
 
-        if poll.role_id_needed_to_vote is None:
+        if poll.role_id_needed_to_vote is None or is_template:
             waiter = RoleWaiter(ctx, prompt = prompt("role_id_needed_to_vote"), skippable = cls.role_id_needed_to_vote.null)
             try:
                 poll.role_id_needed_to_vote = (await waiter.wait()).id
             except Skipped: pass
 
-        if poll.vote_percentage_to_pass is None and poll.type == Poll.Type.bool:
+        if (poll.vote_percentage_to_pass is None or is_template) and poll.type == Poll.Type.bool:
             waiter = IntWaiter(ctx, range = range(0,101), prompt = prompt("vote_percentage_to_pass"), skippable = cls.vote_percentage_to_pass.null)
             try:
                 poll.vote_percentage_to_pass = await waiter.wait()
