@@ -1,15 +1,14 @@
 from .base import BaseModel
-
 from .human import Human, GlobalHuman
 from .analytics import EmojiUsage
 from .settings import Settings, NamedEmbed, NamedChannel, Translation, Locale
-# from .poll import Poll, Vote, Option
 from .staff_communication import Ticket, Reply
 from .poll import Change, Parameter, Poll, PollTemplate, Vote, Option
-
+from .assassins import Game, Player, KillMessage
 database = Human._meta.database
 
 with database:
+
     # database.drop_tables([Human, GlobalHuman])
     database.create_tables([Human, GlobalHuman])
 
@@ -25,4 +24,6 @@ with database:
     # database.drop_tables([Change, Parameter, Poll, PollTemplate, Option, Vote])
     database.create_tables([Change, Parameter, Poll, PollTemplate, Option, Vote])
 
+    # database.drop_tables([Game, Player, KillMessage])
+    database.create_tables([Game, Player, KillMessage])
 
