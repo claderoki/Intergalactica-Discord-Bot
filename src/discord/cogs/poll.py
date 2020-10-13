@@ -119,10 +119,13 @@ class PollCog(commands.Cog):
 
         return poll
 
-    @commands.has_guild_permissions(administrator = True)
     @commands.group(name = "poll")
     async def poll_group(self, ctx):
-        pass
+        if ctx.guild.id in (695416318681415790, 761624318291476482):
+            pass
+        else:
+            if not ctx.author.guild_permissions.administrator:
+                raise commands.errors.MissingPermissions(["administrator"])
 
     @poll_group.command()
     async def template(self, ctx, name):
