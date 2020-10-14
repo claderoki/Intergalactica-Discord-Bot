@@ -3,6 +3,7 @@ from discord.ext import commands
 
 import src.config as config
 import src.games.blackjack as blackjack
+import src.games.slotmachine as slotmachine
 
 class Games(commands.Cog):
 
@@ -15,14 +16,19 @@ class Games(commands.Cog):
 
     @commands.command()
     async def blackjack(self, ctx):
-        
         players = []
         players.append(blackjack.game.Player(5, ctx.author))
-        players.append(blackjack.game.Player(0))
-        players.append(blackjack.game.Player(0))
-
         game = blackjack.game.Game(players, blackjack.ui.DiscordUI(ctx))
         await game.start()
+
+    @commands.command()
+    async def slotmachine(self, ctx):
+        # players = []
+        # players.append(blackjack.game.Player(5, ctx.author))
+        game = slotmachine.game.Game(slotmachine.ui.DiscordUI(ctx))
+        await game.start()
+
+
 
 def setup(bot):
     bot.add_cog(Games(bot))

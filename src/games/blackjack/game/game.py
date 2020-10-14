@@ -15,7 +15,7 @@ class Game(BaseGame):
         self.deck = Deck()
         self.deck.shuffle()
 
-        self.dealer = Player(None)
+        self.dealer = Player(None, name = "Dealer")
         self.dealer.draw(self.deck)
         self.dealer.draw(self.deck, hidden = True)
 
@@ -53,7 +53,7 @@ class Game(BaseGame):
             player.state = player.State.draw
         elif score == 21 and len(player.cards) == 2:
             player.state = player.State.blackjack
-        elif score >= 21:
+        elif score > 21:
             player.state = player.State.lose
         elif score > dealer_score:
             player.state = player.State.win

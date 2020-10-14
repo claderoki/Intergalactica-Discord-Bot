@@ -28,10 +28,11 @@ class Player(BasePlayer):
         stand = 1
         draw  = 2
 
-    def __init__(self, bet, member = None):
+    def __init__(self, bet, member = None, name = None):
         if member is None:
-            identity = AiIdentity(name = "AI")
+            identity = AiIdentity(name = name or "AI")
             self.type = self.Type.ai
+
         else:
             identity = DiscordIdentity(member)
             self.type = self.Type.human
@@ -39,11 +40,16 @@ class Player(BasePlayer):
         super().__init__(identity = identity)
 
         self.bet = bet
+        print(self.bet)
+
         self.cards = []
         self.state = self.State.drawing
 
     @property
     def amount_won(self):
+        if self.bet is None:
+            return
+
         return {
             self.State.bust:       -self.bet,
             self.State.draw:       0,

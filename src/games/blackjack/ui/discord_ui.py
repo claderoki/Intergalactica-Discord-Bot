@@ -20,52 +20,52 @@ class DiscordUI(UI):
         draw_emoji   = "✅"
         stand_emoji  = "❌" 
 
-        waiter = ReactionWaiter(self.ctx, self.message, emojis = (draw_emoji, stand_emoji), channels = [self.ctx.channel], members = [self.ctx.author])
+        waiter = ReactionWaiter(
+            self.ctx,
+            self.message,
+            emojis = (draw_emoji, stand_emoji),
+            channels = [self.ctx.channel],
+            members = [self.ctx.author],
+        )
         await waiter.add_reactions()
-        emoji = await waiter.wait()
+        try:
+            emoji = await waiter.wait(timeout = 120, remove = True)
+        except asyncio.TimeoutError:
+            emoji = draw_emoji
 
         if emoji == draw_emoji:
             return player.Action.draw
         else:
             return player.Action.stand
 
-    async def display_board(self, game, current_player = None):
+    def get_player_value(self, player, game):
+        return self.get_players_cards_emoji(player)
 
+    def get_player_name(self, player, game):
+        value = []
+        value.append(f"{player.identity}")
+        value.append("\n")
+        value.append(f"{self.ctx.translate('card_value')} = **{player.score}**")
+        if game.done:
+            amount_won = player.amount_won
+            if amount_won:
+                value.append(f"\n{self.ctx.translate(player.state.name)}")
+                abc = "won" if amount_won > 0 else "lost"
+                abc = self.ctx.translate(abc)
+                value.append(f", {abc} {abs(amount_won)}")
+        return "".join(value)
+
+    async def display_board(self, game, current_player = None):
         embed = discord.Embed(
-            title = f">>> Dealer ({game.dealer.score})",
-            description = self.get_player_cards_unicode(game.dealer),
+            title = self.get_player_name(game.dealer, game),
+            description = self.get_player_value(game.dealer, game),
             color=self.ctx.guild_color
         )
 
         for player in game.players:
-            name = []
-            name.append(">>> ")
-
-            name.append(f"{player.identity} ({player.type.value})")
-
-            value = []
-            value.append(self.get_player_cards_unicode(player))
-            if player == current_player:
-                symbol = "▶️"
-            elif player.state == player.State.bust:
-                symbol = "⏹️"
-            else:
-                symbol = "⏸️"
-
-            value.append(f"(**{player.score}**) - {player.state.name.title()} {symbol}")
-
-            if game.done:
-                amount_won = player.amount_won
-                if amount_won != 0:
-                    value.append(f"\n{player.state.value}{player.state.name.title()}")
-                    abc = "won" if amount_won > 0 else "lost"
-                    value.append(f"{abc} {abs(amount_won)}")
-
-
-
             embed.add_field(
-                name = "".join(name),
-                value = "".join(value),
+                name = self.get_player_name(player, game),
+                value = self.get_player_value(player, game),
                 inline = True
             )
 
@@ -74,12 +74,19 @@ class DiscordUI(UI):
         else:
             await self.message.edit(embed = embed)
 
-
+    def get_players_cards_emoji(self, player, hidden = False):
+        emojis = []
+        for card in player.cards:
+            if card.hidden or hidden:
+                emoji = str(self.ctx.bot._emoji_mapping["hidden_card"])
+            else:
+                value = card.value if card.value != 13 else 12
+                emoji = str(self.ctx.bot._emoji_mapping[f"{card.suit.name}_{value}" ])
+            emojis.append(emoji)
+        return "".join(emojis)
 
     def get_player_cards_unicode(self, player, hidden = False):
         cards_as_str = ">>> ```\n"
-        # cards_as_str = ">>> "
-
         ascii_lines = 5
         for i in range(ascii_lines):
             for card in player.cards:
@@ -93,7 +100,6 @@ class DiscordUI(UI):
                 else:
                     cards_as_str += unicode.splitlines()[i][:3]
             cards_as_str += "\n"
-
         return cards_as_str + "```"
 
     async def game_over(self, game):
@@ -102,13 +108,3 @@ class DiscordUI(UI):
         except:
             pass
         await self.display_board(game)
-        # game_over_lines = ["```"]
-
-        # for player in game.players:
-        #     game_over_lines.append(
-        #         f"{player.identity}: {player.state.name} - " + \
-        #         ("won " if player.amount_won > 0 else "lost ") + str(abs(player.amount_won)))
-
-        # game_over_lines.append("```")
-
-        # await self.message.channel.send("\n".join(game_over_lines))
