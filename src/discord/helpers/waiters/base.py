@@ -442,19 +442,27 @@ class ReactionWaiter(Waiter):
         for emoji in self.emojis:
             await self.message.add_reaction(emoji)
 
-    async def remove_reactions(self):
-        pass
+    async def clear_reactions(self):
+        try:
+            await self.message.clear_reactions()
+        except: pass
 
-    async def wait(self, raw = False, timeout = 45):
+    async def wait(self, raw = False, timeout = 45, remove = False):
         reaction, user = await self.ctx.bot.wait_for(
             'reaction_add',
             timeout = timeout,
             check   = self.check)
 
+        if remove:
+            try:
+                await self.message.remove_reaction(reaction, user)
+            except: pass
+
         if raw:
             return reaction, user
         else:
             return str(reaction.emoji)
+
 
     def check(self, reaction, user):
         if reaction.message.id != self.message.id:
