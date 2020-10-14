@@ -4,8 +4,8 @@ import requests
 
 HCTI_API_ENDPOINT = "https://hcti.io/v1/image"
 # Retrieve these from 
-HCTI_API_USER_ID = '6028e147-6062-45a6-adc4-2c5593220521'
-HCTI_API_KEY = '4fe8a261-acd4-49f7-a0e4-c121311d85b7'
+HCTI_API_USER_ID = ''
+HCTI_API_KEY = ''
 
 # data = { 'html': "<div class='box'>Hello, world!</div>",
 #          'css': ".box { color: white; background-color: #0f79b9; padding: 10px; font-family: Roboto }",
