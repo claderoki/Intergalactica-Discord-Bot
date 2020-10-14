@@ -54,33 +54,26 @@ class Human(BaseModel):
             if role.id in ranks:
                 return role
 
-
     @property
     def level(self):
         level = 0
         xp = int(self.experience)
-
         while xp >= self.get_experience_needed_for_level(level):
             xp -= self.get_experience_needed_for_level(level)
             level += 1
-
         return level + 1
-
 
     def get_experience_needed_for_level(self, level):
         return (5 * (level ** 2)) + (50 * level) + 100
-
 
     @property
     def experience_needed_for_next_level(self):
         return self.get_experience_needed_for_level(self.level + 1)
 
-
     @property
     def is_eligible_for_xp(self):
         difference_in_seconds = ( datetime.datetime.utcnow() - self.last_experience_given).seconds
         return difference_in_seconds >= config.xp_timeout
-
 
     @property
     def base_embed(self):
