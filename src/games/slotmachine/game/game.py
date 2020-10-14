@@ -42,9 +42,4 @@ class Game:
             else:
                 win = -1
 
-        emojis = []
-        emojis.append(" ".join([first.value[0], self._get_different_emoji(second.value[0]), self._get_different_emoji(third.value[0])]))
-        emojis.append(" ".join([first.value[0], second.value[0], self._get_different_emoji(third.value[0])]))
-        emojis.append(" ".join([first.value[0], second.value[0], third.value[0]]))
-
-        await self.ui.show_reel(emojis, win)
+        await self.ui.show_reel((first,second,third), win)

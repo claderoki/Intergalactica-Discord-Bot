@@ -15,25 +15,25 @@ class DiscordUI(UI):
         embed.set_author(name = self.ctx.translate("slot_machine"), icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/765694715596242964/slot-machine2.png")
         return embed
 
-    async def show_reel(self, emojis, win):
-
+    async def show_reel(self, fruits, win):
         delay = 0.3
+        empty = "⬛️"
 
-        if self.message is None:
-            self.message = await self.ctx.channel.send(embed=self.get_base_embed(description = emojis[0]))
-        else:
-            await self.message.edit(embed=self.get_base_embed(description = emojis[0]))
+        count = 4
+        for i in range(count):
+            emojis = [str(x.value[0]) for x in fruits[:i]]
+            for _ in range(count - (i+1)):
+                emojis.append(empty)
 
-        await asyncio.sleep(delay)
-
-        for emoji in emojis:
-            await self.message.edit(embed=self.get_base_embed(description = emoji))
+            embed = self.get_base_embed(description = "".join(emojis))
+            if i == (count-1):
+                msg = f" {'+' if win > 0 else '-'}${abs(win)}"
+                embed.set_footer(text = msg)
+            if self.message is None:
+                self.message = await self.ctx.channel.send(embed = embed)
+            else:
+                await self.message.edit(embed = embed)
             await asyncio.sleep(delay)
-
-        msg = f" {'+' if win > 0 else '-'}${abs(win)}"
-        last_embed = self.get_base_embed(description = emojis[-1])
-        last_embed.set_footer(text = msg)
-        await self.message.edit(embed = last_embed )
 
         identity = DiscordIdentity(self.ctx.author)
         identity.add_points(win)
