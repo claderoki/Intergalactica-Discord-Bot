@@ -62,7 +62,6 @@ class StaffCommunication(commands.Cog):
             if ticket.user_id == ctx.author.id:
                 type = Reply.Type.author
             else:
-                # await ctx.send("This is not your ticket!")
                 await ctx.send(ctx.translate("not_your_ticket"))
                 return
         else:
@@ -72,7 +71,6 @@ class StaffCommunication(commands.Cog):
 
         if ticket.status == ticket.Status.closed:
             return await ctx.send(ctx.translate("ticket_closed"))
-            # return await ctx.send("This ticket is closed for replies.")
 
         attachments = ctx.message.attachments
         if len(attachments) > 0:
@@ -85,7 +83,8 @@ class StaffCommunication(commands.Cog):
 
     @commands.has_guild_permissions(administrator = True)
     @commands.command()
-    async def close(self, ctx, ticket : Ticket, reason : EnumConverter(Ticket.CloseReason), *, text = None):
+    # async def close(self, ctx, ticket : Ticket, reason : EnumConverter(Ticket.CloseReason), *, text = None):
+    async def close(self, ctx, ticket : Ticket, *, text = None):
         attachments = ctx.message.attachments
         if len(attachments) > 0:
             for attachment in attachments:
@@ -95,7 +94,7 @@ class StaffCommunication(commands.Cog):
             if text:
                 reply = Reply.create(anonymous = ticket.anonymous, user_id = ctx.author.id, text = text, ticket = ticket, type = Reply.Type.staff)
             ticket.status = Ticket.Status.closed
-            ticket.close_reason = reason
+            ticket.close_reason = Ticket.CloseReason.resolved
             await ticket.sync_message()
 
 def setup(bot):
