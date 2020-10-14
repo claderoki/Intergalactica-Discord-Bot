@@ -243,30 +243,25 @@ class Game(BaseModel):
 
     def start(self):
         self.active = True
-
         self.next_round()
-
 
     def start_final_round(self):
         pass
 
-
     def next_cycle(self):
-
         first_cycle = self.cycle_count == 0
-
         self.cycle_count += 1
-
         players = list(self.living_players)
 
         if not self.final_round and not first_cycle:
             self.leak_player_codes(players)
 
         self.cycle_start = datetime.datetime.utcnow()
-
         self.save()
 
-        embed = discord.Embed(title = f"Cycle {self.cycle_count}", description = f"A new cycle has started! When the cycle ends each player's code will be leaked to {self.cycle_count} players.")
+        embed = discord.Embed(
+            title = f"Cycle {self.cycle_count}",
+            description = f"A new cycle has started! When the cycle ends each player's code will be leaked to {self.cycle_count} players.")
 
         dm_embed = discord.Embed(
             title = f"Round {self.round_count} Cycle {self.cycle_count+1}",
@@ -279,12 +274,9 @@ class Game(BaseModel):
             _embed.timestamp = self.cycle_end_date
 
         coros = []
-
         for player in players:
             coros.append(player.member.send(embed = dm_embed))
-
         coros.append(self.log(embed = embed))
-
         asyncio.gather(*coros)
 
         Player.update(kill_command_available = True, cycle_immunity = False).where( (Player.game == self) & (Player.alive == True) ).execute()

@@ -40,7 +40,7 @@ class NamedEmbed(BaseModel):
         return embed
 
     def get_embed_only_selected_fields(self, field_indexes):
-        embed = self.embed        
+        embed = self.embed
 
         fields = []
         for index in field_indexes:

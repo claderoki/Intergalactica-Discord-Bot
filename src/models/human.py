@@ -35,11 +35,9 @@ class Human(BaseModel):
     @property
     def inactive(self):
         date_implemented = datetime.datetime(2020,9,21, 0,0,0,0)
-        member = self.member
-
+        # member = self.member
         # last_active = self.last_active or member.joined_at
         last_active = self.last_active or date_implemented
-        print(last_active)
         return (last_active + config.inactive_delta) < datetime.datetime.utcnow()
 
     @property
