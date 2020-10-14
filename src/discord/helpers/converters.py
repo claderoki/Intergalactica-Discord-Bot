@@ -1,4 +1,5 @@
 import datetime
+from discord.ext import commands
 
 def convert_to_date(argument):
     text = argument
@@ -21,3 +22,11 @@ def convert_to_date(argument):
         day,month,year = dates
 
     return datetime.date(year, month, day)
+
+
+class EnumConverter(commands.Converter):
+    def __init__(self, enum):
+        self.enum = enum
+
+    async def convert(self, ctx, argument):
+        return self.enum[argument]
