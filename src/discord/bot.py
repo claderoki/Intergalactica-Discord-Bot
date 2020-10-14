@@ -25,7 +25,8 @@ class Locus(commands.Bot):
         commands.errors.MissingRequiredArgument,
         commands.errors.MissingPermissions,
         commands.errors.PrivateMessageOnly,
-        commands.errors.NoPrivateMessage
+        commands.errors.NoPrivateMessage,
+        commands.errors.ConversionError
     )
 
     ignorables = \

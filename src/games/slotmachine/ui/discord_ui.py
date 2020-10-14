@@ -1,6 +1,8 @@
-from .ui import UI
 import discord
 import asyncio
+
+from .ui import UI
+from src.games.game.base import DiscordIdentity
 
 class DiscordUI(UI):
     def __init__(self, ctx):
@@ -32,3 +34,6 @@ class DiscordUI(UI):
         last_embed = self.get_base_embed(description = emojis[-1])
         last_embed.set_footer(text = msg)
         await self.message.edit(embed = last_embed )
+
+        identity = DiscordIdentity(self.ctx.author)
+        identity.add_points(win)

@@ -8,6 +8,9 @@ from .ui import UI
 from src.discord.helpers.waiters import ReactionWaiter
 
 class DiscordUI(UI):
+    draw_emoji = "✅"
+    stand_emoji  = "❌"
+
     def __init__(self, ctx):
         self.ctx = ctx
         self.message = None
@@ -17,13 +20,11 @@ class DiscordUI(UI):
             await asyncio.sleep(0.5)
             return player.Action.draw
 
-        draw_emoji   = "✅"
-        stand_emoji  = "❌" 
 
         waiter = ReactionWaiter(
             self.ctx,
             self.message,
-            emojis = (draw_emoji, stand_emoji),
+            emojis = (self.draw_emoji, self.stand_emoji),
             channels = [self.ctx.channel],
             members = [self.ctx.author],
         )
@@ -31,43 +32,47 @@ class DiscordUI(UI):
         try:
             emoji = await waiter.wait(timeout = 120, remove = True)
         except asyncio.TimeoutError:
-            emoji = draw_emoji
+            emoji = self.draw_emoji
 
-        if emoji == draw_emoji:
+        if emoji == self.draw_emoji:
             return player.Action.draw
         else:
             return player.Action.stand
 
-    def get_player_value(self, player, game):
+    def get_player_value(self, player):
         return self.get_players_cards_emoji(player)
 
-    def get_player_name(self, player, game):
+    def get_player_name(self, player):
         value = []
         value.append(f"{player.identity}")
         value.append("\n")
         value.append(f"{self.ctx.translate('card_value')} = **{player.score}**")
-        if game.done:
-            amount_won = player.amount_won
-            if amount_won:
-                value.append(f"\n{self.ctx.translate(player.state.name)}")
-                abc = "won" if amount_won > 0 else "lost"
-                abc = self.ctx.translate(abc)
-                value.append(f", {abc} {abs(amount_won)}")
         return "".join(value)
 
     async def display_board(self, game, current_player = None):
         embed = discord.Embed(
-            title = self.get_player_name(game.dealer, game),
-            description = self.get_player_value(game.dealer, game),
+            title = self.get_player_name(game.dealer),
+            description = self.get_player_value(game.dealer),
             color=self.ctx.guild_color
         )
 
-        for player in game.players:
-            embed.add_field(
-                name = self.get_player_name(player, game),
-                value = self.get_player_value(player, game),
-                inline = True
-            )
+        player = game.player
+        embed.add_field(
+            name = self.get_player_name(player),
+            value = self.get_player_value(player),
+            inline = True
+        )
+
+        footer = []
+
+        if game.done:
+            amount_won = player.amount_won
+            if amount_won is not None:
+                abc = "+" if amount_won > 0 else "-"
+                footer.append(f"{abc} {abs(amount_won)}")
+        else:
+            footer.append(f"{self.draw_emoji} to draw, {self.stand_emoji} to stand." )
+        embed.set_footer(text = "\n".join(footer))
 
         if self.message is None:
             self.message = await self.ctx.channel.send(embed = embed)
@@ -108,3 +113,6 @@ class DiscordUI(UI):
         except:
             pass
         await self.display_board(game)
+
+        identity = game.player.identity
+        identity.add_points(game.player.amount_won)

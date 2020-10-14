@@ -126,8 +126,8 @@ class Profile(commands.Cog):
 
         with db:
             human, _ = Human.get_or_create_for_member(ctx.author)
-            human.date_of_birth = date_of_birth
-            human.save()
+            human.global_human.date_of_birth = date_of_birth
+            human.global_human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = str(date_of_birth)))
 
@@ -135,8 +135,8 @@ class Profile(commands.Cog):
     async def delete_date_of_birth(self, ctx):
         with db:
             human, _ = Human.get_or_create_for_member(member)
-            human.date_of_birth = None
-            human.save()
+            human.global_human.date_of_birth = None
+            human.global_human.save()
 
         await ctx.send(ctx.bot.translate("attr_removed".format(name = ctx.attr_name)))
 
@@ -151,8 +151,8 @@ class Profile(commands.Cog):
 
         with db:
             human, _ = Human.get_or_create_for_member(ctx.author)
-            human.timezone = timezone.name
-            human.save()
+            human.global_human.timezone = timezone.name
+            human.global_human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
 
@@ -163,8 +163,8 @@ class Profile(commands.Cog):
 
         with db:
             human, _ = Human.get_or_create_for_member(ctx.author)
-            human.timezone = timezone.name
-            human.save()
+            human.global_human.timezone = timezone.name
+            human.global_human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
 
@@ -185,8 +185,8 @@ class Profile(commands.Cog):
         with db:
             human, _ = Human.get_or_create_for_member(ctx.author)
 
-            human.timezone = timezone.name
-            human.save()
+            human.global_human.timezone = timezone.name
+            human.global_human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
 
@@ -196,11 +196,10 @@ class Profile(commands.Cog):
         with db:
             human, _ = Human.get_or_create_for_member(ctx.author)
 
-            human.timezone = None
-            human.save()
+            human.global_human.global_human.timezone = None
+            human.global_human.save()
 
         await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
-
 
     async def edit_personal_role(self, ctx, **kwargs):
         attr_name = ctx.command.name
@@ -242,7 +241,6 @@ class Profile(commands.Cog):
             if not allowed:
                 await ctx.send("You are not allowed to run this command yet.")
                 raise Exception()
-
 
     @role.command(aliases = ["colour"])
     async def color(self, ctx, color : discord.Color = None):
@@ -307,8 +305,8 @@ class Profile(commands.Cog):
         with db:
             human, _ = Human.get_or_create_for_member(ctx.author)
 
-            human.city = city
-            human.save()
+            human.global_human.city = city
+            human.global_human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = city))
 
@@ -317,46 +315,10 @@ class Profile(commands.Cog):
         with db:
             human, _ = Human.get_or_create_for_member(ctx.author)
 
-            human.city = None
-            human.save()
+            human.global_human.city = None
+            human.global_human.save()
 
         await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
-
-
-    # @commands.command()
-    # async def addrankrole(self, ctx, role : discord.Role, required_experience : int):
-    #     RankRole.create(role_id = role.id, required_experience = required_experience, guild_id = ctx.guild.id)
-    #     await ctx.send("rank_role_added")
-
-    # @commands.has_guild_permissions(manage_roles = True)
-    # @commands.group()
-    # async def xp(self, ctx):
-    #     pass
-
-    # @xp.command(name="+")
-    # async def addxp(self, ctx, member : discord.Member, xp : int):
-    #     """Adds an amount of xp from a member."""
-
-    #     with db:
-    #         human, _ = Human.get_or_create_for_member(member)
-
-    #         human.experience += xp
-    #         human.save()
-
-    #     await ctx.send(ctx.bot.translate("xp_added"))
-
-    # @xp.command(name="-")
-    # async def removexp(self, ctx, member : discord.Member, xp : int):
-    #     """Adds an amount of xp from a member."""
-
-    #     with db:
-    #         human, _ = Human.get_or_create_for_member(member)
-
-    #         human.experience -= xp
-    #         human.save()
-
-    #     await ctx.send(ctx.bot.translate("xp_removed"))
-
 
     async def cog_before_invoke(self, ctx):
         attr_name = (ctx.command.root_parent or ctx.command).callback.__name__

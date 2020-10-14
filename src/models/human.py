@@ -13,7 +13,10 @@ emojize = lambda x : emoji.emojize(x, use_aliases=True)
 
 class GlobalHuman(BaseModel):
     user_id               = peewee.BigIntegerField  (null = False)
-    # blacklisted           = peewee.BooleanField     (default = False)
+    gold                  = peewee.BigIntegerField  (null = False, default = 250)
+    timezone              = peewee.TextField        (null = True)
+    date_of_birth         = peewee.DateField        (null = True)
+    city                  = peewee.TextField        (null = True)
 
 class Human(BaseModel):
     user_id               = peewee.BigIntegerField  (null = False)
@@ -22,9 +25,6 @@ class Human(BaseModel):
     experience            = peewee.BigIntegerField  (null = False, default = 0)
     last_experience_given = peewee.DateTimeField    (null = False, default = lambda : datetime.datetime.utcnow())
     global_human          = peewee.ForeignKeyField  (GlobalHuman)
-    timezone              = peewee.TextField        (null = True)
-    date_of_birth         = peewee.DateField        (null = True)
-    city                  = peewee.TextField        (null = True)
     last_active           = peewee.DateTimeField    (null = True)
 
     class Meta:
@@ -89,6 +89,22 @@ class Human(BaseModel):
         embed.set_author(name = self.member.display_name, icon_url = self.member.icon_url)
         return embed
 
+    @property
+    def date_of_birth(self):
+        return self.global_human.date_of_birth
+
+    @property
+    def city(self):
+        return self.global_human.city
+
+    @property
+    def timezone(self):
+        return self.global_human.timezone
+
+    @property
+    def gold(self):
+        return self.global_human.gold
+
     def get_embed_field(self, show_all = False):
 
         name = self.member.display_name
@@ -120,6 +136,11 @@ class Human(BaseModel):
             values.append(f"{city.weather_infos[0].emoji} {city.temperature_info.temperature}{city.unit.symbol}")
         elif show_all:
             values.append("🌡️ N/A")
+
+        if self.gold is not None:
+            values.append(f"{emoji.emojize(':euro:')} {self.gold}")
+        elif show_all:
+            values.append(f"{emoji.emojize(':euro:')} N/A")
 
         if len(values) == 0:
             values.append("N/A")

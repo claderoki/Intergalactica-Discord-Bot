@@ -7,7 +7,7 @@ from src.games.game.base import BaseGame
 
 class Game(BaseGame):
 
-    def __init__(self, players, ui : UI):
+    def __init__(self, player, ui : UI):
         assert isinstance(ui, UI)
 
         self.ui = ui
@@ -19,20 +19,19 @@ class Game(BaseGame):
         self.dealer.draw(self.deck)
         self.dealer.draw(self.deck, hidden = True)
 
-        self.players = players
+        self.player = player
 
-        for player in self.players:
-            player.draw(self.deck)
-            player.draw(self.deck)
+        player.draw(self.deck)
+        player.draw(self.deck)
 
-            if player.score == 21 and len(player.cards) == 2:
-                player.state = player.State.blackjack
+        if player.score == 21 and len(player.cards) == 2:
+            player.state = player.State.blackjack
 
     @property
     def players_done(self):
-        for player in self.players:
-            if not player.done:
-                return False
+        player = self.player
+        if not player.done:
+            return False
 
         return True
 
@@ -53,6 +52,8 @@ class Game(BaseGame):
             player.state = player.State.draw
         elif score == 21 and len(player.cards) == 2:
             player.state = player.State.blackjack
+        elif score == 21:
+            player.state = player.State.win
         elif score > 21:
             player.state = player.State.lose
         elif score > dealer_score:
@@ -61,24 +62,6 @@ class Game(BaseGame):
             player.state = player.State.lose
 
     async def stop(self):
-        pass
-
-    async def start(self):
-        while not self.players_done:
-            for player in self.players:
-                if player.done:
-                    continue
-
-                await self.ui.display_board(self, player)
-
-                player_action = await self.ui.draw_or_stand(player)
-
-                if player_action == Player.Action.stand:
-                    player.state = Player.State.stand
-                else:
-                    player.draw(self.deck)
-                    self.calculate_state(player)
-
         await self.ui.display_board(self)
         self.done = True
 
@@ -88,7 +71,24 @@ class Game(BaseGame):
         while self.dealer.score < 17:
             self.dealer.draw(self.deck)
 
-        for player in self.players:
-            self.calculate_end_state(player)
+        self.calculate_end_state(self.player)
 
         await self.ui.game_over(self)
+
+    async def start(self):
+        player = self.player
+
+        while not self.players_done:
+            if player.done:
+                continue
+
+            await self.ui.display_board(self, player)
+
+            player_action = await self.ui.draw_or_stand(player)
+
+            if player_action == Player.Action.stand:
+                player.state = Player.State.stand
+            else:
+                player.draw(self.deck)
+                self.calculate_state(player)
+        await self.stop()

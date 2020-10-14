@@ -69,7 +69,7 @@ class Player(BasePlayer):
         aces = 0
 
         for card in self.cards:
-            if card.value != 1:
+            if card.score != 1:
                 total_score += card.score
             else:
                 aces += 1

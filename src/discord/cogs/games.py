@@ -16,15 +16,12 @@ class Games(commands.Cog):
 
     @commands.command()
     async def blackjack(self, ctx):
-        players = []
-        players.append(blackjack.game.Player(5, ctx.author))
-        game = blackjack.game.Game(players, blackjack.ui.DiscordUI(ctx))
+        player = blackjack.game.Player(5, ctx.author)
+        game = blackjack.game.Game(player, blackjack.ui.DiscordUI(ctx))
         await game.start()
 
     @commands.command()
     async def slotmachine(self, ctx):
-        # players = []
-        # players.append(blackjack.game.Player(5, ctx.author))
         game = slotmachine.game.Game(slotmachine.ui.DiscordUI(ctx))
         await game.start()
 
