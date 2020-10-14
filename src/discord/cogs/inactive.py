@@ -61,21 +61,12 @@ class Inactive(discord.ext.commands.Cog):
         embed.description = "\n".join(lines)
         await ctx.send(embed = embed)
 
-        waiter = BoolWaiter(ctx, prompt = "Kick?")
-        to_kick = await waiter.wait()
-        if to_kick:
-            for member in inactive_members:
-                await member.kick(reason = "Inactivity")
-
-
-    # @tasks.loop(hours = 5)
-    # async def poll(self):
-    #     for human in self.iter_inactives():
-    #         try:
-    #             await human.inactive_action()
-    #         except Exception as e:
-    #             print(e)
-
+        if len(inactive_members) > 0:
+            waiter = BoolWaiter(ctx, prompt = "Kick?")
+            to_kick = await waiter.wait()
+            if to_kick:
+                for member in inactive_members:
+                    await member.kick(reason = "Inactivity")
 
 
 def setup(bot):
