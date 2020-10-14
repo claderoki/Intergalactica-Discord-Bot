@@ -232,16 +232,16 @@ class Profile(commands.Cog):
 
     @commands.group()
     async def role(self, ctx):
+        if ctx.guild.id == 742146159711092757:
+            with db:
+                human, _ = Human.get_or_create_for_member(ctx.author)
+                rank_role = human.rank_role
 
-        with db:
-            human, _ = Human.get_or_create_for_member(ctx.author)
-            rank_role = human.rank_role
+            allowed = rank_role is not None or ctx.author.premium_since is not None
 
-        allowed = rank_role is not None or ctx.author.premium_since is not None
-
-        if not allowed:
-            await ctx.send("You are not allowed to run this command yet.")
-            raise Exception()
+            if not allowed:
+                await ctx.send("You are not allowed to run this command yet.")
+                raise Exception()
 
 
     @role.command(aliases = ["colour"])
