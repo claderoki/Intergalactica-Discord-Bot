@@ -10,21 +10,26 @@ from .base import BaseModel, EnumField
 
 class Ticket(BaseModel):
     class Type(Enum):
-        support = 1
-        concern = 2
-        complaint = 3
+        support    = 1
+        concern    = 2
+        complaint  = 3
         suggestion = 4
 
     class Status(Enum):
-        pending = 1
+        open   = 1
+        closed = 2
+
+    class CloseReason(Enum):
+        denied   = 1
         approved = 2
-        denied = 3
+        resolved = 3
 
     text            = peewee.TextField       (null = False)
     user_id         = peewee.BigIntegerField (null = False)
     guild_id        = peewee.BigIntegerField (null = False)
     type            = EnumField              (Type, null = False)
-    status          = EnumField              (Status, null = False, default = Status.pending )
+    status          = EnumField              (Status, null = False, default = Status.open )
+    close_reason    = EnumField              (CloseReason, null = True)
     anonymous       = peewee.BooleanField    (null = False, default = True)
     channel_id      = peewee.BigIntegerField (null = True)
     message_id      = peewee.BigIntegerField (null = True)
@@ -37,9 +42,26 @@ class Ticket(BaseModel):
 
         author_name = "anonymous" if self.anonymous else str(self.member)
 
-        embed.set_author(name = f"{self.type.name.title()} by: {author_name}", icon_url="https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Blue_question_mark_icon.svg/1024px-Blue_question_mark_icon.svg.png")
+        embed.set_author(name = f"{self.type.name.title()} by: {author_name}", icon_url="https://cdn.discordapp.com/attachments/744172199770062899/765879281498587136/Blue_question_mark_icon.svg.png")
         embed.description = f"**{self.text}**\n\uFEFF"
-        embed.set_footer(text = f"Use \"/reply {self.id} <response>\" to reply.\nCreated")
+        footer = []
+
+        translate = self.bot.translate
+
+        if self.status == self.Status.open:
+            footer.append(translate("ticket_reply_instructions").format(id = str(self.id) ))
+        else:
+            footer.append(translate("ticket_closed_info").format(reason = translate(self.close_reason.name) ))
+
+        if self.close_reason == self.CloseReason.approved:
+            embed.color = discord.Color.green()
+        elif self.close_reason == self.CloseReason.resolved:
+            embed.color = discord.Color.green()
+        elif self.close_reason == self.CloseReason.denied:
+            embed.color = discord.Color.red()
+
+        footer.append(translate("created_at"))
+        embed.set_footer(text = "\n".join(footer))
         embed.timestamp = self.created_at
 
         for reply in self.replies:
@@ -49,11 +71,9 @@ class Ticket(BaseModel):
 
             date_string = reply.replied_at.time().isoformat()
 
-            embed.add_field(name = f"{icon} {reply.type.name.title()} at {date_string}", value = f"{reply.text}\n\uFEFF", inline = False)
+            embed.add_field(name = f"{icon} {translate(reply.type.name)} ({date_string})", value = f"{reply.text}\n\uFEFF", inline = False)
 
         return embed
-
-
 
     @property
     def embed(self):
@@ -63,9 +83,7 @@ class Ticket(BaseModel):
     @property
     def staff_embed(self):
         embed = self.base_embed
-        # embed.set_footer(text = embed.footer.text)
         return embed
-
 
     async def sync_message(self, channel = None):
         channel = self.channel
@@ -83,7 +101,6 @@ class Ticket(BaseModel):
         self.save()
 
         await self.member.send(embed = self.embed)
-
 
 class Reply(BaseModel):
     class Type(Enum):

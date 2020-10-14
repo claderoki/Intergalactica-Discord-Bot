@@ -72,10 +72,12 @@ class EnumField(peewee.TextField):
         super().__init__(**kwargs)
 
     def db_value(self, value):
-        return value.name
+        if value is not None:
+            return value.name
 
     def python_value(self, value):
-        return self.enum[value]
+        if value is not None:
+            return self.enum[value]
 
 class EmojiField(peewee.TextField):
 
