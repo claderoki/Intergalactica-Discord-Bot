@@ -174,8 +174,18 @@ class Poll(BaseModel):
         passed = self.passed
 
         embed = discord.Embed(description = f"Poll #{self.id} results", color = self.bot.get_dominant_color(self.guild))
-        if len(changes) > 0 and passed:
-            embed.set_footer(text = "Changes have been implemented.")
+
+        if self.type == self.Type.bool:
+            if passed:
+                #TODO: translate!
+                embed.color = discord.Color.green()
+                embed.set_footer(text = "Vote passed!")
+            else:
+                embed.color = discord.Color.red()
+                embed.set_footer(text = "Vote did not pass.")
+
+            if len(changes) > 0 and passed:
+                embed.set_footer(text = "Changes have been implemented.")
 
         embed.set_image(url = url)
 
