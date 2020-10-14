@@ -37,6 +37,8 @@ class Locus(commands.Bot):
         self.mode = mode
         self.production = mode == config.Mode.production
         self.missing_translations = {}
+        self._guild = None
+        self.owner = None
 
         if not self.production:
             prefix = "."
@@ -63,8 +65,6 @@ class Locus(commands.Bot):
         embed = discord.Embed(color = self.get_dominant_color(None), **kwargs)
         return embed.set_author(name = user.name, icon_url = user.avatar_url)
 
-
-
     async def store_file(self, file, filename) -> str:
         """This function stores a file in the designated storage channel, it returns the url of the newly stored image."""
 
@@ -80,9 +80,6 @@ class Locus(commands.Bot):
 
         return msg.attachments[0].url
 
-
-
-
     def calculate_dominant_color(self, image_url, normalize = False):
         color_thief = ColorThief(requests.get(image_url, stream=True).raw)
         dominant_color = color_thief.get_color(quality=1)
@@ -94,7 +91,6 @@ class Locus(commands.Bot):
             return obj.avatar_url_as(**options)
         elif isinstance(obj, discord.Guild):
             return obj.icon_url_as(**options)
-
 
     def get_dominant_color(self, guild):
         obj = guild if guild is not None else self.user
@@ -217,10 +213,20 @@ class Locus(commands.Bot):
 
         raise exception
 
+    @property
+    def guild(self):
+        if self._guild is None:
+            self._guild = self.get_guild(761624318291476482)
+        return self._guild
+
     async def on_ready(self):
         self.print_info()
         print("Ready")
+        self.owner = (await self.application_info()).owner
 
+        self._emoji_mapping = {}
+        for emoji in self.guild.emojis:
+            self._emoji_mapping[emoji.name] = emoji
 
     def translate(self, key, locale = "en_US"):
         if locale not in self.missing_translations:

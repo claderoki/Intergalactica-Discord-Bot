@@ -135,6 +135,9 @@ class Intergalactica(commands.Cog):
 
     @tasks.loop(hours = 12)
     async def poller(self):
+        if not self.bot.production:
+            return 
+
         async for introduction in self.introductions_to_purge():
             embed = discord.Embed(
                 color = self.bot.get_dominant_color(self.guild),
