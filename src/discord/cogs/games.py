@@ -26,6 +26,5 @@ class Games(commands.Cog):
         await game.start()
 
 
-
 def setup(bot):
     bot.add_cog(Games(bot))

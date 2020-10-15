@@ -40,7 +40,6 @@ class Player(BasePlayer):
         super().__init__(identity = identity)
 
         self.bet = bet
-        print(self.bet)
 
         self.cards = []
         self.state = self.State.drawing

@@ -131,7 +131,6 @@ class Management(discord.ext.commands.Cog):
 
         with database:
             translations = list( Translation.select().where(Translation.locale.in_([locale, "en_US"])).order_by(Translation.locale.desc()) )
-            print(translations)
 
             locale_translations = [x.message_key for x in translations if x.locale.name == locale]
             for translation in [x for x in translations if x.locale.name == "en_US"]:

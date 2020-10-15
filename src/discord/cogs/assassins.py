@@ -38,14 +38,12 @@ class AssassinsCog(commands.Cog):
     #     await self.choose_game(ctx.author)
 
     async def choose_game(self, member):
-
         mutual_guilds = [x.id for x in self.bot.guilds if x.get_member(member.id) is not None]
 
         games = list(Game.select().where( (Game.guild_id.in_(mutual_guilds)) & ( Game.active == True) ))
 
         if len(games) == 1:
             return games[0]
-
 
     @commands.command()
     async def msg(self, ctx):
@@ -65,7 +63,6 @@ class AssassinsCog(commands.Cog):
     async def assassins(self, ctx):
         pass
 
-    @is_setup()
     @commands.max_concurrency(1, commands.BucketType.guild)
     @assassins.command()
     async def start(self, ctx, minutes_to_start : float = 30):
