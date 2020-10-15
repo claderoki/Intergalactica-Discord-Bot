@@ -10,11 +10,24 @@ import requests
 import emoji
 import discord
 from discord.ext import commands
+from dateutil.relativedelta import relativedelta
 
 import src.config as config
 from src.wrappers.openweathermap import OpenWeatherMapApi
 from src.wrappers.color_thief import ColorThief
 from src.models import Settings, Translation, database
+
+
+def seconds_readable(seconds):
+    fmt = "{delta.days} days {delta.hours} hours {delta.minutes} minutes {delta.seconds} seconds"
+    delta = relativedelta(seconds = seconds)
+    normalize = lambda x : int(x) if x % 1 == 0 else round(x, 2)
+    text = []
+    for attr in ('days','hours','minutes'):
+        value = getattr(delta, attr)
+        if value:
+            text.append(f"{normalize(value)}{attr[0]}")
+    return "".join(text)
 
 class Locus(commands.Bot):
     _dominant_colors = {}
@@ -207,9 +220,11 @@ class Locus(commands.Bot):
 
     async def on_command_error(self, ctx, exception):
 
+        if isinstance(exception, commands.errors.CommandOnCooldown):
+            embed = Embed.error("You are on cooldown. Try again in " + seconds_readable(exception.retry_after))
+            return await ctx.send(embed = embed)
         if isinstance(exception, self.sendables):
-            return await ctx.send(str(exception))
-
+            return await ctx.send(embed = Embed.error(str(exception)))
         if isinstance(exception, self.ignorables):
             return
 
@@ -256,6 +271,10 @@ class Locus(commands.Bot):
 class Embed:
     @classmethod
     def warning(cls, message):
+        return discord.Embed( description = message, color = discord.Color.red() )
+
+    @classmethod
+    def error(cls, message):
         return discord.Embed( description = message, color = discord.Color.red() )
 
 
