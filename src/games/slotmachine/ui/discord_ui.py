@@ -22,13 +22,13 @@ class DiscordUI(UI):
 
         count = 4
         for i in range(count):
-            emojis = [str(x.value[0]) for x in fruits[:i]]
+            emojis = [x.emoji for x in fruits[:i]]
             for _ in range(count - (i+1)):
                 emojis.append(empty)
 
             embed = self.get_base_embed(description = "".join(emojis))
             if i == (count-1):
-                msg = f" {'+' if win > 0 else '-'}${abs(win)}"
+                msg = f" {'+' if win > 0 else '-'}{abs(win)}"
                 embed.set_footer(text = msg)
             if self.message is None:
                 self.message = await self.ctx.channel.send(embed = embed)

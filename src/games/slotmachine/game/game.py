@@ -1,45 +1,45 @@
-import discord
 import random
 from enum import Enum
-import asyncio
-
 
 class Game:
     bet = 5
 
     class Reel(Enum):
-        ORANGE      = ("🍊", 10)
-        WATERMELON  = ("🍉", 14)
-        BAR         = ("🍫", 250)
-        CHERRY      = ("🍒", 7)
-        SEVEN       = ("🥝", 1000)
+        cherry      = ("🍒", 7)
+        orange      = ("🍊", 10)
+        watermelon  = ("🍉", 14)
+        # bell        = ("🔔", 75)
+        bar         = ("🍫", 250)
+        seven       = ("🥝", 500)
+
+        @property
+        def probability(self):
+            pass
+
+        @property
+        def emoji(self):
+            return self.value[0]
+
+        @property
+        def payout(self):
+            return self.value[1]
 
     values = list(Reel)
-
 
     def __init__(self, ui):
         self.ui = ui
 
-    def _get_different_emoji(self, emoji):
-        different_emoji = None
-        while different_emoji is None or different_emoji == emoji:
-            different_emoji = random.choice(self.values).value[0]
-
-        return different_emoji
-
-
     async def start(self):
-        first,second,third = random.choice(self.values), random.choice(self.values), random.choice(self.values)
+        reel = random.choices(self.values, weights = (20, 15, 13, 5, 2), k = 3)
+        first,second,third = reel
 
-        if first == self.Reel.CHERRY:
-            if second == self.Reel.CHERRY:
-                win = self.Reel.CHERRY.value[1] if third == self.Reel.CHERRY else 5
-            else:
-                win = 2
+        cherry_count = len([x for x in reel if x == self.Reel.cherry])
+
+        if first == second == third:
+            win = first.payout
+        elif cherry_count > 0 and first == self.Reel.cherry:
+            win = cherry_count * 2
         else:
-            if first == second == third:
-                win = first.value[1]
-            else:
-                win = -1
+            win = -1
 
-        await self.ui.show_reel((first,second,third), win)
+        await self.ui.show_reel(reel, win)
