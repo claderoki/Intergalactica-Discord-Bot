@@ -26,7 +26,8 @@ class Locus(commands.Bot):
         commands.errors.MissingPermissions,
         commands.errors.PrivateMessageOnly,
         commands.errors.NoPrivateMessage,
-        commands.errors.ConversionError
+        commands.errors.ConversionError,
+        commands.errors.CommandOnCooldown,
     )
 
     ignorables = \
@@ -40,6 +41,7 @@ class Locus(commands.Bot):
         self.missing_translations = {}
         self._guild = None
         self.owner = None
+        self._locales = {}
 
         if not self.production:
             prefix = "."
@@ -93,15 +95,18 @@ class Locus(commands.Bot):
         elif isinstance(obj, discord.Guild):
             return obj.icon_url_as(**options)
 
-    def get_dominant_color(self, guild):
-        obj = guild if guild is not None else self.user
+    @property
+    def gold_emoji(self):
+        return emoji.emojize(":euro:")
 
+    def get_dominant_color(self, guild):
+        # obj = guild if guild is not None else self.user
+        obj = self.user
         if obj.id not in self._dominant_colors:
             url = self._get_icon_url(obj)
             if not url:
                 return self.get_dominant_color(None)
             self._dominant_colors[obj.id] = self.calculate_dominant_color(url, normalize = True)
-        
         return self._dominant_colors[obj.id]
 
     def mutual_guilds_with(self, user):
@@ -137,6 +142,7 @@ class Locus(commands.Bot):
             "inactive",
             "staff_communication",
             "assassins",
+            "scene",
         ]
 
         if True:
@@ -184,10 +190,12 @@ class Locus(commands.Bot):
         if ctx.guild is None:
             locale_name = "en_US"
         else:
-            with database:
-                ctx.settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
-                locale_name = ctx.settings.locale.name
-        ctx.translate = lambda x: self.translate(x, locale_name)
+            if ctx.guild.id not in self._locales:
+                with database:
+                    ctx.settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
+                    self._locales[ctx.guild.id] = ctx.settings.locale.name
+
+        ctx.translate = lambda x: self.translate(x, self._locales[ctx.guild.id])
 
         ar = lambda x: ctx.message.add_reaction(x)
 

@@ -5,9 +5,14 @@ from .settings import Settings, NamedEmbed, NamedChannel, Translation, Locale
 from .staff_communication import Ticket, Reply
 from .poll import Change, Parameter, Poll, PollTemplate, Vote, Option
 from .assassins import Game, Player, KillMessage
+from .scene import Scene, Scenario
+
 database = Human._meta.database
 
 with database:
+
+    # database.drop_tables([Scene, Scenario])
+    database.create_tables([Scene, Scenario])
 
     # database.drop_tables([Human, GlobalHuman])
     database.create_tables([Human, GlobalHuman])

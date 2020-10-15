@@ -186,6 +186,12 @@ class IntWaiter(MessageWaiter):
         except ValueError:
             raise ConversionFailed("Message needs to be a number.")
 
+class FloatWaiter(IntWaiter):
+    def convert(self, argument):
+        try:
+            return float(argument)
+        except ValueError:
+            raise ConversionFailed("Message needs to be a number.")
 
 
 class StrWaiter(MessageWaiter):
@@ -219,6 +225,21 @@ class StrWaiter(MessageWaiter):
     def convert(self, argument):
         return argument
 
+
+class RangeWaiter(StrWaiter):
+    def __init__(self, ctx, **kwargs):
+        super().__init__(ctx, max_words = 2, **kwargs)
+
+    @property
+    def instructions(self):
+        return "<min> <max>"
+
+    def convert(self, argument):
+        try:
+            min, max = [int(x) for x in argument.split()]
+            return range(min, max)
+        except:
+            raise ConversionFailed("Message needs to be a range")
 
 class EnumWaiter(StrWaiter):
     def __init__(self, ctx, enum, **kwargs):
