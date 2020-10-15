@@ -18,7 +18,8 @@ class PollCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.poller.start()
+        if self.bot.production:
+            self.poller.start()
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -59,6 +60,7 @@ class PollCog(commands.Cog):
                 role = member.guild.get_role(poll.role_id_needed_to_vote)
 
                 if role not in member.roles:
+                    #TODO: translate!
                     return await member.send(f"To vote for this poll you need the **{role}** role.")
 
             vote, created = Vote.get_or_create(option = option, user_id = member.id)
