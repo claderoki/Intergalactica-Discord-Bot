@@ -15,6 +15,7 @@ class Intergalactica(commands.Cog):
     {
         "selfies" : 748566253534445568,
         "nova"    : 748494888844132442,
+        "luna"    : 748494880229163021,
         "age"     : {},
         "gender"  : {}
     }
@@ -44,7 +45,8 @@ class Intergalactica(commands.Cog):
     async def on_ready(self):
         self.guild = self.bot.get_guild(self.guild_id)
         self.bot.get_dominant_color(self.guild)
-        self.poller.start()
+        if not self.bot.production:
+            self.poller.start()
 
 
     async def log(self, channel_name, content = None, **kwargs):
@@ -72,9 +74,8 @@ class Intergalactica(commands.Cog):
             if after.guild.id != self.guild_id:
                 return
 
-            if self.bot.production:
+            if not self.bot.production:
                 return
-            return
 
             added_role = None
             has_selfie_perms = None
@@ -85,13 +86,15 @@ class Intergalactica(commands.Cog):
                 if role.id == self._role_ids["selfies"]:
                     has_selfie_perms = True
 
-            if added_role.id == self._role_ids["nova"] and not has_selfie_perms:
-                pass
-                # await self.log("bot_commands", f"DMed **{after}** {after.mention} has achieved Nova!.")
+            if added_role.id == self._role_ids["luna"] and not has_selfie_perms:
+                await self.log("bot_commands", f"**{after}** {after.mention} has achieved Luna!")
+                # return
+
                 # with database:
                 #     try:
                 #         poll = Poll.get(question = self.selfie_poll_question.format(member = str(after), ended = False))
                 #     except Poll.DoesNotExist:
+                #         pass
 
                 #         channel = guild.get_channel(self._channel_ids["bot_commands"])
                 #         await channel.send("Would send a selfie poll here")
@@ -132,12 +135,8 @@ class Intergalactica(commands.Cog):
             if not member_is_legal(member):
                 yield member
 
-
     @tasks.loop(hours = 12)
     async def poller(self):
-        if not self.bot.production:
-            return 
-
         async for introduction in self.introductions_to_purge():
             embed = discord.Embed(
                 color = self.bot.get_dominant_color(self.guild),
@@ -145,7 +144,6 @@ class Intergalactica(commands.Cog):
                 description = introduction.content)
             await self.log("logs", embed = embed)
             await introduction.delete()
-
 
         for member in self.illegal_member_iterator():
             days = (datetime.datetime.utcnow() - member.joined_at).days
