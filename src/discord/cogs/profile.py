@@ -290,9 +290,6 @@ class Profile(commands.Cog):
                 role = human.personal_role
                 if role is not None and human.member is None:
                     await role.delete()
-                    print(f"Deleted {role}")
-
-
 
     @commands.group()
     async def city(self, ctx):
