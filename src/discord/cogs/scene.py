@@ -36,7 +36,9 @@ class SceneCog(commands.Cog):
             command = self.bot.command_prefix + "pigeon claim"
             if message.content == command:
                 return
-            if random.randint(self.message_count, 1000) >= 950:
+
+            likeliness = 4000
+            if random.randint(self.message_count, likeliness) >= (likeliness-50):
                 self.message_count = 0
                 embed = discord.Embed(color = self.bot.get_dominant_color(message.guild))
                 embed.title = "💩 Pigeon Droppings 💩"
