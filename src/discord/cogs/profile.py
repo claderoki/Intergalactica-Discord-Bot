@@ -7,14 +7,10 @@ import discord
 from discord.ext import commands, tasks
 import emoji
 
-from src.models import Human
+from src.models import Human, GlobalHuman, database
 from src.discord.helpers.converters import convert_to_date
 import src.config as config
 from src.utils.timezone import Timezone
-
-emojize = lambda x : emoji.emojize(x, use_aliases=True)
-
-db = Human._meta.database
 
 class WeirdFont:
     __slots__ = ("char_mapping",)
@@ -52,9 +48,7 @@ class WeirdFont:
     def italica(cls):
         return cls("𝘢𝘣𝘤𝘥𝘦𝘧𝘨𝘩𝘪𝘫𝘬𝘭𝘮𝘯𝘰𝘱𝘲𝘳𝘴𝘵𝘶𝘷𝘸𝘲𝘺𝘻𝘈𝘉𝘊𝘋𝘌𝘍𝘎𝘏𝘐𝘑𝘒𝘓𝘔𝘕𝘖𝘗𝘘𝘙𝘚𝘛𝘜𝘝𝘞𝘘𝘠𝘟")
 
-
 font = WeirdFont.italica()
-
 
 class Profile(commands.Cog):
 
@@ -67,9 +61,57 @@ class Profile(commands.Cog):
         await ctx.send(text)
 
     @commands.command()
+    @commands.is_owner()
     async def font(self, ctx, *, text):
         await ctx.send(font(text))
 
+    @commands.command()
+    async def scoreboard(self, ctx):
+        query = Human.select().where(Human.guild_id == ctx.guild.id)
+        query = query.join(GlobalHuman, on=(Human.global_human == GlobalHuman.id))
+        query = query.order_by(GlobalHuman.gold.desc())
+        query = query.limit(10)
+
+        embed = discord.Embed(title = "Scoreboard")
+
+        with database:
+            humans = list(query)
+
+        rows = []
+        i = 0
+        for human in humans:
+            values = []
+            values.append(f"{i+1}")
+            values.append(str(human.global_human.gold))
+            values.append(str(human.member))
+            rows.append(values)
+            i += 1
+
+        headers = ["rank", "gold", "member"]
+        sep = " | "
+        lines = []
+        longests = [len(x) for x in headers]
+        padding = 2
+        for row in rows:
+            row_text = []
+            for i in range(len(row)):
+                value = row[i]
+                if len(value) > longests[i]:
+                    longests[i] = len(value)
+
+                row_text.append(value.ljust(longests[i]+padding) )
+            lines.append(sep.join(row_text))
+
+        lines.insert(0, sep.join([x.ljust(longests[i]+padding) for i,x in enumerate(headers)]) )
+
+        equals = sum(longests) + (len(headers) * (padding) ) + len(sep) + padding
+        lines.insert(1, "=" * equals )
+
+        embed.description = "```md\n" + ( "\n".join(lines) ) + "```"
+
+        print(embed.description)
+
+        await ctx.send(embed = embed)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -79,7 +121,7 @@ class Profile(commands.Cog):
         if message.channel.name.lower() in ("votes", "suggestions"):
             await self.bot.vote_for(message)
 
-        with db:
+        with database:
             human, _ = Human.get_or_create_for_member(message.author)
 
             if human.is_eligible_for_xp:
@@ -105,7 +147,7 @@ class Profile(commands.Cog):
         if ctx.author not in members:
             members.insert(0, ctx.author)
 
-        with db:
+        with database:
             embed = discord.Embed(color = ctx.author.color)
             for member in members:
                 human, _ = Human.get_or_create_for_member(member)
@@ -124,7 +166,7 @@ class Profile(commands.Cog):
         if date_of_birth >= datetime.date.today():
             return await ctx.send(ctx.bot.translate("date_cannot_be_in_future"))
 
-        with db:
+        with database:
             human, _ = Human.get_or_create_for_member(ctx.author)
             human.global_human.date_of_birth = date_of_birth
             human.global_human.save()
@@ -133,7 +175,7 @@ class Profile(commands.Cog):
 
     @date_of_birth.command(name = "delete")
     async def delete_date_of_birth(self, ctx):
-        with db:
+        with database:
             human, _ = Human.get_or_create_for_member(member)
             human.global_human.date_of_birth = None
             human.global_human.save()
@@ -149,7 +191,7 @@ class Profile(commands.Cog):
     async def assign_timezone(self, ctx, timezone : Timezone):
         """Adds a timezone"""
 
-        with db:
+        with database:
             human, _ = Human.get_or_create_for_member(ctx.author)
             human.global_human.timezone = timezone.name
             human.global_human.save()
@@ -161,7 +203,7 @@ class Profile(commands.Cog):
         """Adds a timezone"""
         timezone = Timezone.from_city(city)
 
-        with db:
+        with database:
             human, _ = Human.get_or_create_for_member(ctx.author)
             human.global_human.timezone = timezone.name
             human.global_human.save()
@@ -182,7 +224,7 @@ class Profile(commands.Cog):
 
         timezone = Timezone.from_hour(int(hour))
 
-        with db:
+        with database:
             human, _ = Human.get_or_create_for_member(ctx.author)
 
             human.global_human.timezone = timezone.name
@@ -193,7 +235,7 @@ class Profile(commands.Cog):
 
     @timezone.command(name = "delete")
     async def delete_timezone(self, ctx):
-        with db:
+        with database:
             human, _ = Human.get_or_create_for_member(ctx.author)
 
             human.global_human.global_human.timezone = None
@@ -210,7 +252,7 @@ class Profile(commands.Cog):
         elif attr_name == "color":
             kwargs["name"] = ctx.author.display_name
 
-        with db:
+        with database:
             human, _ = Human.get_or_create_for_member(ctx.author)
             new = human.personal_role_id is None or human.personal_role is None
             if new:
@@ -232,7 +274,7 @@ class Profile(commands.Cog):
     @commands.group()
     async def role(self, ctx):
         if ctx.guild.id == 742146159711092757:
-            with db:
+            with database:
                 human, _ = Human.get_or_create_for_member(ctx.author)
                 rank_role = human.rank_role
 
@@ -270,7 +312,7 @@ class Profile(commands.Cog):
 
     @role.command(name = "delete")
     async def delete_role(self, ctx):
-        with db:
+        with database:
             human, _ = Human.get_or_create_for_member(ctx.author)
             if human.personal_role_id is not None:
                 role = human.personal_role
@@ -299,7 +341,7 @@ class Profile(commands.Cog):
     async def assign_city(self, ctx, city : str):
         """Adds a city"""
 
-        with db:
+        with database:
             human, _ = Human.get_or_create_for_member(ctx.author)
 
             human.global_human.city = city
@@ -309,7 +351,7 @@ class Profile(commands.Cog):
 
     @city.command(name = "delete")
     async def delete_city(self, ctx):
-        with db:
+        with database:
             human, _ = Human.get_or_create_for_member(ctx.author)
 
             human.global_human.city = None
