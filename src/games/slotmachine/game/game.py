@@ -30,7 +30,7 @@ class Game:
         self.ui = ui
 
     async def start(self):
-        reel = random.choices(self.values, weights = (20, 15, 13, 5, 2), k = 3)
+        reel = random.choices(self.values, weights = (17, 15, 15, 10, 5), k = 3)
         first,second,third = reel
 
         cherry_count = len([x for x in reel if x == self.Reel.cherry])
