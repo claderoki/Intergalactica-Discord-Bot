@@ -18,9 +18,10 @@ class Scene(BaseModel):
         money = scenario.random_value
         embed = discord.Embed(color = ctx.guild_color)
         embed.description = scenario.text
+        embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/705242963550404658/766680730457604126/pigeon_tiny.png")
         if money > 0:
             embed.description += f" You earn {self.bot.gold_emoji} {abs(money)}"
-        else:
+        elif money < 0:
             embed.description += f" You lose {self.bot.gold_emoji} {abs(money)}"
 
         identity.add_points(money)
@@ -35,7 +36,7 @@ class Scenario(BaseModel):
 
     @property
     def random_value(self):
-        return random.randint(self.min, self.max+1)
+        return random.randint(self.min, self.max)
 
     @property
     def range(self):
