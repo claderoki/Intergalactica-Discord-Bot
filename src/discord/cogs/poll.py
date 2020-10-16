@@ -10,7 +10,7 @@ from src.discord.helpers.waiters import *
 import src.config as config
 from src.models import Change, Parameter, Poll, PollTemplate, Vote, database
 
-class PollCog(commands.Cog):
+class PollCog(commands.Cog, name = "Poll"):
 
     def __init__(self, bot):
         super().__init__()

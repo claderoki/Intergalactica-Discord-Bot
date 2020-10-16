@@ -7,7 +7,7 @@ from src.discord.helpers.converters import EnumConverter
 from src.models import Ticket, Reply, database
 import src.config as config
 
-class StaffCommunication(commands.Cog):
+class StaffCommunication(commands.Cog, name = "Staff communication"):
 
     def __init__(self, bot):
         super().__init__()
@@ -16,12 +16,6 @@ class StaffCommunication(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         pass
-
-
-    # @commands.Cog.listener()
-    # async def on_message(self, message):
-    #     pass
-
 
     async def create_ticket(self, user, guild, type):
         guild = self.bot.get_guild(742146159711092757)

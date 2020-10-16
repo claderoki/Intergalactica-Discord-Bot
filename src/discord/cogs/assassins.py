@@ -23,7 +23,7 @@ def is_setup():
 
     return commands.check(predicate)
 
-class AssassinsCog(commands.Cog):
+class AssassinsCog(commands.Cog, name = "Assassins"):
 
     def __init__(self, bot):
         super().__init__()
