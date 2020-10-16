@@ -94,6 +94,11 @@ class Management(discord.ext.commands.Cog):
         quit()
 
     @commands.is_owner()
+    @commands.command()
+    async def blacklist(self, ctx):
+        await ctx.send("OK")
+
+    @commands.is_owner()
     @commands.group()
     async def translation(self, ctx):
         pass
