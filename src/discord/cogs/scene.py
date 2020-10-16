@@ -62,6 +62,8 @@ class SceneCog(commands.Cog):
                     embed.description = f"{author.mention}, you picked up the droppings and received {self.bot.gold_emoji} {money}"
                     embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/705242963550404658/766680730457604126/pigeon_tiny.png")
                     await message.channel.send(embed = embed)
+                    identity = DiscordIdentity(message.author)
+                    identity.add_points(money)
 
     @commands.group()
     async def pigeon(self, ctx):
