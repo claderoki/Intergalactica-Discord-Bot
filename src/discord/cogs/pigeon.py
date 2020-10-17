@@ -231,6 +231,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         with database:
             query = Fight.select()
             query = query.where(Fight.ended == False)
+            query = query.where(Fight.accepted == True)
             # query = query.where(Fight.start_date <= datetime.datetime.utcnow())
             for fight in query:
                 if not fight.start_date_passed:
