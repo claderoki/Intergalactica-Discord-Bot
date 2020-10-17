@@ -230,7 +230,7 @@ class Locus(commands.Bot):
             pass
         elif isinstance(exception, commands.errors.CommandInvokeError):
             if isinstance(exception.original, self.sendables):
-                asyncio.gather(ctx.send(embed = Embed.error(str(exception))))
+                asyncio.gather(ctx.send(embed = Embed.error(str(exception.original))))
         else:
             raise exception
 
