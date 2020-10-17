@@ -37,8 +37,8 @@ class MessageWaiter(Waiter):
     prompt = None,
     end_prompt = None,
     timeout = 360,
-    members = [],
-    channels = [],
+    members = None,
+    channels = None,
     max_words = 1,
     skippable = False,
     skip_command = ">>skip",
@@ -48,10 +48,9 @@ class MessageWaiter(Waiter):
         self.prompt = prompt
         self.end_prompt = end_prompt
         self.timeout = timeout
-        self.members = members
-        self.channels = channels
+        self.members = members or []
+        self.channels = channels or []
         self.max_words = max_words
-
         self.skippable = skippable
         self.skip_command = skip_command
 
@@ -78,7 +77,6 @@ class MessageWaiter(Waiter):
         raise NotImplementedError()
 
     def check(self, message):
-
         if self.members and message.author.id not in [x.id for x in self.members]:
             return False
 
