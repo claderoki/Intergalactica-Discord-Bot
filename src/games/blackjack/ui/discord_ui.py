@@ -10,7 +10,7 @@ from src.discord.helpers.waiters import ReactionWaiter
 class DiscordUI(UI):
     # draw_emoji = "✅"
     # stand_emoji  = "❌"
-    draw_emoij = "▶️"
+    draw_emoji = "▶️"
     stand_emoji = "⏹️"
 
     def __init__(self, ctx):
