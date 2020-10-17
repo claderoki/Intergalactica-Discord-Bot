@@ -14,12 +14,6 @@ from src.discord.errors.assassins import NotSetup, GameRunning
 def is_setup():
     def predicate(ctx):
         return True
-        try:
-            Settings.get(guild_id = ctx.guild.id)
-        except Settings.DoesNotExist:
-            raise NotSetup(f"To begin, setup a log channel first. `{ctx.prefix}logchannel #channel`")
-        else:
-            return True
 
     return commands.check(predicate)
 
