@@ -93,14 +93,13 @@ class MessageWaiter(Waiter):
         else:
             words = message.content.split()[:self.max_words]
 
-        try:            
+        try:
             self.converted = self.convert(" ".join(words))
         except ConversionFailed as e:
             self._send(message.channel, e)
             return False
 
         return True
-
 
     @property
     def embed(self):
@@ -118,8 +117,7 @@ class MessageWaiter(Waiter):
 
         return embed
 
-
-    async def wait(self, raw = False, timeout_crash = False):
+    async def wait(self, raw = False):
         await self.ctx.channel.send(embed = self.embed)
 
         try:
@@ -127,8 +125,6 @@ class MessageWaiter(Waiter):
         except asyncio.TimeoutError:
             if self.verbose:
                 await self.ctx.send("Timed out.")
-            if timeout_crash:
-                raise
             return None
         else:
             if self.end_prompt is not None:
