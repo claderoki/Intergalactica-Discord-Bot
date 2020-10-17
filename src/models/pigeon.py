@@ -23,7 +23,6 @@ class Fight(BaseModel):
     def start_date_passed(self) -> bool:
         return datetime.datetime.utcnow() >= self.start_date
 
-
 class Bet(BaseModel):
     fight        = peewee.ForeignKeyField (Fight, backref = "bets")
     global_human = peewee.ForeignKeyField (GlobalHuman)
