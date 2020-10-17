@@ -158,7 +158,7 @@ class Management(discord.ext.commands.Cog):
     @commands.has_guild_permissions(administrator = True)
     async def embed(self, ctx, name):
         with database:
-            settings = Settings.get(guild_id = ctx.guild.id)
+            settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
 
             if len(ctx.message.attachments) > 0:
                 attachment = ctx.message.attachments[0]
