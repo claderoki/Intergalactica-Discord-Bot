@@ -63,7 +63,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                 await message.channel.send(embed = embed)
 
                 def check(m):
-                    return m.content.lower() == command and m.channel.id == channel_id and not m.author.bot
+                    return m.content.lower() == command and m.channel.id == channel.id and not m.author.bot
                 try:
                     msg = await self.bot.wait_for('message', check = check, timeout = 60)
                 except asyncio.TimeoutError:
