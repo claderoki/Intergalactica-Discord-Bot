@@ -87,7 +87,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     async def perform_scenario(self, ctx):
         with database:
             identity = DiscordIdentity(ctx.author)
-            scene = Scene.get(command_name = ctx.command.name, group_name = ctx.root_parent.name)
+            scene = Scene.get(command_name = ctx.command.name, group_name = ctx.command.root_parent.name)
             await scene.send(ctx, identity = identity)
 
     @pigeon.command(name = "help")
