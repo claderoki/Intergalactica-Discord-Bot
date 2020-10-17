@@ -11,6 +11,7 @@ from src.models import Human, GlobalHuman, database
 from src.discord.helpers.converters import convert_to_date
 import src.config as config
 from src.utils.timezone import Timezone
+from src.discord.errors.base import SendableException
 
 class WeirdFont:
     __slots__ = ("char_mapping",)
@@ -64,6 +65,21 @@ class Profile(commands.Cog):
     @commands.is_owner()
     async def font(self, ctx, *, text):
         await ctx.send(font(text))
+
+    @commands.command(name = "givegold")
+    async def give_gold(self, ctx, member : discord.Member, amount : int):
+        with database:
+            sender, _ = GlobalHuman.get_or_create(user_id = ctx.author.id)
+            if sender.gold < amount:
+                raise SendableException(ctx.translate("not_enough_gold"))
+            sendee, _ = GlobalHuman.get_or_create(user_id = member.id)
+
+            sender.gold -= amount
+            sendee.gold += amount
+            sendee.save()
+            sender.save()
+
+            asyncio.gather(ctx.send(ctx.translate("gold_sent")))
 
     @commands.command()
     async def scoreboard(self, ctx):
