@@ -16,7 +16,7 @@ import src.config as config
 from src.wrappers.openweathermap import OpenWeatherMapApi
 from src.wrappers.color_thief import ColorThief
 from src.models import Settings, Translation, database
-
+from src.discord.errors.base import SendableException
 
 def seconds_readable(seconds):
     fmt = "{delta.days} days {delta.hours} hours {delta.minutes} minutes {delta.seconds} seconds"
@@ -41,6 +41,7 @@ class Locus(commands.Bot):
         commands.errors.NoPrivateMessage,
         commands.errors.ConversionError,
         commands.errors.CommandOnCooldown,
+        SendableException
     )
 
     ignorables = \
@@ -156,6 +157,7 @@ class Locus(commands.Bot):
             "staff_communication",
             "assassins",
             "scene",
+            "pigeon"
         ]
 
         if True:
@@ -219,23 +221,18 @@ class Locus(commands.Bot):
         ctx.guild_color = self.get_dominant_color(ctx.guild)
 
     async def on_command_error(self, ctx, exception):
-
         if isinstance(exception, commands.errors.CommandOnCooldown):
             embed = Embed.error("You are on cooldown. Try again in " + seconds_readable(exception.retry_after))
-            return await ctx.send(embed = embed)
-        if isinstance(exception, self.sendables):
-            return await ctx.send(embed = Embed.error(str(exception)))
-        if isinstance(exception, self.ignorables):
-            return
-
-        if isinstance(exception, commands.errors.CommandInvokeError):
-            if isinstance(exception.original, Settings.DoesNotExist):
-                with database:
-                    Settings.get_or_create(guild_id = ctx.guild.id)
-                await ctx.reinvoke(restart = True)
-                return
-
-        raise exception
+            asyncio.gather(ctx.send(embed = embed))
+        elif isinstance(exception, self.sendables):
+            asyncio.gather(ctx.send(embed = Embed.error(str(exception))))
+        elif isinstance(exception, self.ignorables):
+            pass
+        elif isinstance(exception, commands.errors.CommandInvokeError):
+            if isinstance(exception.original, self.sendables):
+                asyncio.gather(ctx.send(embed = Embed.error(str(exception))))
+        else:
+            raise exception
 
     @property
     def guild(self):

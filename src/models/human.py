@@ -18,6 +18,14 @@ class GlobalHuman(BaseModel):
     date_of_birth         = peewee.DateField        (null = True)
     city                  = peewee.TextField        (null = True)
 
+    @property
+    def mention(self):
+        return f"<@{self.user_id}>"
+
+    @property
+    def pigeon(self):
+        return self.pigeons.first()
+
 class Human(BaseModel):
     user_id               = peewee.BigIntegerField  (null = False)
     guild_id              = peewee.BigIntegerField  (null = False)
@@ -131,9 +139,9 @@ class Human(BaseModel):
             values.append("🌡️ N/A")
 
         if self.gold is not None:
-            values.append(f"{emoji.emojize(':euro:')} {self.gold}")
+            values.append(f"{self.bot.gold_emoji} {self.gold}")
         elif show_all:
-            values.append(f"{emoji.emojize(':euro:')} N/A")
+            values.append(f"{self.bot.gold_emoji} N/A")
 
         if len(values) == 0:
             values.append("N/A")
