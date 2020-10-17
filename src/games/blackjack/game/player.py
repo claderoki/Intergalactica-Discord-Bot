@@ -52,8 +52,8 @@ class Player(BasePlayer):
         return {
             self.State.bust:       -self.bet,
             self.State.draw:       0,
-            self.State.blackjack:  self.bet * 2,
-            self.State.win:        self.bet,
+            self.State.blackjack:  self.bet * 4,
+            self.State.win:        self.bet * 2,
             self.State.lose:       -self.bet
         }[self.state]
 
