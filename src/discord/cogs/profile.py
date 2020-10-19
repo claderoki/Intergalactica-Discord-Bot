@@ -375,7 +375,8 @@ class Profile(commands.Cog):
 
     async def cog_before_invoke(self, ctx):
         attr_name = (ctx.command.root_parent or ctx.command).callback.__name__
-        ctx.attr_name = ctx.bot.translate(attr_name)
+        # ctx.attr_name = ctx.bot.translate(attr_name)
+        ctx.attr_name = attr_name
 
 
 
