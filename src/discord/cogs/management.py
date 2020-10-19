@@ -1,13 +1,14 @@
 import re
 import json
 import io
+import asyncio
 
 import requests
 import discord
 from discord.ext import commands
 
 import src.config as config
-from src.models import Settings, EmojiUsage, NamedEmbed, Translation, Locale, database
+from src.models import Settings, EmojiUsage, NamedEmbed, NamedChannel, Translation, Locale, database
 from src.discord.helpers.waiters import *
 
 emoji_match = lambda x : [int(x) for x in re.findall(r'<a?:[a-zA-Z0-9\_]+:([0-9]+)>', x)]
@@ -45,18 +46,13 @@ class Management(discord.ext.commands.Cog):
 
         emoji = payload.emoji
 
-        if payload.member.bot:
-            return
-
-        if emoji.id is None:
+        if payload.member.bot or emoji.id is None:
             return
 
         member = payload.member
 
-        if emoji not in member.guild.emojis:
-            return
-
-        increment_emoji(member.guild, emoji)
+        if emoji in member.guild.emojis:
+            increment_emoji(member.guild, emoji)
 
     @commands.command()
     async def emojis(self, ctx, order = "least"):
@@ -80,13 +76,27 @@ class Management(discord.ext.commands.Cog):
 
             await ctx.send(embed = embed)
 
-    @commands.command()
-    @commands.is_owner()
-    async def selfie(self, ctx):
-        await ctx.message.delete()
-        response = requests.get("http://www.mwctoys.com/images2/review_ssc3po_3.jpg", stream=True)
-        f = io.BytesIO(response.raw.read())
-        msg = await ctx.send(file=discord.File(fp=f, filename="selfie.jpg", spoiler = True))
+    # @commands.command()
+    # @commands.is_owner()
+    # async def selfie(self, ctx):
+    #     await ctx.message.delete()
+    #     response = requests.get("http://www.mwctoys.com/images2/review_ssc3po_3.jpg", stream=True)
+    #     f = io.BytesIO(response.raw.read())
+    #     msg = await ctx.send(file=discord.File(fp=f, filename="selfie.jpg", spoiler = True))
+
+    @commands.has_guild_permissions(administrator = True)
+    @commands.group()
+    async def channel(self, ctx):
+        pass
+
+    @channel.command(name = "set")
+    async def channel_set(self, ctx, name : str, channel : discord.TextChannel):
+        with database:
+            named_channel, created = NamedChannel.get_or_create(name = name, settings = ctx.settings)
+            named_channel.channel_id = channel.id
+            named_channel.save()
+
+        asyncio.gather(ctx.send("OK"))
 
     @commands.is_owner()
     @commands.command()
@@ -109,12 +119,12 @@ class Management(discord.ext.commands.Cog):
             try:
                 Translation.create(message_key = key, value = value)
             except:
-                await ctx.error()
+                asyncio.gather(ctx.error())
             else:
-                await ctx.success()
+                asyncio.gather(ctx.success())
 
     @translation.command()
-    async def keys(self, ctx, locale : Locale):
+    async def keys(self, ctx, locale : Locale = "en_US"):
         missing_translations = self.bot.missing_translations.get(locale.name, [])
         with database:
             for key in [x for x in missing_translations]:
@@ -127,7 +137,7 @@ class Management(discord.ext.commands.Cog):
                     Translation.create(message_key = key, value = value, locale = locale)
                     missing_translations.remove(key)
 
-            await ctx.send("OK, created")
+            asyncio.gather(ctx.send(ctx.translate("keys_created")))
 
     @translation.command()
     async def fromen(self, ctx, locale : Locale):
@@ -149,10 +159,7 @@ class Management(discord.ext.commands.Cog):
                     else:
                         Translation.create(message_key = translation.message_key, value = value, locale = locale)
 
-            await ctx.send("OK, created")
-
-
-
+            asyncio.gather(ctx.send(ctx.translate("translations_created")))
 
     @commands.command()
     @commands.has_guild_permissions(administrator = True)

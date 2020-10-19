@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands, tasks
 
 import src.config as config
-from src.models import Scene, Scenario, GlobalHuman, Fight, Pigeon, Bet, database
+from src.models import Scene, Scenario, GlobalHuman, Fight, Pigeon, Bet, Settings, database
 from src.discord.helpers.waiters import *
 from src.games.game.base import DiscordIdentity
 from src.discord.errors.base import SendableException
@@ -17,19 +17,15 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         self.bot = bot
         self.message_counts = {}
 
-    guilds = \
-    {
-        742146159711092757: 742163352712642600,
-        761624318291476482:766643537269751849
-    }
-
     def get_base_embed(self, guild):
         embed = discord.Embed(color = self.bot.get_dominant_color(guild))
         embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/705242963550404658/766680730457604126/pigeon_tiny.png")
         return embed
 
     def get_pigeon_channel(self, guild):
-        return guild.get_channel(self.guilds[guild.id])
+        with database:
+            settings, _ = Settings.get_or_create(guild_id = guild.id)
+        return settings.get_channel("pigeon")
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -41,12 +37,10 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             return
 
         guild = message.guild
-        if guild.id not in self.guilds:
-            return
+        channel = self.get_pigeon_channel(guild)
+
         if guild.id not in self.message_counts:
             self.message_counts[guild.id] = 0
-
-        channel = self.get_pigeon_channel(guild)
 
         if message.channel.id == channel.id:
             self.message_counts[guild.id] += 1
@@ -94,7 +88,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     async def pigeon_help(self, ctx):
         embed_data = {
             "title": "⋆ Broken Pigeon-Phone ⋆",
-            "description": "**__Money Generator__**\n• /pigeon feed\n• /pigeon chase\n• /pigeon yell\n• /pigeon fish\n\n**__Interactive__**\n• /pigeon claim: Droppings spawn randomly. Input claim to collect it.\n• /pigeon buy: Purchase a pigeon for Pigeon Fight.\n• /pigeon fight: \n",
+            "description": "**__Money Generator__**\n• /pigeon feed\n• /pigeon chase\n• /pigeon yell\n• /pigeon fish\n\n**__Interactive__**\n• /pigeon claim: Droppings spawn randomly. Input claim to collect it.\n• /pigeon buy: Purchase a pigeon for the pigeon Fight.\n• /pigeon challenge @mention\n",
             "footer": {
                 "text": "There is a 4h cooldown for all Money Generator commands.",
                 "icon_url": "https://cdn.discordapp.com/attachments/705242963550404658/766661638224216114/pigeon.png"
@@ -104,12 +98,6 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed = discord.Embed.from_dict(embed_data)
         embed.color = ctx.guild_color
         asyncio.gather(ctx.send(embed = embed))
-
-    # @commands.command()
-    # async def wot(self, ctx):
-    #     waiter = StrWaiter(ctx, prompt = f"type some shit", max_words = None)
-    #     value = await waiter.wait()
-    #     asyncio.gather(ctx.send("OK"))
 
     @commands.cooldown(1, (3600 * 4), type=commands.BucketType.user)
     @pigeon.command(name = "feed")
@@ -137,8 +125,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             global_human, _ = GlobalHuman.get_or_create(user_id = ctx.author.id)
             pigeon = global_human.pigeon
             if pigeon is not None:
-                # raise SendableException("pigeon_ale")
-                asyncio.gather(ctx.send(f"You already have a lovely pigeon named **{pigeon.name}**!"))
+                # asyncio.gather(ctx.send(f"You already have a lovely pigeon named **{pigeon.name}**!"))
+                asyncio.gather(ctx.send(ctx.translate("pigeon_already_purchased").format(name = pigeon.name)))
                 return
 
             prompt = lambda x : ctx.translate(f"pigeon_{x}_prompt")
@@ -153,8 +141,10 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             identity.remove_points(pigeon_price)
             asyncio.gather(ctx.send(ctx.translate("pigeon_purchased")))
 
-    @pigeon.command(name = "challenge")
+    @pigeon.command(name = "challenge", aliases = ["fight"])
     async def pigeon_challenge(self, ctx, member : discord.Member):
+        channel = self.get_pigeon_channel(ctx.guild)
+
         with database:
             challenger, _ = GlobalHuman.get_or_create(user_id = ctx.author.id)
             challengee, _ = GlobalHuman.get_or_create(user_id = member.id)
@@ -176,8 +166,11 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             fight.challengee = challengee
             fight.save()
 
-        channel = self.get_pigeon_channel(ctx.guild)
-        await channel.send(f"{challenger.mention} has challenged {challengee.mention} to a pigeon fight.")
+        embed = self.get_base_embed(ctx.guild)
+        embed.title = "Pigeon Challenge"
+        embed.description = f"{challenger.mention} has challenged {challengee.mention} to a pigeon fight."
+        embed.set_footer(text = f"use '{ctx.prefix}pigeon accept' to accept") 
+        asyncio.gather(channel.send(embed = embed))
 
     @pigeon.command(name = "accept")
     async def pigeon_accept(self, ctx):
@@ -225,18 +218,14 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             Bet.create(fight = fight, global_human = global_human)
             asyncio.gather(ctx.send(ctx.translate("bet_created")))
 
-
     @tasks.loop(minutes=1)
     async def poller(self):
         with database:
             query = Fight.select()
             query = query.where(Fight.ended == False)
             query = query.where(Fight.accepted == True)
-            # query = query.where(Fight.start_date <= datetime.datetime.utcnow())
+            query = query.where(Fight.start_date <= datetime.datetime.utcnow())
             for fight in query:
-                if not fight.start_date_passed:
-                    continue
-
                 won = random.randint(0, 1) == 0
                 guild = fight.guild
                 channel = self.get_pigeon_channel(guild)
@@ -264,8 +253,6 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                 fight.won = won
                 fight.ended = True
                 fight.save()
-
-
 
 def setup(bot):
     bot.add_cog(PigeonCog(bot))
