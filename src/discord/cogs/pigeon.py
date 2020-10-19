@@ -218,7 +218,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             Bet.create(fight = fight, global_human = global_human)
             asyncio.gather(ctx.send(ctx.translate("bet_created")))
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(seconds=30)
     async def poller(self):
         with database:
             query = Fight.select()
