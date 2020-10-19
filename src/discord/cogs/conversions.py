@@ -10,7 +10,7 @@ measurements = [
     ("c", "f"),
     ("kg", "lb"),
     ("g", "oz"),
-    ("cm", "inch"),
+    ("cm", "inch", "ft"),
     ("ml", "cup"),
     ("km", "mi"),
     ("m", "yd", "ft"),
