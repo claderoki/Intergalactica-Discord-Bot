@@ -128,9 +128,13 @@ class Human(BaseModel):
             if timezone.country_code:
                 flag = "".join([emojize(f":regional_indicator_symbol_letter_{x}:") for x in timezone.country_code.lower()])
                 name += " "+flag
-
         elif show_all:
             values.append("🕑 N/A")
+
+        if self.global_human.pigeon is not None:
+            values.append("<:pigeon:767362416941203456> " + self.global_human.pigeon.name)
+        elif show_all:
+            values.append("<:pigeon:767362416941203456> N/A")
 
         if self.city is not None:
             city = self.bot.owm_api.by_q(self.city)
