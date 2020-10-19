@@ -125,8 +125,6 @@ class Profile(commands.Cog):
 
         embed.description = "```md\n" + ( "\n".join(lines) ) + "```"
 
-        print(embed.description)
-
         await ctx.send(embed = embed)
 
     @commands.Cog.listener()
