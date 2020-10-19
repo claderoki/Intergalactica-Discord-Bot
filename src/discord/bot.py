@@ -15,7 +15,7 @@ from dateutil.relativedelta import relativedelta
 import src.config as config
 from src.wrappers.openweathermap import OpenWeatherMapApi
 from src.wrappers.color_thief import ColorThief
-from src.models import Settings, Translation, database
+from src.models import Settings, Translation, NamedChannel, database
 from src.discord.errors.base import SendableException
 
 def seconds_readable(seconds):
@@ -201,14 +201,13 @@ class Locus(commands.Bot):
         await message.add_reaction("⬇️")
 
     async def before_any_command(self, ctx):
-
         if ctx.guild is None:
             locale_name = "en_US"
         else:
             if ctx.guild.id not in self._locales:
                 with database:
-                    ctx.settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
-                    self._locales[ctx.guild.id] = ctx.settings.locale.name
+                    settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
+                    self._locales[ctx.guild.id] = settings.locale.name
 
         ctx.translate = lambda x: self.translate(x, self._locales[ctx.guild.id])
 
@@ -231,6 +230,8 @@ class Locus(commands.Bot):
         elif isinstance(exception, commands.errors.CommandInvokeError):
             if isinstance(exception.original, self.sendables):
                 asyncio.gather(ctx.send(embed = Embed.error(str(exception.original))))
+            else:
+                raise exception
         else:
             raise exception
 
