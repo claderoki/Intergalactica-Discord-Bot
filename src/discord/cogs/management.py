@@ -92,7 +92,8 @@ class Management(discord.ext.commands.Cog):
     @channel.command(name = "set")
     async def channel_set(self, ctx, name : str, channel : discord.TextChannel):
         with database:
-            named_channel, created = NamedChannel.get_or_create(name = name, settings = ctx.settings)
+            settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
+            named_channel, created = NamedChannel.get_or_create(name = name, settings = settings)
             named_channel.channel_id = channel.id
             named_channel.save()
 
