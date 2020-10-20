@@ -17,6 +17,7 @@ class GlobalHuman(BaseModel):
     timezone              = peewee.TextField        (null = True)
     date_of_birth         = peewee.DateField        (null = True)
     city                  = peewee.TextField        (null = True)
+    country_code          = peewee.TextField        (null = True)
 
     @property
     def mention(self):
