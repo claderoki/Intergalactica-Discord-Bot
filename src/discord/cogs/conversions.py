@@ -59,7 +59,7 @@ class Conversions(discord.ext.commands.Cog):
     @discord.ext.commands.Cog.listener()
     async def on_message(self, message):
 
-        if message.author.bot or not self.production:
+        if message.author.bot or not self.bot.production:
             return
 
 
