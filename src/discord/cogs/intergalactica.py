@@ -54,7 +54,7 @@ class Intergalactica(commands.Cog):
         await channel.send(content = content, **kwargs)
 
     async def on_member_leave_or_join(self, member, type):
-        if not self.bot.production:
+        if not self.bot.production or member.guild.id != self.guild_id:
             return
         welcome_channel = member.guild.system_channel
         text = self.bot.translate("member_" + type)
