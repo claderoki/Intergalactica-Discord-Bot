@@ -176,7 +176,7 @@ class Profile(commands.Cog):
 
                 await ctx.send(embed = embed)
 
-    @profile.command(named = "clear", aliases = ["reset"])
+    @profile.command(name = "clear", aliases = ["reset"])
     async def profile_clear(self, ctx):
         with database:
             human, _ = GlobalHuman.get_or_create(user_id = ctx.author.id)
