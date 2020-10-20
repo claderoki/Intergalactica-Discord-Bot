@@ -17,7 +17,6 @@ class Timezone:
         self.country_code = self._get_country_code()
         self.country = self.geolocator.geocode(self.country_code, language="en")
 
-        
     def _get_country_code(self):
         for code in pytz.country_timezones:
             if self.name in pytz.country_timezones[code]:

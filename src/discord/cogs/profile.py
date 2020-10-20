@@ -9,6 +9,7 @@ import emoji
 
 from src.models import Human, GlobalHuman, database
 from src.discord.helpers.converters import convert_to_date
+from src.discord.helpers.waiters import *
 import src.config as config
 from src.utils.timezone import Timezone
 from src.discord.errors.base import SendableException
@@ -51,6 +52,21 @@ class WeirdFont:
 
 font = WeirdFont.italica()
 
+class CityWaiter(StrWaiter):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, max_words = None, **kwargs)
+
+    def convert(self, argument):
+        if argument.isdigit():
+            city = self.bot.owm_api.by_id(argument)
+        else:
+            city = self.bot.owm_api.by_q(*argument.split(","))
+
+        if city is None:
+            raise ConversionFailed("City was not found.")
+
+        return city
+
 class Profile(commands.Cog):
 
     def __init__(self, bot):
@@ -68,6 +84,9 @@ class Profile(commands.Cog):
 
     @commands.command(name = "givegold")
     async def give_gold(self, ctx, member : discord.Member, amount : int):
+        if member.id == ctx.author.id:
+            raise SendableException(ctx.translate("cannot_send_gold_to_self"))
+
         with database:
             sender, _ = GlobalHuman.get_or_create(user_id = ctx.author.id)
             if sender.gold < amount:
@@ -143,31 +162,75 @@ class Profile(commands.Cog):
                 human.last_experience_given = datetime.datetime.utcnow()
                 human.save()
 
-                # rank_role = human.rank_role_should_have
-
-                # if not rank_role:
-                #     return
-
-                # roles_to_remove = [x.role for x in RankRole.select().where(RankRole.guild_id == message.guild.id) if x.role in message.author.roles and x.role != rank_role.role]
-                # await message.author.remove_roles(*roles_to_remove)
-
-                # if rank_role.role not in message.author.roles:
-                #     await message.author.add_roles(rank_role.role)
-                #     await message.channel.send(self.bot.translate("new_rank_achieved").format(role = rank_role.role))
-
-
-    @commands.command()
+    @commands.group()
     async def profile(self, ctx, members : commands.Greedy[discord.Member]):
-        if ctx.author not in members:
-            members.insert(0, ctx.author)
+        if ctx.invoked_subcommand is None:
+            if ctx.author not in members:
+                members.insert(0, ctx.author)
+
+            with database:
+                embed = discord.Embed(color = ctx.author.color)
+                for member in members:
+                    human, _ = Human.get_or_create_for_member(member)
+                    embed.add_field(**human.get_embed_field(show_all = len(members) > 1))
+
+                await ctx.send(embed = embed)
+
+    @profile.command(named = "clear", aliases = ["reset"])
+    async def profile_clear(self, ctx):
+        with database:
+            human, _ = GlobalHuman.get_or_create(user_id = ctx.author.id)
+            human.timezone      = None
+            human.city          = None
+            human.country_code  = None
+            human.date_of_birth = None
+            human.save()
+            await ctx.send(ctx.translate("profile_cleared"))
+
+    @profile.command(name = "setup")
+    async def profile_setup(self, ctx):
+        prompt = lambda x : ctx.translate(f"profile_{x}_prompt")
 
         with database:
-            embed = discord.Embed(color = ctx.author.color)
-            for member in members:
-                human, _ = Human.get_or_create_for_member(member)
-                embed.add_field(**human.get_embed_field(show_all = len(members) > 1))
+            human, _ = GlobalHuman.get_or_create(user_id = ctx.author.id)
 
-            await ctx.send(embed = embed)
+            waiter = CityWaiter(ctx, prompt = prompt("city"), skippable = True)
+            try:
+                city = await waiter.wait()
+            except Skipped:
+                pass
+            else:
+                human.city = city.name
+
+            timezone_set = False
+            waiter = CountryWaiter(ctx, prompt = prompt("country"), skippable = True)
+            try:
+                country = await waiter.wait()
+            except Skipped:
+                pass
+            else:
+                human.country_code = country.alpha_2
+                if human.city is not None:
+                    city = self.bot.owm_api.by_q(human.city, human.country_code)
+                    human.timezone = str(city.timezone)
+                    await ctx.send(f"Timezone set to {human.timezone}")
+                    timezone_set = True
+
+            if not timezone_set:
+                waiter = TimezoneWaiter(ctx, prompt = prompt("timezone"), skippable = True)
+                try:
+                    human.timezone = await waiter.wait()
+                except Skipped:
+                    pass
+
+            waiter = DateWaiter(ctx, prompt = prompt("date_of_birth"), skippable = True)
+            try:
+                human.date_of_birth = await waiter.wait()
+            except Skipped:
+                pass
+
+            human.save()
+            await ctx.send(ctx.translate("profile_setup"))
 
     @commands.group(name="dateofbirth")
     async def date_of_birth(self, ctx):
@@ -176,7 +239,6 @@ class Profile(commands.Cog):
     @date_of_birth.command(name="=", aliases=["add"], usage = (datetime.date.today() - datetime.timedelta(days=(365 * 20))) )
     async def assign_date_of_birth(self, ctx, date_of_birth : convert_to_date):
         """Adds a date of birth"""
-
         if date_of_birth >= datetime.date.today():
             return await ctx.send(ctx.bot.translate("date_cannot_be_in_future"))
 
