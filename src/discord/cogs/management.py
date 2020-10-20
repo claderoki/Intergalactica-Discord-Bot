@@ -125,8 +125,10 @@ class Management(discord.ext.commands.Cog):
                 asyncio.gather(ctx.success())
 
     @translation.command()
-    async def keys(self, ctx, locale : Locale = "en_US"):
-        missing_translations = self.bot.missing_translations.get(locale.name, [])
+    async def keys(self, ctx):
+        locale = "en_US"
+
+        missing_translations = self.bot.missing_translations.get(locale, [])
         with database:
             for key in [x for x in missing_translations]:
                 waiter = StrWaiter(ctx, prompt = f"Translate: {key}", max_words = None, skippable = True)
