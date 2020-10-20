@@ -37,7 +37,10 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             return
 
         guild = message.guild
-        channel = self.get_pigeon_channel(guild)
+        try:
+            channel = self.get_pigeon_channel(guild)
+        except SendableException:
+            return
 
         if guild.id not in self.message_counts:
             self.message_counts[guild.id] = 0
