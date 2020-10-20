@@ -30,7 +30,8 @@ for equivalents in measurements:
 units = \
 {
     "f" : "°F",
-    "c" : "°C"
+    "c" : "°C",
+    "inch" : '"'
 }
 
 def clean_measurement(value, unit = None):
@@ -45,6 +46,7 @@ def clean_measurement(value, unit = None):
 all_units = list(other_measurements.keys())
 all_units.append("°f")
 all_units.append("°c")
+all_units.append('"')
 
 class Conversions(discord.ext.commands.Cog):
     measures = (Weight, Temperature, Distance)
@@ -57,8 +59,9 @@ class Conversions(discord.ext.commands.Cog):
     @discord.ext.commands.Cog.listener()
     async def on_message(self, message):
 
-        if message.author.bot or not self.bot.production:
+        if message.author.bot or not self.production:
             return
+
 
         if "http" in message.content:
             return
@@ -71,7 +74,7 @@ class Conversions(discord.ext.commands.Cog):
             measurements = []
             for match in matches:
                 value = float(match[0])
-                unit = match[-1].replace("°", "")
+                unit = match[-1].replace("°", "").replace('"', "in")
                 measurement = guess(value, unit, measures = self.measures)
                 measurements.append(measurement)
 
