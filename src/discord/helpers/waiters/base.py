@@ -2,7 +2,12 @@ import asyncio
 import datetime
 import re
 
+import pytz
+import pycountry
 import discord
+
+import src.config as config
+from src.discord.helpers.embed import Embed
 
 class ConversionFailed(Exception): pass
 class Skipped(Exception): pass
@@ -10,23 +15,14 @@ class Skipped(Exception): pass
 def _get_id_match(argument):
     return re.compile(r'([0-9]{15,21})$').match(argument)
 
-
-
-# class ConversionInstruction:
-#     def __init__(self):
-#         pass
-
-#     def __get__(self, instance, cls):
-#         pass
-
-#     def __set__(self, instance,  value):
-#         pass
-
 class Waiter:
     __slots__ = ("verbose")
     def __init__(self, verbose = True):
         self.verbose = verbose
 
+    @property
+    def bot(self):
+        return config.bot
 
 class MessageWaiter(Waiter):
     __slots__ = ("ctx","prompt", "end_prompt", "timeout", "members", "channels", "converted", "max_words", "skippable", "skip_command")
@@ -94,7 +90,7 @@ class MessageWaiter(Waiter):
         try:
             self.converted = self.convert(" ".join(words))
         except ConversionFailed as e:
-            self._send(message.channel, e)
+            self._send(message.channel, embed = Embed.error(str(e) + " Try again."))
             return False
 
         return True
@@ -187,7 +183,6 @@ class FloatWaiter(IntWaiter):
         except ValueError:
             raise ConversionFailed("Message needs to be a number.")
 
-
 class StrWaiter(MessageWaiter):
     __slots__ = ("allowed_words", "case_sensitive", "min_length", "max_length")
 
@@ -219,6 +214,30 @@ class StrWaiter(MessageWaiter):
     def convert(self, argument):
         return argument
 
+class TimezoneWaiter(StrWaiter):
+    def __init__(self, ctx, **kwargs):
+        super().__init__(ctx, **kwargs)
+
+    def convert(self, argument):
+        return pytz.timezone(argument)
+
+class CountryWaiter(StrWaiter):
+    def __init__(self, ctx, **kwargs):
+        super().__init__(ctx, min_length = 2, max_length = 3, **kwargs)
+
+    @property
+    def instructions(self):
+        return "NL / NLD"
+
+    def convert(self, argument):
+        if len(argument) not in (2,3):
+            raise ConversionFailed("Message needs to be a country code.")
+
+        country = pycountry.countries.get(**{f"alpha_{len(argument)}": argument.upper()})
+        if country is None:
+            raise ConversionFailed("Country not found.")
+
+        return country
 
 class RangeWaiter(StrWaiter):
     def __init__(self, ctx, **kwargs):
@@ -233,7 +252,7 @@ class RangeWaiter(StrWaiter):
             min, max = [int(x) for x in argument.split()]
             return range(min, max)
         except:
-            raise ConversionFailed("Message needs to be a range")
+            raise ConversionFailed("Message needs to be a range.")
 
 class EnumWaiter(StrWaiter):
     def __init__(self, ctx, enum, **kwargs):
@@ -252,7 +271,7 @@ class EnumWaiter(StrWaiter):
         try:
             return self.enum[argument.lower()]
         except:
-            raise ConversionFailed("Message needs to be yes/no")
+            raise ConversionFailed("Message not valid.")
 
 
 class BoolWaiter(StrWaiter):
@@ -272,7 +291,7 @@ class BoolWaiter(StrWaiter):
         elif lowered in ("no", "n"):
             return False
 
-        raise ConversionFailed("Message needs to be yes/no")
+        raise ConversionFailed("Message needs to be yes/no.")
 
 
 class MemberWaiter(MessageWaiter):
@@ -287,18 +306,7 @@ class MemberWaiter(MessageWaiter):
             id = int(match.group(1))
             return self.ctx.guild.get_member(id)
 
-        raise ConversionFailed("Message needs to be a @mention")
-
-    # def check(self, message):
-    #     if not super().check(message):
-    #         return False
-
-    #     if len(message.mentions) == 0:
-    #         return False
-        
-    #     return True
-
-
+        raise ConversionFailed("Message needs to be a @mention.")
 
 class TextChannelWaiter(MessageWaiter):
 
@@ -312,7 +320,7 @@ class TextChannelWaiter(MessageWaiter):
             id = int(match.group(1))
             return self.ctx.guild.get_channel(id)
 
-        raise ConversionFailed("Message needs to be a #mention")
+        raise ConversionFailed("Message needs to be a #mention.")
 
 
 class RoleWaiter(MessageWaiter):
@@ -327,7 +335,7 @@ class RoleWaiter(MessageWaiter):
             result = discord.utils.get(guild._roles.values(), name=argument)
 
         if result is None:
-            raise ConversionFailed("Role not found")
+            raise ConversionFailed("Role not found.")
         return result
 
 
@@ -353,7 +361,7 @@ class TimeWaiter(MessageWaiter):
         try:
             hours, minutes, seconds = [int(x) for x in argument.split(":")]
         except:
-            raise ConversionFailed("Needs to be HH:MM:SS")
+            raise ConversionFailed("Needs to be HH:MM:SS.")
 
         return datetime.time(hours, minutes, seconds)
 
@@ -370,6 +378,10 @@ class DateWaiter(StrWaiter):
         self.before = before
         self.after  = after
 
+    @property
+    def instructions(self):
+        return "YYYY-MM-DD"
+
     def convert(self, argument):
         try:
             year,month,day = argument.split("-")
@@ -378,7 +390,7 @@ class DateWaiter(StrWaiter):
             day = day.zfill(2)
             return datetime.datetime.strptime(year + month + day,"%Y%m%d").date()
         except ValueError:
-            raise ConversionFailed("Message needs to be a date: YYYY-MM-DD")
+            raise ConversionFailed("Message needs to be a date: YYYY-MM-DD.")
 
 
     def check(self, message):
@@ -405,7 +417,7 @@ class TimeDeltaWaiter(MessageWaiter):
         amount, time = argument.split()
 
         if not amount.isdigit():
-            raise ConversionFailed("Needs to be a number. example: **2** hours")
+            raise ConversionFailed("Needs to be a number. example: **2** hours.")
 
         amount = int(amount)
 
@@ -426,7 +438,7 @@ class TimeDeltaWaiter(MessageWaiter):
 
 
         if time not in possible_values:
-            raise ConversionFailed("Time can only be: " + ", ".join(possible_values) + "\nExample: 2 **days**")
+            raise ConversionFailed("Time can only be: " + ", ".join(possible_values) + "\nExample: 2 **days**.")
 
         return datetime.timedelta(**{time : amount })
 
