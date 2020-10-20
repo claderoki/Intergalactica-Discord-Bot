@@ -212,8 +212,7 @@ class Profile(commands.Cog):
                 human.country_code = country.alpha_2
                 if human.city is not None:
                     city = self.bot.owm_api.by_q(human.city, human.country_code)
-                    human.timezone = str(city.timezone)
-                    await ctx.send(f"Timezone set to {human.timezone}")
+                    human.timezone = str(city.timezone))
                     timezone_set = True
 
             if not timezone_set:
