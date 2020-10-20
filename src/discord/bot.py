@@ -17,6 +17,7 @@ from src.wrappers.openweathermap import OpenWeatherMapApi
 from src.wrappers.color_thief import ColorThief
 from src.models import Settings, Translation, NamedChannel, database
 from src.discord.errors.base import SendableException
+from src.discord.helpers.embed import Embed
 
 def seconds_readable(seconds):
     fmt = "{delta.days} days {delta.hours} hours {delta.minutes} minutes {delta.seconds} seconds"
@@ -265,17 +266,3 @@ class Locus(commands.Bot):
             except Translation.DoesNotExist:
                 missing_translations.add(key)
                 return key
-
-class Embed:
-    @classmethod
-    def warning(cls, message):
-        return discord.Embed( description = message, color = discord.Color.red() )
-
-    @classmethod
-    def error(cls, message):
-        return discord.Embed( description = message, color = discord.Color.red() )
-
-
-    @classmethod
-    def success(cls, message):
-        return discord.Embed( description = message, color = discord.Color.green() )
