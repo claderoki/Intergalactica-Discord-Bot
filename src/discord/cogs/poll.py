@@ -144,8 +144,6 @@ class PollCog(commands.Cog, name = "Poll"):
 
         await ctx.send("OK")
 
-
-
     @poll_group.command(name = "create")
     async def create_poll(self, ctx, template_name):
         prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
