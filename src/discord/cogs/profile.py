@@ -146,21 +146,21 @@ class Profile(commands.Cog):
 
         await ctx.send(embed = embed)
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if message.author.bot or not message.guild:
-            return
+    # @commands.Cog.listener()
+    # async def on_message(self, message):
+    #     if message.author.bot or not message.guild:
+    #         return
 
-        if message.channel.name.lower() in ("votes", "suggestions"):
-            await self.bot.vote_for(message)
+    #     if message.channel.name.lower() in ("votes", "suggestions"):
+    #         await self.bot.vote_for(message)
 
-        with database:
-            human, _ = Human.get_or_create_for_member(message.author)
+    #     with database:
+    #         human, _ = Human.get_or_create_for_member(message.author)
 
-            if human.is_eligible_for_xp:
-                human.experience += random.randint(config.min_xp, config.max_xp)
-                human.last_experience_given = datetime.datetime.utcnow()
-                human.save()
+    #         if human.is_eligible_for_xp:
+    #             human.experience += random.randint(config.min_xp, config.max_xp)
+    #             human.last_experience_given = datetime.datetime.utcnow()
+    #             human.save()
 
     @commands.group()
     async def profile(self, ctx, members : commands.Greedy[discord.Member]):
