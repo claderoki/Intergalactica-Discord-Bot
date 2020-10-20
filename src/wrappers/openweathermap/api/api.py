@@ -31,7 +31,6 @@ class OpenWeatherMapApi:
 
 
     def call(self, params):
-        
         url = self.url
 
         req = requests.get(url, params = params)
@@ -72,13 +71,3 @@ class OpenWeatherMapApi:
             params["units"] = unit.value
 
         return self.call(params)
-
-
-
-    # def test(self):
-    #     url = "https://samples.openweathermap.org/data/2.5/find?q=Munstergeleen&appid=ab9a9e95335043c2afb67f9a576c38b4"
-
-
-    #     req = requests.get(url)
-
-    #     print(req.json())
