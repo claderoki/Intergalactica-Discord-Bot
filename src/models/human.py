@@ -126,11 +126,12 @@ class Human(BaseModel):
             timezone = Timezone(self.timezone)
             time = str(timezone.current_time.strftime('%H:%M'))
             values.append(f"🕑 {time}")
-            if timezone.country_code:
-                flag = "".join([emojize(f":regional_indicator_symbol_letter_{x}:") for x in timezone.country_code.lower()])
-                name += " "+flag
         elif show_all:
             values.append("🕑 N/A")
+
+        if self.global_human.country_code:
+            flag = "".join([emojize(f":regional_indicator_symbol_letter_{x}:") for x in self.global_human.country_code.lower()])
+            name += " " + flag
 
         if self.global_human.pigeon is not None:
             values.append("<:pigeon:767362416941203456> " + self.global_human.pigeon.name)
