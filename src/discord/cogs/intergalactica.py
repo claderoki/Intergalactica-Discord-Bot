@@ -46,6 +46,7 @@ class Intergalactica(commands.Cog):
         self.guild = self.bot.get_guild(self.guild_id)
         self.bot.get_dominant_color(self.guild)
         if not self.bot.production:
+            await asyncio.sleep( (60 * 60) * 3 )
             self.poller.start()
 
 
