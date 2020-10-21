@@ -33,7 +33,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot or not self.bot.production:
+        if message.author.bot or not self.bot.production or message.guild is None:
             return
 
         guild = message.guild
