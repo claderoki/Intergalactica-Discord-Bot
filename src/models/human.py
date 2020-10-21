@@ -139,7 +139,7 @@ class Human(BaseModel):
             values.append("<:pigeon:767362416941203456> N/A")
 
         if self.city is not None:
-            city = self.bot.owm_api.by_q(self.city)
+            city = self.bot.owm_api.by_q(self.city, self.global_human.country_code)
             values.append(f"{city.weather_infos[0].emoji} {city.temperature_info.temperature}{city.unit.symbol}")
         elif show_all:
             values.append("🌡️ N/A")
