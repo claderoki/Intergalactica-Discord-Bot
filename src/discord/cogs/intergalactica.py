@@ -67,7 +67,7 @@ class Intergalactica(commands.Cog):
             name = f"Welcome to {member.guild.name}!"
         else:
             name = "Farewell, Earthling."
-        embed.set_author(name = "", icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/768460504649695282/c3p0.png")
+        embed.set_author(name = name, icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/768460504649695282/c3p0.png")
         embed.description = text.format(member = member)
 
         await welcome_channel.send(embed = embed)
