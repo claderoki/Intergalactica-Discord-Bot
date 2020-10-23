@@ -7,50 +7,12 @@ import discord
 from discord.ext import commands, tasks
 import emoji
 
-from src.models import Human, GlobalHuman, database
+from src.models import Human, Earthling, database
 from src.discord.helpers.converters import convert_to_date
 from src.discord.helpers.waiters import *
 import src.config as config
 from src.utils.timezone import Timezone
 from src.discord.errors.base import SendableException
-
-class WeirdFont:
-    __slots__ = ("char_mapping",)
-
-    def __init__(self, alphabet):
-        self.char_mapping = {}
-        i = 0
-        for letter in (string.ascii_lowercase + string.ascii_uppercase):
-            self.char_mapping[letter] = alphabet[i]
-            i += 1
-
-    def __call__(self, text):
-        return self.convert(text)
-
-    def convert(self, text):
-        new = []
-        for letter in text:
-            if letter in self.char_mapping:
-                new.append(self.char_mapping[letter])
-            else:
-                new.append(letter)
-
-        return "".join(new)
-    
-
-    @classmethod
-    def from_full_alphabet(cls, text):
-        pass
-
-    @classmethod
-    def regional(cls):
-        return cls("🇦🇧🇨🇩🇪🇫🇬🇭🇯🇮🇰🇱🇲🇳🇴🇵🇶🇷🇸🇹🇺🇻🇼🇽🇾🇿")
-
-    @classmethod
-    def italica(cls):
-        return cls("𝘢𝘣𝘤𝘥𝘦𝘧𝘨𝘩𝘪𝘫𝘬𝘭𝘮𝘯𝘰𝘱𝘲𝘳𝘴𝘵𝘶𝘷𝘸𝘲𝘺𝘻𝘈𝘉𝘊𝘋𝘌𝘍𝘎𝘏𝘐𝘑𝘒𝘓𝘔𝘕𝘖𝘗𝘘𝘙𝘚𝘛𝘜𝘝𝘞𝘘𝘠𝘟")
-
-font = WeirdFont.italica()
 
 class CityWaiter(StrWaiter):
     def __init__(self, *args, **kwargs):
@@ -77,21 +39,16 @@ class Profile(commands.Cog):
     async def parrot(self, ctx, *, text):
         await ctx.send(text)
 
-    @commands.command()
-    @commands.is_owner()
-    async def font(self, ctx, *, text):
-        await ctx.send(font(text))
-
     @commands.command(name = "givegold")
     async def give_gold(self, ctx, member : discord.Member, amount : int):
         if member.id == ctx.author.id:
             raise SendableException(ctx.translate("cannot_send_gold_to_self"))
 
         with database:
-            sender, _ = GlobalHuman.get_or_create(user_id = ctx.author.id)
+            sender, _ = Human.get_or_create(user_id = ctx.author.id)
             if sender.gold < amount:
                 raise SendableException(ctx.translate("not_enough_gold"))
-            sendee, _ = GlobalHuman.get_or_create(user_id = member.id)
+            sendee, _ = Human.get_or_create(user_id = member.id)
 
             sender.gold -= amount
             sendee.gold += amount
@@ -102,23 +59,23 @@ class Profile(commands.Cog):
 
     @commands.command()
     async def scoreboard(self, ctx):
-        query = Human.select().where(Human.guild_id == ctx.guild.id)
-        query = query.join(GlobalHuman, on=(Human.global_human == GlobalHuman.id))
-        query = query.order_by(GlobalHuman.gold.desc())
+        query = Earthling.select().where(Earthling.guild_id == ctx.guild.id)
+        query = query.join(Human, on=(Earthling.human == Human.id))
+        query = query.order_by(Human.gold.desc())
         query = query.limit(10)
 
         embed = discord.Embed(title = "Scoreboard")
 
         with database:
-            humans = list(query)
+            earthlings = list(query)
 
         rows = []
         i = 0
-        for human in humans:
+        for earthling in earthlings:
             values = []
             values.append(f"{i+1}")
-            values.append(str(human.global_human.gold))
-            values.append(str(human.member))
+            values.append(str(earthling.human.gold))
+            values.append(str(earthling.member))
             rows.append(values)
             i += 1
 
@@ -146,22 +103,6 @@ class Profile(commands.Cog):
 
         await ctx.send(embed = embed)
 
-    # @commands.Cog.listener()
-    # async def on_message(self, message):
-    #     if message.author.bot or not message.guild:
-    #         return
-
-    #     if message.channel.name.lower() in ("votes", "suggestions"):
-    #         await self.bot.vote_for(message)
-
-    #     with database:
-    #         human, _ = Human.get_or_create_for_member(message.author)
-
-    #         if human.is_eligible_for_xp:
-    #             human.experience += random.randint(config.min_xp, config.max_xp)
-    #             human.last_experience_given = datetime.datetime.utcnow()
-    #             human.save()
-
     @commands.group()
     async def profile(self, ctx, members : commands.Greedy[discord.Member]):
         if ctx.invoked_subcommand is None:
@@ -171,7 +112,7 @@ class Profile(commands.Cog):
             with database:
                 embed = discord.Embed(color = ctx.author.color)
                 for member in members:
-                    human, _ = Human.get_or_create_for_member(member)
+                    human, _ = Human.get_or_create(user_id = member.id)
                     embed.add_field(**human.get_embed_field(show_all = len(members) > 1))
 
                 await ctx.send(embed = embed)
@@ -179,7 +120,7 @@ class Profile(commands.Cog):
     @profile.command(name = "clear", aliases = ["reset"])
     async def profile_clear(self, ctx):
         with database:
-            human, _ = GlobalHuman.get_or_create(user_id = ctx.author.id)
+            human, _ = Human.get_or_create(user_id = ctx.author.id)
             human.timezone      = None
             human.city          = None
             human.country_code  = None
@@ -192,7 +133,7 @@ class Profile(commands.Cog):
         prompt = lambda x : ctx.translate(f"profile_{x}_prompt")
 
         with database:
-            human, _ = GlobalHuman.get_or_create(user_id = ctx.author.id)
+            human, _ = Human.get_or_create(user_id = ctx.author.id)
 
             waiter = CityWaiter(ctx, prompt = prompt("city"), skippable = True)
             try:
@@ -242,18 +183,18 @@ class Profile(commands.Cog):
             return await ctx.send(ctx.bot.translate("date_cannot_be_in_future"))
 
         with database:
-            human, _ = Human.get_or_create_for_member(ctx.author)
-            human.global_human.date_of_birth = date_of_birth
-            human.global_human.save()
+            human, _ = Human.get_or_create(user_id = ctx.author.id)
+            human.date_of_birth = date_of_birth
+            human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = str(date_of_birth)))
 
     @date_of_birth.command(name = "delete")
     async def delete_date_of_birth(self, ctx):
         with database:
-            human, _ = Human.get_or_create_for_member(member)
-            human.global_human.date_of_birth = None
-            human.global_human.save()
+            human, _ = Human.get_or_create(user_id = ctx.author.id)
+            human.date_of_birth = None
+            human.save()
 
         await ctx.send(ctx.bot.translate("attr_removed".format(name = ctx.attr_name)))
 
@@ -267,9 +208,9 @@ class Profile(commands.Cog):
         """Adds a timezone"""
 
         with database:
-            human, _ = Human.get_or_create_for_member(ctx.author)
-            human.global_human.timezone = timezone.name
-            human.global_human.save()
+            human, _ = Human.get_or_create(user_id = ctx.author.id)
+            human.timezone = timezone.name
+            human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
 
@@ -279,9 +220,9 @@ class Profile(commands.Cog):
         timezone = Timezone.from_city(city)
 
         with database:
-            human, _ = Human.get_or_create_for_member(ctx.author)
-            human.global_human.timezone = timezone.name
-            human.global_human.save()
+            human, _ = Human.get_or_create(user_id = ctx.author.id)
+            human.timezone = timezone.name
+            human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
 
@@ -300,10 +241,10 @@ class Profile(commands.Cog):
         timezone = Timezone.from_hour(int(hour))
 
         with database:
-            human, _ = Human.get_or_create_for_member(ctx.author)
+            human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-            human.global_human.timezone = timezone.name
-            human.global_human.save()
+            human.timezone = timezone.name
+            human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
 
@@ -311,10 +252,10 @@ class Profile(commands.Cog):
     @timezone.command(name = "delete")
     async def delete_timezone(self, ctx):
         with database:
-            human, _ = Human.get_or_create_for_member(ctx.author)
+            human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-            human.global_human.global_human.timezone = None
-            human.global_human.save()
+            human.timezone = None
+            human.save()
 
         await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
 
@@ -328,7 +269,7 @@ class Profile(commands.Cog):
             kwargs["name"] = ctx.author.display_name
 
         with database:
-            human, _ = Human.get_or_create_for_member(ctx.author)
+            human, _ = Earthling.get_or_create_for_member(ctx.author)
             new = human.personal_role_id is None or human.personal_role is None
             if new:
                 first_human = Human.select().where(Human.personal_role_id != None).limit(1).first()
@@ -350,7 +291,7 @@ class Profile(commands.Cog):
     async def role(self, ctx):
         if ctx.guild.id == 742146159711092757:
             with database:
-                human, _ = Human.get_or_create_for_member(ctx.author)
+                human, _ = Earthling.get_or_create_for_member(ctx.author)
                 rank_role = human.rank_role
 
             allowed = rank_role is not None or ctx.author.premium_since is not None
@@ -375,11 +316,11 @@ class Profile(commands.Cog):
             await ctx.send("Too many people have this role.")
         else:
             for member in role.members:
-                human, _ = Human.get_or_create_for_member(ctx.author)
+                human, _ = Earthling.get_or_create_for_member(ctx.author)
                 human.personal_role_id = role.id
                 human.save()
 
-            await ctx.send("All done.")
+            await ctx.send(ctx.translate("roles_linked"))
 
     @role.command()
     async def name(self, ctx, *, name : str):
@@ -388,24 +329,24 @@ class Profile(commands.Cog):
     @role.command(name = "delete")
     async def delete_role(self, ctx):
         with database:
-            human, _ = Human.get_or_create_for_member(ctx.author)
-            if human.personal_role_id is not None:
-                role = human.personal_role
+            earthling, _ = Earthling.get_or_create_for_member(ctx.author)
+            if earthling.personal_role_id is not None:
+                role = earthling.personal_role
                 if role is not None:
                     await role.delete()
 
-                human.personal_role_id = None
-                human.save()
+                earthling.personal_role_id = None
+                earthling.save()
 
                 await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
 
     @role.command(name = "reset")
     @commands.is_owner()
     async def reset_roles(self, ctx):
-        for human in Human:
-            if human.personal_role_id is not None:
-                role = human.personal_role
-                if role is not None and human.member is None:
+        for earthling in Earthling:
+            if earthling.personal_role_id is not None:
+                role = earthling.personal_role
+                if role is not None and earthling.member is None:
                     await role.delete()
 
     @commands.group()
@@ -417,26 +358,25 @@ class Profile(commands.Cog):
         """Adds a city"""
 
         with database:
-            human, _ = Human.get_or_create_for_member(ctx.author)
+            human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-            human.global_human.city = city
-            human.global_human.save()
+            human.city = city
+            human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = city))
 
     @city.command(name = "delete")
     async def delete_city(self, ctx):
         with database:
-            human, _ = Human.get_or_create_for_member(ctx.author)
+            human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-            human.global_human.city = None
-            human.global_human.save()
+            human.city = None
+            human.save()
 
         await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
 
     async def cog_before_invoke(self, ctx):
         attr_name = (ctx.command.root_parent or ctx.command).callback.__name__
-        # ctx.attr_name = ctx.bot.translate(attr_name)
         ctx.attr_name = attr_name
 
 

@@ -48,7 +48,6 @@ class Timezone:
     @property
     def current_time(self):
         return datetime.datetime.now().astimezone(self.tz)
-        # return loc_dt.strftime('%H:%M')
 
     def __str__(self):
         return "Timezone object: name=" + self.name

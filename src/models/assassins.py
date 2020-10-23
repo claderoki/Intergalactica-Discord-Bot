@@ -19,20 +19,11 @@ def cache(func):
             self._cache = {}
 
         if name not in self._cache:
-            self._cache[name] = func.__get__()#(*args, **kwargs)
+            self._cache[name] = func.__get__()
 
         return self._cache[name]
 
     return wrapper
-
-# class Settings(BaseModel):
-#     guild_id       = peewee.BigIntegerField ()
-#     log_channel_id = peewee.BigIntegerField ()
-
-#     @property
-#     def log_channel(self):
-#         return self.bot.get_channel(self.log_channel_id)
-
 
 class Leak(BaseModel):
     class Meta:
@@ -55,23 +46,16 @@ class Game(BaseModel):
     initial_players_at_round_start = peewee.IntegerField    (null = True)
     cycle_start                    = peewee.DateTimeField   (null = True)
 
-    # @property
-    # def base_embed(self):
-    #     embed = discord.Embed(color = self.bot.get_dominant_color(self.guild))
-
-
     @property
     def started(self):
         return self.cycle_count > 0 and self.round_count > 0
 
     @property
     def final_round(self):
-        # return False
         return len(self.living_players) <= self.players_left_for_final_round
 
     @property
     def living_players(self):
-        # return Player.select().where((Player.game == self) & (Player.alive == True) )
         return self.players.where(Player.alive == True)
 
     async def log(self, *args, **kwargs):
@@ -104,8 +88,6 @@ class Game(BaseModel):
 
     @property
     def new_round_available(self):
-        # return True
-
         if self.initial_players_at_round_start is None:
             return True
 
@@ -114,8 +96,6 @@ class Game(BaseModel):
 
         players = self.living_players
         return len(players) <= math.ceil(self.initial_players_at_round_start / 2)
-            
-
 
     def leak_player_codes(self, players = None):
         if players is None:
@@ -176,21 +156,6 @@ class Game(BaseModel):
 
         asyncio.gather(*[x.send_status() for x in players])
 
-    def send_instructions_to_players(self, players = None):
-        pass
-        # if players is None:
-        #     players = list(self.living_players)
-
-        # embed = discord.Embed(title = "How to play")
-
-        # embed.add_field(name = "Kill command", value = "Kill your target. Usage (Dms only)\n`/kill 94`", inline = False)
-        # embed.add_field(name = "Share command", value = "Share your code with one person to prevent it from leaking to random people. Usage (Dms only)\n`/share Clark#1062`", inline = False)
-
-        # coros = [x.member.send(embed = embed) for x in players]
-
-        # asyncio.gather(*coros)
-
-
     def next_round(self):
 
         self.cycle_count = 0
@@ -199,9 +164,6 @@ class Game(BaseModel):
         players = list(self.living_players)
 
         self.initial_players_at_round_start = len(players)
-
-        # if self.round_count == 1:
-        #     self.send_instructions_to_players(players)
 
         self.assign_new_targets(players)
         self.assign_new_code_to_players(players)

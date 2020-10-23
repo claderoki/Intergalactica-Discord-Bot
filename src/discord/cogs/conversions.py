@@ -78,7 +78,7 @@ class Conversions(discord.ext.commands.Cog):
                 measurement = guess(value, unit, measures = self.measures)
                 measurements.append(measurement)
 
-            embed = discord.Embed(title = "Conversions", color = color)
+            embed = discord.Embed(color = color)
 
             for measurement in measurements:
                 values = []

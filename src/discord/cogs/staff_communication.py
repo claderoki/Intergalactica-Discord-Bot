@@ -77,7 +77,6 @@ class StaffCommunication(commands.Cog, name = "Staff communication"):
 
     @commands.has_guild_permissions(administrator = True)
     @commands.command()
-    # async def close(self, ctx, ticket : Ticket, reason : EnumConverter(Ticket.CloseReason), *, text = None):
     async def close(self, ctx, ticket : Ticket, *, text = None):
         attachments = ctx.message.attachments
         if len(attachments) > 0:

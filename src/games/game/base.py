@@ -50,13 +50,13 @@ class DiscordIdentity(BaseIdentity):
 
     def add_points(self, points):
         with database:
-            human, _ = Human.get_or_create_for_member(self.member)
-            human.global_human.gold += points
-            human.global_human.save()
+            human, _ = Human.get_or_create(user_id = self.member.id)
+            human.gold += points
+            human.save()
 
     def remove_points(self, points):
         with database:
-            human, _ = Human.get_or_create_for_member(self.member)
-            human.global_human.gold -= points
-            human.global_human.save()
+            human, _ = Human.get_or_create(user_id = self.member.id)
+            human.gold -= points
+            human.save()
 

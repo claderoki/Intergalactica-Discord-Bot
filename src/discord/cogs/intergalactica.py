@@ -5,8 +5,7 @@ from emoji import emojize
 import discord
 from discord.ext import commands, tasks
 
-# from src.models import Poll, Option, Settings, NamedEmbed, NamedChannel, database as db
-from src.models import Poll, Option, Settings, NamedEmbed, Human, database
+from src.models import Poll, Option, Settings, NamedEmbed, Earthling, database
 
 
 class Intergalactica(commands.Cog):
@@ -45,9 +44,12 @@ class Intergalactica(commands.Cog):
     async def on_ready(self):
         self.guild = self.bot.get_guild(self.guild_id)
         self.bot.get_dominant_color(self.guild)
+
         if not self.bot.production:
             await asyncio.sleep( (60 * 60) * 3 )
-            self.poller.start()
+            self.introduction_purger.start()
+            self.illegal_member_notifier.start()
+            self.birthday_poller.start()
 
 
     async def log(self, channel_name, content = None, **kwargs):
@@ -59,7 +61,16 @@ class Intergalactica(commands.Cog):
             return
         welcome_channel = member.guild.system_channel
         text = self.bot.translate("member_" + type)
-        await welcome_channel.send(text.format(member = member))
+
+        embed = discord.Embed(color = self.bot.get_dominant_color(member.guild))
+        if type == "join":
+            name = f"Welcome to {member.guild.name}!"
+        else:
+            name = "Farewell, Earthling."
+        embed.set_author(name = "", icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/768460504649695282/c3p0.png")
+        embed.description = text.format(member = member)
+
+        await welcome_channel.send(embed = embed)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -89,25 +100,6 @@ class Intergalactica(commands.Cog):
 
             if added_role.id == self._role_ids["luna"] and not has_selfie_perms:
                 await self.log("bot_commands", f"**{after}** {after.mention} has achieved Luna!")
-                # return
-
-                # with database:
-                #     try:
-                #         poll = Poll.get(question = self.selfie_poll_question.format(member = str(after), ended = False))
-                #     except Poll.DoesNotExist:
-                #         pass
-
-                #         channel = guild.get_channel(self._channel_ids["bot_commands"])
-                #         await channel.send("Would send a selfie poll here")
-
-                        # poll = self.create_selfie_poll(after)
-
-                        # message = await poll.send()
-                        # poll.message_id = message.id
-                        # poll.save()
-
-                        # await message.pin()
-
 
     def embed_from_name(self, name, indexes):
         with database:
@@ -137,7 +129,7 @@ class Intergalactica(commands.Cog):
                 yield member
 
     @tasks.loop(hours = 12)
-    async def poller(self):
+    async def introduction_purger(self):
         async for introduction in self.introductions_to_purge():
             embed = discord.Embed(
                 color = self.bot.get_dominant_color(self.guild),
@@ -146,6 +138,9 @@ class Intergalactica(commands.Cog):
             await self.log("logs", embed = embed)
             await introduction.delete()
 
+
+    @tasks.loop(hours = 24)
+    async def illegal_member_notifier(self):
         for member in self.illegal_member_iterator():
             days = (datetime.datetime.utcnow() - member.joined_at).days
             if days > 1:
@@ -158,13 +153,13 @@ class Intergalactica(commands.Cog):
                 #     await self.log("tabs", f"DMed **{member}** {member.mention} to ask them to pick up mandatory roles.")
                 # embed = self.embed_from_name("rules", [7])
 
+    @tasks.loop(hours = 12)
+    async def birthday_poller(self):
         with database:
-            for human in Human.select().where( (Human.guild_id == self.guild_id) & (Human.date_of_birth != None) ):
+            for earthling in Earthling.select().where( Earthling.guild_id == self.guild_id ):
+                human = earthling.human
                 if human.birthday:
-                    await self.log("bot_commands", f"**{human.member}** {human.member.mention} Should be celebrating their birthday today.")
-
-
-
+                    await self.log("bot_commands", f"**{human.user}** {human.mention} Should be celebrating their birthday today.")
 
 def member_is_legal(member):
     age_roles       = [748606669902053387,748606823229030500,748606893387153448,748606902363095206]

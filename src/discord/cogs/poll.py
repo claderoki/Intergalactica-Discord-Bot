@@ -67,7 +67,6 @@ class PollCog(commands.Cog, name = "Poll"):
 
             if created:
                 pass
-                # await member.send(f"You have successfully voted for option {} ")
 
 
     async def setup_poll(self, ctx, poll):

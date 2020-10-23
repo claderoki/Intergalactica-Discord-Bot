@@ -1,5 +1,6 @@
 from .base import BaseModel
-from .human import Human, GlobalHuman
+from .human import Human
+from .intergalactica import Earthling
 from .analytics import EmojiUsage
 from .settings import Settings, NamedEmbed, NamedChannel, Translation, Locale
 from .staff_communication import Ticket, Reply
@@ -18,8 +19,11 @@ with database:
     # database.drop_tables([Scene, Scenario])
     database.create_tables([Scene, Scenario])
 
-    # database.drop_tables([Human, GlobalHuman])
-    database.create_tables([Human, GlobalHuman])
+    # database.drop_tables([Human])
+    database.create_tables([Human])
+
+    # database.drop_tables([Earthling])
+    database.create_tables([Earthling])
 
     # database.drop_tables([Settings, NamedEmbed, NamedChannel, Locale, Translation])
     database.create_tables([Settings, NamedEmbed, NamedChannel, Locale, Translation])

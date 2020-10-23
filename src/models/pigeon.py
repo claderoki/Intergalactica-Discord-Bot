@@ -3,15 +3,15 @@ import datetime
 import peewee
 
 from .base import BaseModel, EnumField
-from .human import GlobalHuman
+from .human import Human
 
 class Pigeon(BaseModel):
     name         = peewee.TextField       (null = False)
-    global_human = peewee.ForeignKeyField (GlobalHuman, backref="pigeons")
+    human        = peewee.ForeignKeyField (Human, backref="pigeons", column_name = "global_human_id" )
 
 class Fight(BaseModel):
-    challenger = peewee.ForeignKeyField (GlobalHuman, null = False)
-    challengee = peewee.ForeignKeyField (GlobalHuman, null = False)
+    challenger = peewee.ForeignKeyField (Human, null = False)
+    challengee = peewee.ForeignKeyField (Human, null = False)
     start_date = peewee.DateTimeField   (null = True)
     created_at = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow())
     guild_id   = peewee.BigIntegerField (null = False)
@@ -25,10 +25,10 @@ class Fight(BaseModel):
 
 class Bet(BaseModel):
     fight        = peewee.ForeignKeyField (Fight, backref = "bets")
-    global_human = peewee.ForeignKeyField (GlobalHuman)
+    human        = peewee.ForeignKeyField (Human)
     amount       = peewee.BigIntegerField (null = False, default = 10)
 
     class Meta:
         indexes = (
-            (('fight', 'global_human'), True),
+            (('fight', 'human'), True),
         )

@@ -19,11 +19,6 @@ class Player(BasePlayer):
         win       = "👍"
         lose      = "👎"
 
-    # class EndState(Enum):
-    #     win = 1
-    #     lose = 2
-    #     draw = 3
-
     class Action(Enum):
         stand = 1
         draw  = 2

@@ -18,7 +18,6 @@ class DiscordUI(UI):
     async def show_reel(self, fruits, win):
         delay = 0.3
         empty = "🔲"
-        # empty = "🔳"
 
         count = 4
         for i in range(count):

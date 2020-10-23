@@ -42,6 +42,9 @@ class Locus(commands.Bot):
         commands.errors.NoPrivateMessage,
         commands.errors.ConversionError,
         commands.errors.CommandOnCooldown,
+        commands.errors.MemberNotFound,
+        commands.errors.ChannelNotFound,
+        commands.errors.RoleNotFound,
         SendableException
     )
 
@@ -87,7 +90,6 @@ class Locus(commands.Bot):
         """This function stores a file in the designated storage channel, it returns the url of the newly stored image."""
 
         storage_channel = (await self.application_info()).owner
-        # storage_channel = self.get_channel(755895328745455746)
 
         if isinstance(file, io.BytesIO):
             f = file
@@ -134,9 +136,10 @@ class Locus(commands.Bot):
             return guilds[0]
 
         for guild in guilds:
+            #TODO: remove hard coding
             if guild.id == 742146159711092757: #intergalactica
                 return guild
-
+        #TODO: translate
         lines = ["Select the server."]
 
         i = 1
@@ -220,7 +223,12 @@ class Locus(commands.Bot):
 
         ctx.guild_color = self.get_dominant_color(ctx.guild)
 
-    async def on_command_error(self, ctx, exception):
+    async def on_command_error(self, ctx, error):
+        if isinstance(error, commands.errors.CommandInvokeError):
+            exception = error.original
+        else:
+            exception = error
+
         if isinstance(exception, commands.errors.CommandOnCooldown):
             embed = Embed.error("You are on cooldown. Try again in " + seconds_readable(exception.retry_after))
             asyncio.gather(ctx.send(embed = embed))
@@ -228,13 +236,8 @@ class Locus(commands.Bot):
             asyncio.gather(ctx.send(embed = Embed.error(str(exception))))
         elif isinstance(exception, self.ignorables):
             pass
-        elif isinstance(exception, commands.errors.CommandInvokeError):
-            if isinstance(exception.original, self.sendables):
-                asyncio.gather(ctx.send(embed = Embed.error(str(exception.original))))
-            else:
-                raise exception
         else:
-            raise exception
+            raise error
 
     @property
     def guild(self):

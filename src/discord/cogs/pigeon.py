@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands, tasks
 
 import src.config as config
-from src.models import Scene, Scenario, GlobalHuman, Fight, Pigeon, Bet, Settings, database
+from src.models import Scene, Scenario, Human, Fight, Pigeon, Bet, Settings, database
 from src.discord.helpers.waiters import *
 from src.games.game.base import DiscordIdentity
 from src.discord.errors.base import SendableException
@@ -125,16 +125,15 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @pigeon.command(name = "buy")
     async def pigeon_buy(self, ctx):
         with database:
-            global_human, _ = GlobalHuman.get_or_create(user_id = ctx.author.id)
-            pigeon = global_human.pigeon
+            human, _ = Human.get_or_create(user_id = ctx.author.id)
+            pigeon = human.pigeon
             if pigeon is not None:
-                # asyncio.gather(ctx.send(f"You already have a lovely pigeon named **{pigeon.name}**!"))
                 asyncio.gather(ctx.send(ctx.translate("pigeon_already_purchased").format(name = pigeon.name)))
                 return
 
             prompt = lambda x : ctx.translate(f"pigeon_{x}_prompt")
 
-            pigeon = Pigeon(global_human = global_human)
+            pigeon = Pigeon(human = human)
             waiter = StrWaiter(ctx, prompt = prompt("name"), max_words = None)
             pigeon.name = await waiter.wait()
             pigeon.save()
@@ -149,8 +148,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         channel = self.get_pigeon_channel(ctx.guild)
 
         with database:
-            challenger, _ = GlobalHuman.get_or_create(user_id = ctx.author.id)
-            challengee, _ = GlobalHuman.get_or_create(user_id = member.id)
+            challenger, _ = Human.get_or_create(user_id = ctx.author.id)
+            challengee, _ = Human.get_or_create(user_id = member.id)
 
             if challenger.pigeon is None:
                 raise SendableException(ctx.translate("you_no_pigeon"))
@@ -178,7 +177,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @pigeon.command(name = "accept")
     async def pigeon_accept(self, ctx):
         with database:
-            challengee, _ = GlobalHuman.get_or_create(user_id = ctx.author.id)
+            challengee, _ = Human.get_or_create(user_id = ctx.author.id)
 
             query = Fight.select()
             query = query.where(Fight.ended == False)
@@ -205,11 +204,11 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @pigeon.command(name = "bet")
     async def pigeon_bet(self, ctx, member : discord.Member):
         with database:
-            global_human, _ = GlobalHuman.get_or_create(user_id = member.id)
+            human, _ = Human.get_or_create(user_id = member.id)
 
             query = Fight.select()
             query = query.where( Fight.ended == False )
-            query = query.where( (Fight.challenger == global_human) | (Fight.challengee == global_human))
+            query = query.where( (Fight.challenger == human) | (Fight.challengee == human))
             fight = query.first()
 
             if fight is None:
@@ -218,7 +217,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             if fight.challengee.user_id == ctx.author.id or fight.challenger.user_id == ctx.author.id:
                 raise SendableException(ctx.translate("cannot_vote_own_fight"))
 
-            Bet.create(fight = fight, global_human = global_human)
+            Bet.create(fight = fight, human = human)
             asyncio.gather(ctx.send(ctx.translate("bet_created")))
 
     @tasks.loop(seconds=30)

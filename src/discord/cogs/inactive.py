@@ -4,12 +4,11 @@ import datetime
 import discord
 from discord.ext import commands, tasks
 
-from src.models import Human, database as db
+from src.models import Earthling, database
 import src.config as config
 from src.discord.helpers.waiters import BoolWaiter
 
 class Inactive(discord.ext.commands.Cog):
-
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
@@ -22,11 +21,11 @@ class Inactive(discord.ext.commands.Cog):
         if member.bot:
             return
 
-        with db:
-            human, created = Human.get_or_create_for_member(member)
+        with database:
+            earthling, created = Earthling.get_or_create_for_member(member)
             if not created:
-                human.last_active = datetime.datetime.utcnow()
-                human.save()
+                earthling.last_active = datetime.datetime.utcnow()
+                earthling.save()
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -40,11 +39,11 @@ class Inactive(discord.ext.commands.Cog):
             self.set_active_or_create(member)
 
     def iter_inactives(self, guild):
-        for human in Human.select().where(Human.guild_id == guild.id):
-            if human.guild is None or human.member is None:
+        for earthling in Earthling.select().where(Earthling.guild_id == guild.id):
+            if earthling.guild is None or earthling.member is None:
                 continue
-            if human.inactive and not human.member.bot:
-                yield human
+            if earthling.inactive and not earthling.member.bot:
+                yield earthling
 
     @commands.has_guild_permissions(administrator = True)
     @commands.command()
@@ -53,10 +52,11 @@ class Inactive(discord.ext.commands.Cog):
         lines = []
 
         inactive_members = []
-        for human in self.iter_inactives(ctx.guild):
-            if human.member.premium_since is None:
-                inactive_members.append(human.member)
-                lines.append( str(human.member) )
+        with database:
+            for earthling in self.iter_inactives(ctx.guild):
+                if earthling.member.premium_since is None:
+                    inactive_members.append(earthling.member)
+                    lines.append( str(earthling.member) )
 
         embed.description = "\n".join(lines)
         await ctx.send(embed = embed)

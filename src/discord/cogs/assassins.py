@@ -27,10 +27,6 @@ class AssassinsCog(commands.Cog, name = "Assassins"):
     async def on_ready(self):
         self.poll.start()
 
-    # @commands.command()
-    # async def test(self, ctx):
-    #     await self.choose_game(ctx.author)
-
     async def choose_game(self, member):
         mutual_guilds = [x.id for x in self.bot.guilds if x.get_member(member.id) is not None]
 
@@ -43,15 +39,6 @@ class AssassinsCog(commands.Cog, name = "Assassins"):
     async def msg(self, ctx):
         kill_message = KillMessage.get_random().value.format(user = ctx.author)
         await ctx.send(embed = discord.Embed(title = kill_message))
-
-    # @commands.Cog.listener()
-    # async def on_message(self, message):
-    #     if message.channel.id != 710402878652809276:
-    #         return
-
-    #     if "{user}" in message.content:
-    #         KillMessage.create(value = message.content.strip("`"))
-    #         await message.add_reaction("☑️")
 
     @commands.group()
     async def assassins(self, ctx):

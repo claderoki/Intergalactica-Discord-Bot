@@ -76,14 +76,6 @@ class Management(discord.ext.commands.Cog):
 
             await ctx.send(embed = embed)
 
-    # @commands.command()
-    # @commands.is_owner()
-    # async def selfie(self, ctx):
-    #     await ctx.message.delete()
-    #     response = requests.get("http://www.mwctoys.com/images2/review_ssc3po_3.jpg", stream=True)
-    #     f = io.BytesIO(response.raw.read())
-    #     msg = await ctx.send(file=discord.File(fp=f, filename="selfie.jpg", spoiler = True))
-
     @commands.has_guild_permissions(administrator = True)
     @commands.group()
     async def channel(self, ctx):
