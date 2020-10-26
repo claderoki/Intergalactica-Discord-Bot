@@ -296,7 +296,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                 await ctx.send(embed = embed)
 
             elif isinstance(activity, Mail):
-                pass
+                print("mail activity")
 
     @pigeon.command(name = "mail")
     async def pigeon_mail(self, ctx, user : discord.User):
