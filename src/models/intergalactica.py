@@ -1,8 +1,11 @@
+import datetime
+
 import peewee
 import discord
 
 from .base import BaseModel
 from .human import Human
+import src.config as config
 
 class Earthling(BaseModel):
     user_id               = peewee.BigIntegerField  (null = False)
