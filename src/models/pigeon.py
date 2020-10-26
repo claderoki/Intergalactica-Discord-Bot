@@ -87,13 +87,10 @@ class Exploration(Activity):
 
     @property
     def distance_in_km(self):
-        res_capital = CountryInfo(self.residence)
-        des_capital = CountryInfo(self.destination)
-
         R = 6373.0
 
-        lat1, lon1 = [math.radians(x) for x in res_capital.capital_latlng()]
-        lat2, lon2 = [math.radians(x) for x in des_capital.capital_latlng()]
+        lat1, lon1 = [math.radians(x) for x in CountryInfo(self.residence).capital_latlng()]
+        lat2, lon2 = [math.radians(x) for x in CountryInfo(self.destination).capital_latlng()]
 
         dlon = lon2 - lon1
         dlat = lat2 - lat1
