@@ -8,7 +8,13 @@ parser.add_argument('--mode', default="development", choices=[x.name for x in li
 args = parser.parse_args()
 mode = config.Mode[args.mode]
 
-if mode != config.Mode.production:
+parser = argparse.ArgumentParser(description='Choose the mode.')
+parser.add_argument('--service', default="none", choices=["heroku", "none"])
+args = parser.parse_args()
+service = args.service
+
+
+if service != "heroku":
     try:
         with open(config.path + "/env") as f:
             for line in f.read().splitlines():
