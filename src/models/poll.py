@@ -286,12 +286,10 @@ class PollTemplate(BaseModel):
     delta                   = peewee.CharField       (null = True)
     vote_percentage_to_pass = peewee.IntegerField    (null = True)
 
-
     class Meta:
         indexes = (
             (('name', 'guild_id'), True),
         )
-
 
     @property
     def shared_columns(self):
