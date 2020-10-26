@@ -199,8 +199,13 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             def get_random_country():
                 country_code = None
                 countries = list(pycountry.countries)
-                while country_code is None or country_code in ("vi", "ad", "tc", "um", "ax"):
+                while country_code is None:
                     country_code = random.choice(countries).alpha_2
+                    try:
+                        CountryInfo(country_code).capital()
+                    except KeyError:
+                        country_code = None
+
                 return country_code
 
             residence = pigeon.human.country_code or get_random_country()
@@ -211,12 +216,6 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                 destination = destination,
                 pigeon = pigeon
             )
-
-            try:
-                exploration.distance_in_km
-            except KeyError as e:
-                print(e)
-                raise SendableException("Something went wrong. Please try again.")
 
             current_date = datetime.datetime.utcnow()
 
