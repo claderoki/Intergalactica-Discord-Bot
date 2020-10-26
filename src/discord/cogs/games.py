@@ -4,6 +4,8 @@ from discord.ext import commands
 import src.config as config
 import src.games.blackjack as blackjack
 import src.games.slotmachine as slotmachine
+import src.games.hangman as hangman
+from src.games.game.base import DiscordIdentity
 
 class Games(commands.Cog):
 
@@ -23,6 +25,14 @@ class Games(commands.Cog):
     @commands.command()
     async def slotmachine(self, ctx):
         game = slotmachine.game.Game(slotmachine.ui.DiscordUI(ctx))
+        await game.start()
+
+    @commands.command()
+    async def hangman(self, ctx):
+        players = []
+
+        players.append(hangman.game.Player(DiscordIdentity(ctx.author), 5))
+        game = hangman.game.Game(players, "appelsap", hangman.ui.DiscordUI(ctx))
         await game.start()
 
 

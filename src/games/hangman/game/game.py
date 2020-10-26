@@ -81,7 +81,6 @@ class Game:
                     self.words_used.append(guess)
                     player.increment_incorrect()
 
-
         await self.ui.refresh_board(self)
 
         await self.stop(self.calculate_reason())

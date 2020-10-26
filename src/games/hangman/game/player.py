@@ -1,10 +1,14 @@
 
 
 class Player:
-    def __init__(self, bet):
+    def __init__(self, identity, bet):
+        self.identity = identity
         self.bet = bet
         self.correct_guesses   = 0
         self.incorrect_guesses = 0
+
+    def __str__(self):
+        return str(self.identity)
 
     @property
     def dead(self):
