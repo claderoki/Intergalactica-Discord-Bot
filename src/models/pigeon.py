@@ -31,6 +31,39 @@ class Activity(BaseModel):
     def duration_in_minutes(self):
         return int((self.end_date - self.start_date).total_seconds() / 60.0)
 
+class TravelActivity(Activity):
+    residence    = peewee.TextField       (null = True)
+    destination  = peewee.TextField       (null = True)
+
+    @property
+    def distance_in_km(self):
+        if self.residence is None or self.destination is None:
+            return
+
+        R = 6373.0
+
+        lat1, lon1 = [math.radians(x) for x in CountryInfo(self.residence).capital_latlng()]
+        lat2, lon2 = [math.radians(x) for x in CountryInfo(self.destination).capital_latlng()]
+
+        dlon = lon2 - lon1
+        dlat = lat2 - lat1
+
+        a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        return R * c
+
+    def calculate_duration(self):
+        min_time_in_minutes = 30
+        max_time_in_minutes = 180
+
+        duration = int(self.distance_in_km / 40)
+        if duration < min_time_in_minutes:
+            duration = min_time_in_minutes
+        elif duration > max_time_in_minutes:
+            duration = max_time_in_minutes
+        return duration
+
 class Pigeon(BaseModel):
     emojis = {
         "gold"        : "",
@@ -72,33 +105,16 @@ class Pigeon(BaseModel):
     class Meta:
         table_name = "new_pigeon"
 
-class Mail(Activity):
-    gold       = peewee.IntegerField    (null = False, default = 0)
-    recipient  = peewee.ForeignKeyField (Pigeon, null = False, backref = "inbox", on_delete = "CASCADE" )
-    sender     = peewee.ForeignKeyField (Pigeon, null = False, backref = "outbox", on_delete = "CASCADE")
-    message    = peewee.TextField       (null = True)
-    read       = peewee.BooleanField    (null = False, default = True)
+class Mail(TravelActivity):
+    gold        = peewee.IntegerField    (null = False, default = 0)
+    recipient   = peewee.ForeignKeyField (Human, null = False, backref = "inbox", on_delete = "CASCADE")
+    sender      = peewee.ForeignKeyField (Pigeon, null = False, backref = "outbox", on_delete = "CASCADE")
+    message     = peewee.TextField       (null = True)
+    read        = peewee.BooleanField    (null = False, default = True)
 
-class Exploration(Activity):
-    residence    = peewee.TextField       (null = False)
-    destination  = peewee.TextField       (null = False)
+class Exploration(TravelActivity):
     name         = peewee.TextField       (null = True)
     pigeon       = peewee.ForeignKeyField (Pigeon, null = False, backref = "explorations", on_delete = "CASCADE")
-
-    @property
-    def distance_in_km(self):
-        R = 6373.0
-
-        lat1, lon1 = [math.radians(x) for x in CountryInfo(self.residence).capital_latlng()]
-        lat2, lon2 = [math.radians(x) for x in CountryInfo(self.destination).capital_latlng()]
-
-        dlon = lon2 - lon1
-        dlat = lat2 - lat1
-
-        a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-        return R * c
 
     @property
     def xp_worth(self):
