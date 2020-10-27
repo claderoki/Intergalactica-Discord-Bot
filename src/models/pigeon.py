@@ -1,6 +1,7 @@
 import datetime
 from enum import Enum
 import math
+import random
 
 from countryinfo import CountryInfo
 import peewee
@@ -16,7 +17,6 @@ class PercentageField(peewee.IntegerField):
     # def python_value(self, value):
     #     if value is not None:
     #         return self.enum[value]
-
 
 class Activity(BaseModel):
     start_date = peewee.DateTimeField   (null = True, default = lambda : datetime.datetime.utcnow())
@@ -56,8 +56,11 @@ class TravelActivity(Activity):
     def calculate_duration(self):
         min_time_in_minutes = 30
         max_time_in_minutes = 180
+        km = self.distance_in_km
+        if km is None:
+            return random.randint(min_time_in_minutes, max_time_in_minutes+1)
 
-        duration = int(self.distance_in_km / 40)
+        duration = int(km / 40)
         if duration < min_time_in_minutes:
             duration = min_time_in_minutes
         elif duration > max_time_in_minutes:
@@ -129,5 +132,6 @@ class Fight(Activity):
     challengee = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
     created_at = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow())
     guild_id   = peewee.BigIntegerField (null = False)
+    bet        = peewee.BigIntegerField (null = False, default = 50)
     accepted   = peewee.BooleanField    (null = True) # null is pending, true is accepted, false is declined.
     won        = peewee.BooleanField    (null = True) # null is not ended yet, true means challenger won, false means challengee won
