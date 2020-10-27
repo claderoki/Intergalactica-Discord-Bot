@@ -39,24 +39,6 @@ class Profile(commands.Cog):
     async def parrot(self, ctx, *, text):
         await ctx.send(text)
 
-    @commands.command(name = "givegold")
-    async def give_gold(self, ctx, member : discord.Member, amount : int):
-        if member.id == ctx.author.id:
-            raise SendableException(ctx.translate("cannot_send_gold_to_self"))
-
-        with database:
-            sender, _ = Human.get_or_create(user_id = ctx.author.id)
-            if sender.gold < amount:
-                raise SendableException(ctx.translate("not_enough_gold"))
-            sendee, _ = Human.get_or_create(user_id = member.id)
-
-            sender.gold -= amount
-            sendee.gold += amount
-            sendee.save()
-            sender.save()
-
-            asyncio.gather(ctx.send(ctx.translate("gold_sent")))
-
     @commands.command()
     async def scoreboard(self, ctx):
         query = Earthling.select().where(Earthling.guild_id == ctx.guild.id)
