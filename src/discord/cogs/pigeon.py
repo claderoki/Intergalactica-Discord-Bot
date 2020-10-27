@@ -23,6 +23,14 @@ def get_random_country():
 
     return country_code
 
+
+def update_pigeon(pigeon, data):
+    for key, value in data.items():
+        if key == "gold":
+            pigeon.human.gold += value
+        else:
+            setattr(pigeon, key, (getattr(pigeon, key) + value) )
+
 class PigeonCog(commands.Cog, name = "Pigeon"):
 
     def __init__(self, bot):
@@ -30,8 +38,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         self.bot = bot
         self.message_counts = {}
 
-    def get_winnings_field(self, **kwargs):
-        values = {"name" : "Winnings"}
+    def get_winnings_value(self, **kwargs):
         lines = []
         for key, value in kwargs.items():
             emoji = Pigeon.emojis[key]
@@ -40,8 +47,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             elif value < 0:
                 lines.append(f"{emoji} {key} {value}")
 
-        values["value"] = "\n".join(lines)
-        return values
+        return "\n".join(lines)
 
     def get_active_pigeon(self, user):
         try:
@@ -62,7 +68,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @commands.Cog.listener()
     async def on_ready(self):
         Pigeon.emojis["gold"] = self.bot.gold_emoji
-        # self.poller.start()
+        self.fight_ticker.start()
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -146,7 +152,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         with database:
             challenger = self.get_active_pigeon(ctx.author)
-            challengee = self.get_active_pigeon(member.id)
+            challengee = self.get_active_pigeon(member)
 
             if challenger is None:
                 raise SendableException(ctx.translate("you_no_pigeon"))
@@ -257,16 +263,14 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                         "experience"  : int(activity.xp_worth * multiplier),
                         "food"        : -random.randint(10,40),
                         "happiness"   : int(random.randint(10,40) * multiplier),
-                        "cleanliness" : -random.randint(10,40),
+                        "cleanliness" : -random.randint(10,40)
                     }
 
-                    embed.add_field(**self.get_winnings_field(**winnings))
-
-                    for key, value in winnings.items():
-                        if key == "gold":
-                            pigeon.human.gold += value
-                        else:
-                            setattr(pigeon, key, (getattr(pigeon, key) + value) )
+                    embed.add_field(
+                        name = "Winnings",
+                        value = self.get_winnings_value(**winnings)
+                    )
+                    update_pigeon(pigeon, winnings)
 
                     activity.finished = True
                     pigeon.status = Pigeon.Status.idle
@@ -277,26 +281,23 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                     embed.description = f"**{pigeon.name}** is still on its way to explore!"
                     embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
                     embed.timestamp = activity.end_date
-                asyncio.gather(ctx.send(embed = embed))
-
             elif isinstance(activity, Mail):
                 if activity.end_date_passed:
 
                     winnings = {
-                        "experience"  : int(activity.xp_worth * multiplier),
+                        "experience"  : int(activity.duration_in_minutes * 0.6),
                         "food"        : -random.randint(10,40),
-                        "happiness"   : int(random.randint(10,40) * multiplier),
+                        "happiness"   : int(random.randint(10,40)),
                         "cleanliness" : -random.randint(10,40),
                     }
 
-                    embed.add_field(**self.get_winnings_field(**winnings))
+                    embed.add_field(
+                        name = "Winnings", 
+                        value = self.get_winnings_value(**winnings)
+                    )
 
-                    for key, value in winnings.items():
-                        if key == "gold":
-                            pigeon.human.gold += value
-                        else:
-                            setattr(pigeon, key, (getattr(pigeon, key) + value) )
-
+                    embed.description = f"{pigeon.name} comes back from a long journey to {activity.recipient.mention}."
+                    update_pigeon(pigeon, winnings)
                     activity.finished = True
                     pigeon.status = Pigeon.Status.idle
                     pigeon.human.save()
@@ -307,7 +308,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                     embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
                     embed.timestamp = activity.end_date
 
-                asyncio.gather(ctx.send(embed = embed))
+            asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "send")
     async def pigeon_send(self, ctx, user : discord.User):
@@ -315,16 +316,28 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         with database:
             sender = self.get_active_pigeon(ctx.author)
             recipient, _ = Human.get_or_create(user_id = user.id)
-            if sender.status == Pigeon.Status.idle:
-                raise SendableException(ctx.translate("pigeon_idle"))
+            if sender.status != Pigeon.Status.idle:
+                raise SendableException(ctx.translate("pigeon_not_idle"))
 
-            gold    = 5
-            message = "jibberish message"
+            prompt = lambda x : ctx.translate(f"mail_{x}_prompt")
 
-            mail = Mail(recipient = recipient, sender = sender, message = message, gold = gold)
+            mail = Mail(recipient = recipient, sender = sender)
+
+            waiter = StrWaiter(ctx, prompt = prompt("message"), max_words = None)
+            mail.message = await waiter.wait()
+
+            waiter = IntWaiter(ctx, prompt = prompt("gold"), min = 0, skippable = True)
+            try:
+                mail.gold = await waiter.wait()
+            except Skipped:
+                pass
+
             mail.end_date = mail.start_date + datetime.timedelta(minutes = random.randint(30, 180))
-            mail.save()
+            sender.human.gold -= mail.gold
             sender.status = Pigeon.Status.mailing
+
+            mail.save()
+            sender.human.save()
             sender.save()
 
             embed = self.get_base_embed(ctx.guild)
@@ -334,10 +347,52 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
     @pigeon.command(name = "inbox")
     async def pigeon_inbox(self, ctx):
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
-        unread_mail = human.inbox.where(Mail.read == False)
-        for mail in unread_mail:
-            print(mail.message, mail.gold)
+        with database:
+            human, _ = Human.get_or_create(user_id = ctx.author.id)
+            unread_mail = human.inbox.where(Mail.read == False)
+            if len(unread_mail) == 0:
+                return await ctx.send(ctx.translate("no_unread_mail"))
+
+            for mail in unread_mail:
+                embed = self.get_base_embed(ctx.guild)
+                if mail.gold > 0:
+                    embed.description = f"{mail.sender.human.mention} has sent you some gold ({mail.gold}) with a message attached:\n`{mail.message}`"
+                else:
+                    embed.description = f"{mail.sender.human.mention} has sent you a message:\n`{mail.message}`"
+
+                await ctx.send(embed = embed)
+
+                mail.read = True
+                mail.recipient.gold += mail.gold
+                mail.save()
+                mail.recipient.save()
+
+
+    @pigeon.command(name = "status")
+    async def pigeon_status(self, ctx):
+        with database:
+            pigeon = self.get_active_pigeon(ctx.author)
+            lines = []
+            longest = max([len(x) for x in Pigeon.emojis])
+            ljust = lambda x : x.ljust(longest+2, "\u2002")
+            for attr, emoji in Pigeon.emojis.items():
+                if attr in ("gold", "experience"):
+                    continue
+                else:
+                    value = getattr(pigeon, attr)
+
+                lines.append(f"{emoji} {ljust(attr)} `{value}%`")
+
+        lines.insert(0, f"📛 {ljust('name')} `{pigeon.name}`")
+        lines.append(f"{Pigeon.emojis['experience']} {ljust('experience')} `{pigeon.experience}`")
+        lines.append(f"{pigeon.status.value} {ljust('status')} `{pigeon.status.name}`")
+
+        embed = self.get_base_embed(ctx.guild)
+        embed.description = "\n".join(lines)
+        asyncio.gather(ctx.send(embed = embed))
+
+
+
 
     @tasks.loop(seconds=30)
     async def fight_ticker(self):
@@ -359,28 +414,33 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                     loser = fight.challenger
 
                 embed = self.get_base_embed(guild)
-                embed.title = f"{fight.challenger.pigeon.name} vs {fight.challengee.pigeon.name}"
+                embed.title = f"{fight.challenger.name} vs {fight.challengee.name}"
 
                 bet = 50
                 embed.description = f"{winner.name} destroys {loser.name}."
 
-                winner_field = self.get_winnings_field(experience = 30, gold = bet, health = -2)
-                winner_field["name"] = f"🏆 {winner.name}"
+                winner_data = {"experience" : 30, "gold" : bet, "health" : -2}
+                loser_data = {"experience" : 5, "gold" : -bet, "health" : -2}
 
-                loser_field = self.get_winnings_field(experience = 5, gold = -bet, health = -10)
-                loser_field["name"] = f"💩 {loser.name}"
-
-                embed.add_field(**winner_field)
-                embed.add_field(**loser_field)
+                embed.add_field(name = f"💩 {loser.name}", value = self.get_winnings_value(**loser_data))
+                embed.add_field(name = f"🏆 {winner.name}", value = self.get_winnings_value(**winner_data))
 
                 asyncio.gather(channel.send(embed = embed))
-                winner.gold += bet
-                loser.gold -= bet
+
+                update_pigeon(winner, winner_data)
+                update_pigeon(loser, loser_data)
+
+                winner.status = Pigeon.Status.idle
+                loser.status = Pigeon.Status.idle
+
+
                 winner.save()
+                winner.human.save()
                 loser.save()
+                loser.human.save()
 
                 fight.won = won
-                fight.ended = True
+                fight.finished = True
                 fight.save()
 
 def setup(bot):
