@@ -106,9 +106,9 @@ class Pigeon(BaseModel):
         table_name = "new_pigeon"
 
 class Mail(TravelActivity):
-    gold        = peewee.IntegerField    (null = False, default = 0)
     recipient   = peewee.ForeignKeyField (Human, null = False, backref = "inbox", on_delete = "CASCADE")
     sender      = peewee.ForeignKeyField (Pigeon, null = False, backref = "outbox", on_delete = "CASCADE")
+    gold        = peewee.IntegerField    (null = False, default = 0)
     message     = peewee.TextField       (null = True)
     read        = peewee.BooleanField    (null = False, default = True)
 
