@@ -43,6 +43,7 @@ class Locus(commands.Bot):
         commands.errors.ConversionError,
         commands.errors.CommandOnCooldown,
         commands.errors.MemberNotFound,
+        commands.errors.UserNotFound,
         commands.errors.ChannelNotFound,
         commands.errors.RoleNotFound,
         SendableException
@@ -213,7 +214,7 @@ class Locus(commands.Bot):
                     settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
                     self._locales[ctx.guild.id] = settings.locale.name
 
-        ctx.translate = lambda x: self.translate(x, self._locales.get(ctx.guild.id, "en_US"))
+        ctx.translate = lambda x: self.translate(x, self._locales.get(ctx.guild.id if ctx.guild else 761624318291476482, "en_US"))
 
         ar = lambda x: ctx.message.add_reaction(x)
 
