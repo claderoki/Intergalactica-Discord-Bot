@@ -10,6 +10,8 @@ from src.models import Scene, Scenario, Human, Fight, Pigeon, Exploration, Mail,
 from src.discord.helpers.waiters import *
 from src.games.game.base import DiscordIdentity
 from src.discord.errors.base import SendableException
+from src.utils.enums import Gender
+from src.discord.helpers.converters import EnumConverter
 
 class PigeonCog(commands.Cog, name = "Pigeon"):
 
@@ -39,6 +41,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
     @pigeon.command(name = "buy")
     async def pigeon_buy(self, ctx):
+        """Buy a pigeon."""
+
         with database:
             human, _ = Human.get_or_create(user_id = ctx.author.id)
             pigeon = human.pigeons.select(Pigeon.dead == False).first()
@@ -65,29 +69,21 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
     @pigeon.command(name = "challenge", aliases = ["fight"])
     async def pigeon_challenge(self, ctx, member : discord.Member):
+        """Challenge another user to a fight."""
+
         channel = self.get_pigeon_channel(ctx.guild)
+        if member.id == ctx.author.id:
+            raise SendableException(ctx.translate("cannot_challenge_self"))
 
         with database:
             challenger = get_active_pigeon(ctx.author)
             challengee = get_active_pigeon(member)
 
-            pigeon_raise_if_unavailable(ctx, challenger)
-            pigeon_raise_if_stats_too_low(ctx, challenger)
+            pigeon_raise_if_unavailable(ctx, challenger, name = "challenger")
+            pigeon_raise_if_stats_too_low(ctx, challenger, name = "challenger")
 
-            pigeon_raise_if_unavailable(ctx, challengee)
-            pigeon_raise_if_stats_too_low(ctx, challengee)
-
-            if challenger is None:
-                raise SendableException(ctx.translate("you_no_pigeon"))
-            if challengee is None:
-                raise SendableException(ctx.translate("challengee_no_pigeon"))
-
-            if challenger.status != Pigeon.Status.idle:
-                raise SendableException(ctx.translate("challenger_not_idle"))
-
-            if challengee.status != Pigeon.Status.idle:
-                raise SendableException(ctx.translate("challengee_not_idle"))
-
+            pigeon_raise_if_unavailable(ctx, challengee, name = "challengee")
+            pigeon_raise_if_stats_too_low(ctx, challengee, name = "challengee")
 
             fight = Fight(guild_id = ctx.guild.id, start_date = None)
 
@@ -112,8 +108,18 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed.set_footer(text = f"use '{ctx.prefix}pigeon accept' to accept") 
         asyncio.gather(channel.send(embed = embed))
 
+    @pigeon.command(name = "gender")
+    async def pigeon_gender(self, ctx, gender : EnumConverter(Gender)):
+        with database:
+            pigeon = get_active_pigeon(ctx.author)
+            pigeon.gender = gender
+            pigeon.save()
+            asyncio.gather(ctx.send(ctx.translate("gender_set")))
+
     @pigeon.command(name = "accept")
     async def pigeon_accept(self, ctx):
+        """Accept a pending fight."""
+
         with database:
             challengee = get_active_pigeon(ctx.author)
 
@@ -150,6 +156,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
     @pigeon.command(name = "explore")
     async def pigeon_explore(self, ctx):
+        """Have your pigeon exploring a random location."""
         with database:
             pigeon = get_active_pigeon(ctx.author)
             pigeon_raise_if_unavailable(ctx, pigeon)
@@ -169,8 +176,9 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             embed.set_footer(text = f"'{ctx.prefix}pigeon retrieve' to check on your pigeon")
             asyncio.gather(ctx.send(embed = embed))
 
-    @pigeon.command(name = "retrieve")
+    @pigeon.command(name = "retrieve", aliases = ["return"] )
     async def pigeon_retrieve(self, ctx):
+        """Retrieve and check on your pigeon."""
         with database:
             pigeon = get_active_pigeon(ctx.author)
             if pigeon.status == Pigeon.Status.idle:
@@ -189,12 +197,12 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
                     text = f"{pigeon.name} soared through the skies for **{activity.duration_in_minutes}** minutes"
                     text += f" over a distance of **{int(activity.distance_in_km)}** Kilometers"
-                    text += f" until it finally reached **{country_name}**"
+                    text += f" until {pigeon.gender.get_pronoun()} finally reached **{country_name}**"
 
                     multiplier = 1
                     if random.randint(1,10) == 1:
                         multiplier += 0.5
-                        text += "\nIt even picked up some of the local language!"
+                        text += f"\n{pigeon.gender.get_pronoun().title()} even picked up some of the local language!"
 
                     explorations_finished = len(activity.pigeon.explorations)
                     if explorations_finished % 10 == 0:
@@ -223,7 +231,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                     pigeon.save()
                     activity.save()
                 else:
-                    embed.description = f"**{pigeon.name}** is still on its way to explore!"
+                    embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to explore!"
                     embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
                     embed.timestamp = activity.end_date
             elif isinstance(activity, Mail):
@@ -249,14 +257,15 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                     pigeon.save()
                     activity.save()
                 else:
-                    embed.description = f"**{pigeon.name}** is still on its way to send a message!"
+                    embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to send a message!"
                     embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
                     embed.timestamp = activity.end_date
 
             asyncio.gather(ctx.send(embed = embed))
 
-    @pigeon.command(name = "send")
-    async def pigeon_send(self, ctx, user : discord.User):
+    @pigeon.command(name = "mail", aliases = ["message", "send", "letter"])
+    async def pigeon_mail(self, ctx, user : discord.User):
+        """Send someone a pigeon letter."""
         if user.id == ctx.author.id:
             raise SendableException(ctx.translate("cannot_send_to_self"))
 
@@ -269,7 +278,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
             prompt = lambda x : ctx.translate(f"mail_{x}_prompt")
 
-            mail = Mail(recipient = recipient, sender = sender)
+            mail = Mail(recipient = recipient, sender = sender, read = False)
 
             waiter = StrWaiter(ctx, prompt = prompt("message"), max_words = None)
             mail.message = await waiter.wait()
@@ -297,13 +306,14 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
     @pigeon.command(name = "inbox")
     async def pigeon_inbox(self, ctx):
+        """Check your inbox."""
         with database:
             human, _ = Human.get_or_create(user_id = ctx.author.id)
             unread_mail = human.inbox.where(Mail.read == False)
             if len(unread_mail) == 0:
                 return await ctx.send(ctx.translate("no_unread_mail"))
 
-            for mail in unread_mail:
+            for mail in list(unread_mail):
                 embed = self.get_base_embed(ctx.guild)
                 if mail.gold > 0:
                     embed.description = f"{mail.sender.human.mention} has sent you some gold ({mail.gold}) with a message attached:\n`{mail.message}`"
@@ -317,11 +327,61 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                 mail.save()
                 mail.recipient.save()
 
+    @pigeon.command(name = "stats")
+    async def pigeon_stats(self, ctx):
+        pigeon = get_active_pigeon(ctx.author)
+        if pigeon is None:
+            raise SendableException(ctx.translate("pigeon_does_not_exist"))
+
+        embed = self.get_base_embed(ctx.guild)
+
+        explorations = pigeon.explorations.where(Exploration.finished == True)
+        unique_countries_visited = {x.destination for x in explorations}
+
+        lines = []
+        lines.append(f"Total explorations: {len(explorations)}")
+        lines.append(f"Unique countries visited: {len(unique_countries_visited)}")
+        embed.add_field(name = f"Explorations {Pigeon.Status.exploring.value}", value = "\n".join(lines), inline = False)
+
+        mails = pigeon.outbox.where(Mail.finished == True)
+        total_gold_sent = sum([x.gold for x in mails if x.gold is not None])
+
+        lines = []
+        lines.append(f"Total mails sent: {len(mails)}")
+        lines.append(f"Total gold sent: {total_gold_sent}")
+        embed.add_field(name = f"Mails {Pigeon.Status.mailing.value}", value = "\n".join(lines), inline = False)
+
+        fights = pigeon.fights.where(Fight.finished == True)
+        fights_won = 0
+        fights_lost = 0
+        profit = 0
+        for fight in fights:
+            if fight.challenger == pigeon and fight.won:
+                fights_won += 1
+                profit += fight.bet
+            elif fight.challengee == pigeon and not fight.won:
+                fights_won += 1
+                profit += fight.bet
+            else:
+                fights_lost += 1
+                profit -= fight.bet
+
+        lines = []
+        lines.append(f"Total fights won : {fights_won}")
+        lines.append(f"Total fights lost: {fights_lost}")
+        lines.append(f"Profit: {profit}")
+        embed.add_field(name = f"Fights {Pigeon.Status.fighting.value}", value = "\n".join(lines), inline = False)
+
+        asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "status")
     async def pigeon_status(self, ctx):
+        """Check the status of your pigeon."""
+
         with database:
             pigeon = get_active_pigeon(ctx.author)
+            if pigeon is None:
+                raise SendableException(ctx.translate("pigeon_does_not_exist"))
             lines = []
             longest = max([len(x) for x in Pigeon.emojis])
             ljust = lambda x : x.ljust(longest+2)#\u2002
@@ -346,8 +406,12 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             pigeon = get_active_pigeon(ctx.author)
             pigeon_raise_if_unavailable(ctx, pigeon)
 
+            value = getattr(pigeon, attr_name)
+            if value == 100:
+                raise SendableException(ctx.translate(f"{attr_name}_already_max"))
+
             pigeon.human.gold  -= cost
-            setattr(pigeon, attr_name, getattr(pigeon, attr_name) + attr_increase )
+            setattr(pigeon, attr_name, value+attr_increase )
             pigeon.human.save()
             pigeon.save()
 
@@ -359,7 +423,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
     @pigeon.command(name = "clean")
     async def pigeon_clean(self, ctx):
-        self.increase_stats(ctx, 'food', 20, 15, "You happily clean up **{pigeon.name}s** fecal matter.\n")
+        self.increase_stats(ctx, 'cleanliness', 20, 15, "You happily clean up **{pigeon.name}s** fecal matter.\n")
 
     @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
     @pigeon.command(name = "feed")
@@ -370,6 +434,10 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @pigeon.command(name = "heal")
     async def pigeon_heal(self, ctx):
         self.increase_stats(ctx, 'health', 20, 15, "You give **{pigeon.name}** some seed you found inside your couch and convince it of its healing effects.\n")
+
+    @pigeon.command(name = "help")
+    async def pigeon_help(self, ctx):
+        await ctx.send_help(ctx.command.root_parent)
 
     @tasks.loop(seconds=30)
     async def fight_ticker(self):
@@ -451,21 +519,21 @@ def get_active_pigeon(user):
     except Pigeon.DoesNotExist:
         return None
 
-def pigeon_raise_if_unavailable(ctx, pigeon):
+def pigeon_raise_if_unavailable(ctx, pigeon, name = "pigeon"):
     if pigeon is None:
-        raise SendableException(ctx.translate("pigeon_does_not_exist"))
+        raise SendableException(ctx.translate(f"{name}_does_not_exist"))
     if pigeon.status != Pigeon.Status.idle:
-        raise SendableException(ctx.translate("pigeon_not_idle").format(status = pigeon.status.name))
+        raise SendableException(ctx.translate(f"{name}_not_idle").format(status = pigeon.status.name))
 
-def pigeon_raise_if_stats_too_low(ctx, pigeon):
+def pigeon_raise_if_stats_too_low(ctx, pigeon, name = "pigeon"):
     if pigeon.cleanliness <= 10:
-        raise SendableException(ctx.translate("pigeon_too_stinky"))
+        raise SendableException(ctx.translate(f"{name}_too_stinky"))
     if pigeon.happiness <= 10:
-        raise SendableException(ctx.translate("pigeon_too_sad"))
+        raise SendableException(ctx.translate(f"{name}_too_sad"))
     if pigeon.food <= 10:
-        raise SendableException(ctx.translate("pigeon_too_hungry"))
+        raise SendableException(ctx.translate(f"{name}_too_hungry"))
     if pigeon.health <= 10:
-        raise SendableException(ctx.translate("pigeon_too_wounded"))
+        raise SendableException(ctx.translate(f"{name}_too_wounded"))
 
 def setup(bot):
     bot.add_cog(PigeonCog(bot))
