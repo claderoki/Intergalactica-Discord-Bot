@@ -181,6 +181,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         """Retrieve and check on your pigeon."""
         with database:
             pigeon = get_active_pigeon(ctx.author)
+            if pigeon is None:
+                raise SendableException(ctx.translate("pigeon_does_not_exist"))
             if pigeon.status == Pigeon.Status.idle:
                 raise SendableException(ctx.translate("pigeon_idle"))
 
