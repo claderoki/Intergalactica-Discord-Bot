@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands, tasks
 import emoji
 
-from src.models import Human, Earthling, database
+from src.models import Human, Earthling, Mail, database
 from src.discord.helpers.converters import convert_to_date
 from src.discord.helpers.waiters import *
 import src.config as config
@@ -44,22 +44,24 @@ class Profile(commands.Cog):
         query = Earthling.select().where(Earthling.guild_id == ctx.guild.id)
         query = query.join(Human, on=(Earthling.human == Human.id))
         query = query.order_by(Human.gold.desc())
-        query = query.limit(10)
 
         embed = discord.Embed(title = "Scoreboard")
 
-        with database:
-            earthlings = list(query)
-
+        top = 1
         rows = []
-        i = 0
-        for earthling in earthlings:
-            values = []
-            values.append(f"{i+1}")
-            values.append(str(earthling.human.gold))
-            values.append(str(earthling.member))
-            rows.append(values)
-            i += 1
+        i = (top-1)
+        with database:
+            for earthling in query:
+                values = []
+                member = earthling.member
+                if member:
+                    values.append(f"{i+1}")
+                    values.append(str(earthling.human.gold))
+                    values.append(str(member))
+                    rows.append(values)
+                    if len(rows) == 10:
+                        break
+                    i += 1
 
         headers = ["rank", "gold", "member"]
         sep = " | "
@@ -95,7 +97,11 @@ class Profile(commands.Cog):
                 embed = discord.Embed(color = ctx.author.color)
                 for member in members:
                     human, _ = Human.get_or_create(user_id = member.id)
-                    embed.add_field(**human.get_embed_field(show_all = len(members) > 1))
+                    field = human.get_embed_field(show_all = len(members) > 1)
+                    unread_mail = human.inbox.where(Mail.read == False)
+                    if len(unread_mail) > 0:
+                        field["name"] += f"  | {len(unread_mail)} 📥"
+                    embed.add_field(**field)
 
                 await ctx.send(embed = embed)
 
