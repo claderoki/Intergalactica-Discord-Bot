@@ -6,17 +6,9 @@ import random
 from countryinfo import CountryInfo
 import peewee
 
-from .base import BaseModel, EnumField
+from .base import BaseModel, EnumField, PercentageField
 from .human import Human
-
-class PercentageField(peewee.IntegerField):
-    def db_value(self, value):
-        if value is not None:
-            return max(min(value, 100), 0)
-
-    # def python_value(self, value):
-    #     if value is not None:
-    #         return self.enum[value]
+from src.utils.enums import Gender
 
 class Activity(BaseModel):
     start_date = peewee.DateTimeField   (null = True, default = lambda : datetime.datetime.utcnow())
@@ -92,6 +84,7 @@ class Pigeon(BaseModel):
     food          = PercentageField        (null = False, default = 100)
     health        = PercentageField        (null = False, default = 100)
     status        = EnumField              (Status, default = Status.idle)
+    gender        = EnumField              (Gender, default = Gender.other)
 
     @property
     def current_activity(self):
@@ -100,13 +93,13 @@ class Pigeon(BaseModel):
         if self.status == self.Status.mailing:
             return self.outbox.where(Mail.finished == False).first()
         if self.status == self.Status.fighting:
-            query = Fight.select()
-            query = query.where(Fight.finnished == False)
-            query = query.where((Fight.challenger == self) | (Fight.challengee == self))
-            return query.first()
+            return self.fights.where(Fight.finished == False).first()
 
-    class Meta:
-        table_name = "new_pigeon"
+    @property
+    def fights(self):
+        query = Fight.select()
+        query = query.where((Fight.challenger == self) | (Fight.challengee == self))
+        return query
 
 class Mail(TravelActivity):
     recipient   = peewee.ForeignKeyField (Human, null = False, backref = "inbox", on_delete = "CASCADE")

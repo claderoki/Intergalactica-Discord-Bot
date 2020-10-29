@@ -23,13 +23,11 @@ class BaseModel(peewee.Model):
         self._user = None
         self._channel = None
 
-
     @property
     def guild(self):
         if self._guild is None:
             self._guild = self.bot.get_guild(self.guild_id)
         return self._guild
-
 
     @property
     def user(self):
@@ -86,3 +84,8 @@ class EmojiField(peewee.TextField):
 
     def python_value(self, value):
         return emoji.emojize(value)
+
+class PercentageField(peewee.IntegerField):
+    def db_value(self, value):
+        if value is not None:
+            return max(min(value, 100), 0)
