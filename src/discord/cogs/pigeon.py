@@ -112,9 +112,25 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     async def pigeon_gender(self, ctx, gender : EnumConverter(Gender)):
         with database:
             pigeon = get_active_pigeon(ctx.author)
+            pigeon_raise_if_not_exist(ctx, pigeon)
             pigeon.gender = gender
             pigeon.save()
             asyncio.gather(ctx.send(ctx.translate("gender_set")))
+
+    @pigeon.command(name = "name")
+    async def pigeon_name(self, ctx, *, name : str):
+        cost = 50
+        with database:
+            pigeon = get_active_pigeon(ctx.author)
+            pigeon_raise_if_not_exist(ctx, pigeon)
+            raise_if_not_enough_gold(ctx, cost, pigeon.human)
+
+            pigeon.name = name
+            pigeon.save()
+            embed = self.get_base_embed(ctx.guild)
+            embed.description = f"Okay. Name has been set to {name}"
+            embed.set_footer(text = f"-{cost}")
+            asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "accept")
     async def pigeon_accept(self, ctx):
@@ -382,8 +398,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         with database:
             pigeon = get_active_pigeon(ctx.author)
-            if pigeon is None:
-                raise SendableException(ctx.translate("pigeon_does_not_exist"))
+            pigeon_raise_if_not_exist(ctx, pigeon)
+
             lines = []
             longest = max([len(x) for x in Pigeon.emojis])
             ljust = lambda x : x.ljust(longest+2)#\u2002
@@ -515,15 +531,18 @@ def get_winnings_value(**kwargs):
             lines.append(f"{emoji} {key} {value}")
     return "\n".join(lines)
 
-def get_active_pigeon(user):
+def get_active_pigeon(user, raise_on_none = False):
     try:
         return Pigeon.get(human = Human.get(user_id = user.id), dead = False)
     except Pigeon.DoesNotExist:
         return None
 
-def pigeon_raise_if_unavailable(ctx, pigeon, name = "pigeon"):
+def pigeon_raise_if_not_exist(ctx, pigeon, name = "pigeon"):
     if pigeon is None:
         raise SendableException(ctx.translate(f"{name}_does_not_exist"))
+
+def pigeon_raise_if_unavailable(ctx, pigeon, name = "pigeon"):
+    pigeon_raise_if_not_exist(ctx, pigeon, name)
     if pigeon.status != Pigeon.Status.idle:
         raise SendableException(ctx.translate(f"{name}_not_idle").format(status = pigeon.status.name))
 
@@ -536,6 +555,10 @@ def pigeon_raise_if_stats_too_low(ctx, pigeon, name = "pigeon"):
         raise SendableException(ctx.translate(f"{name}_too_hungry"))
     if pigeon.health <= 10:
         raise SendableException(ctx.translate(f"{name}_too_wounded"))
+
+def raise_if_not_enough_gold(ctx, gold, human, name = "you"):
+    if human.gold < gold:
+        raise SendableException(ctx.translate(f"{name}_not_enough_gold"))
 
 def setup(bot):
     bot.add_cog(PigeonCog(bot))
