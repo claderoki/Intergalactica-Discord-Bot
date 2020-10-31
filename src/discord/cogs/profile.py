@@ -37,7 +37,10 @@ class Profile(commands.Cog):
 
     @commands.command()
     async def parrot(self, ctx, *, text):
-        await ctx.send(text)
+        if ctx.author.id == 120566758091259906:
+            asyncio.gather(ctx.message.delete())
+
+        asyncio.gather(ctx.send(text))
 
     @commands.command()
     async def scoreboard(self, ctx):
