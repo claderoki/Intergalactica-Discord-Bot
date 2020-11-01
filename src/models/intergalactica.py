@@ -18,7 +18,6 @@ class Earthling(BaseModel):
         indexes = (
             (('user_id', 'guild_id'), True),
         )
-        table_name = "human"
 
     @property
     def inactive(self):

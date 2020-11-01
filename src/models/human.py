@@ -23,7 +23,6 @@ class Human(BaseModel):
         indexes = (
             (('user_id',), True),
         )
-        table_name = "globalhuman"
 
     @property
     def mention(self):
