@@ -7,14 +7,14 @@ from .staff_communication import Ticket, Reply
 from .poll import Change, Parameter, Poll, PollTemplate, Vote, Option
 from .assassins import Game, Player, KillMessage
 from .scene import Scene, Scenario
-from .pigeon import Pigeon, Fight, Bet
+from .pigeon import Pigeon, Fight, Exploration, Mail
 
 database = Human._meta.database
 
 with database:
 
-    # database.drop_tables([Pigeon, Fight, Bet])
-    database.create_tables([Pigeon, Fight, Bet])
+    # database.drop_tables([Pigeon, Fight, Exploration, Mail])
+    database.create_tables([Pigeon, Fight, Exploration, Mail ])
 
     # database.drop_tables([Scene, Scenario])
     database.create_tables([Scene, Scenario])

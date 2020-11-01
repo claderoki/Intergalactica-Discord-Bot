@@ -15,11 +15,11 @@ class DiscordUI(UI):
 
 
     async def get_guess(self, word, player, letters_used):
-        guess = await self.ctx.wait_for_message(
-            channel = self.ctx.channel,
-            author = player.member,
-            check = lambda m : (len(m.content) == 1 or len(m.content) == len(word) and m.content.lower() not in letters_used ))
-            
+
+        # guess = await self.ctx.wait_for_message(
+        #     channel = self.ctx.channel,
+        #     author = str(player),
+        #     check = lambda m : (len(m.content) == 1 or len(m.content) == len(word) and m.content.lower() not in letters_used ))
 
         try:
             await guess.delete()
@@ -36,12 +36,12 @@ class DiscordUI(UI):
             if player.dead:
                 continue
 
-            length = len(str(player.member))
+            length = len(str(player))
 
             arrows = "`" + (((length // 2) - 1) * " ") + "↑`"
 
             embed.add_field(
-                name = str(player.member),
+                name = str(player),
                 value = f"```\n{self.game_states[player.incorrect_guesses]}```" + (arrows if player == current_player else "") )
 
 
@@ -65,15 +65,10 @@ class DiscordUI(UI):
         bet_pool = sum([x.bet for x in game.players])
         bet_pool = int(bet_pool * 1.25)
 
-        db = None
-
         for player in game.players:
-            if db is None:
-                db = player.human._meta.database
-
             if player.dead:
-                player.human.gold -= player.bet
-                lines.append(f"Player {player.member} has lost **{player.bet}** gold")
+                player.identity.remove_points(player.bet)
+                lines.append(f"Player {player} has lost **{player.bet}** gold")
 
             else:
 
@@ -81,14 +76,10 @@ class DiscordUI(UI):
 
                 won = math.ceil(percentage_guessed / 100 * bet_pool)
 
-                player.human.gold += won
+                player.identity.add_point(won)
 
-                lines.append(f"Player {player.member} has won **{won}** gold, percentage guessed: **{int(percentage_guessed)}**")
+                lines.append(f"Player {player} has won **{won}** gold, percentage guessed: **{int(percentage_guessed)}**")
 
         lines.append(f"The word was {game.word}")
 
-        with db:
-            for player in game.players:
-                player.human.save()
-        
         await self.ctx.send("\n".join(lines))

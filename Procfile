@@ -1,1 +1,1 @@
-worker: python -m src --mode=production
+worker: python -m src --mode=production --service=heroku

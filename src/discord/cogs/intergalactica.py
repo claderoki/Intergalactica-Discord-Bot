@@ -7,7 +7,6 @@ from discord.ext import commands, tasks
 
 from src.models import Poll, Option, Settings, NamedEmbed, Earthling, database
 
-
 class Intergalactica(commands.Cog):
 
     _role_ids = \
@@ -45,7 +44,7 @@ class Intergalactica(commands.Cog):
         self.guild = self.bot.get_guild(self.guild_id)
         self.bot.get_dominant_color(self.guild)
 
-        if not self.bot.production:
+        if self.bot.production:
             await asyncio.sleep( (60 * 60) * 3 )
             self.introduction_purger.start()
             self.illegal_member_notifier.start()
@@ -137,7 +136,6 @@ class Intergalactica(commands.Cog):
                 description = introduction.content)
             await self.log("logs", embed = embed)
             await introduction.delete()
-
 
     @tasks.loop(hours = 24)
     async def illegal_member_notifier(self):

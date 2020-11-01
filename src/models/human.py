@@ -23,7 +23,6 @@ class Human(BaseModel):
         indexes = (
             (('user_id',), True),
         )
-        table_name = "globalhuman"
 
     @property
     def mention(self):
@@ -31,7 +30,9 @@ class Human(BaseModel):
 
     @property
     def pigeon(self):
-        return self.pigeons.first()
+        for pigeon in self.pigeons:
+            if not pigeon.dead:
+                return pigeon
 
     @property
     def current_time(self):

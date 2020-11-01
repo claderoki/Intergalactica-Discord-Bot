@@ -12,3 +12,4 @@ pymysql
 Pillow
 matplotlib
 numpy
+countryinfo

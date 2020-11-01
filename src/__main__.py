@@ -3,12 +3,14 @@ import argparse
 
 import src.config as config
 
-parser = argparse.ArgumentParser(description='Choose the mode.')
-parser.add_argument('--mode', default="development", choices=[x.name for x in list(config.Mode)])
+parser = argparse.ArgumentParser()
+parser.add_argument('--mode', default=config.Mode.development.name, choices=[x.name for x in list(config.Mode)])
+parser.add_argument('--service', default="none", choices=["heroku", "none"])
 args = parser.parse_args()
 mode = config.Mode[args.mode]
+service = args.service
 
-if mode != config.Mode.production:
+if service != "heroku":
     try:
         with open(config.path + "/env") as f:
             for line in f.read().splitlines():
@@ -21,7 +23,6 @@ if mode != config.Mode.production:
                 lines.append(f"{var}=")
             f.write("\n".join(lines))
         raise Exception("Please fill in the 'env' file.")
-
 
 from src.discord.bot import Locus
 config.bot = Locus(mode)

@@ -1,8 +1,11 @@
+import datetime
+
 import peewee
 import discord
 
 from .base import BaseModel
 from .human import Human
+import src.config as config
 
 class Earthling(BaseModel):
     user_id               = peewee.BigIntegerField  (null = False)
@@ -15,7 +18,6 @@ class Earthling(BaseModel):
         indexes = (
             (('user_id', 'guild_id'), True),
         )
-        table_name = "human"
 
     @property
     def inactive(self):

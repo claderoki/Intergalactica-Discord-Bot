@@ -25,6 +25,6 @@ class WeatherInfo:
             "Thunderstorm" : "⛈",
             "Fog"          : "🌫️",
             "Smoke"        : "💨",
-            "Drizzle"      : "⛲",
+            "Drizzle"      : "🌧",
             "Mist"         : "🌫️"
         }[self.main]

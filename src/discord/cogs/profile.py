@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands, tasks
 import emoji
 
-from src.models import Human, Earthling, database
+from src.models import Human, Earthling, Mail, database
 from src.discord.helpers.converters import convert_to_date
 from src.discord.helpers.waiters import *
 import src.config as config
@@ -37,47 +37,34 @@ class Profile(commands.Cog):
 
     @commands.command()
     async def parrot(self, ctx, *, text):
-        await ctx.send(text)
+        if ctx.author.id == 120566758091259906:
+            asyncio.gather(ctx.message.delete())
 
-    @commands.command(name = "givegold")
-    async def give_gold(self, ctx, member : discord.Member, amount : int):
-        if member.id == ctx.author.id:
-            raise SendableException(ctx.translate("cannot_send_gold_to_self"))
-
-        with database:
-            sender, _ = Human.get_or_create(user_id = ctx.author.id)
-            if sender.gold < amount:
-                raise SendableException(ctx.translate("not_enough_gold"))
-            sendee, _ = Human.get_or_create(user_id = member.id)
-
-            sender.gold -= amount
-            sendee.gold += amount
-            sendee.save()
-            sender.save()
-
-            asyncio.gather(ctx.send(ctx.translate("gold_sent")))
+        asyncio.gather(ctx.send(text))
 
     @commands.command()
     async def scoreboard(self, ctx):
         query = Earthling.select().where(Earthling.guild_id == ctx.guild.id)
         query = query.join(Human, on=(Earthling.human == Human.id))
         query = query.order_by(Human.gold.desc())
-        query = query.limit(10)
 
         embed = discord.Embed(title = "Scoreboard")
 
-        with database:
-            earthlings = list(query)
-
+        top = 1
         rows = []
-        i = 0
-        for earthling in earthlings:
-            values = []
-            values.append(f"{i+1}")
-            values.append(str(earthling.human.gold))
-            values.append(str(earthling.member))
-            rows.append(values)
-            i += 1
+        i = (top-1)
+        with database:
+            for earthling in query:
+                values = []
+                member = earthling.member
+                if member:
+                    values.append(f"{i+1}")
+                    values.append(str(earthling.human.gold))
+                    values.append(str(member))
+                    rows.append(values)
+                    if len(rows) == 10:
+                        break
+                    i += 1
 
         headers = ["rank", "gold", "member"]
         sep = " | "
@@ -113,7 +100,11 @@ class Profile(commands.Cog):
                 embed = discord.Embed(color = ctx.author.color)
                 for member in members:
                     human, _ = Human.get_or_create(user_id = member.id)
-                    embed.add_field(**human.get_embed_field(show_all = len(members) > 1))
+                    field = human.get_embed_field(show_all = len(members) > 1)
+                    unread_mail = human.inbox.where(Mail.read == False)
+                    if len(unread_mail) > 0:
+                        field["name"] += f"  | {len(unread_mail)} 📥"
+                    embed.add_field(**field)
 
                 await ctx.send(embed = embed)
 
