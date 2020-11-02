@@ -30,7 +30,6 @@ class CityWaiter(StrWaiter):
         return city
 
 class Profile(commands.Cog):
-
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
@@ -288,8 +287,7 @@ class Profile(commands.Cog):
             allowed = rank_role is not None or ctx.author.premium_since is not None
 
             if not allowed:
-                await ctx.send("You are not allowed to run this command yet.")
-                raise Exception()
+                raise SendableException("You are not allowed to run this command yet.")
 
     @role.command(aliases = ["colour"])
     async def color(self, ctx, color : discord.Color = None):
