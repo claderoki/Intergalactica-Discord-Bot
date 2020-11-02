@@ -44,11 +44,11 @@ class Intergalactica(commands.Cog):
         self.guild = self.bot.get_guild(self.guild_id)
         self.bot.get_dominant_color(self.guild)
 
-        if self.bot.production:
-            await asyncio.sleep( (60 * 60) * 3 )
-            self.introduction_purger.start()
-            self.illegal_member_notifier.start()
-            self.birthday_poller.start()
+        # if self.bot.production:
+        #     await asyncio.sleep( (60 * 60) * 3 )
+        #     self.introduction_purger.start()
+        #     self.illegal_member_notifier.start()
+        #     self.birthday_poller.start()
 
 
     async def log(self, channel_name, content = None, **kwargs):
@@ -129,13 +129,20 @@ class Intergalactica(commands.Cog):
 
     @tasks.loop(hours = 12)
     async def introduction_purger(self):
+        return
+        tasks = []
         async for introduction in self.introductions_to_purge():
             embed = discord.Embed(
                 color = self.bot.get_dominant_color(self.guild),
                 title = f"Purged: Introduction by {introduction.author}",
                 description = introduction.content)
-            await self.log("logs", embed = embed)
-            await introduction.delete()
+            tasks.append(self.log("logs", embed = embed))
+            tasks.append(introduction.delete())
+
+        if len(tasks) > 3*2:
+            pass
+        else:
+            asyncio.gather(*tasks)
 
     @tasks.loop(hours = 24)
     async def illegal_member_notifier(self):
