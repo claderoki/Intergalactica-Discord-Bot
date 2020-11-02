@@ -53,8 +53,8 @@ class Prank(discord.ext.commands.Cog):
                 raise SendableException(ctx.translate("pranking_disabled"))
 
             prankstee, _ = Prankster.get_or_create(user_id = member.id, guild_id = ctx.guild.id)
-            # if not prankstee.enabled:
-            #     raise SendableException(ctx.translate("pranking_disabled"))
+            if not prankstee.enabled:
+                raise SendableException(ctx.translate("pranking_disabled"))
             if prankstee.pranked:
                 raise SendableException(ctx.translate("already_pranked"))
 
