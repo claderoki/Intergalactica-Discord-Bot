@@ -21,7 +21,7 @@ def setup():
         # database.drop_tables([SavedEmoji])
         database.create_tables([SavedEmoji])
 
-        database.drop_tables([NicknamePrank, Prankster])
+        # database.drop_tables([NicknamePrank, Prankster])
         database.create_tables([NicknamePrank, Prankster])
 
         # database.drop_tables([Scene, Scenario])
