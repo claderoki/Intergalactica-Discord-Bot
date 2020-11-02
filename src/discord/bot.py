@@ -83,6 +83,9 @@ class Locus(commands.Bot):
         print("--------------------")
 
     def base_embed(self, **kwargs) -> discord.Embed:
+        return self.get_base_embed(**kwargs)
+
+    def get_base_embed(self, **kwargs) -> discord.Embed:
         user = self.user
         embed = discord.Embed(color = self.get_dominant_color(None), **kwargs)
         return embed.set_author(name = user.name, icon_url = user.avatar_url)
@@ -160,7 +163,9 @@ class Locus(commands.Bot):
             "games",
             "inactive",
             "staff_communication",
-            "assassins",
+            # "assassins",
+            "admin",
+            "prank",
             "scene",
             "pigeon"
         ]
@@ -198,7 +203,7 @@ class Locus(commands.Bot):
                 emoji_format = ":regional_indicator_symbol_letter_{char}:"
 
             emojis.append(emoji.emojize(emoji_format.format(char = char), use_aliases=True))
-        
+
         return emojis
 
     async def vote_for(self, message):
