@@ -18,7 +18,7 @@ class Prank(discord.ext.commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
 
-        # if self.bot.production:
+        if self.bot.production:
             self.prank_poller.start()
 
     @commands.group()
@@ -82,8 +82,8 @@ class Prank(discord.ext.commands.Cog):
                 pranked_by = prankster
             )
 
-            # human.gold -= cost
-            # human.save()
+            human.gold -= cost
+            human.save()
             prank.save()
             prankstee.save()
             prankster.save()
