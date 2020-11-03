@@ -97,7 +97,7 @@ class MessageWaiter(Waiter):
 
     @property
     def embed(self):
-        embed = self.ctx.bot.base_embed(description = self.prompt)
+        embed = self.bot.base_embed(description = self.prompt)
 
         footer = []
         instructions = self.instructions
@@ -115,7 +115,7 @@ class MessageWaiter(Waiter):
         await self.ctx.channel.send(embed = self.embed)
 
         try:
-            message = await self.ctx.bot.wait_for("message", timeout=self.timeout, check = self.check)
+            message = await self.bot.wait_for("message", timeout=self.timeout, check = self.check)
         except asyncio.TimeoutError:
             if self.verbose:
                 await self.ctx.send("Timed out.")
@@ -192,7 +192,6 @@ class StrWaiter(MessageWaiter):
         self.case_sensitive = case_sensitive
         self.min_length     = min_length
         self.max_length     = max_length
-
 
     def check(self, message):
         if not super().check(message):
@@ -475,7 +474,7 @@ class ReactionWaiter(Waiter):
         except: pass
 
     async def wait(self, raw = False, timeout = 45, remove = False):
-        reaction, user = await self.ctx.bot.wait_for(
+        reaction, user = await self.bot.wait_for(
             'reaction_add',
             timeout = timeout,
             check   = self.check)
