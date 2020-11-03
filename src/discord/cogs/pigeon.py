@@ -281,12 +281,15 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
             asyncio.gather(ctx.send(embed = embed))
 
-    @commands.dm_only()
     @pigeon.command(name = "mail", aliases = ["message", "send", "letter"])
     async def pigeon_mail(self, ctx, user : discord.User):
         """Send someone a pigeon letter."""
         if user.id == ctx.author.id:
             raise SendableException(ctx.translate("cannot_send_to_self"))
+
+        ctx.channel = ctx.author.dm_channel
+        if ctx.channel is None:
+            ctx.channel = await ctx.author.create_dm()
 
         with database:
             sender = get_active_pigeon(ctx.author)
