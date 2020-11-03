@@ -82,6 +82,20 @@ class Locus(commands.Bot):
         print(f"Prefix={self.command_prefix}")
         print("--------------------")
 
+    def render_view(self, name, **data):
+        from weasyprint import HTML, CSS
+        import jinja2
+
+        path = f"{config.path}/src/views/{name}"
+        with open(f"{path}/{name}.html") as f:
+            template = jinja2.Template(f.read())
+
+        html = template.render(**data)
+
+        with open(f"{path}/{name}.css") as f:
+            HTML(string = html, base_url = path).write_png(f"{config.path}/tmp/profile.png", stylesheets  = [CSS(string = f.read())] )
+        print("Finished exporting.")
+
     def base_embed(self, **kwargs) -> discord.Embed:
         return self.get_base_embed(**kwargs)
 
