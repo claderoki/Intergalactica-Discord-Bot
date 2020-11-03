@@ -29,16 +29,16 @@ class Game:
         self.ui = ui
 
     async def start(self):
-        # reel = random.choices(self.values, weights = (17, 15, 15, 10, 5), k = 3)
-        reel = random.choices(self.values, weights = (30, 25, 20, 10, 5), k = 3)
+        reel = random.choices(self.values, weights = (17, 15, 15, 10, 5), k = 3)
+        # reel = random.choices(self.values, weights = (30, 25, 20, 10, 5), k = 3)
         first,second,third = reel
 
-        # cherry_count = len([x for x in reel if x == self.Reel.cherry])
+        cherry_count = len([x for x in reel if x == self.Reel.cherry])
 
         if first == second == third:
             win = first.payout
-        # elif cherry_count > 0 and first == self.Reel.cherry:
-        #     win = cherry_count * 2
+        elif cherry_count > 0 and first == self.Reel.cherry:
+            win = cherry_count * 2
         else:
             win = -3
 
