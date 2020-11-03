@@ -281,6 +281,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
             asyncio.gather(ctx.send(embed = embed))
 
+    @commands.dm_only()
     @pigeon.command(name = "mail", aliases = ["message", "send", "letter"])
     async def pigeon_mail(self, ctx, user : discord.User):
         """Send someone a pigeon letter."""
@@ -346,8 +347,10 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                 mail.recipient.save()
 
     @pigeon.command(name = "stats")
-    async def pigeon_stats(self, ctx):
-        pigeon = get_active_pigeon(ctx.author)
+    async def pigeon_stats(self, ctx, member : discord.Member = None):
+        member = member or ctx.author
+
+        pigeon = get_active_pigeon(member)
         if pigeon is None:
             raise SendableException(ctx.translate("pigeon_does_not_exist"))
 
@@ -393,11 +396,13 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "status")
-    async def pigeon_status(self, ctx):
+    async def pigeon_status(self, ctx, member : discord.Member = None):
         """Check the status of your pigeon."""
 
+        member = member or ctx.author
+
         with database:
-            pigeon = get_active_pigeon(ctx.author)
+            pigeon = get_active_pigeon(member)
             pigeon_raise_if_not_exist(ctx, pigeon)
 
             lines = []
