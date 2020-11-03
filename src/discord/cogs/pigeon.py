@@ -328,7 +328,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         """Check your inbox."""
         with database:
             human, _ = Human.get_or_create(user_id = ctx.author.id)
-            unread_mail = human.inbox.where(Mail.read == False)
+            unread_mail = human.inbox.where(Mail.read == False).where(Mail.finished == True)
             if len(unread_mail) == 0:
                 return await ctx.send(ctx.translate("no_unread_mail"))
 
