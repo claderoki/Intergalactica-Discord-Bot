@@ -44,7 +44,7 @@ class Prank(discord.ext.commands.Cog):
         if member.bot:
             raise SendableException(ctx.translate("cannot_prank_bot"))
 
-        if ctx.guild.me.top_role.position >= member.top_role.position or member.id == ctx.guild.owner_id:
+        if ctx.guild.me.top_role.position <= member.top_role.position or member.id == ctx.guild.owner_id:
             raise SendableException(ctx.translate("cannot_change_nickname"))
 
         with database:
