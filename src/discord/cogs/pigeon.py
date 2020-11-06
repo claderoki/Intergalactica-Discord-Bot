@@ -85,14 +85,20 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             pigeon_raise_if_unavailable(ctx, challengee, name = "challengee")
             pigeon_raise_if_stats_too_low(ctx, challengee, name = "challengee")
 
+
             fight = Fight(guild_id = ctx.guild.id, start_date = None)
 
             prompt = lambda x : ctx.translate(f"fight_{x}_prompt")
-            waiter = IntWaiter(ctx, prompt = prompt("bet"), min = 0, skippable = True)
+            waiter = IntWaiter(ctx, prompt = prompt("bet"), min = 0, max = min([challenger.human.gold, challengee.human.gold]), skippable = True)
             try:
                 fight.bet = await waiter.wait()
             except Skipped:
                 pass
+
+            if challenger.human.gold < fight.bet:
+                raise SendableException(ctx.translate("challenger_not_enough_gold").format(bet = fight.bet))
+            if challengee.human.gold < fight.bet:
+                raise SendableException(ctx.translate("challengee_not_enough_gold").format(bet = fight.bet))
 
             fight.challenger = challenger
             fight.challengee = challengee
@@ -212,6 +218,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             if isinstance(activity, Exploration):
                 if activity.end_date_passed:
                     country_name = pycountry.countries.get(alpha_2 = activity.destination).name
+                    country_info = CountryInfo(activity.destination)
 
                     text = f"{pigeon.name} soared through the skies for **{activity.duration_in_minutes}** minutes"
                     text += f" over a distance of **{int(activity.distance_in_km)}** Kilometers"
@@ -220,7 +227,16 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                     multiplier = 1
                     if random.randint(1,10) == 1:
                         multiplier += 0.5
-                        text += f"\n{pigeon.gender.get_pronoun().title()} even picked up some of the local language!"
+                        languages = country_info.languages()
+                        if languages:
+                            if len(languages) == 1:
+                                language = pycountry.languages.get(alpha_2 = languages[0])
+                            else:
+                                language = [x for x in languages if x != "en"][0]
+
+                            text += f"\n\nSome {country_info.demonym()} person also taught {pigeon.gender.get_posessive_pronoun()} some {language.name}!"
+                        else:
+                            text += f"\n\n{pigeon.gender.get_pronoun().title()} even picked up some of the local language!"
 
                     explorations_finished = len(activity.pigeon.explorations)
                     if explorations_finished % 10 == 0:
@@ -241,13 +257,12 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                         name = "Winnings",
                         value = get_winnings_value(**winnings)
                     )
-                    update_pigeon(pigeon, winnings)
-
-                    activity.finished = True
-                    pigeon.status = Pigeon.Status.idle
-                    pigeon.human.save()
-                    pigeon.save()
-                    activity.save()
+                    # update_pigeon(pigeon, winnings)
+                    # activity.finished = True
+                    # pigeon.status = Pigeon.Status.idle
+                    # pigeon.human.save()
+                    # pigeon.save()
+                    # activity.save()
                 else:
                     embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to explore!"
                     embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
