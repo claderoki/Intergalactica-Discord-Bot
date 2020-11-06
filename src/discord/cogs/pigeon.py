@@ -257,12 +257,12 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                         name = "Winnings",
                         value = get_winnings_value(**winnings)
                     )
-                    # update_pigeon(pigeon, winnings)
-                    # activity.finished = True
-                    # pigeon.status = Pigeon.Status.idle
-                    # pigeon.human.save()
-                    # pigeon.save()
-                    # activity.save()
+                    update_pigeon(pigeon, winnings)
+                    activity.finished = True
+                    pigeon.status = Pigeon.Status.idle
+                    pigeon.human.save()
+                    pigeon.save()
+                    activity.save()
                 else:
                     embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to explore!"
                     embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
