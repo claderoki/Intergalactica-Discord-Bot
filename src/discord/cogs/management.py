@@ -55,25 +55,42 @@ class Management(discord.ext.commands.Cog):
             increment_emoji(member.guild, emoji)
 
     @commands.command()
-    async def emojis(self, ctx, order = "least"):
-        emoji_usages = [x for x in EmojiUsage.select().where(EmojiUsage.guild_id == ctx.guild.id).order_by(EmojiUsage.total_uses.desc()) if x.emoji is not None]
-        first = -10 if order == "least" else 0
-        last = -1 if order == "least" else 10
-
-        emoji_ids = [x.emoji_id for x in emoji_usages]
-
+    async def emojis(self, ctx, order = "least", animated : bool = False):
         with database:
+            query = EmojiUsage.select()
+            query = query.where(EmojiUsage.guild_id == ctx.guild.id)
+            if order == "least":
+                query = query.order_by(EmojiUsage.total_uses.asc())
+            else:
+                query = query.order_by(EmojiUsage.total_uses.desc())
+
+            emoji_usages = [x for x in query if x.emoji is not None and x.emoji.animated == animated]
+
+            emoji_ids = [x.emoji_id for x in emoji_usages]
+
             for emoji in ctx.guild.emojis:
                 if emoji.id is not None:
                     if emoji.id not in emoji_ids:
-                        emoji_usages.append( EmojiUsage.create(guild_id = ctx.guild.id, emoji_id = emoji.id) )
+                        try:
+                            emoji_usages.append( EmojiUsage.create(guild_id = ctx.guild.id, emoji_id = emoji.id) )
+                        except: pass
+                else:
+                    if emoji.id in emoji_ids:
+                        usage = EmojiUsage.get(emoji_id = emoji.id, guild_id = ctx.guild.id)
+                        usage.delete_instance()
 
             embed = discord.Embed(color = ctx.guild_color )
-            embed.description = ""
 
-            for usage in emoji_usages[first:last]:
-                embed.description += f"{usage.emoji} = {usage.total_uses}\n"
+            lines = []
 
+            for usage in emoji_usages[:10]:
+                line = f"{usage.emoji} = {usage.total_uses}"
+                if order == "least":
+                    lines.insert(0, line)
+                else:
+                    lines.append(line)
+
+            embed.description = "\n".join(lines)
             await ctx.send(embed = embed)
 
     @commands.has_guild_permissions(administrator = True)
