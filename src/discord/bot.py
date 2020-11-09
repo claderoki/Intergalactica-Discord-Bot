@@ -261,8 +261,8 @@ class Locus(commands.Bot):
             exception = error
 
         if isinstance(exception, commands.errors.CommandOnCooldown):
-            embed = Embed.error("You are on cooldown.")
-            embed.set_footer(text = "Try again at")
+            embed = Embed.error(f"You are on cooldown. Try again in {seconds_readable(exception.retry_after)}")
+            embed.set_footer(text = "Available again at")
             embed.timestamp = datetime.datetime.utcnow() + datetime.timedelta(seconds = exception.retry_after)
             asyncio.gather(ctx.send(embed = embed))
         elif isinstance(exception, self.sendables):
