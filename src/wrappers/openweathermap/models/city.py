@@ -8,8 +8,6 @@ from .coordinate import Coordinate
 from .weather_info import WeatherInfo
 from .temperature_info import TemperatureInfo
 
-
-
 class City:
     __slots__ = ("id", "coordinates", "name",
                  "country_code", "weather_infos",
