@@ -153,10 +153,17 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             if fight is None:
                 raise SendableException(ctx.translate("no_challenger"))
 
+            error = None
             if fight.challenger.human.gold < fight.bet:
-                raise SendableException(ctx.translate("challenger_not_enough_gold").format(bet = fight.bet))
+                error = ctx.translate("challenger_not_enough_gold").format(bet = fight.bet)
             if fight.challengee.human.gold < fight.bet:
-                raise SendableException(ctx.translate("challengee_not_enough_gold").format(bet = fight.bet))
+                error = ctx.translate("challengee_not_enough_gold").format(bet = fight.bet)
+            if error is not None:
+                for pigeon in (challenger, challengee):
+                    pigeon.status = Pigeon.Status.idle
+                    pigeon.save()
+                fight.delete_instance()
+                raise SendableException(error)
 
             fight.accepted = True
             fight.start_date = datetime.datetime.utcnow() + datetime.timedelta(minutes = 5)
