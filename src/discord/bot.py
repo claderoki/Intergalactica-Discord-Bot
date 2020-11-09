@@ -105,16 +105,26 @@ class Locus(commands.Bot):
         return embed.set_author(name = user.name, icon_url = user.avatar_url)
 
     async def store_file(self, file, filename) -> str:
-        """This function stores a file in the designated storage channel, it returns the url of the newly stored image."""
+        """ This function stores a file in the designated storage channel, it returns the url of the newly stored image.
+            <item> can be:
+                - a file (io.BytesIO)
+                - a path (str)
+                - bytes
+        """
 
         storage_channel = (await self.application_info()).owner
 
         if isinstance(file, io.BytesIO):
             f = file
+        elif isinstance(file, str):
+            f = open(file, "rb")
         else:
             f = io.BytesIO(file)
 
         msg = await storage_channel.send(file=discord.File(fp=f, filename=filename))
+
+        if isinstance(file, str):
+            f.close()
 
         return msg.attachments[0].url
 
