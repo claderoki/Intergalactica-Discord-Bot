@@ -5,6 +5,7 @@ import random
 import os
 from enum import Enum
 import io
+import datetime
 
 import requests
 import emoji
@@ -260,7 +261,9 @@ class Locus(commands.Bot):
             exception = error
 
         if isinstance(exception, commands.errors.CommandOnCooldown):
-            embed = Embed.error("You are on cooldown. Try again in " + seconds_readable(exception.retry_after))
+            embed = Embed.error("You are on cooldown.")
+            embed.set_footer(text = "Try again at")
+            embed.timestamp = datetime.datetime.utcnow() + datetime.timedelta(seconds = exception.retry_after)
             asyncio.gather(ctx.send(embed = embed))
         elif isinstance(exception, self.sendables):
             asyncio.gather(ctx.send(embed = Embed.error(str(exception))))
