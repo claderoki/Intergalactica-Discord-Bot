@@ -1,0 +1,73 @@
+@page {
+  size: 600px 300px;
+  margin:0;
+}
+
+body, html {
+  background-color: rgba(0,0,0,0);
+}
+
+.profile-card {
+  width:600px;
+  height:300px;
+}
+
+label {
+  font-size: 200%;
+  /* font-family: Retroville; */
+  /* font-family: "Baskerville Old Face"; */
+  font-family: "Constantia";
+}
+
+.attributes {
+  margin-left:20%;
+}
+
+.attribute-names, .attribute-values{
+
+  /* border-bottom: 1.5px solid white; */
+  /* border-top: 1.5px solid white; */
+
+  /* background: rgba(228,228,228,0.1); */
+  /* box-shadow: 0 0 5px 5px rgba(228,228,228,0.1); */
+}
+
+
+
+.attributes tr:nth-child(odd) {
+
+}
+
+.avatar-label {
+  font-size:250%;
+  margin-left:5%;
+  /* text-align: center; */
+}
+
+.avatar-image {
+  border-radius: 50%;
+  height:120px;
+  width:120px;
+  border: 3px solid white;
+}
+
+.profile-card {
+    background-color: #282828;
+    border: 1.5px solid white;
+    padding: 10px;
+    border-radius: 25px;
+    background-image: url("bg_blur.png");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.profile-card, .profile-card table {
+  color: white;
+}
+
+
+@font-face {
+    font-family: Retroville;
+    src: url(../../../resources/fonts/retroville\ nc.ttf);
+  }
