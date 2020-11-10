@@ -162,6 +162,30 @@ class Profile(commands.Cog):
             human.save()
             await ctx.send(ctx.translate("profile_setup"))
 
+    @commands.command()
+    async def events(self, ctx, month : int = None):
+        if month is None:
+            month = datetime.datetime.utcnow().month
+        month = max(min(month, 12), 1)
+
+        query = Human.select()
+        query = query.where(Human.date_of_birth != None)
+        query = query.where(Human.date_of_birth.month == month)
+        query = query.order_by(Human.date_of_birth.asc())
+
+        with database:
+            humans = [x for x in query if ctx.guild.get_member(x.user_id) is not None]
+
+        lines = []
+        for human in humans:
+            lines.append(f"{human.user} - {human.date_of_birth}")
+        if len(lines) > 0:
+            embed = discord.Embed(color = ctx.guild_color)
+            embed.set_author(name = "Birthdays", icon_url = ctx.guild.icon_url)
+            embed.description = "\n".join(lines)
+            await ctx.send(embed = embed)
+        else:
+            await ctx.send("No events this month")
     @commands.group(name="dateofbirth")
     async def date_of_birth(self, ctx):
         pass
