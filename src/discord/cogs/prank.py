@@ -97,16 +97,15 @@ class Prank(discord.ext.commands.Cog):
 
             asyncio.gather(ctx.send(embed = embed))
 
-
-        # ask what nickname they'd like to give that person, (specify rules still apply)
-
-
     @tasks.loop(minutes = 1)
     async def prank_poller(self):
         for prank in NicknamePrank.select().where(NicknamePrank.finished == False):
             if prank.end_date_passed:
                 prank.finished = True
+                prank.victim.pranked = False
+                prank.victim.prank_type = None
                 prank.save()
+                prank.victim.save()
                 asyncio.gather(prank.revert())
             else:
                 if prank.victim.member.display_name != prank.new_nickname:
