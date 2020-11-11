@@ -38,6 +38,14 @@ class Prank(discord.ext.commands.Cog):
             prankster.save()
             asyncio.gather(ctx.send(ctx.translate("saved")))
 
+    @prank.command(name = "list")
+    async def prank_list(self, ctx):
+        with database:
+            lines = []
+            for prankster in Prankster.select().where(Prankster.guild_id == ctx.guild.id).where(Prankster.enabled == True):
+                lines.append(str(prankster.member))
+            asyncio.gather(ctx.send("\n".join(lines)))
+
     @commands.guild_only()
     @prank.command(name = "nickname", aliases = ["nick"] )
     async def prank_nickname(self, ctx, member : discord.Member):
