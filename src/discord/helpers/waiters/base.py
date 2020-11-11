@@ -90,7 +90,7 @@ class MessageWaiter(Waiter):
         try:
             self.converted = self.convert(" ".join(words))
         except ConversionFailed as e:
-            self._send(message.channel, embed = Embed.error(str(e) + " Try again."))
+            self._send(message.channel, embed = Embed.error(f"{e} Try again."))
             return False
 
         return True
@@ -186,9 +186,9 @@ class FloatWaiter(IntWaiter):
 class StrWaiter(MessageWaiter):
     __slots__ = ("allowed_words", "case_sensitive", "min_length", "max_length")
 
-    def __init__(self, ctx, allowed_words = [], case_sensitive = True, min_length = 1, max_length = 2000, **kwargs):
+    def __init__(self, ctx, allowed_words = None, case_sensitive = True, min_length = 1, max_length = 2000, **kwargs):
         super().__init__(ctx, **kwargs)
-        self.allowed_words  = allowed_words
+        self.allowed_words  = allowed_words or []
         self.case_sensitive = case_sensitive
         self.min_length     = min_length
         self.max_length     = max_length
@@ -213,12 +213,34 @@ class StrWaiter(MessageWaiter):
     def convert(self, argument):
         return argument
 
+class AttachmentWaiter(MessageWaiter):
+    def __init__(self, ctx, **kwargs):
+        super().__init__(ctx, max_words = None, **kwargs)
+
+    def convert(self, argument):
+        return argument
+
+    def check(self, message):
+        if not super().check(message):
+            return False
+
+        if len(message.attachments) == 0:
+            return False
+        return True
+
+    async def wait(self, store = False, raw = False):
+        message = await super().wait(raw = True)
+        if not raw and store:
+            attachment = message.attachments[0]
+            return await self.bot.store_file(await attachment.read(), attachment.filename)
+        return message
+
 class TimezoneWaiter(StrWaiter):
     def __init__(self, ctx, **kwargs):
         super().__init__(ctx, **kwargs)
 
     def convert(self, argument):
-        return pytz.timezone(argument)
+        return pytz.timezone(argument.title())
 
 class CountryWaiter(StrWaiter):
     def __init__(self, ctx, **kwargs):
@@ -321,7 +343,6 @@ class TextChannelWaiter(MessageWaiter):
 
         raise ConversionFailed("Message needs to be a #mention.")
 
-
 class RoleWaiter(MessageWaiter):
 
     def convert(self, argument):
@@ -337,7 +358,6 @@ class RoleWaiter(MessageWaiter):
             raise ConversionFailed("Role not found.")
         return result
 
-
 class TimeWaiter(MessageWaiter):
     __slots__ = ("before", "after")
 
@@ -348,7 +368,6 @@ class TimeWaiter(MessageWaiter):
         self.after  = after
 
     def convert(self, argument):
-
         missing_count = 8 - len(argument)
         if missing_count > 0:
             for i in range(len(argument)+1, 9):
@@ -356,16 +375,12 @@ class TimeWaiter(MessageWaiter):
                     argument += ":"
                 else:
                     argument += "0"
-
         try:
             hours, minutes, seconds = [int(x) for x in argument.split(":")]
         except:
             raise ConversionFailed("Needs to be HH:MM:SS.")
 
         return datetime.time(hours, minutes, seconds)
-
-
-
 
 class DateWaiter(StrWaiter):
 
@@ -403,7 +418,6 @@ class DateWaiter(StrWaiter):
             return False
 
         return True
-
 
 class TimeDeltaWaiter(MessageWaiter):
 
@@ -444,7 +458,6 @@ class TimeDeltaWaiter(MessageWaiter):
     def convert(self, argument):
         return self._convert(argument)
 
-
 waiter_mapping = \
 {
     str                 : StrWaiter,
@@ -457,12 +470,12 @@ waiter_mapping = \
 }
 
 class ReactionWaiter(Waiter):
-    def __init__(self, ctx, message, emojis, members = [], channels = [] ):
+    def __init__(self, ctx, message, emojis, members = None, channels = None ):
         self.ctx = ctx
         self.message = message
         self.emojis = emojis
-        self.members = members
-        self.channels = channels
+        self.members = members or []
+        self.channels = channels or []
 
     async def add_reactions(self):
         for emoji in self.emojis:
