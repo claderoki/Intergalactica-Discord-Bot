@@ -124,3 +124,18 @@ class Human(BaseModel):
 
         return {"name" : name, "value" : "\n".join(values), "inline" : True}
 
+
+class Item(BaseModel):
+    name        = peewee.CharField (null = False)
+    description = peewee.TextField (null = False)
+    image_url   = peewee.TextField (null = False)
+
+class HumanItem(BaseModel):
+    human  = peewee.ForeignKeyField (Human, null = False)
+    item   = peewee.ForeignKeyField (Item, null = False)
+    amount = peewee.IntegerField    (null = False, default = 1)
+
+    class Meta:
+        indexes = (
+            (("human", "item"), True),
+        )

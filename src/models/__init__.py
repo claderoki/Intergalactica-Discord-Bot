@@ -1,5 +1,5 @@
 from .base import BaseModel
-from .human import Human
+from .human import Human, Item, HumanItem
 from .intergalactica import Earthling
 from .analytics import EmojiUsage
 from .settings import Settings, NamedEmbed, NamedChannel, Translation, Locale
@@ -27,8 +27,8 @@ def setup():
         # database.drop_tables([Scene, Scenario])
         database.create_tables([Scene, Scenario])
 
-        # database.drop_tables([Human])
-        database.create_tables([Human])
+        # database.drop_tables([Human, Item, HumanItem])
+        database.create_tables([Human, Item, HumanItem])
 
         # database.drop_tables([Earthling])
         database.create_tables([Earthling])

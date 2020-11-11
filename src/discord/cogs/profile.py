@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands, tasks
 import emoji
 
-from src.models import Human, Earthling, Mail, database
+from src.models import Human, Earthling, Mail, Item, database
 from src.discord.helpers.converters import convert_to_date
 from src.discord.helpers.waiters import *
 import src.config as config
@@ -186,6 +186,27 @@ class Profile(commands.Cog):
             await ctx.send(embed = embed)
         else:
             await ctx.send("No events this month")
+
+    @commands.group()
+    async def item(self, ctx):
+        pass
+
+    @item.command()
+    async def create(self, ctx):
+        prompt = lambda x : ctx.translate(f"item_{x}_prompt")
+        item = Item()
+
+        waiter = AttachmentWaiter(ctx, prompt = prompt("image"))
+        item.image_url = await waiter.wait(store = True)
+
+        waiter = StrWaiter(ctx, prompt = prompt("name") )
+        item.name = await waiter.wait()
+
+        waiter = StrWaiter(ctx, max_words = None, prompt = prompt("description"))
+        item.description = await waiter.wait()
+
+        item.save()
+        await ctx.send("ok")
     @commands.group(name="dateofbirth")
     async def date_of_birth(self, ctx):
         pass

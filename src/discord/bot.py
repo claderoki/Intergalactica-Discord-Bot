@@ -111,21 +111,30 @@ class Locus(commands.Bot):
                 - a file (io.BytesIO)
                 - a path (str)
                 - bytes
+                - url (str)
         """
+
+        filename = filename or "file"
 
         storage_channel = (await self.application_info()).owner
 
+        data = {}
         if isinstance(file, io.BytesIO):
-            f = file
+            file.seek(0)
+            data["file"] = file
         elif isinstance(file, str):
-            f = open(file, "rb")
-        else:
-            f = io.BytesIO(file)
+            if file.startswith("http"):
+                data["bytes"] = urlopen(file).read()
+            else:
+                data["path"] = file
+        if "bytes" in data or len(data) == 0:
+            data["file"] = io.BytesIO(file)
+            if "bytes" in data:
+                del data["bytes"]
 
-        msg = await storage_channel.send(file=discord.File(fp=f, filename=filename))
+        fp = data.get("file") or data.get("path")
 
-        if isinstance(file, str):
-            f.close()
+        msg = await storage_channel.send(file=discord.File(fp=fp, filename=filename))
 
         return msg.attachments[0].url
 
