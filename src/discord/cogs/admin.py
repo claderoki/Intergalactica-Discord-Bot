@@ -13,8 +13,10 @@ class Admin(discord.ext.commands.Cog):
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
+
     @commands.Cog.listener()
     async def on_ready(self):
+        pass
 
     @commands.is_owner()
     @commands.group()
