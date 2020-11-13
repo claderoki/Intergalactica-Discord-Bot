@@ -14,6 +14,11 @@ import src.config as config
 from src.utils.timezone import Timezone
 from src.discord.errors.base import SendableException
 
+def is_tester(member):
+    with database:
+        human, _ = Human.get_or_create(user_id = member.id)
+        return human.tester
+
 class CityWaiter(StrWaiter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, max_words = None, **kwargs)
