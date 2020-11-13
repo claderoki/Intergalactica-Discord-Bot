@@ -5,7 +5,7 @@ from emoji import emojize
 import discord
 from discord.ext import commands, tasks
 
-from src.models import Poll, Option, Settings, NamedEmbed, Earthling, database
+from src.models import Poll, PollTemplate, Option, Settings, NamedEmbed, Earthling, database
 
 class Intergalactica(commands.Cog):
 
@@ -44,11 +44,11 @@ class Intergalactica(commands.Cog):
         self.guild = self.bot.get_guild(self.guild_id)
         self.bot.get_dominant_color(self.guild)
 
-        # if self.bot.production:
-        #     await asyncio.sleep( (60 * 60) * 3 )
+        if self.bot.production:
+            await asyncio.sleep( (60 * 60) * 3 )
         #     self.introduction_purger.start()
-        #     self.illegal_member_notifier.start()
-        #     self.birthday_poller.start()
+            self.illegal_member_notifier.start()
+            self.birthday_poller.start()
 
 
     async def log(self, channel_name, content = None, **kwargs):
@@ -70,6 +70,22 @@ class Intergalactica(commands.Cog):
         embed.description = text.format(member = member)
 
         await welcome_channel.send(embed = embed)
+
+    async def create_selfie_poll(self, member):
+        with database:
+            poll = Poll.from_template(PollTemplate.get(name = "selfies"))
+            poll.question = f"Should {member} be given selfie access?"
+            poll.save()
+            poll.create_options(("Yes", "No", "I don't know them well enough yet"))
+            await poll.send()
+            poll.save()
+            return poll
+
+    @commands.has_guild_permissions(administrator = True)
+    @commands.command()
+    async def selfiepoll(self, ctx, member : discord.Member):
+        await self.create_selfie_poll(member)
+        await ctx.success()
 
     @commands.Cog.listener()
     async def on_member_join(self, member):

@@ -1,5 +1,6 @@
 import datetime
-from dateutil.relativedelta import relativedelta 
+from dateutil.relativedelta import relativedelta
+from enum import Enum
 
 import peewee
 import discord
@@ -18,6 +19,7 @@ class Human(BaseModel):
     date_of_birth         = peewee.DateField        (null = True)
     city                  = peewee.TextField        (null = True)
     country_code          = peewee.TextField        (null = True)
+    tester                = peewee.BooleanField     (null = False, default = False)
 
     class Meta:
         indexes = (
@@ -56,6 +58,15 @@ class Human(BaseModel):
 
         current_date = datetime.datetime.utcnow()
         return self.date_of_birth.day == current_date.day and self.date_of_birth.month == current_date.month
+
+    def add_item(self, item, amount):
+        human_item, created = HumanItem.get_or_create(item = item, human = self)
+        if created:
+            human_item.amount = amount
+        else:
+            human_item.amount += amount
+        human_item.save()
+        return human_item
 
     @property
     def next_birthday(self):

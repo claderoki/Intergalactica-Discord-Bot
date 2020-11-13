@@ -4,9 +4,51 @@ import json
 import peewee
 import emoji
 
+from src.discord.helpers.waiters import *
+from src.discord.helpers.pretty import prettify_value
 import src.config as config
 
+def to_snake_case(text):
+    new_chars = []
+    for i, char in enumerate(text):
+        if i != 0 and char.upper() == char:
+            new_chars.append("_")
+        new_chars.append(char.lower())
+    return "".join(new_chars)
+
 class BaseModel(peewee.Model):
+
+    def waiter_for(self, attr, ctx, **kwargs):
+        cls = self.__class__
+        field = getattr(cls, attr)
+        value = getattr(self, attr)
+
+        if "prompt" not in kwargs:
+            kwargs["prompt"] = ctx.translate(f"{to_snake_case(cls.__name__)}_{attr}_prompt")
+            if field.default is not None:
+                kwargs["prompt"] += f"\nDefault: **{prettify_value(field.default)}**"
+            if value is not None:
+                kwargs["prompt"] += f"\nCurrent: **{prettify_value(value)}**"
+
+        if "skippable" not in kwargs:
+            kwargs["skippable"] = field.null or field.default is not None
+
+        if isinstance(field, peewee.BooleanField):
+            return BoolWaiter(ctx, **kwargs)
+        if isinstance(field, EnumField):
+            return EnumWaiter(ctx, field.enum, **kwargs)
+        if isinstance(field, (peewee.TextField, peewee.CharField)):
+            return StrWaiter(ctx, max_words = None, **kwargs)
+
+    async def editor_for(self, attr, ctx, on_skip = "pass", **kwargs):
+        waiter = self.waiter_for(attr, ctx, **kwargs)
+        try:
+            setattr(self, attr, await waiter.wait())
+        except Skipped:
+            if on_skip in ("null", "none"):
+                setattr(self, None, await waiter.wait())
+            elif on_skip == "default":
+                setattr(self, getattr(self.__class__, attr).default, await waiter.wait())
 
     @property
     def bot(self):
@@ -49,6 +91,7 @@ class BaseModel(peewee.Model):
 
     class Meta:
         legacy_table_names = False
+
         database = peewee.MySQLDatabase(
             "locus_db",
             user     = os.environ["mysql_user"],

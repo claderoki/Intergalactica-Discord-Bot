@@ -41,7 +41,7 @@ class Profile(commands.Cog):
 
     @commands.command()
     async def parrot(self, ctx, *, text):
-        if ctx.author.id == 120566758091259906:
+        if ctx.author.id == self.bot.owner.id:
             asyncio.gather(ctx.message.delete())
 
         asyncio.gather(ctx.send(text))
@@ -95,7 +95,17 @@ class Profile(commands.Cog):
         await ctx.send(embed = embed)
 
     @commands.group()
-    async def profile(self, ctx, members : commands.Greedy[discord.Member]):
+    async def profile(self, ctx, member : discord.Member = None):
+        member = member or ctx.author
+        with database:
+            human, _ = Human.get_or_create(user_id = member.id)
+
+        async with ctx.typing():
+            image = self.bot.render_template("profile", human = human)
+            await ctx.send(file = image)
+
+        return
+
         if ctx.invoked_subcommand is None:
             if ctx.author not in members:
                 members.insert(0, ctx.author)
@@ -148,8 +158,9 @@ class Profile(commands.Cog):
                 human.country_code = country.alpha_2
                 if human.city is not None:
                     city = self.bot.owm_api.by_q(human.city, human.country_code)
-                    human.timezone = str(city.timezone)
-                    timezone_set = True
+                    if city is not None:
+                        human.timezone = str(city.timezone)
+                        timezone_set = True
 
             if not timezone_set:
                 waiter = TimezoneWaiter(ctx, prompt = prompt("timezone"), skippable = True)
@@ -196,22 +207,53 @@ class Profile(commands.Cog):
     async def item(self, ctx):
         pass
 
-    @item.command()
-    async def create(self, ctx):
-        prompt = lambda x : ctx.translate(f"item_{x}_prompt")
-        item = Item()
+    @item.command(name = "create", aliases = ["edit"])
+    async def item_create(self, ctx,*, name):
+        if name == "":
+            raise commands.errors.MissingRequiredArgument("name")
+        if not is_tester(ctx.author):
+            raise SendableException(ctx.translate("not_a_tester"))
 
-        waiter = AttachmentWaiter(ctx, prompt = prompt("image"))
-        item.image_url = await waiter.wait(store = True)
+        item, new = Item.get_or_create(name = name)
 
-        waiter = StrWaiter(ctx, prompt = prompt("name") )
-        item.name = await waiter.wait()
+        if not new:
+            await item.editor_for("name", ctx, skippable = True)
 
-        waiter = StrWaiter(ctx, max_words = None, prompt = prompt("description"))
-        item.description = await waiter.wait()
+        await item.editor_for("description", ctx, skippable = True)
+        await item.editor_for("rarity", ctx, skippable = not new)
+        await item.editor_for("explorable", ctx, skippable = not new)
+
+        waiter = AttachmentWaiter(ctx, prompt = ctx.translate("item_image_prompt"), skippable = not new)
+        try:
+            item.image_url = await waiter.wait(store = True)
+        except Skipped: pass
 
         item.save()
-        await ctx.send("ok")
+        await ctx.send("OK")
+
+    @item.command(name = "list")
+    async def item_list(self, ctx):
+        with database:
+            lines = []
+            for item in Item:
+                if item.explorable:
+                    line = f"{item.name} ({item.rarity.weight})"
+                else:
+                    line = item.name
+                lines.append(line)
+
+            embed = discord.Embed()
+            lines = "\n".join(lines)
+            embed.description = f"```\n{lines}```"
+            embed.set_footer(text = f"To view more information about a specific item type '{ctx.prefix}item view <name>'")
+            asyncio.gather(ctx.send(embed = embed))
+
+    @item.command(name = "view")
+    async def item_view(self, ctx,*, name):
+        with database:
+            item = Item.get(name = name)
+            await ctx.send(embed = item.embed)
+
     @commands.group(name="dateofbirth")
     async def date_of_birth(self, ctx):
         pass
@@ -237,7 +279,6 @@ class Profile(commands.Cog):
             human.save()
 
         await ctx.send(ctx.bot.translate("attr_removed".format(name = ctx.attr_name)))
-
 
     @commands.group()
     async def timezone(self, ctx):
@@ -287,7 +328,6 @@ class Profile(commands.Cog):
             human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
-
 
     @timezone.command(name = "delete")
     async def delete_timezone(self, ctx):

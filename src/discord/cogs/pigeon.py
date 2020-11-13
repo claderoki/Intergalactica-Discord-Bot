@@ -6,12 +6,23 @@ from discord.ext import commands, tasks
 from countryinfo import CountryInfo
 
 import src.config as config
-from src.models import Scene, Scenario, Human, Fight, Pigeon, Exploration, Mail, Settings, database
+from src.models import Scene, Scenario, Human, Fight, Pigeon, Item, Exploration, Mail, Settings, database
+from src.models.base import PercentageField
 from src.discord.helpers.waiters import *
 from src.games.game.base import DiscordIdentity
 from src.discord.errors.base import SendableException
+from src.discord.helpers.pretty import prettify_dict
 from src.utils.enums import Gender
 from src.discord.helpers.converters import EnumConverter
+
+def choose(items,chances):
+    p = chances[0]
+    x = random.random()
+    i = 0
+    while x > p :
+        i = i + 1
+        p = p + chances[i]
+    return items[i]
 
 class PigeonCog(commands.Cog, name = "Pigeon"):
 
@@ -228,8 +239,10 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                     country_info = CountryInfo(activity.destination)
 
                     text = f"{pigeon.name} soared through the skies for **{activity.duration_in_minutes}** minutes"
-                    text += f" over a distance of **{int(activity.distance_in_km)}** Kilometers"
+                    text += f" over a distance of **{int(activity.distance_in_km)}** km"
                     text += f" until {pigeon.gender.get_pronoun()} finally reached **{country_name}**"
+
+                    bonuses = []
 
                     multiplier = 1
                     if random.randint(1,10) == 1:
@@ -239,16 +252,27 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                             if len(languages) == 1:
                                 language = pycountry.languages.get(alpha_2 = languages[0])
                             else:
-                                language = [x for x in languages if x != "en"][0]
+                                language = pycountry.languages.get(alpha_2 = [x for x in languages if x != "en"][0])
 
-                            text += f"\n\nSome {country_info.demonym()} person also taught {pigeon.gender.get_posessive_pronoun()} some {language.name}!"
+                            bonuses.append(f"Some {country_info.demonym()} person also taught {pigeon.gender.get_posessive_pronoun()} some {language.name}!")
                         else:
-                            text += f"\n\n{pigeon.gender.get_pronoun().title()} even picked up some of the local language!"
+                            bonuses.append(f"{pigeon.gender.get_pronoun().title()} even picked up some of the local language!")
+
+                    if random.randint(0,2) == 0:
+                        items = [x for x in Item.select().where(Item.explorable == True)]
+                        if len(items) > 0:
+                            item = random.choices(items, weights = [x.rarity.weight for x in items], k = 1)[0]
+                            embed.set_thumbnail(url = item.image_url)
+                            bonuses.append(f"On the way {pigeon.gender.get_pronoun()} also found a **{item.name}**")
+                            pigeon.human.add_item(item, 1)
 
                     explorations_finished = len(activity.pigeon.explorations)
                     if explorations_finished % 10 == 0:
                         multiplier += 1
-                        text += f"\nSince this is your **{explorations_finished}th** exploration, you get a bonus!"
+                        bonuses.append(f"Since this is your **{explorations_finished}th** exploration, you get a bonus!")
+
+                    for bonus in bonuses:
+                        embed.add_field(name = "Bonus", value = bonus, inline = False)
 
                     embed.description = text
 
@@ -262,8 +286,10 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
                     embed.add_field(
                         name = "Winnings",
-                        value = get_winnings_value(**winnings)
+                        value = get_winnings_value(**winnings),
+                        inline = False
                     )
+
                     update_pigeon(pigeon, winnings)
                     activity.finished = True
                     pigeon.status = Pigeon.Status.idle
@@ -284,13 +310,14 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                         "cleanliness" : -random.randint(10,40),
                     }
 
+                    update_pigeon(pigeon, winnings)
+
                     embed.add_field(
                         name = "Winnings",
                         value = get_winnings_value(**winnings)
                     )
 
                     embed.description = f"{pigeon.name} comes back from a long journey to {activity.recipient.mention}."
-                    update_pigeon(pigeon, winnings)
                     activity.finished = True
                     pigeon.status = Pigeon.Status.idle
                     pigeon.human.save()
@@ -430,23 +457,25 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             pigeon = get_active_pigeon(member)
             pigeon_raise_if_not_exist(ctx, pigeon)
 
-            lines = []
-            longest = max([len(x) for x in Pigeon.emojis])
-            ljust = lambda x : x.ljust(longest+2)#\u2002
+            data = {}
+            emojis = []
+
             for attr, emoji in Pigeon.emojis.items():
-                if attr in ("gold", "experience"):
-                    continue
-                else:
+                try:
                     value = getattr(pigeon, attr)
+                except AttributeError:
+                    continue
+                if isinstance(getattr(Pigeon, attr), PercentageField):
+                    data[attr] = f"{value}%"
+                else:
+                    data[attr] = f"{value}"
+                emojis.append(emoji)
 
-                lines.append(f"{emoji} {ljust(attr)} {value}%")
-
-        lines.insert(0, f"📛 {ljust('name')} {pigeon.name}")
-        lines.append(f"{Pigeon.emojis['experience']} {ljust('experience')} {pigeon.experience}")
-        lines.append(f"{pigeon.status.value} {ljust('status')} {pigeon.status.name}")
-
+        emojis.append(pigeon.status.value)
+        data["status"] = pigeon.status.name
+        lines = prettify_dict(data, emojis = emojis)
         embed = self.get_base_embed(ctx.guild)
-        embed.description = "```\n" + ("\n".join(lines)) + "```"
+        embed.description = f"```\n{lines}```"
         asyncio.gather(ctx.send(embed = embed))
 
     def increase_stats(self, ctx, attr_name, attr_increase, cost, message):
@@ -556,10 +585,10 @@ def get_winnings_value(**kwargs):
     for key, value in kwargs.items():
         emoji = Pigeon.emojis[key]
         if value > 0:
-            lines.append(f"{emoji} {key} +{value}")
+            lines.append(f"{emoji} +{value}")
         elif value < 0:
-            lines.append(f"{emoji} {key} {value}")
-    return "\n".join(lines)
+            lines.append(f"{emoji} {value}")
+    return ", ".join(lines)
 
 def get_active_pigeon(user, raise_on_none = False):
     try:
