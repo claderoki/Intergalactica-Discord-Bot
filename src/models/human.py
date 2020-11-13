@@ -5,7 +5,7 @@ import peewee
 import discord
 import emoji
 
-from .base import BaseModel
+from .base import BaseModel, EnumField
 from src.utils.timezone import Timezone
 import src.config as config
 
@@ -126,9 +126,48 @@ class Human(BaseModel):
 
 
 class Item(BaseModel):
-    name        = peewee.CharField (null = False)
-    description = peewee.TextField (null = False)
-    image_url   = peewee.TextField (null = False)
+    class Rarity(Enum):
+        junk      = 1
+        common    = 2
+        rare      = 3
+        legendary = 4
+
+        @property
+        def color(self):
+            if self == self.junk:
+                return discord.Color.from_rgb(168, 115, 77)
+            elif self == self.common:
+                return discord.Color.from_rgb(196, 100, 70)
+            elif self == self.rare:
+                return discord.Color.from_rgb(196, 100, 70)
+            elif self == self.legendary:
+                return discord.Color.from_rgb(196, 100, 70)
+
+        @property
+        def weight(self):
+            if self == self.junk:
+                return 40
+            elif self == self.common:
+                return 30
+            elif self == self.rare:
+                return 20
+            elif self == self.legendary:
+                return 10
+
+    name        = peewee.CharField    (null = False)
+    description = peewee.TextField    (null = False)
+    image_url   = peewee.TextField    (null = False)
+    rarity      = EnumField           (Rarity, null = False, default = Rarity.common)
+    explorable  = peewee.BooleanField (null = False, default = False)
+
+    @property
+    def embed(self):
+        embed = discord.Embed()
+        # embed.color = self.bot.calculate_dominant_color(self.image_url)
+        embed.set_thumbnail(url = self.image_url)
+        embed.title = self.name
+        embed.description = self.description
+        return embed
 
 class HumanItem(BaseModel):
     human  = peewee.ForeignKeyField (Human, null = False)
