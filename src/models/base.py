@@ -48,6 +48,7 @@ class BaseModel(peewee.Model):
         return self._channel
 
     class Meta:
+        legacy_table_names = False
         database = peewee.MySQLDatabase(
             "locus_db",
             user     = os.environ["mysql_user"],
