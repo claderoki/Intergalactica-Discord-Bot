@@ -7,6 +7,8 @@ from emoji import emojize
 import peewee
 
 from src.discord.helpers.waiters import *
+from src.discord.helpers.pretty import prettify_dict
+from src.discord.errors.base import SendableException
 import src.config as config
 from src.models import Change, Parameter, Poll, PollTemplate, Vote, database
 
@@ -68,7 +70,6 @@ class PollCog(commands.Cog, name = "Poll"):
             if created:
                 pass
 
-
     async def setup_poll(self, ctx, poll):
         prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
         cls = poll.__class__
@@ -118,6 +119,24 @@ class PollCog(commands.Cog, name = "Poll"):
                 poll.vote_percentage_to_pass = await waiter.wait()
             except Skipped: pass
 
+        if poll.pin is None or is_template:
+            waiter = BoolWaiter(ctx, prompt = prompt("pin"), skippable = cls.pin.null)
+            try:
+                poll.pin = await waiter.wait()
+            except Skipped: pass
+
+        if poll.delete_after_results is None or is_template:
+            waiter = BoolWaiter(ctx, prompt = prompt("delete_after_results"), skippable = cls.delete_after_results.null)
+            try:
+                poll.delete_after_results = await waiter.wait()
+            except Skipped: pass
+
+        if poll.role_id_needed_to_vote is not None and (poll.delete is None or is_template):
+            waiter = BoolWaiter(ctx, prompt = prompt("mention_role"), skippable = cls.mention_role.null)
+            try:
+                poll.mention_role = await waiter.wait()
+            except Skipped: pass
+
         return poll
 
     @commands.group(name = "poll")
@@ -130,18 +149,57 @@ class PollCog(commands.Cog, name = "Poll"):
 
     @poll_group.command()
     async def template(self, ctx, name):
-        prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
+            prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
+            with database:
+                template, _ = PollTemplate.get_or_create(name = name, guild_id = ctx.guild.id)
+                poll = await self.setup_poll(ctx, template)
+
+                waiter = TimeDeltaWaiter(ctx, prompt = prompt("due_date"), max_words = 2)
+                message = await waiter.wait(raw = True)
+                poll.delta = message.content
+
+                poll.save()
+
+            asyncio.gather(ctx.send("OK"))
+
+    @poll_group.command(name = "templateview")
+    async def template_view(self, ctx, name):
         with database:
-            template, _ = PollTemplate.get_or_create(name = name, guild_id = ctx.guild.id)
-            poll = await self.setup_poll(ctx, template)
+            try:
+                template = PollTemplate.get(name = name, guild_id = ctx.guild.id)
+            except PollTemplate.DoesNotExist:
+                raise SendableException(ctx.translate("poll_template_does_not_exist"))
 
-            waiter = TimeDeltaWaiter(ctx, prompt = prompt("due_date"), max_words = 2)
-            message = await waiter.wait(raw = True)
-            poll.delta = message.content
+        columns = template.shared_columns
+        del columns["guild_id"]
 
-            poll.save()
+        if columns["result_channel_id"] is not None:
+            columns["result_channel"] = str(ctx.guild.get_channel(columns["result_channel_id"]))
+            del columns["result_channel_id"]
+        if columns["channel_id"] is not None:
+            columns["channel"] = str(template.channel)
+            del columns["channel_id"]
+        if columns["role_id_needed_to_vote"] is not None:
+            columns["role_needed_to_vote"] = str(ctx.guild.get_role(template.role_id_needed_to_vote))
+            del columns["role_id_needed_to_vote"]
 
-        await ctx.send("OK")
+        new_columns = {}
+        for key, value in columns.items():
+            new_key = key.replace("_", " ").capitalize()
+            if isinstance(value, bool):
+                new_key += "?"
+            new_columns[new_key] = value
+
+        lines = prettify_dict(new_columns)
+
+        embed = discord.Embed(
+            color       = ctx.guild_color,
+            title       = f"Config of poll-template '{name}'",
+            description = f"```\n{lines}```"
+        )
+        return asyncio.gather(ctx.send(embed = embed))
+
+
 
     @poll_group.command(name = "create")
     async def create_poll(self, ctx, template_name):
@@ -245,6 +303,10 @@ class PollCog(commands.Cog, name = "Poll"):
 
                     await poll.send_results()
                     poll.ended = True
+                    if poll.delete_after_results:
+                        message = await poll.channel.fetch_message(poll.message_id)
+                        asyncio.gather(message.delete())
+
                     poll.save()
 
 

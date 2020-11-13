@@ -2,6 +2,7 @@ import datetime
 import discord
 from enum import Enum
 import io
+import asyncio
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -25,7 +26,6 @@ def calculate_percentage(part, total):
     else:
         return percentage
 
-
 class Poll(BaseModel):
     class Type(Enum):
         custom = 1
@@ -41,11 +41,13 @@ class Poll(BaseModel):
     created_at              = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow())
     ended                   = peewee.BooleanField    (default = False)
     anonymous               = peewee.BooleanField    (null = False, default = False)
-    max_votes_per_user      = peewee.BooleanField    (null = False, default = 1)
+    max_votes_per_user      = peewee.IntegerField    (null = False, default = 1)
     type                    = EnumField              (Type, default = Type.custom)
     role_id_needed_to_vote  = peewee.BigIntegerField (null = True)
     vote_percentage_to_pass = peewee.IntegerField    (null = True)
-
+    mention_role            = peewee.BooleanField    (null = False, default = False)
+    pin                     = peewee.BooleanField    (null = False, default = False)
+    delete_after_results    = peewee.BooleanField    (null = False, default = False)
 
     @classmethod
     def from_template(cls, template):
@@ -53,7 +55,6 @@ class Poll(BaseModel):
         if template.delta is not None:
             poll.due_date = datetime.datetime.utcnow() + TimeDeltaWaiter._convert(template.delta)
         return poll
-
 
     def create_bool_options(self):
         Option.create(value = "yes", reaction = emojize(":white_heavy_check_mark:"), poll = self)
@@ -96,9 +97,12 @@ class Poll(BaseModel):
         await channel.send(embed = await self.get_results_embed() )
 
     async def send(self):
-        msg = await self.channel.send(embed = self.embed)
+        content = f"<@&{self.role_id_needed_to_vote}>" if self.mention_role else None
+        msg = await self.channel.send(content, embed = self.embed)
         for option in self.options:
             await msg.add_reaction(option.reaction)
+        if self.pin:
+            asyncio.gather(msg.pin())
         return msg
 
     def generate_question(self, mention = False):
@@ -164,7 +168,7 @@ class Poll(BaseModel):
 
         stream = io.BytesIO()
         plt.savefig(stream, format = 'png', transparent = False)
-        stream.seek(0)
+
         return self.bot.store_file(stream, "results.png")
 
     async def get_results_embed(self):
@@ -280,11 +284,14 @@ class PollTemplate(BaseModel):
     channel_id              = peewee.BigIntegerField (null = True)
     result_channel_id       = peewee.BigIntegerField (null = True)
     anonymous               = peewee.BooleanField    (null = True)
-    max_votes_per_user      = peewee.BooleanField    (null = True)
+    max_votes_per_user      = peewee.IntegerField    (null = True)
     type                    = EnumField              (Poll.Type, null = True)
     role_id_needed_to_vote  = peewee.BigIntegerField (null = True)
     delta                   = peewee.CharField       (null = True)
     vote_percentage_to_pass = peewee.IntegerField    (null = True)
+    mention_role            = peewee.BooleanField    (null = True, default = False)
+    pin                     = peewee.BooleanField    (null = True, default = False)
+    delete_after_results    = peewee.BooleanField    (null = True, default = False)
 
     class Meta:
         indexes = (
@@ -295,12 +302,15 @@ class PollTemplate(BaseModel):
     def shared_columns(self):
         return \
         {
-            "guild_id"                : self.guild_id,
-            "channel_id"              : self.channel_id,
-            "result_channel_id"       : self.result_channel_id,
-            "anonymous"               : self.anonymous,
-            "max_votes_per_user"      : self.max_votes_per_user,
-            "type"                    : self.type,
-            "role_id_needed_to_vote"  : self.role_id_needed_to_vote,
-            "vote_percentage_to_pass" : self.vote_percentage_to_pass
+            "guild_id"                  : self.guild_id,
+            "channel_id"                : self.channel_id,
+            "result_channel_id"         : self.result_channel_id,
+            "anonymous"                 : self.anonymous,
+            "max_votes_per_user"        : self.max_votes_per_user,
+            "type"                      : self.type,
+            "role_id_needed_to_vote"    : self.role_id_needed_to_vote,
+            "vote_percentage_to_pass"   : self.vote_percentage_to_pass,
+            "pin"                       : self.pin,
+            "delete_after_results"      : self.delete_after_results,
+            "mention_role"              : self.mention_role,
         }
