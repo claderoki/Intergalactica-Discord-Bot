@@ -12,6 +12,8 @@ import emoji
 import discord
 from discord.ext import commands
 from dateutil.relativedelta import relativedelta
+from weasyprint import HTML, CSS
+import jinja2
 
 import src.config as config
 from src.wrappers.openweathermap import OpenWeatherMapApi
@@ -19,6 +21,49 @@ from src.wrappers.color_thief import ColorThief
 from src.models import Settings, Translation, NamedChannel, database
 from src.discord.errors.base import SendableException
 from src.discord.helpers.embed import Embed
+
+
+# class StorageFile:
+#     def __init__(self):
+#         pass
+
+#     def upload(self):
+#         pass
+
+
+#     @classmethod
+#     def from_url(cls, url):
+#         return cls.from_bytes(requests.get(file, stream=True).raw)
+
+#     @classmethod
+#     def from_bytes(cls, bytes):
+#         pass
+
+#     @classmethod
+#     def from_path(cls, path):
+#         return 
+
+#     @classmethod
+#     def from_stream(cls, stream):
+#         pass
+
+    #    storage_channel = (await self.application_info()).owner
+
+    #     if isinstance(file, io.BytesIO):
+    #         f = file
+    #     elif isinstance(file, str):
+    #         if file.startswith("http"):
+    #             bytes = 
+    #         else:
+    #             f = open(file, "rb")
+    #     else:
+    #         f = io.BytesIO(file)
+
+    #     msg = await storage_channel.send(file=discord.File(fp=f, filename=filename))
+
+    #     if isinstance(file, str):
+    #         f.close()
+
 
 def seconds_readable(seconds):
     fmt = "{delta.days} days {delta.hours} hours {delta.minutes} minutes {delta.seconds} seconds"
@@ -83,19 +128,16 @@ class Locus(commands.Bot):
         print(f"Prefix={self.command_prefix}")
         print("--------------------")
 
-    def render_view(self, name, **data):
-        from weasyprint import HTML, CSS
-        import jinja2
-
-        path = f"{config.path}/src/views/{name}"
+    def render_template(self, name, **data):
+        path = f"{config.path}/src/templates/{name}"
         with open(f"{path}/{name}.html") as f:
             template = jinja2.Template(f.read())
 
         html = template.render(**data)
 
         with open(f"{path}/{name}.css") as f:
-            HTML(string = html, base_url = path).write_png(f"{config.path}/tmp/profile.png", stylesheets  = [CSS(string = f.read())] )
-        print("Finished exporting.")
+            _bytes = HTML(string = html, base_url = path).write_png(None,  stylesheets  = [CSS(string = f.read())] )
+        return discord.File(fp = io.BytesIO(_bytes), filename = f"{name}.png")
 
     def base_embed(self, **kwargs) -> discord.Embed:
         return self.get_base_embed(**kwargs)
@@ -105,7 +147,7 @@ class Locus(commands.Bot):
         embed = discord.Embed(color = self.get_dominant_color(None), **kwargs)
         return embed.set_author(name = user.name, icon_url = user.avatar_url)
 
-    async def store_file(self, file, filename) -> str:
+    async def store_file(self, file, filename = None) -> str:
         """ This function stores a file in the designated storage channel, it returns the url of the newly stored image.
             <item> can be:
                 - a file (io.BytesIO)
@@ -240,10 +282,6 @@ class Locus(commands.Bot):
 
         return emojis
 
-    async def vote_for(self, message):
-        await message.add_reaction("⬆️")
-        await message.add_reaction("⬇️")
-
     async def before_any_command(self, ctx):
         if ctx.guild is None:
             locale_name = "en_US"
@@ -257,11 +295,11 @@ class Locus(commands.Bot):
 
         ar = lambda x: ctx.message.add_reaction(x)
 
-        ctx.vote = lambda: self.vote_for(ctx.message)
         ctx.success = lambda: ctx.message.add_reaction("✅")
         ctx.error = lambda: ctx.message.add_reaction("❌")
 
         ctx.guild_color = self.get_dominant_color(ctx.guild)
+        # ctx.color = 
 
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.errors.CommandInvokeError):
@@ -299,7 +337,7 @@ class Locus(commands.Bot):
     def translate(self, key, locale = "en_US"):
         if locale not in self.missing_translations:
             self.missing_translations[locale] = set()
-        
+
         missing_translations = self.missing_translations[locale]
 
         with database:

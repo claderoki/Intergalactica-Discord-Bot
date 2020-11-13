@@ -7,7 +7,7 @@ from countryinfo import CountryInfo
 import peewee
 
 from .base import BaseModel, EnumField, PercentageField
-from .human import Human
+from .human import Human, Item, HumanItem
 from src.utils.enums import Gender
 
 class Activity(BaseModel):
@@ -61,12 +61,13 @@ class TravelActivity(Activity):
 
 class Pigeon(BaseModel):
     emojis = {
+        "name"        : "📛",
         "gold"        : "",
         "experience"  : "📊",
         "cleanliness" : "💩",
         "food"        : "🌾",
         "happiness"   : "🌻",
-        "health"      : "❤️"
+        "health"      : "❤️",
     }
 
     class Status(Enum):

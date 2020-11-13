@@ -52,7 +52,6 @@ class MessageWaiter(Waiter):
 
         self.channels.append(ctx.channel)
 
-
         if only_author:
             self.members.append(ctx.author)
 
