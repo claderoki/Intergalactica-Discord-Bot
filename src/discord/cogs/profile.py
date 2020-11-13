@@ -97,6 +97,7 @@ class Profile(commands.Cog):
     @commands.group()
     async def profile(self, ctx, member : discord.Member = None):
         if ctx.invoked_subcommand is None:
+            members = []
             if ctx.author not in members:
                 members.insert(0, ctx.author)
 
