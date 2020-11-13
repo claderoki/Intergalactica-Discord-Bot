@@ -12,8 +12,6 @@ import emoji
 import discord
 from discord.ext import commands
 from dateutil.relativedelta import relativedelta
-from weasyprint import HTML, CSS
-import jinja2
 
 import src.config as config
 from src.wrappers.openweathermap import OpenWeatherMapApi
@@ -129,6 +127,9 @@ class Locus(commands.Bot):
         print("--------------------")
 
     def render_template(self, name, **data):
+        from weasyprint import HTML, CSS
+        import jinja2
+
         path = f"{config.path}/src/templates/{name}"
         with open(f"{path}/{name}.html") as f:
             template = jinja2.Template(f.read())
