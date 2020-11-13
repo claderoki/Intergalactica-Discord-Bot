@@ -96,16 +96,6 @@ class Profile(commands.Cog):
 
     @commands.group()
     async def profile(self, ctx, member : discord.Member = None):
-        member = member or ctx.author
-        with database:
-            human, _ = Human.get_or_create(user_id = member.id)
-
-        async with ctx.typing():
-            image = self.bot.render_template("profile", human = human)
-            await ctx.send(file = image)
-
-        return
-
         if ctx.invoked_subcommand is None:
             if ctx.author not in members:
                 members.insert(0, ctx.author)
