@@ -10,6 +10,7 @@ import emoji
 from src.models import Human, Earthling, Mail, Item, database
 from src.discord.helpers.converters import convert_to_date
 from src.discord.helpers.waiters import *
+from src.discord.helpers.pretty import prettify_dict
 import src.config as config
 from src.utils.timezone import Timezone
 from src.discord.errors.base import SendableException
@@ -95,9 +96,8 @@ class Profile(commands.Cog):
         await ctx.send(embed = embed)
 
     @commands.group()
-    async def profile(self, ctx, member : discord.Member = None):
+    async def profile(self, ctx, members : commands.Greedy[discord.Member]):
         if ctx.invoked_subcommand is None:
-            members = []
             if ctx.author not in members:
                 members.insert(0, ctx.author)
 
@@ -208,11 +208,11 @@ class Profile(commands.Cog):
         item, new = Item.get_or_create(name = name)
 
         if not new:
-            await item.editor_for("name", ctx, skippable = True)
+            await item.editor_for("name", ctx, skippable = not new)
 
-        await item.editor_for("description", ctx, skippable = True)
-        await item.editor_for("rarity", ctx, skippable = not new)
-        await item.editor_for("explorable", ctx, skippable = not new)
+        await item.editor_for("description", ctx, skippable = not new)
+        await item.editor_for("rarity", ctx, skippable = True)
+        await item.editor_for("explorable", ctx, skippable = True)
 
         waiter = AttachmentWaiter(ctx, prompt = ctx.translate("item_image_prompt"), skippable = not new)
         try:
@@ -221,6 +221,26 @@ class Profile(commands.Cog):
 
         item.save()
         await ctx.send("OK")
+
+    @item.command(name = "explorable", aliases = ["exp"])
+    async def item_explorable(self, ctx,*, name):
+        if name == "":
+            raise commands.errors.MissingRequiredArgument("name")
+
+        if not is_tester(ctx.author):
+            raise SendableException(ctx.translate("not_a_tester"))
+        try:
+            item = Item.get(name = name)
+        except Item.DoesNotExist:
+            raise SendableException("Item not found.")
+
+        await item.editor_for("rarity", ctx, skippable = True)
+        await item.editor_for("explorable", ctx, skippable = True)
+
+        item.save()
+        await ctx.send("OK")
+
+
 
     @item.command(name = "list")
     async def item_list(self, ctx):
@@ -238,6 +258,17 @@ class Profile(commands.Cog):
             embed.description = f"```\n{lines}```"
             embed.set_footer(text = f"To view more information about a specific item type '{ctx.prefix}item view <name>'")
             asyncio.gather(ctx.send(embed = embed))
+
+    @commands.command()
+    async def inventory(self, ctx):
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+
+        data = {}
+        for human_item in human.human_items:
+            data[human_item.item.name] = human_item.amount
+
+        embed = discord.Embed(color = ctx.guild_color, description = f"```\n{prettify_dict(data)}```")
+        asyncio.gather(ctx.send(embed = embed))
 
     @item.command(name = "view")
     async def item_view(self, ctx,*, name):
