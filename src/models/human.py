@@ -140,14 +140,17 @@ class Item(BaseModel):
     class Rarity(Enum):
         junk      = 1
         common    = 2
-        rare      = 3
-        legendary = 4
+        uncommon  = 3
+        rare      = 4
+        legendary = 5
 
         @property
         def color(self):
             if self == self.junk:
                 return discord.Color.from_rgb(168, 115, 77)
             elif self == self.common:
+                return discord.Color.from_rgb(196, 100, 70)
+            elif self == self.uncommon:
                 return discord.Color.from_rgb(196, 100, 70)
             elif self == self.rare:
                 return discord.Color.from_rgb(196, 100, 70)
@@ -160,10 +163,12 @@ class Item(BaseModel):
                 return 40
             elif self == self.common:
                 return 30
-            elif self == self.rare:
+            elif self == self.uncommon:
                 return 20
-            elif self == self.legendary:
+            elif self == self.rare:
                 return 10
+            elif self == self.legendary:
+                return 1
 
     name        = peewee.CharField    (null = False)
     description = peewee.TextField    (null = False)
