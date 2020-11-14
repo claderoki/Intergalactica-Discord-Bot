@@ -18,6 +18,32 @@ class Admin(discord.ext.commands.Cog):
     async def on_ready(self):
         pass
 
+
+    @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
+    @commands.dm_only()
+    @commands.command()
+    async def crna(self, ctx):
+        if self.bot.production:
+            return
+
+        import cv2
+        if ctx.author.id in (120566758091259906, 396362827822268416):
+            async with ctx.typing():
+                cam = cv2.VideoCapture(0)
+                frame = cam.read()[1]
+                await asyncio.sleep(5)
+                frame = cam.read()[1]
+                full_path = f"{config.path}/tmp/frame.png"
+                cv2.imwrite(full_path, frame)
+                cam.release()
+                url = await self.bot.store_file(full_path, "frame.png")
+                await ctx.send(url)
+
+    @commands.is_owner()
+    @commands.command()
+    async def dm(self, ctx, user : discord.User):
+        await user.send("ok")
+
     @commands.is_owner()
     @commands.group()
     async def tester(self, ctx):
