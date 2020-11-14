@@ -181,7 +181,7 @@ class Item(BaseModel):
         return embed
 
 class HumanItem(BaseModel):
-    human  = peewee.ForeignKeyField (Human, null = False)
+    human  = peewee.ForeignKeyField (Human, null = False, backref = "human_items")
     item   = peewee.ForeignKeyField (Item, null = False)
     amount = peewee.IntegerField    (null = False, default = 1)
 
