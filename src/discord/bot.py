@@ -300,7 +300,6 @@ class Locus(commands.Bot):
         ctx.error = lambda: ctx.message.add_reaction("❌")
 
         ctx.guild_color = self.get_dominant_color(ctx.guild)
-        # ctx.color = 
 
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.errors.CommandInvokeError):
