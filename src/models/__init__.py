@@ -5,9 +5,8 @@ from .analytics import EmojiUsage
 from .settings import Settings, NamedEmbed, NamedChannel, Translation, Locale
 from .staff_communication import Ticket, Reply
 from .poll import Change, Parameter, Poll, PollTemplate, Vote, Option
-# from .assassins import Game, Player, KillMessage
 from .scene import Scene, Scenario
-from .pigeon import Pigeon, Fight, Exploration, Mail
+from .pigeon import Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage
 from .admin import SavedEmoji
 from .prank import NicknamePrank, Prankster
 
@@ -15,8 +14,8 @@ database = Human._meta.database
 
 def setup():
     with database.connection_context():
-        # database.drop_tables([Pigeon, Fight, Exploration, Mail])
-        database.create_tables([Pigeon, Fight, Exploration, Mail ])
+        # database.drop_tables([Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage ])
+        database.create_tables([Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage ])
 
         # database.drop_tables([SavedEmoji])
         database.create_tables([SavedEmoji])
@@ -44,8 +43,5 @@ def setup():
 
         # database.drop_tables([Change, Parameter, Poll, PollTemplate, Option, Vote])
         database.create_tables([Change, Parameter, Poll, PollTemplate, Option, Vote])
-
-        # database.drop_tables([Game, Player, KillMessage])
-        # database.create_tables([Game, Player, KillMessage])
 
 setup()
