@@ -3,6 +3,7 @@ from enum import Enum
 import math
 import random
 
+import discord
 from countryinfo import CountryInfo
 import peewee
 
@@ -84,7 +85,6 @@ class Pigeon(BaseModel):
     name                = peewee.TextField       (null = False)
     human               = peewee.ForeignKeyField (Human, backref = "pigeons")
     condition           = EnumField              (Condition, default = Condition.active)
-    condition_notified  = peewee.BooleanField    (null = False, default = False)
     experience          = peewee.IntegerField    (null = False, default = 0)
     cleanliness         = PercentageField        (null = False, default = 100)
     happiness           = PercentageField        (null = False, default = 100)
@@ -108,8 +108,8 @@ class Pigeon(BaseModel):
                     if self.health <= 0:
                         self.condition = self.Condition.dead
                         SystemMessage.create(text = "Oh no! Your pigeon has died. Better take better care of it next time!", human = self.human)
-        self.save()
-        self.human.save()
+        self.save(only = self.dirty_fields)
+        self.human.save(only = self.human.dirty_fields)
 
     @property
     def current_activity(self):
@@ -129,7 +129,7 @@ class Pigeon(BaseModel):
 class LanguageMastery(BaseModel):
     language = LanguageField()
     mastery  = PercentageField(null = False, default = 0)
-    pigeon   = peewee.ForeignKeyField (Pigeon, null = False, backref = "languages", on_delete = "CASCADE")
+    pigeon   = peewee.ForeignKeyField (Pigeon, null = False, backref = "language_masteries", on_delete = "CASCADE")
 
 class SystemMessage(BaseModel):
     human = peewee.ForeignKeyField (Human, null = False, backref = "system_messages", on_delete = "CASCADE")
