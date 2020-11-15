@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 from countryinfo import CountryInfo
 
 import src.config as config
-from src.models import Scene, Scenario, Human, Fight, Pigeon, Item, Exploration, Mail, Settings, database
+from src.models import Scene, Scenario, Human, Fight, Pigeon, Earthling, Item, Exploration, Mail, Settings, database
 from src.models.base import PercentageField
 from src.discord.helpers.waiters import *
 from src.games.game.base import DiscordIdentity
@@ -592,7 +592,7 @@ def get_winnings_value(**kwargs):
 
 def get_active_pigeon(user, raise_on_none = False):
     try:
-        return Pigeon.get(human = Human.get(user_id = user.id), dead = False)
+        return Pigeon.get(human = Human.get(user_id = user.id), condition = Pigeon.Condition.active)
     except Pigeon.DoesNotExist:
         return None
 

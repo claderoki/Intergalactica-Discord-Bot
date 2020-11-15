@@ -76,16 +76,22 @@ class Pigeon(BaseModel):
         exploring = "🗺️"
         fighting  = "⚔️"
 
-    name          = peewee.TextField       (null = False)
-    human         = peewee.ForeignKeyField (Human, backref = "pigeons")
-    dead          = peewee.BooleanField    (null = False, default = False)
-    experience    = peewee.IntegerField    (null = False, default = 0)
-    cleanliness   = PercentageField        (null = False, default = 100)
-    happiness     = PercentageField        (null = False, default = 100)
-    food          = PercentageField        (null = False, default = 100)
-    health        = PercentageField        (null = False, default = 100)
-    status        = EnumField              (Status, default = Status.idle)
-    gender        = EnumField              (Gender, default = Gender.other)
+    class Condition(Enum):
+        active   = 1
+        ran_away = 2
+        dead     = 3
+
+    name                = peewee.TextField       (null = False)
+    human               = peewee.ForeignKeyField (Human, backref = "pigeons")
+    condition           = EnumField              (Condition, default = Condition.active)
+    condition_notified  = peewee.BooleanField    (null = False, default = False)
+    experience          = peewee.IntegerField    (null = False, default = 0)
+    cleanliness         = PercentageField        (null = False, default = 100)
+    happiness           = PercentageField        (null = False, default = 100)
+    food                = PercentageField        (null = False, default = 100)
+    health              = PercentageField        (null = False, default = 100)
+    status              = EnumField              (Status, default = Status.idle)
+    gender              = EnumField              (Gender, default = Gender.other)
 
     @property
     def current_activity(self):

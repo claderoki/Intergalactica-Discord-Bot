@@ -33,7 +33,7 @@ class Human(BaseModel):
     @property
     def pigeon(self):
         for pigeon in self.pigeons:
-            if not pigeon.dead:
+            if not pigeon.condition == pigeon.Condition.active:
                 return pigeon
 
     @property
