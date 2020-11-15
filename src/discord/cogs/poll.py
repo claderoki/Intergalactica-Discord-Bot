@@ -149,26 +149,25 @@ class PollCog(commands.Cog, name = "Poll"):
 
     @poll_group.command()
     async def template(self, ctx, name):
-            prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
-            with database:
-                template, _ = PollTemplate.get_or_create(name = name, guild_id = ctx.guild.id)
-                poll = await self.setup_poll(ctx, template)
+        prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
 
-                waiter = TimeDeltaWaiter(ctx, prompt = prompt("due_date"), max_words = 2)
-                message = await waiter.wait(raw = True)
-                poll.delta = message.content
+        template, _ = PollTemplate.get_or_create(name = name, guild_id = ctx.guild.id)
+        poll = await self.setup_poll(ctx, template)
 
-                poll.save()
+        waiter = TimeDeltaWaiter(ctx, prompt = prompt("due_date"), max_words = 2)
+        message = await waiter.wait(raw = True)
+        poll.delta = message.content
 
-            asyncio.gather(ctx.send("OK"))
+        poll.save()
+
+        asyncio.gather(ctx.send("OK"))
 
     @poll_group.command(name = "templateview")
     async def template_view(self, ctx, name):
-        with database:
-            try:
-                template = PollTemplate.get(name = name, guild_id = ctx.guild.id)
-            except PollTemplate.DoesNotExist:
-                raise SendableException(ctx.translate("poll_template_does_not_exist"))
+        try:
+            template = PollTemplate.get(name = name, guild_id = ctx.guild.id)
+        except PollTemplate.DoesNotExist:
+            raise SendableException(ctx.translate("poll_template_does_not_exist"))
 
         columns = template.shared_columns
         del columns["guild_id"]
@@ -228,18 +227,17 @@ class PollCog(commands.Cog, name = "Poll"):
             delta = await waiter.wait()
             poll.due_date = datetime.datetime.utcnow() + delta
 
-        with database:
-            poll.save()
+        poll.save()
 
-            if poll.type == Poll.Type.bool:
-                poll.create_bool_options()
-            else:
-                poll.create_options(options)
+        if poll.type == Poll.Type.bool:
+            poll.create_bool_options()
+        else:
+            poll.create_options(options)
 
-            message = await poll.send()
-            poll.message_id = message.id
+        message = await poll.send()
+        poll.message_id = message.id
 
-            poll.save()
+        poll.save()
 
 
     @poll_group.group(name = "change")
@@ -250,44 +248,42 @@ class PollCog(commands.Cog, name = "Poll"):
     async def change_delete(self, ctx, discordObject : typing.Union[discord.TextChannel, discord.Role] ):
         poll_channel = ctx.channel
 
-        with database:
-            template       = PollTemplate.get(name = "change", guild_id = ctx.guild.id)
-            poll           = Poll.from_template(template)
-            poll.author_id = ctx.author.id
-            poll.type      = Poll.Type.bool
-            poll.save()
+        template       = PollTemplate.get(name = "change", guild_id = ctx.guild.id)
+        poll           = Poll.from_template(template)
+        poll.author_id = ctx.author.id
+        poll.type      = Poll.Type.bool
+        poll.save()
 
-            poll.create_bool_options()
+        poll.create_bool_options()
 
-            change = Change.create(poll = poll, action = "delete", type = Change.Type[discordObject.__class__.__name__.lower()])
-            Parameter.create(change = change, key = "id",   value = discordObject.id)
+        change = Change.create(poll = poll, action = "delete", type = Change.Type[discordObject.__class__.__name__.lower()])
+        Parameter.create(change = change, key = "id",   value = discordObject.id)
 
-            poll.question = poll.generate_question()
+        poll.question = poll.generate_question()
 
-            message = await poll.send()
-            poll.message_id = message.id
-            poll.save()
+        message = await poll.send()
+        poll.message_id = message.id
+        poll.save()
 
     @change.command("create")
     async def change_create(self, ctx, type : str,  name : str):
-        with database:
-            template       = PollTemplate.get(name = "change", guild_id = ctx.guild.id)
-            poll           = Poll.from_template(template)
-            poll.author_id = ctx.author.id
-            poll.type      = Poll.Type.bool
-            poll.save()
+        template       = PollTemplate.get(name = "change", guild_id = ctx.guild.id)
+        poll           = Poll.from_template(template)
+        poll.author_id = ctx.author.id
+        poll.type      = Poll.Type.bool
+        poll.save()
 
-            poll.create_bool_options()
+        poll.create_bool_options()
 
-            await self.setup_poll(ctx, poll)
-            change = Change.create(action = "create", poll = poll, type = Change.Type[type.lower()])
-            change.create_param("name", name)
+        await self.setup_poll(ctx, poll)
+        change = Change.create(action = "create", poll = poll, type = Change.Type[type.lower()])
+        change.create_param("name", name)
 
-            poll.question = poll.generate_question()
+        poll.question = poll.generate_question()
 
-            message = await poll.send()
-            poll.message_id = message.id
-            poll.save()
+        message = await poll.send()
+        poll.message_id = message.id
+        poll.save()
 
     @tasks.loop(minutes=2)
     async def poller(self):

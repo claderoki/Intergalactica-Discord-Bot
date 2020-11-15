@@ -37,7 +37,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         return embed
 
     def get_pigeon_channel(self, guild):
-        with database:
+        with database.connection_context():
             settings, _ = Settings.get_or_create(guild_id = guild.id)
         return settings.get_channel("pigeon")
 
@@ -57,29 +57,28 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     async def pigeon_buy(self, ctx):
         """Buy a pigeon."""
 
-        with database:
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
-            pigeon = human.pigeons.select(Pigeon.dead == False).first()
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        pigeon = human.pigeons.select(Pigeon.dead == False).first()
 
-            if pigeon is not None:
-                asyncio.gather(ctx.send(ctx.translate("pigeon_already_purchased").format(name = pigeon.name)))
-                return
+        if pigeon is not None:
+            asyncio.gather(ctx.send(ctx.translate("pigeon_already_purchased").format(name = pigeon.name)))
+            return
 
-            prompt = lambda x : ctx.translate(f"pigeon_{x}_prompt")
+        prompt = lambda x : ctx.translate(f"pigeon_{x}_prompt")
 
-            pigeon = Pigeon(human = human)
-            waiter = StrWaiter(ctx, prompt = prompt("name"), max_words = None)
-            pigeon.name = await waiter.wait()
-            pigeon.save()
+        pigeon = Pigeon(human = human)
+        waiter = StrWaiter(ctx, prompt = prompt("name"), max_words = None)
+        pigeon.name = await waiter.wait()
+        pigeon.save()
 
-            pigeon_price = 50
-            identity = DiscordIdentity(ctx.author)
-            identity.remove_points(pigeon_price)
+        pigeon_price = 50
+        identity = DiscordIdentity(ctx.author)
+        identity.remove_points(pigeon_price)
 
-            embed = self.get_base_embed(ctx.guild)
-            embed.set_footer(text = f"-{pigeon_price}")
-            embed.description = ctx.translate("pigeon_purchased")
-            asyncio.gather(ctx.send(embed = embed))
+        embed = self.get_base_embed(ctx.guild)
+        embed.set_footer(text = f"-{pigeon_price}")
+        embed.description = ctx.translate("pigeon_purchased")
+        asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "challenge", aliases = ["fight"])
     async def pigeon_challenge(self, ctx, member : discord.Member):
@@ -89,38 +88,37 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         if member.id == ctx.author.id:
             raise SendableException(ctx.translate("cannot_challenge_self"))
 
-        with database:
-            challenger = get_active_pigeon(ctx.author)
-            challengee = get_active_pigeon(member)
+        challenger = get_active_pigeon(ctx.author)
+        challengee = get_active_pigeon(member)
 
-            pigeon_raise_if_unavailable(ctx, challenger, name = "challenger")
-            pigeon_raise_if_stats_too_low(ctx, challenger, name = "challenger")
+        pigeon_raise_if_unavailable(ctx, challenger, name = "challenger")
+        pigeon_raise_if_stats_too_low(ctx, challenger, name = "challenger")
 
-            pigeon_raise_if_unavailable(ctx, challengee, name = "challengee")
-            pigeon_raise_if_stats_too_low(ctx, challengee, name = "challengee")
+        pigeon_raise_if_unavailable(ctx, challengee, name = "challengee")
+        pigeon_raise_if_stats_too_low(ctx, challengee, name = "challengee")
 
 
-            fight = Fight(guild_id = ctx.guild.id, start_date = None)
+        fight = Fight(guild_id = ctx.guild.id, start_date = None)
 
-            prompt = lambda x : ctx.translate(f"fight_{x}_prompt")
-            waiter = IntWaiter(ctx, prompt = prompt("bet"), min = 0, max = min([challenger.human.gold, challengee.human.gold]), skippable = True)
-            try:
-                fight.bet = await waiter.wait()
-            except Skipped:
-                pass
+        prompt = lambda x : ctx.translate(f"fight_{x}_prompt")
+        waiter = IntWaiter(ctx, prompt = prompt("bet"), min = 0, max = min([challenger.human.gold, challengee.human.gold]), skippable = True)
+        try:
+            fight.bet = await waiter.wait()
+        except Skipped:
+            pass
 
-            if challenger.human.gold < fight.bet:
-                raise SendableException(ctx.translate("challenger_not_enough_gold").format(bet = fight.bet))
-            if challengee.human.gold < fight.bet:
-                raise SendableException(ctx.translate("challengee_not_enough_gold").format(bet = fight.bet))
+        if challenger.human.gold < fight.bet:
+            raise SendableException(ctx.translate("challenger_not_enough_gold").format(bet = fight.bet))
+        if challengee.human.gold < fight.bet:
+            raise SendableException(ctx.translate("challengee_not_enough_gold").format(bet = fight.bet))
 
-            fight.challenger = challenger
-            fight.challengee = challengee
-            fight.save()
+        fight.challenger = challenger
+        fight.challengee = challengee
+        fight.save()
 
-            for pigeon in (challenger, challengee):
-                pigeon.status = Pigeon.Status.fighting
-                pigeon.save()
+        for pigeon in (challenger, challengee):
+            pigeon.status = Pigeon.Status.fighting
+            pigeon.save()
 
         embed = self.get_base_embed(ctx.guild)
         embed.title = "Pigeon Challenge"
@@ -130,208 +128,207 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
     @pigeon.command(name = "gender")
     async def pigeon_gender(self, ctx, gender : EnumConverter(Gender)):
-        with database:
-            pigeon = get_active_pigeon(ctx.author)
-            pigeon_raise_if_not_exist(ctx, pigeon)
-            pigeon.gender = gender
-            pigeon.save()
-            asyncio.gather(ctx.send(ctx.translate("gender_set")))
+        pigeon = get_active_pigeon(ctx.author)
+        pigeon_raise_if_not_exist(ctx, pigeon)
+        pigeon.gender = gender
+        pigeon.save()
+        asyncio.gather(ctx.send(ctx.translate("gender_set")))
 
     @pigeon.command(name = "name")
     async def pigeon_name(self, ctx, *, name : str):
         cost = 50
-        with database:
-            pigeon = get_active_pigeon(ctx.author)
-            pigeon_raise_if_not_exist(ctx, pigeon)
-            raise_if_not_enough_gold(ctx, cost, pigeon.human)
+        pigeon = get_active_pigeon(ctx.author)
+        notify_condition_pigeon(ctx)
+        pigeon_raise_if_not_exist(ctx, pigeon)
+        raise_if_not_enough_gold(ctx, cost, pigeon.human)
 
-            pigeon.name = name
-            pigeon.save()
-            embed = self.get_base_embed(ctx.guild)
-            embed.description = f"Okay. Name has been set to {name}"
-            embed.set_footer(text = f"-{cost}")
-            asyncio.gather(ctx.send(embed = embed))
+        pigeon.name = name
+        pigeon.save()
+        embed = self.get_base_embed(ctx.guild)
+        embed.description = f"Okay. Name has been set to {name}"
+        embed.set_footer(text = f"-{cost}")
+        asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "accept")
     async def pigeon_accept(self, ctx):
         """Accept a pending fight."""
 
-        with database:
-            challengee = get_active_pigeon(ctx.author)
+        challengee = get_active_pigeon(ctx.author)
+        notify_condition_pigeon(ctx)
 
-            query = Fight.select()
-            query = query.where(Fight.finished == False)
-            query = query.where(Fight.challengee == challengee)
-            fight = query.first()
+        query = Fight.select()
+        query = query.where(Fight.finished == False)
+        query = query.where(Fight.challengee == challengee)
+        fight = query.first()
 
-            if fight is None:
-                raise SendableException(ctx.translate("no_challenger"))
+        if fight is None:
+            raise SendableException(ctx.translate("no_challenger"))
 
-            error = None
-            if fight.challenger.human.gold < fight.bet:
-                error = ctx.translate("challenger_not_enough_gold").format(bet = fight.bet)
-            if fight.challengee.human.gold < fight.bet:
-                error = ctx.translate("challengee_not_enough_gold").format(bet = fight.bet)
-            if error is not None:
-                for pigeon in (challenger, challengee):
-                    pigeon.status = Pigeon.Status.idle
-                    pigeon.save()
-                fight.delete_instance()
-                raise SendableException(error)
+        error = None
+        if fight.challenger.human.gold < fight.bet:
+            error = ctx.translate("challenger_not_enough_gold").format(bet = fight.bet)
+        if fight.challengee.human.gold < fight.bet:
+            error = ctx.translate("challengee_not_enough_gold").format(bet = fight.bet)
+        if error is not None:
+            for pigeon in (challenger, challengee):
+                pigeon.status = Pigeon.Status.idle
+                pigeon.save()
+            fight.delete_instance()
+            raise SendableException(error)
 
-            fight.accepted = True
-            fight.start_date = datetime.datetime.utcnow() + datetime.timedelta(minutes = 5)
+        fight.accepted = True
+        fight.start_date = datetime.datetime.utcnow() + datetime.timedelta(minutes = 5)
 
-            for human in (fight.challenger.human, fight.challengee.human):
-                human.gold -= fight.bet
-                human.save()
+        for human in (fight.challenger.human, fight.challengee.human):
+            human.gold -= fight.bet
+            human.save()
 
-            fight.save()
+        fight.save()
 
-            embed = self.get_base_embed(ctx.guild)
-            embed.description = f"{ctx.author.mention} has accepted the challenge!"
-            embed.set_footer(text = "Fight will start at")
-            embed.timestamp = fight.start_date
+        embed = self.get_base_embed(ctx.guild)
+        embed.description = f"{ctx.author.mention} has accepted the challenge!"
+        embed.set_footer(text = "Fight will start at")
+        embed.timestamp = fight.start_date
 
-            channel = self.get_pigeon_channel(ctx.guild)
+        channel = self.get_pigeon_channel(ctx.guild)
 
-            await channel.send(embed = embed)
+        await channel.send(embed = embed)
 
     @pigeon.command(name = "explore")
     async def pigeon_explore(self, ctx):
         """Have your pigeon exploring a random location."""
-        with database:
-            pigeon = get_active_pigeon(ctx.author)
-            pigeon_raise_if_unavailable(ctx, pigeon)
-            pigeon_raise_if_stats_too_low(ctx, pigeon)
+        pigeon = get_active_pigeon(ctx.author)
+        notify_condition_pigeon(ctx)
+        pigeon_raise_if_unavailable(ctx, pigeon)
+        pigeon_raise_if_stats_too_low(ctx, pigeon)
 
-            residence = pigeon.human.country_code or get_random_country_code()
-            destination = get_random_country_code()
+        residence = pigeon.human.country_code or get_random_country_code()
+        destination = get_random_country_code()
 
-            exploration = Exploration(residence = residence, destination = destination, pigeon = pigeon)
-            exploration.end_date = exploration.start_date + datetime.timedelta(minutes = exploration.calculate_duration())
-            pigeon.status = Pigeon.Status.exploring
-            pigeon.save()
-            exploration.save()
+        exploration = Exploration(residence = residence, destination = destination, pigeon = pigeon)
+        exploration.end_date = exploration.start_date + datetime.timedelta(minutes = exploration.calculate_duration())
+        pigeon.status = Pigeon.Status.exploring
+        pigeon.save()
+        exploration.save()
 
-            embed = self.get_base_embed(ctx.guild)
-            embed.description = "Okay. Your pigeon is now off to explore a random location!"
-            embed.set_footer(text = f"'{ctx.prefix}pigeon retrieve' to check on your pigeon")
-            asyncio.gather(ctx.send(embed = embed))
+        embed = self.get_base_embed(ctx.guild)
+        embed.description = "Okay. Your pigeon is now off to explore a random location!"
+        embed.set_footer(text = f"'{ctx.prefix}pigeon retrieve' to check on your pigeon")
+        asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "retrieve", aliases = ["return"] )
     async def pigeon_retrieve(self, ctx):
         """Retrieve and check on your pigeon."""
-        with database:
-            pigeon = get_active_pigeon(ctx.author)
-            if pigeon is None:
-                raise SendableException(ctx.translate("pigeon_does_not_exist"))
-            if pigeon.status == Pigeon.Status.idle:
-                raise SendableException(ctx.translate("pigeon_idle"))
+        pigeon = get_active_pigeon(ctx.author)
+        notify_condition_pigeon(ctx)
+        if pigeon is None:
+            raise SendableException(ctx.translate("pigeon_does_not_exist"))
+        if pigeon.status == Pigeon.Status.idle:
+            raise SendableException(ctx.translate("pigeon_idle"))
 
-            embed = self.get_base_embed(ctx.guild)
+        embed = self.get_base_embed(ctx.guild)
 
-            activity = pigeon.current_activity
+        activity = pigeon.current_activity
 
-            if activity is None:
-                raise SendableException(ctx.translate("nothing_to_retrieve"))
+        if activity is None:
+            raise SendableException(ctx.translate("nothing_to_retrieve"))
 
-            if isinstance(activity, Exploration):
-                if activity.end_date_passed:
-                    country_name = pycountry.countries.get(alpha_2 = activity.destination).name
-                    country_info = CountryInfo(activity.destination)
+        if isinstance(activity, Exploration):
+            if activity.end_date_passed:
+                country_name = pycountry.countries.get(alpha_2 = activity.destination).name
+                country_info = CountryInfo(activity.destination)
 
-                    text = f"{pigeon.name} soared through the skies for **{activity.duration_in_minutes}** minutes"
-                    text += f" over a distance of **{int(activity.distance_in_km)}** km"
-                    text += f" until {pigeon.gender.get_pronoun()} finally reached **{country_name}**"
+                text = f"{pigeon.name} soared through the skies for **{activity.duration_in_minutes}** minutes"
+                text += f" over a distance of **{int(activity.distance_in_km)}** km"
+                text += f" until {pigeon.gender.get_pronoun()} finally reached **{country_name}**"
 
-                    bonuses = []
+                bonuses = []
 
-                    multiplier = 1
-                    if random.randint(1,10) == 1:
-                        multiplier += 0.5
-                        languages = country_info.languages()
-                        if languages:
-                            if len(languages) == 1:
-                                language = pycountry.languages.get(alpha_2 = languages[0])
-                            else:
-                                language = pycountry.languages.get(alpha_2 = [x for x in languages if x != "en"][0])
-
-                            bonuses.append(f"Some {country_info.demonym()} person also taught {pigeon.gender.get_posessive_pronoun()} some {language.name}!")
+                multiplier = 1
+                if random.randint(1,10) == 1:
+                    multiplier += 0.5
+                    languages = country_info.languages()
+                    if languages:
+                        if len(languages) == 1:
+                            language = pycountry.languages.get(alpha_2 = languages[0])
                         else:
-                            bonuses.append(f"{pigeon.gender.get_pronoun().title()} even picked up some of the local language!")
+                            language = pycountry.languages.get(alpha_2 = [x for x in languages if x != "en"][0])
 
-                    if random.randint(0,2) == 0:
-                        items = [x for x in Item.select().where(Item.explorable == True)]
-                        if len(items) > 0:
-                            item = random.choices(items, weights = [x.rarity.weight for x in items], k = 1)[0]
-                            embed.set_thumbnail(url = item.image_url)
-                            bonuses.append(f"On the way {pigeon.gender.get_pronoun()} also found a **{item.name}**")
-                            pigeon.human.add_item(item, 1)
+                        bonuses.append(f"Some {country_info.demonym()} person also taught {pigeon.gender.get_posessive_pronoun()} some {language.name}!")
+                    else:
+                        bonuses.append(f"{pigeon.gender.get_pronoun().title()} even picked up some of the local language!")
 
-                    explorations_finished = len(activity.pigeon.explorations)
-                    if explorations_finished % 10 == 0:
-                        multiplier += 1
-                        bonuses.append(f"Since this is your **{explorations_finished}th** exploration, you get a bonus!")
+                if random.randint(0,2) == 0:
+                    items = list(Item.select().where(Item.explorable == True))
+                    if len(items) > 0:
+                        item = random.choices(items, weights = [x.rarity.weight for x in items], k = 1)[0]
+                        embed.set_thumbnail(url = item.image_url)
+                        bonuses.append(f"On the way {pigeon.gender.get_pronoun()} also found a **{item.name}**")
+                        pigeon.human.add_item(item, 1)
 
-                    for bonus in bonuses:
-                        embed.add_field(name = "Bonus", value = bonus, inline = False)
+                explorations_finished = len(activity.pigeon.explorations)
+                if explorations_finished % 10 == 0:
+                    multiplier += 1
+                    bonuses.append(f"Since this is your **{explorations_finished}th** exploration, you get a bonus!")
 
-                    embed.description = text
+                for bonus in bonuses:
+                    embed.add_field(name = "Bonus", value = bonus, inline = False)
 
-                    winnings = {
-                        "gold"        : int(activity.gold_worth * multiplier),
-                        "experience"  : int(activity.xp_worth * multiplier),
-                        "food"        : -random.randint(10,40),
-                        "happiness"   : int(random.randint(10,40) * multiplier),
-                        "cleanliness" : -random.randint(10,40)
-                    }
+                embed.description = text
 
-                    embed.add_field(
-                        name = "Winnings",
-                        value = get_winnings_value(**winnings),
-                        inline = False
-                    )
+                winnings = {
+                    "gold"        : int(activity.gold_worth * multiplier),
+                    "experience"  : int(activity.xp_worth * multiplier),
+                    "food"        : -random.randint(10,40),
+                    "happiness"   : int(random.randint(10,40) * multiplier),
+                    "cleanliness" : -random.randint(10,40)
+                }
 
-                    update_pigeon(pigeon, winnings)
-                    activity.finished = True
-                    pigeon.status = Pigeon.Status.idle
-                    pigeon.human.save()
-                    pigeon.save()
-                    activity.save()
-                else:
-                    embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to explore!"
-                    embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
-                    embed.timestamp = activity.end_date
-            elif isinstance(activity, Mail):
-                if activity.end_date_passed:
+                embed.add_field(
+                    name = "Winnings",
+                    value = get_winnings_value(**winnings),
+                    inline = False
+                )
 
-                    winnings = {
-                        "experience"  : int(activity.duration_in_minutes * 0.6),
-                        "food"        : -random.randint(10,40),
-                        "happiness"   : int(random.randint(10,40)),
-                        "cleanliness" : -random.randint(10,40),
-                    }
+                update_pigeon(pigeon, winnings)
+                activity.finished = True
+                pigeon.status = Pigeon.Status.idle
+                pigeon.human.save()
+                pigeon.save()
+                activity.save()
+            else:
+                embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to explore!"
+                embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
+                embed.timestamp = activity.end_date
+        elif isinstance(activity, Mail):
+            if activity.end_date_passed:
 
-                    update_pigeon(pigeon, winnings)
+                winnings = {
+                    "experience"  : int(activity.duration_in_minutes * 0.6),
+                    "food"        : -random.randint(10,40),
+                    "happiness"   : int(random.randint(10,40)),
+                    "cleanliness" : -random.randint(10,40),
+                }
 
-                    embed.add_field(
-                        name = "Winnings",
-                        value = get_winnings_value(**winnings)
-                    )
+                update_pigeon(pigeon, winnings)
 
-                    embed.description = f"{pigeon.name} comes back from a long journey to {activity.recipient.mention}."
-                    activity.finished = True
-                    pigeon.status = Pigeon.Status.idle
-                    pigeon.human.save()
-                    pigeon.save()
-                    activity.save()
-                else:
-                    embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to send a message!"
-                    embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
-                    embed.timestamp = activity.end_date
+                embed.add_field(
+                    name = "Winnings",
+                    value = get_winnings_value(**winnings)
+                )
 
-            asyncio.gather(ctx.send(embed = embed))
+                embed.description = f"{pigeon.name} comes back from a long journey to {activity.recipient.mention}."
+                activity.finished = True
+                pigeon.status = Pigeon.Status.idle
+                pigeon.human.save()
+                pigeon.save()
+                activity.save()
+            else:
+                embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to send a message!"
+                embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
+                embed.timestamp = activity.end_date
+
+        asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "mail", aliases = ["message", "send", "letter"])
     async def pigeon_mail(self, ctx, user : discord.User):
@@ -343,69 +340,68 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         if ctx.channel is None:
             ctx.channel = await ctx.author.create_dm()
 
-        with database:
-            sender = get_active_pigeon(ctx.author)
-            pigeon_raise_if_unavailable(ctx, sender)
-            pigeon_raise_if_stats_too_low(ctx, sender)
+        sender = get_active_pigeon(ctx.author)
+        notify_condition_pigeon(ctx)
+        pigeon_raise_if_unavailable(ctx, sender)
+        pigeon_raise_if_stats_too_low(ctx, sender)
 
-            recipient, _ = Human.get_or_create(user_id = user.id)
+        recipient, _ = Human.get_or_create(user_id = user.id)
 
-            prompt = lambda x : ctx.translate(f"mail_{x}_prompt")
+        prompt = lambda x : ctx.translate(f"mail_{x}_prompt")
 
-            mail = Mail(recipient = recipient, sender = sender, read = False)
+        mail = Mail(recipient = recipient, sender = sender, read = False)
 
-            waiter = StrWaiter(ctx, prompt = prompt("message"), max_words = None)
-            mail.message = await waiter.wait()
+        waiter = StrWaiter(ctx, prompt = prompt("message"), max_words = None)
+        mail.message = await waiter.wait()
 
-            waiter = IntWaiter(ctx, prompt = prompt("gold"), min = 0, skippable = True)
-            try:
-                mail.gold = await waiter.wait()
-            except Skipped:
-                pass
+        waiter = IntWaiter(ctx, prompt = prompt("gold"), min = 0, skippable = True)
+        try:
+            mail.gold = await waiter.wait()
+        except Skipped:
+            pass
 
-            mail.residence   = sender.human.country_code
-            mail.destination = recipient.country_code
-            mail.end_date = mail.start_date + datetime.timedelta(minutes = mail.calculate_duration())
-            sender.human.gold -= mail.gold
-            sender.status = Pigeon.Status.mailing
+        mail.residence   = sender.human.country_code
+        mail.destination = recipient.country_code
+        mail.end_date = mail.start_date + datetime.timedelta(minutes = mail.calculate_duration())
+        sender.human.gold -= mail.gold
+        sender.status = Pigeon.Status.mailing
 
-            mail.save()
-            sender.human.save()
-            sender.save()
+        mail.save()
+        sender.human.save()
+        sender.save()
 
-            embed = self.get_base_embed(ctx.guild)
-            embed.description = f"Okay. Your pigeon is off to send a package to {recipient.mention}!"
-            embed.set_footer(text = f"'{ctx.prefix}pigeon retrieve' to check on your pigeon")
-            asyncio.gather(ctx.send(embed = embed))
+        embed = self.get_base_embed(ctx.guild)
+        embed.description = f"Okay. Your pigeon is off to send a package to {recipient.mention}!"
+        embed.set_footer(text = f"'{ctx.prefix}pigeon retrieve' to check on your pigeon")
+        asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "inbox")
     async def pigeon_inbox(self, ctx):
         """Check your inbox."""
-        with database:
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
-            unread_mail = human.inbox.where(Mail.read == False).where(Mail.finished == True)
-            if len(unread_mail) == 0:
-                return await ctx.send(ctx.translate("no_unread_mail"))
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        unread_mail = human.inbox.where(Mail.read == False).where(Mail.finished == True)
+        if len(unread_mail) == 0:
+            return await ctx.send(ctx.translate("no_unread_mail"))
 
-            for mail in list(unread_mail):
-                embed = self.get_base_embed(ctx.guild)
-                if mail.gold > 0:
-                    embed.description = f"{mail.sender.human.mention} has sent you some gold ({mail.gold}) with a message attached:\n`{mail.message}`"
-                else:
-                    embed.description = f"{mail.sender.human.mention} has sent you a message:\n`{mail.message}`"
+        for mail in list(unread_mail):
+            embed = self.get_base_embed(ctx.guild)
+            if mail.gold > 0:
+                embed.description = f"{mail.sender.human.mention} has sent you some gold ({mail.gold}) with a message attached:\n`{mail.message}`"
+            else:
+                embed.description = f"{mail.sender.human.mention} has sent you a message:\n`{mail.message}`"
 
-                await ctx.send(embed = embed)
+            await ctx.send(embed = embed)
 
-                mail.read = True
-                mail.recipient.gold += mail.gold
-                mail.save()
-                mail.recipient.save()
+            mail.read = True
+            mail.recipient.gold += mail.gold
+            mail.save()
+            mail.recipient.save()
 
     @pigeon.command(name = "stats")
     async def pigeon_stats(self, ctx, member : discord.Member = None):
         member = member or ctx.author
-
         pigeon = get_active_pigeon(member)
+        notify_condition_pigeon(ctx)
         if pigeon is None:
             raise SendableException(ctx.translate("pigeon_does_not_exist"))
 
@@ -453,26 +449,25 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @pigeon.command(name = "status")
     async def pigeon_status(self, ctx, member : discord.Member = None):
         """Check the status of your pigeon."""
-
         member = member or ctx.author
 
-        with database:
-            pigeon = get_active_pigeon(member)
-            pigeon_raise_if_not_exist(ctx, pigeon)
+        pigeon = get_active_pigeon(member)
+        notify_condition_pigeon(ctx)
+        pigeon_raise_if_not_exist(ctx, pigeon)
 
-            data = {}
-            emojis = []
+        data = {}
+        emojis = []
 
-            for attr, emoji in Pigeon.emojis.items():
-                try:
-                    value = getattr(pigeon, attr)
-                except AttributeError:
-                    continue
-                if isinstance(getattr(Pigeon, attr), PercentageField):
-                    data[attr] = f"{value}%"
-                else:
-                    data[attr] = f"{value}"
-                emojis.append(emoji)
+        for attr, emoji in Pigeon.emojis.items():
+            try:
+                value = getattr(pigeon, attr)
+            except AttributeError:
+                continue
+            if isinstance(getattr(Pigeon, attr), PercentageField):
+                data[attr] = f"{value}%"
+            else:
+                data[attr] = f"{value}"
+            emojis.append(emoji)
 
         emojis.append(pigeon.status.value)
         data["status"] = pigeon.status.name
@@ -482,18 +477,18 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         asyncio.gather(ctx.send(embed = embed))
 
     def increase_stats(self, ctx, attr_name, attr_increase, cost, message):
-        with database:
-            pigeon = get_active_pigeon(ctx.author)
-            pigeon_raise_if_unavailable(ctx, pigeon)
+        pigeon = get_active_pigeon(ctx.author)
+        notify_condition_pigeon(ctx)
+        pigeon_raise_if_unavailable(ctx, pigeon)
 
-            value = getattr(pigeon, attr_name)
-            if value == 100:
-                raise SendableException(ctx.translate(f"{attr_name}_already_max"))
+        value = getattr(pigeon, attr_name)
+        if value == 100:
+            raise SendableException(ctx.translate(f"{attr_name}_already_max"))
 
-            pigeon.human.gold  -= cost
-            setattr(pigeon, attr_name, value+attr_increase )
-            pigeon.human.save()
-            pigeon.save()
+        pigeon.human.gold  -= cost
+        setattr(pigeon, attr_name, value+attr_increase )
+        pigeon.human.save()
+        pigeon.save()
 
         embed = self.get_base_embed(ctx.guild )
         embed.description = message.format(pigeon = pigeon)
@@ -510,6 +505,55 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     async def pigeon_feed(self, ctx):
         self.increase_stats(ctx, 'food', 20, 15, "You feed **{pigeon.name}** some seeds and whatever else they eat.\n")
 
+    @pigeon.command(name = "scoreboard")
+    async def pigeon_scoreboard(self, ctx):
+        query = Human.select()
+        query = query.join(Earthling, on = (Human.id == Earthling.human) )
+        query = query.join(Pigeon, on = (Human.id == Pigeon.human) )
+        query = query.where(Pigeon.dead == False)
+        query = query.where(Earthling.guild_id == ctx.guild.id)
+        query = query.order_by(Pigeon.experience.desc())
+
+        embed = discord.Embed(title = "Scoreboard")
+
+        top = 1
+        rows = []
+        i = (top-1)
+        for human in query:
+            values = []
+            pigeon = human.pigeon
+            values.append(f"{i+1}")
+            values.append(str(pigeon.experience))
+            values.append(str(pigeon.name))
+            rows.append(values)
+            if len(rows) == 10:
+                break
+            i += 1
+
+        headers = ["rank", "exp", "pigeon"]
+        sep = " | "
+        lines = []
+        longests = [len(x) for x in headers]
+        padding = 2
+        for row in rows:
+            row_text = []
+            for i in range(len(row)):
+                value = row[i]
+                if len(value) > longests[i]:
+                    longests[i] = len(value)
+
+                row_text.append(value.ljust(longests[i]+padding) )
+            lines.append(sep.join(row_text))
+
+        lines.insert(0, sep.join([x.ljust(longests[i]+padding) for i,x in enumerate(headers)]) )
+
+        equals = sum(longests) + (len(headers) * (padding) ) + len(sep) + padding
+        lines.insert(1, "=" * equals )
+
+        embed.description = "```md\n" + ( "\n".join(lines) ) + "```"
+
+        await ctx.send(embed = embed)
+
     @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
     @pigeon.command(name = "heal")
     async def pigeon_heal(self, ctx):
@@ -521,49 +565,48 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
     @tasks.loop(seconds=30)
     async def fight_ticker(self):
-        with database:
-            query = Fight.select()
-            query = query.where(Fight.finished == False)
-            query = query.where(Fight.accepted == True)
-            query = query.where(Fight.start_date <= datetime.datetime.utcnow())
-            for fight in query:
-                won = random.randint(0, 1) == 0
-                guild = fight.guild
-                channel = self.get_pigeon_channel(guild)
+        query = Fight.select()
+        query = query.where(Fight.finished == False)
+        query = query.where(Fight.accepted == True)
+        query = query.where(Fight.start_date <= datetime.datetime.utcnow())
+        for fight in query:
+            won = random.randint(0, 1) == 0
+            guild = fight.guild
+            channel = self.get_pigeon_channel(guild)
 
-                if won:
-                    winner = fight.challenger
-                    loser = fight.challengee
-                else:
-                    winner = fight.challengee
-                    loser = fight.challenger
+            if won:
+                winner = fight.challenger
+                loser = fight.challengee
+            else:
+                winner = fight.challengee
+                loser = fight.challenger
 
-                embed = self.get_base_embed(guild)
-                embed.title = f"{winner.name} creeps into {loser.name}’s room. {winner.name}’s jaw unhinges and swallows {loser.name} whole."
+            embed = self.get_base_embed(guild)
+            embed.title = f"{winner.name} creeps into {loser.name}’s room. {winner.name}’s jaw unhinges and swallows {loser.name} whole."
 
-                winner_data = {"experience" : 30, "health" : -2}
-                loser_data = {"experience" : 5, "health" : -10}
+            winner_data = {"experience" : 30, "health" : -2}
+            loser_data = {"experience" : 5, "health" : -10}
 
-                embed.add_field(name = f"💩 {loser.name}", value = get_winnings_value(**loser_data, gold = -fight.bet))
-                embed.add_field(name = f"🏆 {winner.name}", value = get_winnings_value(**winner_data, gold = fight.bet))
+            embed.add_field(name = f"💩 {loser.name}", value = get_winnings_value(**loser_data, gold = -fight.bet))
+            embed.add_field(name = f"🏆 {winner.name}", value = get_winnings_value(**winner_data, gold = fight.bet))
 
-                asyncio.gather(channel.send(embed = embed))
+            asyncio.gather(channel.send(embed = embed))
 
-                update_pigeon(winner, winner_data)
-                update_pigeon(loser, loser_data)
+            update_pigeon(winner, winner_data)
+            update_pigeon(loser, loser_data)
 
-                winner.human.gold += (fight.bet*2)
+            winner.human.gold += (fight.bet*2)
 
-                winner.status = Pigeon.Status.idle
-                loser.status = Pigeon.Status.idle
+            winner.status = Pigeon.Status.idle
+            loser.status = Pigeon.Status.idle
 
-                winner.save()
-                winner.human.save()
-                loser.save()
+            winner.save()
+            winner.human.save()
+            loser.save()
 
-                fight.won = won
-                fight.finished = True
-                fight.save()
+            fight.won = won
+            fight.finished = True
+            fight.save()
 
     @tasks.loop(hours = 1)
     async def stats_ticker(self):
@@ -609,6 +652,13 @@ def get_winnings_value(**kwargs):
         elif value < 0:
             lines.append(f"{emoji} {value}")
     return ", ".join(lines)
+
+def notify_condition_pigeon(ctx):
+    pigeon = Pigeon.select().where(Pigeon.human == Human.get(user_id = ctx.author.id)).where(Pigeon.condition != Pigeon.Condition.active).where(Pigeon.condition_notified == False).first()
+    if pigeon is not None:
+        pigeon.condition_notified = True
+        pigeon.save()
+        raise SendableException(ctx.translate("pigeon_" + pigeon.condition.name).format(pigeon = pigeon))
 
 def get_active_pigeon(user, raise_on_none = False):
     try:

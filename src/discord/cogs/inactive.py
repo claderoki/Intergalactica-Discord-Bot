@@ -21,7 +21,7 @@ class Inactive(discord.ext.commands.Cog):
         if member.bot:
             return
 
-        with database:
+        with database.connection_context():
             earthling, created = Earthling.get_or_create_for_member(member)
             if not created:
                 earthling.last_active = datetime.datetime.utcnow()
@@ -52,11 +52,10 @@ class Inactive(discord.ext.commands.Cog):
         lines = []
 
         inactive_members = []
-        with database:
-            for earthling in self.iter_inactives(ctx.guild):
-                if earthling.member.premium_since is None:
-                    inactive_members.append(earthling.member)
-                    lines.append( str(earthling.member) )
+        for earthling in self.iter_inactives(ctx.guild):
+            if earthling.member.premium_since is None:
+                inactive_members.append(earthling.member)
+                lines.append( str(earthling.member) )
 
         embed.description = "\n".join(lines)
         await ctx.send(embed = embed)

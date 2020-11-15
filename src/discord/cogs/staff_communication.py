@@ -27,9 +27,8 @@ class StaffCommunication(commands.Cog, name = "Staff communication"):
         channel = guild.get_channel(758296826549108746)
 
         anonymous = True
-        with database:
-            ticket = Ticket.create(text = concern, user_id = member.id, anonymous = anonymous, type = Ticket.Type.concern, guild_id = guild.id)
-            await ticket.sync_message(channel)
+        ticket = Ticket.create(text = concern, user_id = member.id, anonymous = anonymous, type = Ticket.Type.concern, guild_id = guild.id)
+        await ticket.sync_message(channel)
 
 
 
@@ -45,9 +44,8 @@ class StaffCommunication(commands.Cog, name = "Staff communication"):
         channel = guild.get_channel(758296826549108746)
 
         anonymous = True
-        with database:
-            ticket = Ticket.create(text = concern, user_id = member.id, channel_id = channel.id, anonymous = anonymous, type = Ticket.Type.concern, guild_id = guild.id)
-            await ticket.sync_message(channel)
+        ticket = Ticket.create(text = concern, user_id = member.id, channel_id = channel.id, anonymous = anonymous, type = Ticket.Type.concern, guild_id = guild.id)
+        await ticket.sync_message(channel)
 
     @commands.command()
     async def reply(self, ctx, ticket : Ticket, *, response):
@@ -71,9 +69,8 @@ class StaffCommunication(commands.Cog, name = "Staff communication"):
             for attachment in attachments:
                 response += f"\n{attachment.url}"
 
-        with database:
-            reply = Reply.create(anonymous = ticket.anonymous, user_id = ctx.author.id, text = response, ticket = ticket, type = type)
-            await ticket.sync_message()
+        reply = Reply.create(anonymous = ticket.anonymous, user_id = ctx.author.id, text = response, ticket = ticket, type = type)
+        await ticket.sync_message()
 
     @commands.has_guild_permissions(administrator = True)
     @commands.command()
@@ -83,12 +80,11 @@ class StaffCommunication(commands.Cog, name = "Staff communication"):
             for attachment in attachments:
                 response += f"\n{attachment.url}"
 
-        with database:
-            if text:
-                reply = Reply.create(anonymous = ticket.anonymous, user_id = ctx.author.id, text = text, ticket = ticket, type = Reply.Type.staff)
-            ticket.status = Ticket.Status.closed
-            ticket.close_reason = Ticket.CloseReason.resolved
-            await ticket.sync_message()
+        if text:
+            reply = Reply.create(anonymous = ticket.anonymous, user_id = ctx.author.id, text = text, ticket = ticket, type = Reply.Type.staff)
+        ticket.status = Ticket.Status.closed
+        ticket.close_reason = Ticket.CloseReason.resolved
+        await ticket.sync_message()
 
 def setup(bot):
     bot.add_cog(StaffCommunication(bot))

@@ -72,7 +72,7 @@ class Intergalactica(commands.Cog):
         await welcome_channel.send(embed = embed)
 
     async def create_selfie_poll(self, member):
-        with database:
+        with database.connection_context():
             poll = Poll.from_template(PollTemplate.get(name = "selfies"))
             poll.question = f"Should {member} be given selfie access?"
             poll.save()
@@ -117,7 +117,7 @@ class Intergalactica(commands.Cog):
                 await self.log("bot_commands", f"**{after}** {after.mention} has achieved Luna!")
 
     def embed_from_name(self, name, indexes):
-        with database:
+        with database.connection_context():
             named_embed = NamedEmbed.get(name = name)
         if indexes is not None:
             embed = named_embed.get_embed_only_selected_fields([x-1 for x in indexes])
@@ -176,7 +176,7 @@ class Intergalactica(commands.Cog):
 
     @tasks.loop(hours = 12)
     async def birthday_poller(self):
-        with database:
+        with database.connection_context():
             for earthling in Earthling.select().where( Earthling.guild_id == self.guild_id ):
                 human = earthling.human
                 if human.birthday:

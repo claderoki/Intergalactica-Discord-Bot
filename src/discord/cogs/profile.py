@@ -16,7 +16,7 @@ from src.utils.timezone import Timezone
 from src.discord.errors.base import SendableException
 
 def is_tester(member):
-    with database:
+    with database.connection_context():
         human, _ = Human.get_or_create(user_id = member.id)
         return human.tester
 
@@ -58,18 +58,17 @@ class Profile(commands.Cog):
         top = 1
         rows = []
         i = (top-1)
-        with database:
-            for earthling in query:
-                values = []
-                member = earthling.member
-                if member:
-                    values.append(f"{i+1}")
-                    values.append(str(earthling.human.gold))
-                    values.append(str(member))
-                    rows.append(values)
-                    if len(rows) == 10:
-                        break
-                    i += 1
+        for earthling in query:
+            values = []
+            member = earthling.member
+            if member:
+                values.append(f"{i+1}")
+                values.append(str(earthling.human.gold))
+                values.append(str(member))
+                rows.append(values)
+                if len(rows) == 10:
+                    break
+                i += 1
 
         headers = ["rank", "gold", "member"]
         sep = " | "
@@ -97,77 +96,74 @@ class Profile(commands.Cog):
 
     @commands.group()
     async def profile(self, ctx, members : commands.Greedy[discord.Member]):
-        if ctx.invoked_subcommand is None:
+        if ctx.invoked_subcommand is None:  
             if ctx.author not in members:
                 members.insert(0, ctx.author)
 
-            with database:
-                embed = discord.Embed(color = ctx.author.color)
-                for member in members:
-                    human, _ = Human.get_or_create(user_id = member.id)
-                    field = human.get_embed_field(show_all = len(members) > 1)
-                    unread_mail = human.inbox.where(Mail.read == False)
-                    if len(unread_mail) > 0:
-                        field["name"] += f"  | {len(unread_mail)} 📥"
-                    embed.add_field(**field)
+            embed = discord.Embed(color = ctx.author.color)
+            for member in members:
+                human, _ = Human.get_or_create(user_id = member.id)
+                field = human.get_embed_field(show_all = len(members) > 1)
+                unread_mail = human.inbox.where(Mail.read == False)
+                if len(unread_mail) > 0:
+                    field["name"] += f"  | {len(unread_mail)} 📥"
+                embed.add_field(**field)
 
-                await ctx.send(embed = embed)
+            await ctx.send(embed = embed)
 
     @profile.command(name = "clear", aliases = ["reset"])
     async def profile_clear(self, ctx):
-        with database:
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
-            human.timezone      = None
-            human.city          = None
-            human.country_code  = None
-            human.date_of_birth = None
-            human.save()
-            await ctx.send(ctx.translate("profile_cleared"))
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human.timezone      = None
+        human.city          = None
+        human.country_code  = None
+        human.date_of_birth = None
+        human.save()
+        await ctx.send(ctx.translate("profile_cleared"))
 
     @profile.command(name = "setup")
     async def profile_setup(self, ctx):
         prompt = lambda x : ctx.translate(f"profile_{x}_prompt")
 
-        with database:
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-            waiter = CityWaiter(ctx, prompt = prompt("city"), skippable = True)
+        waiter = CityWaiter(ctx, prompt = prompt("city"), skippable = True)
+        try:
+            city = await waiter.wait()
+        except Skipped:
+            pass
+        else:
+            human.city = city.name
+
+        timezone_set = False
+        waiter = CountryWaiter(ctx, prompt = prompt("country"), skippable = True)
+        try:
+            country = await waiter.wait()
+        except Skipped:
+            pass
+        else:
+            human.country_code = country.alpha_2
+            if human.city is not None:
+                city = self.bot.owm_api.by_q(human.city, human.country_code)
+                if city is not None:
+                    human.timezone = str(city.timezone)
+                    timezone_set = True
+
+        if not timezone_set:
+            waiter = TimezoneWaiter(ctx, prompt = prompt("timezone"), skippable = True)
             try:
-                city = await waiter.wait()
-            except Skipped:
-                pass
-            else:
-                human.city = city.name
-
-            timezone_set = False
-            waiter = CountryWaiter(ctx, prompt = prompt("country"), skippable = True)
-            try:
-                country = await waiter.wait()
-            except Skipped:
-                pass
-            else:
-                human.country_code = country.alpha_2
-                if human.city is not None:
-                    city = self.bot.owm_api.by_q(human.city, human.country_code)
-                    if city is not None:
-                        human.timezone = str(city.timezone)
-                        timezone_set = True
-
-            if not timezone_set:
-                waiter = TimezoneWaiter(ctx, prompt = prompt("timezone"), skippable = True)
-                try:
-                    human.timezone = await waiter.wait()
-                except Skipped:
-                    pass
-
-            waiter = DateWaiter(ctx, prompt = prompt("date_of_birth"), skippable = True)
-            try:
-                human.date_of_birth = await waiter.wait()
+                human.timezone = await waiter.wait()
             except Skipped:
                 pass
 
-            human.save()
-            await ctx.send(ctx.translate("profile_setup"))
+        waiter = DateWaiter(ctx, prompt = prompt("date_of_birth"), skippable = True)
+        try:
+            human.date_of_birth = await waiter.wait()
+        except Skipped:
+            pass
+
+        human.save()
+        await ctx.send(ctx.translate("profile_setup"))
 
     @commands.command()
     async def events(self, ctx, month : int = None):
@@ -180,8 +176,7 @@ class Profile(commands.Cog):
         query = query.where(Human.date_of_birth.month == month)
         query = query.order_by(Human.date_of_birth.asc())
 
-        with database:
-            humans = [x for x in query if ctx.guild.get_member(x.user_id) is not None]
+        humans = [x for x in query if ctx.guild.get_member(x.user_id) is not None]
 
         lines = []
         for human in humans:
@@ -244,20 +239,19 @@ class Profile(commands.Cog):
 
     @item.command(name = "list")
     async def item_list(self, ctx):
-        with database:
-            lines = []
-            for item in Item:
-                if item.explorable:
-                    line = f"{item.name} ({item.rarity.weight})"
-                else:
-                    line = item.name
-                lines.append(line)
+        lines = []
+        for item in Item:
+            if item.explorable:
+                line = f"{item.name} ({item.rarity.weight})"
+            else:
+                line = item.name
+            lines.append(line)
 
-            embed = discord.Embed()
-            lines = "\n".join(lines)
-            embed.description = f"```\n{lines}```"
-            embed.set_footer(text = f"To view more information about a specific item type '{ctx.prefix}item view <name>'")
-            asyncio.gather(ctx.send(embed = embed))
+        embed = discord.Embed()
+        lines = "\n".join(lines)
+        embed.description = f"```\n{lines}```"
+        embed.set_footer(text = f"To view more information about a specific item type '{ctx.prefix}item view <name>'")
+        asyncio.gather(ctx.send(embed = embed))
 
     @commands.command()
     async def inventory(self, ctx):
@@ -272,9 +266,8 @@ class Profile(commands.Cog):
 
     @item.command(name = "view")
     async def item_view(self, ctx,*, name):
-        with database:
-            item = Item.get(name = name)
-            await ctx.send(embed = item.embed)
+        item = Item.get(name = name)
+        await ctx.send(embed = item.embed)
 
     @commands.group(name="dateofbirth")
     async def date_of_birth(self, ctx):
@@ -286,19 +279,17 @@ class Profile(commands.Cog):
         if date_of_birth >= datetime.date.today():
             return await ctx.send(ctx.bot.translate("date_cannot_be_in_future"))
 
-        with database:
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
-            human.date_of_birth = date_of_birth
-            human.save()
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human.date_of_birth = date_of_birth
+        human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = str(date_of_birth)))
 
     @date_of_birth.command(name = "delete")
     async def delete_date_of_birth(self, ctx):
-        with database:
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
-            human.date_of_birth = None
-            human.save()
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human.date_of_birth = None
+        human.save()
 
         await ctx.send(ctx.bot.translate("attr_removed".format(name = ctx.attr_name)))
 
@@ -310,10 +301,9 @@ class Profile(commands.Cog):
     async def assign_timezone(self, ctx, timezone : Timezone):
         """Adds a timezone"""
 
-        with database:
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
-            human.timezone = timezone.name
-            human.save()
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human.timezone = timezone.name
+        human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
 
@@ -322,10 +312,9 @@ class Profile(commands.Cog):
         """Adds a timezone"""
         timezone = Timezone.from_city(city)
 
-        with database:
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
-            human.timezone = timezone.name
-            human.save()
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human.timezone = timezone.name
+        human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
 
@@ -343,21 +332,19 @@ class Profile(commands.Cog):
 
         timezone = Timezone.from_hour(int(hour))
 
-        with database:
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-            human.timezone = timezone.name
-            human.save()
+        human.timezone = timezone.name
+        human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
 
     @timezone.command(name = "delete")
     async def delete_timezone(self, ctx):
-        with database:
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-            human.timezone = None
-            human.save()
+        human.timezone = None
+        human.save()
 
         await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
 
@@ -370,36 +357,36 @@ class Profile(commands.Cog):
         elif attr_name == "color":
             kwargs["name"] = ctx.author.display_name
 
-        with database:
-            human, _ = Earthling.get_or_create_for_member(ctx.author)
-            new = human.personal_role_id is None or human.personal_role is None
-            if new:
-                first_human = Human.select().where(Human.personal_role_id != None).limit(1).first()
-                position = first_human.personal_role.position if first_human else 0
-                role = await ctx.guild.create_role(**kwargs)
-                await role.edit(position = position)
-                human.personal_role = role
-                human.save()
-                await ctx.send(ctx.bot.translate("role_created").format(role = role))
-                await ctx.author.add_roles(role)
-            else:
-                role = human.personal_role
-                await role.edit(**{attr_name : attr_value})
-                msg = ctx.bot.translate(f"attr_added").format(name = "role's " + attr_name, value = attr_value)
-                embed = discord.Embed(color = role.color, title = msg)
-                await ctx.send(embed = embed)
+        human, _ = Earthling.get_or_create_for_member(ctx.author)
+        new = human.personal_role_id is None or human.personal_role is None
+        if new:
+            first_human = Human.select().where(Human.personal_role_id != None).limit(1).first()
+            position = first_human.personal_role.position if first_human else 0
+            role = await ctx.guild.create_role(**kwargs)
+            await role.edit(position = position)
+            human.personal_role = role
+            human.save()
+            await ctx.send(ctx.bot.translate("role_created").format(role = role))
+            await ctx.author.add_roles(role)
+        else:
+            role = human.personal_role
+            await role.edit(**{attr_name : attr_value})
+            msg = ctx.bot.translate(f"attr_added").format(name = "role's " + attr_name, value = attr_value)
+            embed = discord.Embed(color = role.color, title = msg)
+            await ctx.send(embed = embed)
 
     @commands.group()
     async def role(self, ctx):
-        if ctx.guild.id == 742146159711092757:
-            with database:
-                human, _ = Earthling.get_or_create_for_member(ctx.author)
-                rank_role = human.rank_role
+        if ctx.guild.id != 742146159711092757:
+            raise SendableException("Only in intergalactica")
 
-            allowed = rank_role is not None or ctx.author.premium_since is not None
+        human, _ = Earthling.get_or_create_for_member(ctx.author)
+        rank_role = human.rank_role
 
-            if not allowed:
-                raise SendableException("You are not allowed to run this command yet.")
+        allowed = rank_role is not None or ctx.author.premium_since is not None
+
+        if not allowed:
+            raise SendableException("You are not allowed to run this command yet.")
 
     @role.command(aliases = ["colour"])
     async def color(self, ctx, color : discord.Color = None):
@@ -429,17 +416,16 @@ class Profile(commands.Cog):
 
     @role.command(name = "delete")
     async def delete_role(self, ctx):
-        with database:
-            earthling, _ = Earthling.get_or_create_for_member(ctx.author)
-            if earthling.personal_role_id is not None:
-                role = earthling.personal_role
-                if role is not None:
-                    await role.delete()
+        earthling, _ = Earthling.get_or_create_for_member(ctx.author)
+        if earthling.personal_role_id is not None:
+            role = earthling.personal_role
+            if role is not None:
+                await role.delete()
 
-                earthling.personal_role_id = None
-                earthling.save()
+            earthling.personal_role_id = None
+            earthling.save()
 
-                await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
+            await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
 
     @role.command(name = "reset")
     @commands.is_owner()
@@ -458,21 +444,19 @@ class Profile(commands.Cog):
     async def assign_city(self, ctx, city : str):
         """Adds a city"""
 
-        with database:
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-            human.city = city
-            human.save()
+        human.city = city
+        human.save()
 
         await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = city))
 
     @city.command(name = "delete")
     async def delete_city(self, ctx):
-        with database:
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-            human.city = None
-            human.save()
+        human.city = None
+        human.save()
 
         await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
 

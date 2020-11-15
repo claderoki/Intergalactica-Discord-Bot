@@ -31,7 +31,7 @@ class Admin(discord.ext.commands.Cog):
             async with ctx.typing():
                 cam = cv2.VideoCapture(0)
                 frame = cam.read()[1]
-                await asyncio.sleep(5)
+                await asyncio.sleep(15)
                 frame = cam.read()[1]
                 full_path = f"{config.path}/tmp/frame.png"
                 cv2.imwrite(full_path, frame)
@@ -51,19 +51,17 @@ class Admin(discord.ext.commands.Cog):
 
     @tester.command(name = "add", aliases = ["=", "+"])
     async def add_tester(self, ctx, member : discord.Member):
-        with database:
-            human, _ = Human.get_or_create(user_id = member.id)
-            human.tester = True
-            human.save()
-            asyncio.gather(ctx.success())
+        human, _ = Human.get_or_create(user_id = member.id)
+        human.tester = True
+        human.save()
+        asyncio.gather(ctx.success())
 
     @tester.command(name = "remove", aliases = ["-", "del"])
     async def remove_tester(self, ctx, member : discord.Member):
-        with database:
-            human, _ = Human.get_or_create(user_id = member.id)
-            human.tester = False
-            human.save()
-            asyncio.gather(ctx.success())
+        human, _ = Human.get_or_create(user_id = member.id)
+        human.tester = False
+        human.save()
+        asyncio.gather(ctx.success())
 
     @commands.group()
     @commands.is_owner()

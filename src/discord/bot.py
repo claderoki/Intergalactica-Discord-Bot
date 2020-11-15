@@ -118,6 +118,8 @@ class Locus(commands.Bot):
         self.load_all_cogs()
 
         self.before_invoke(self.before_any_command)
+        self.after_invoke(self.after_any_command)
+
 
     def print_info(self):
         print("--------------------")
@@ -283,14 +285,21 @@ class Locus(commands.Bot):
 
         return emojis
 
+
+
+    async def after_any_command(self, ctx):
+        ctx.db.__exit__(None, None, None)
+
     async def before_any_command(self, ctx):
+        ctx.db = database.connection_context()
+        ctx.db.__enter__()
+
         if ctx.guild is None:
             locale_name = "en_US"
         else:
             if ctx.guild.id not in self._locales:
-                with database:
-                    settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
-                    self._locales[ctx.guild.id] = settings.locale.name
+                settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
+                self._locales[ctx.guild.id] = settings.locale.name
 
         ctx.translate = lambda x: self.translate(x, self._locales.get(ctx.guild.id if ctx.guild else 761624318291476482, "en_US"))
 
@@ -340,7 +349,7 @@ class Locus(commands.Bot):
 
         missing_translations = self.missing_translations[locale]
 
-        with database:
+        with database.connection_context():
             try:
                 translation = Translation.get(locale = locale, message_key = key)
                 if key in missing_translations:

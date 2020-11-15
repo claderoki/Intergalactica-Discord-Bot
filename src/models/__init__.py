@@ -14,7 +14,7 @@ from .prank import NicknamePrank, Prankster
 database = Human._meta.database
 
 def setup():
-    with database:
+    with database.connection_context():
         # database.drop_tables([Pigeon, Fight, Exploration, Mail])
         database.create_tables([Pigeon, Fight, Exploration, Mail ])
 
