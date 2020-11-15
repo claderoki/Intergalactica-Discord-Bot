@@ -44,7 +44,10 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @commands.Cog.listener()
     async def on_ready(self):
         Pigeon.emojis["gold"] = self.bot.gold_emoji
-        self.fight_ticker.start()
+        if self.bot.production:
+            self.fight_ticker.start()
+        else:
+            self.stats_ticker.start()
 
     @commands.group()
     async def pigeon(self, ctx):
@@ -562,6 +565,20 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                 fight.finished = True
                 fight.save()
 
+    @tasks.loop(hours = 1)
+    async def stats_ticker(self):
+        for pigeon in Pigeon.select().where(Pigeon.condition == Pigeon.Condition.active).where(Pigeon.status == Pigeon.Status.idle):
+            if pigeon.id != 1:
+                continue
+
+            data = {"food": -1, "cleanliness" : -1, "happiness": -1}
+
+            if pigeon.food <= 20 or pigeon.cleanliness <= 20:
+                data["health"] = -1
+            print(data)
+            update_pigeon(pigeon, data)
+            pigeon.save()
+
 def get_random_country_code():
     country_code = None
     countries = list(pycountry.countries)
@@ -579,6 +596,9 @@ def update_pigeon(pigeon, data):
             pigeon.human.gold += value
         else:
             setattr(pigeon, key, (getattr(pigeon, key) + value) )
+            if key == "health":
+                if pigeon.health <= 0:
+                    pigeon.condition = Pigeon.Condition.dead
 
 def get_winnings_value(**kwargs):
     lines = []
