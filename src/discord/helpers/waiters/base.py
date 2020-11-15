@@ -96,7 +96,7 @@ class MessageWaiter(Waiter):
 
     @property
     def embed(self):
-        embed = self.bot.base_embed(description = self.prompt)
+        embed = self.bot.get_base_embed(description = self.prompt)
 
         footer = []
         instructions = self.instructions
