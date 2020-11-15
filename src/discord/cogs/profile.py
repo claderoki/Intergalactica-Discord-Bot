@@ -357,19 +357,19 @@ class Profile(commands.Cog):
         elif attr_name == "color":
             kwargs["name"] = ctx.author.display_name
 
-        human, _ = Earthling.get_or_create_for_member(ctx.author)
-        new = human.personal_role_id is None or human.personal_role is None
+        earthling, _ = Earthling.get_or_create_for_member(ctx.author)
+        new = earthling.personal_role_id is None or earthling.personal_role is None
         if new:
-            first_human = Human.select().where(Human.personal_role_id != None).limit(1).first()
-            position = first_human.personal_role.position if first_human else 0
+            first_earthling = Earthling.select().where(Earthling.personal_role_id != None).limit(1).first()
+            position = first_earthling.personal_role.position if first_earthling else 0
             role = await ctx.guild.create_role(**kwargs)
             await role.edit(position = position)
-            human.personal_role = role
-            human.save()
+            earthling.personal_role = role
+            earthling.save()
             await ctx.send(ctx.bot.translate("role_created").format(role = role))
             await ctx.author.add_roles(role)
         else:
-            role = human.personal_role
+            role = earthling.personal_role
             await role.edit(**{attr_name : attr_value})
             msg = ctx.bot.translate(f"attr_added").format(name = "role's " + attr_name, value = attr_value)
             embed = discord.Embed(color = role.color, title = msg)
