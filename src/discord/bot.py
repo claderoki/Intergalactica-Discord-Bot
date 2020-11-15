@@ -20,49 +20,6 @@ from src.models import Settings, Translation, NamedChannel, database
 from src.discord.errors.base import SendableException
 from src.discord.helpers.embed import Embed
 
-
-# class StorageFile:
-#     def __init__(self):
-#         pass
-
-#     def upload(self):
-#         pass
-
-
-#     @classmethod
-#     def from_url(cls, url):
-#         return cls.from_bytes(requests.get(file, stream=True).raw)
-
-#     @classmethod
-#     def from_bytes(cls, bytes):
-#         pass
-
-#     @classmethod
-#     def from_path(cls, path):
-#         return 
-
-#     @classmethod
-#     def from_stream(cls, stream):
-#         pass
-
-    #    storage_channel = (await self.application_info()).owner
-
-    #     if isinstance(file, io.BytesIO):
-    #         f = file
-    #     elif isinstance(file, str):
-    #         if file.startswith("http"):
-    #             bytes = 
-    #         else:
-    #             f = open(file, "rb")
-    #     else:
-    #         f = io.BytesIO(file)
-
-    #     msg = await storage_channel.send(file=discord.File(fp=f, filename=filename))
-
-    #     if isinstance(file, str):
-    #         f.close()
-
-
 def seconds_readable(seconds):
     fmt = "{delta.days} days {delta.hours} hours {delta.minutes} minutes {delta.seconds} seconds"
     delta = relativedelta(seconds = seconds)
@@ -76,6 +33,10 @@ def seconds_readable(seconds):
 
 class Locus(commands.Bot):
     _dominant_colors = {}
+    _guild = None
+    _locales = {}
+    missing_translations = {}
+    owner = None
 
     sendables = \
     (
@@ -98,13 +59,9 @@ class Locus(commands.Bot):
         commands.errors.CommandNotFound
     )
 
-    def __init__(self, mode, prefix = "/", ):
+    def __init__(self, mode, prefix = "/"):
         self.mode = mode
         self.production = mode == config.Mode.production
-        self.missing_translations = {}
-        self._guild = None
-        self.owner = None
-        self._locales = {}
 
         if not self.production:
             prefix = "."
@@ -119,7 +76,6 @@ class Locus(commands.Bot):
 
         self.before_invoke(self.before_any_command)
         self.after_invoke(self.after_any_command)
-
 
     def print_info(self):
         print("--------------------")
@@ -141,9 +97,6 @@ class Locus(commands.Bot):
         with open(f"{path}/{name}.css") as f:
             _bytes = HTML(string = html, base_url = path).write_png(None,  stylesheets  = [CSS(string = f.read())] )
         return discord.File(fp = io.BytesIO(_bytes), filename = f"{name}.png")
-
-    def base_embed(self, **kwargs) -> discord.Embed:
-        return self.get_base_embed(**kwargs)
 
     def get_base_embed(self, **kwargs) -> discord.Embed:
         user = self.user
@@ -242,10 +195,8 @@ class Locus(commands.Bot):
             "games",
             "inactive",
             "staff_communication",
-            # "assassins",
             "admin",
             "prank",
-            "scene",
             "pigeon"
         ]
 
@@ -285,7 +236,11 @@ class Locus(commands.Bot):
 
         return emojis
 
-
+    def get_id(self, obj):
+        if hasattr(obj, "id"):
+            return obj.id
+        else:
+            return obj
 
     async def after_any_command(self, ctx):
         ctx.db.__exit__(None, None, None)
@@ -293,6 +248,7 @@ class Locus(commands.Bot):
     async def before_any_command(self, ctx):
         ctx.db = database.connection_context()
         ctx.db.__enter__()
+        ctx.get_id = self.get_id
 
         if ctx.guild is None:
             locale_name = "en_US"
@@ -301,9 +257,7 @@ class Locus(commands.Bot):
                 settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
                 self._locales[ctx.guild.id] = settings.locale.name
 
-        ctx.translate = lambda x: self.translate(x, self._locales.get(ctx.guild.id if ctx.guild else 761624318291476482, "en_US"))
-
-        ar = lambda x: ctx.message.add_reaction(x)
+        ctx.translate = lambda x: self.translate(x, self._locales.get(ctx.get_id(ctx.guild.id), "en_US"))
 
         ctx.success = lambda: ctx.message.add_reaction("✅")
         ctx.error = lambda: ctx.message.add_reaction("❌")
