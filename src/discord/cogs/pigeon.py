@@ -263,7 +263,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                     if len(items) > 0:
                         item = random.choices(items, weights = [x.rarity.weight for x in items], k = 1)[0]
                         embed.set_thumbnail(url = item.image_url)
-                        bonuses.append(f"On the way {pigeon.gender.get_pronoun()} also found a **{item.name}**")
+                        bonuses.append(f"On the way {pigeon.gender.get_pronoun()} also found **{item.name}**")
                         pigeon.human.add_item(item, 1)
 
                 explorations_finished = len(activity.pigeon.explorations)
