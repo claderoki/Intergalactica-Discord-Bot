@@ -6,7 +6,7 @@ import random
 from countryinfo import CountryInfo
 import peewee
 
-from .base import BaseModel, EnumField, PercentageField
+from .base import BaseModel, EnumField, PercentageField, CountryField, LanguageField
 from .human import Human, Item, HumanItem
 from src.utils.enums import Gender
 
@@ -24,8 +24,8 @@ class Activity(BaseModel):
         return int((self.end_date - self.start_date).total_seconds() / 60.0)
 
 class TravelActivity(Activity):
-    residence    = peewee.TextField       (null = True)
-    destination  = peewee.TextField       (null = True)
+    residence   = CountryField (null = True)
+    destination = CountryField (null = True)
 
     @property
     def distance_in_km(self):
@@ -34,8 +34,8 @@ class TravelActivity(Activity):
 
         R = 6373.0
 
-        lat1, lon1 = [math.radians(x) for x in CountryInfo(self.residence).capital_latlng()]
-        lat2, lon2 = [math.radians(x) for x in CountryInfo(self.destination).capital_latlng()]
+        lat1, lon1 = [math.radians(x) for x in self.residence.capital_latlng()]
+        lat2, lon2 = [math.radians(x) for x in self.destination.capital_latlng()]
 
         dlon = lon2 - lon1
         dlat = lat2 - lat1
@@ -93,6 +93,24 @@ class Pigeon(BaseModel):
     status              = EnumField              (Status, default = Status.idle)
     gender              = EnumField              (Gender, default = Gender.other)
 
+    def study_language(self, language, mastery = 1):
+        language, _ = LanguageMastery.get_or_create(pigeon = self, language = language)
+        language.mastery += 1
+        language.save()
+
+    def update_stats(self, data):
+        for key, value in data.items():
+            if key == "gold":
+                self.human.gold += value
+            else:
+                setattr(self, key, (getattr(self, key) + value) )
+                if key == "health":
+                    if self.health <= 0:
+                        self.condition = self.Condition.dead
+                        SystemMessage.create(text = "Oh no! Your pigeon has died. Better take better care of it next time!", human = self.human)
+        self.save()
+        self.human.save()
+
     @property
     def current_activity(self):
         if self.status == self.Status.exploring:
@@ -107,6 +125,20 @@ class Pigeon(BaseModel):
         query = Fight.select()
         query = query.where((Fight.challenger == self) | (Fight.challengee == self))
         return query
+
+class LanguageMastery(BaseModel):
+    language = LanguageField()
+    mastery  = PercentageField(null = False, default = 0)
+    pigeon   = peewee.ForeignKeyField (Pigeon, null = False, backref = "languages", on_delete = "CASCADE")
+
+class SystemMessage(BaseModel):
+    human = peewee.ForeignKeyField (Human, null = False, backref = "system_messages", on_delete = "CASCADE")
+    text  = peewee.TextField(null = False)
+    read  = peewee.BooleanField(null = False, default = False)
+
+    @property
+    def embed(self):
+        return discord.Embed(description = self.text)
 
 class Mail(TravelActivity):
     recipient   = peewee.ForeignKeyField (Human, null = False, backref = "inbox", on_delete = "CASCADE")
