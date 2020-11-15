@@ -35,8 +35,6 @@ class Timezone:
             if dt.hour == hour:
                 return cls(tz_name)
 
-
-
     @classmethod
     def from_state(cls, name):
         pass
