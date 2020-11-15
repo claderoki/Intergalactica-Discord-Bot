@@ -71,14 +71,10 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         pigeon = get_active_pigeon(ctx.author)
 
         if pigeon is not None:
-            asyncio.gather(ctx.send(ctx.translate("pigeon_already_purchased").format(name = pigeon.name)))
-            return
-
-        prompt = lambda x : ctx.translate(f"pigeon_{x}_prompt")
+            return asyncio.gather(ctx.send(ctx.translate("pigeon_already_purchased").format(name = pigeon.name)))
 
         pigeon = Pigeon(human = Human.get(user_id = ctx.author.id))
-        waiter = StrWaiter(ctx, prompt = prompt("name"), max_words = None)
-        pigeon.name = await waiter.wait()
+        await pigeon.editor_for("name")
         pigeon.save()
 
         cost = 50
