@@ -2,10 +2,12 @@ import os
 import json
 
 import peewee
+import pycountry
 import emoji
 
 from src.discord.helpers.waiters import *
 from src.discord.helpers.pretty import prettify_value
+from src.utils.country import Country
 import src.config as config
 
 def to_snake_case(text):
@@ -107,6 +109,23 @@ class JsonField(peewee.TextField):
 
     def python_value(self, value):
         return json.loads(value)
+
+class LanguageField(peewee.TextField):
+
+    def db_value(self, value):
+        return value.alpha_2
+
+    def python_value(self, value):
+        return pycountry.languages.get(alpha_2 = value)
+
+class CountryField(peewee.TextField):
+    def db_value(self, value):
+        if value is not None:
+            return value.iso()["alpha2"]
+
+    def python_value(self, value):
+        if value is not None:
+            return Country.from_alpha_2(value)
 
 class EnumField(peewee.TextField):
     def __init__(self, enum, **kwargs):
