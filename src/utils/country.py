@@ -1,3 +1,5 @@
+import random
+
 import pycountry
 from countryinfo import CountryInfo
 
@@ -11,6 +13,10 @@ class Country(CountryInfo):
 
     def languages(self):
         return [pycountry.languages.get(alpha_2 = x) for x in super().languages()]
+
+    @property
+    def alpha_2(self):
+        return self.iso()["alpha2"]
 
     @classmethod
     def from_alpha_2(cls, alpha_2):
