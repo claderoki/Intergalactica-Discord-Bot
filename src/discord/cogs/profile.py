@@ -235,8 +235,6 @@ class Profile(commands.Cog):
         item.save()
         await ctx.send("OK")
 
-
-
     @item.command(name = "list")
     async def item_list(self, ctx):
         lines = []
@@ -268,85 +266,6 @@ class Profile(commands.Cog):
     async def item_view(self, ctx,*, name):
         item = Item.get(name = name)
         await ctx.send(embed = item.embed)
-
-    @commands.group(name="dateofbirth")
-    async def date_of_birth(self, ctx):
-        pass
-
-    @date_of_birth.command(name="=", aliases=["add"], usage = (datetime.date.today() - datetime.timedelta(days=(365 * 20))) )
-    async def assign_date_of_birth(self, ctx, date_of_birth : convert_to_date):
-        """Adds a date of birth"""
-        if date_of_birth >= datetime.date.today():
-            return await ctx.send(ctx.bot.translate("date_cannot_be_in_future"))
-
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
-        human.date_of_birth = date_of_birth
-        human.save()
-
-        await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = str(date_of_birth)))
-
-    @date_of_birth.command(name = "delete")
-    async def delete_date_of_birth(self, ctx):
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
-        human.date_of_birth = None
-        human.save()
-
-        await ctx.send(ctx.bot.translate("attr_removed".format(name = ctx.attr_name)))
-
-    @commands.group()
-    async def timezone(self, ctx):
-        pass
-
-    @timezone.command(name="=", aliases=["add"], usage = lambda : "Europe/Amsterdam" )
-    async def assign_timezone(self, ctx, timezone : Timezone):
-        """Adds a timezone"""
-
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
-        human.timezone = timezone.name
-        human.save()
-
-        await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
-
-    @timezone.command(name = "city")
-    async def timezone_city(self, ctx, city : str):
-        """Adds a timezone"""
-        timezone = Timezone.from_city(city)
-
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
-        human.timezone = timezone.name
-        human.save()
-
-        await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
-
-    @timezone.command(name = "hour")
-    async def timezone_hour(self, ctx, hour : str):
-        """Adds a timezone"""
-
-        if "PM" in hour.upper():
-            hour = int(hour.lower().replace("pm", "").strip()) + 12
-        elif "AM" in hour.upper():
-            hour = int(hour.lower().replace("am", "").strip())
-
-        if hour == 24:
-            hour = 0
-
-        timezone = Timezone.from_hour(int(hour))
-
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
-
-        human.timezone = timezone.name
-        human.save()
-
-        await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = timezone.name))
-
-    @timezone.command(name = "delete")
-    async def delete_timezone(self, ctx):
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
-
-        human.timezone = None
-        human.save()
-
-        await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
 
     async def edit_personal_role(self, ctx, **kwargs):
         attr_name = ctx.command.name
@@ -435,30 +354,6 @@ class Profile(commands.Cog):
                 role = earthling.personal_role
                 if role is not None and earthling.member is None:
                     await role.delete()
-
-    @commands.group()
-    async def city(self, ctx):
-        pass
-
-    @city.command(name="=", aliases=["add"], usage = "Munstergeleen" )
-    async def assign_city(self, ctx, city : str):
-        """Adds a city"""
-
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
-
-        human.city = city
-        human.save()
-
-        await ctx.send(ctx.bot.translate("attr_added").format(name = ctx.attr_name, value = city))
-
-    @city.command(name = "delete")
-    async def delete_city(self, ctx):
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
-
-        human.city = None
-        human.save()
-
-        await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
 
     async def cog_before_invoke(self, ctx):
         attr_name = (ctx.command.root_parent or ctx.command).callback.__name__

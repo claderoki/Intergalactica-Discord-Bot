@@ -6,7 +6,7 @@ import peewee
 import discord
 import emoji
 
-from .base import BaseModel, EnumField
+from .base import BaseModel, EnumField, CountryField
 from src.utils.timezone import Timezone
 import src.config as config
 
@@ -18,7 +18,7 @@ class Human(BaseModel):
     timezone              = peewee.TextField        (null = True)
     date_of_birth         = peewee.DateField        (null = True)
     city                  = peewee.TextField        (null = True)
-    country_code          = peewee.TextField        (null = True)
+    country               = CountryField            (null = True, column_name = "country_code")
     tester                = peewee.BooleanField     (null = False, default = False)
 
     class Meta:
