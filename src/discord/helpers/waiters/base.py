@@ -3,9 +3,9 @@ import datetime
 import re
 
 import pytz
-import pycountry
 import discord
 
+from src.utils.country import Country
 import src.config as config
 from src.discord.helpers.embed import Embed
 
@@ -253,7 +253,8 @@ class CountryWaiter(StrWaiter):
         if len(argument) not in (2,3):
             raise ConversionFailed("Message needs to be a country code.")
 
-        country = pycountry.countries.get(**{f"alpha_{len(argument)}": argument.upper()})
+        country = Country.from_alpha_2(argument.upper())
+
         if country is None:
             raise ConversionFailed("Country not found.")
 
