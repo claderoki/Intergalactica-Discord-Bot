@@ -107,7 +107,7 @@ class Pigeon(BaseModel):
                 if key == "health":
                     if self.health <= 0:
                         self.condition = self.Condition.dead
-                        SystemMessage.create(text = "Oh no! Your pigeon has died. Better take better care of it next time!", human = self.human)
+                        SystemMessage.create(text = self.bot.translate("pigeon_dead"), human = self.human)
         self.save(only = self.dirty_fields)
         self.human.save(only = self.human.dirty_fields)
 
