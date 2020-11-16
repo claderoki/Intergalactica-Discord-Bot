@@ -110,8 +110,8 @@ class Human(BaseModel):
         elif show_all:
             values.append("🕑 N/A")
 
-        if self.country_code:
-            flag = "".join([emojize(f":regional_indicator_symbol_letter_{x}:") for x in self.country_code.lower()])
+        if self.country:
+            flag = "".join([emojize(f":regional_indicator_symbol_letter_{x}:") for x in self.country.alpha_2.lower()])
             name += " " + flag
 
         if self.pigeon is not None:
@@ -120,7 +120,7 @@ class Human(BaseModel):
             values.append("<:pigeon:767362416941203456> N/A")
 
         if self.city is not None:
-            city = self.bot.owm_api.by_q(self.city, self.country_code)
+            city = self.bot.owm_api.by_q(self.city, self.country.alpha_2)
             values.append(f"{city.weather_infos[0].emoji} {city.temperature_info.temperature}{city.unit.symbol}")
         elif show_all:
             values.append("🌡️ N/A")
