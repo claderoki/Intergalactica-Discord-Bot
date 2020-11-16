@@ -322,6 +322,7 @@ class MemberWaiter(MessageWaiter):
         return "@mention"
 
     def convert(self, argument):
+        # commands.MemberConverter().convert(self.ctx, argument)
         match = re.match(r'<@!?([0-9]+)>$', argument)
         if match:
             id = int(match.group(1))
