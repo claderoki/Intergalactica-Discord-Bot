@@ -17,11 +17,8 @@ from src.discord.helpers.exploration_retrieval import ExplorationRetrieval, Mail
 from src.utils.enums import Gender
 from src.discord.helpers.converters import EnumConverter
 
-def pigeon_validation():
-    pass
-
 class PigeonCog(commands.Cog, name = "Pigeon"):
-    subcommands_no_require_pigeon = ["buy", "scoreboard", "help"]
+    subcommands_no_require_pigeon = ["buy", "scoreboard", "help", "inbox"]
     subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name"] + subcommands_no_require_pigeon
     subcommands_no_require_stats = ["heal", "clean", "feed", "play"] + subcommands_no_require_available
 
@@ -423,19 +420,24 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         embed = discord.Embed(title = "Scoreboard")
 
-        rows = []
-        rows.append(Row(["rank", "exp", "pigeon", "owner"], header = True))
+        def limit(text, max = None):
+            text = str(text)
+            if max is not None and len(text) > max:
+                return text[:max] + ".."
+            else:
+                return text
 
+        table = Table()
+        table.add_row(Row(["rank", "exp", "pigeon", "owner"], header = True))
         top = 1
         i = (top-1)
         for pigeon in query:
-            values = [f"{i+1}", str(pigeon.experience), str(pigeon.name), str(pigeon.human.user)]
-            rows.append(Row(values))
-            if len(rows) == 10:
+            values = [f"{i+1}", str(pigeon.experience), limit(pigeon.name, 10), limit(pigeon.human.user, 10)]
+            table.add_row(Row(values))
+            if table.row_count == 10+1:
                 break
             i += 1
 
-        table = Table(rows)
         embed.description = table.generate()
         await ctx.send(embed = embed)
 
