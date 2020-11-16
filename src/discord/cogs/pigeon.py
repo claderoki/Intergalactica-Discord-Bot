@@ -110,7 +110,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             challengee = ctx.challengee
         )
 
-        await fight.editor_for("bet", min = 0, max = min([pigeon.human.gold, ctx.challengee.human.gold]), skippable = True)
+        await fight.editor_for("bet", ctx, min = 0, max = min([ctx.pigeon.human.gold, ctx.challengee.human.gold]), skippable = True)
 
         raise_if_not_enough_gold(ctx, fight.bet, ctx.pigeon.human, name = "challenger")
         raise_if_not_enough_gold(ctx, fight.bet, ctx.challengee.human, name = "challengee")
@@ -123,7 +123,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         embed = self.get_base_embed(ctx.guild)
         embed.title = "Pigeon Challenge"
-        embed.description = f"{challenger.name} has challenged {challengee.name} to a pigeon fight.\nThe stake for this fight is `{fight.bet}`"
+        embed.description = f"{ctx.pigeon.name} has challenged {ctx.challengee.name} to a pigeon fight.\nThe stake for this fight is `{fight.bet}`"
         embed.set_footer(text = f"use '{ctx.prefix}pigeon accept' to accept") 
         asyncio.gather(channel.send(embed = embed)) 
 

@@ -126,7 +126,7 @@ class MailRetrieval(ActivityRetrieval):
             value = get_winnings_value(**self.winnings)
         )
 
-        embed.description = f"{self.mail.pigeon.name} comes back from a long journey to deliver a message!"
+        embed.description = f"{self.mail.sender.name} comes back from a long journey to deliver a message!"
 
         return embed
 
@@ -142,6 +142,7 @@ class MailRetrieval(ActivityRetrieval):
         return self._winnings
 
     def commit(self):
+        pigeon = self.mail.sender
         pigeon.update_stats(self.winnings)
         self.mail.finished = True
         pigeon.status = Pigeon.Status.idle
