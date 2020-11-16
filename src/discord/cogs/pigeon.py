@@ -125,8 +125,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed.title = "Pigeon Challenge"
         embed.description = f"{challenger.name} has challenged {challengee.name} to a pigeon fight.\nThe stake for this fight is `{fight.bet}`"
         embed.set_footer(text = f"use '{ctx.prefix}pigeon accept' to accept") 
-        asyncio.gather(channel.send(embed = embed))
-
+        asyncio.gather(channel.send(embed = embed)) 
 
     @pigeon.command(name = "languages", aliases = ["lang"])
     async def pigeon_languages(self, ctx):
@@ -425,12 +424,12 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed = discord.Embed(title = "Scoreboard")
 
         rows = []
-        rows.append(Row(["rank", "exp", "pigeon"], header = True))
+        rows.append(Row(["rank", "exp", "pigeon", "owner"], header = True))
 
         top = 1
         i = (top-1)
         for pigeon in query:
-            values = [f"{i+1}", str(pigeon.experience), str(pigeon.name)]
+            values = [f"{i+1}", str(pigeon.experience), str(pigeon.name), str(pigeon.human.user)]
             rows.append(Row(values))
             if len(rows) == 10:
                 break
