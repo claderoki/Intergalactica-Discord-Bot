@@ -30,6 +30,7 @@ class Country(CountryInfo):
             alpha_2 = random.choice(countries).alpha_2
             try:
                 CountryInfo(alpha_2).capital()
+                CountryInfo(alpha_2).capital_latlng()
             except KeyError:
                 alpha_2 = None
 
