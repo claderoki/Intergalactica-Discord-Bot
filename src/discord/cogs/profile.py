@@ -116,7 +116,7 @@ class Profile(commands.Cog):
         human, _ = Human.get_or_create(user_id = ctx.author.id)
         human.timezone      = None
         human.city          = None
-        human.country_code  = None
+        human.country       = None
         human.date_of_birth = None
         human.save()
         await ctx.send(ctx.translate("profile_cleared"))
@@ -142,9 +142,9 @@ class Profile(commands.Cog):
         except Skipped:
             pass
         else:
-            human.country_code = country.alpha_2
+            human.country = Country
             if human.city is not None:
-                city = self.bot.owm_api.by_q(human.city, human.country_code)
+                city = self.bot.owm_api.by_q(human.city, human.country.alpha_2)
                 if city is not None:
                     human.timezone = str(city.timezone)
                     timezone_set = True
@@ -156,6 +156,7 @@ class Profile(commands.Cog):
             except Skipped:
                 pass
 
+        await human.editor_for("date_of_birth")
         waiter = DateWaiter(ctx, prompt = prompt("date_of_birth"), skippable = True)
         try:
             human.date_of_birth = await waiter.wait()
