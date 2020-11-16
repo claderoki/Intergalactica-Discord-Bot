@@ -150,7 +150,6 @@ class MailRetrieval(ActivityRetrieval):
         pigeon.save()
         self.mail.save()
 
-
 def get_winnings_value(**kwargs):
     lines = []
     for key, value in kwargs.items():
