@@ -9,6 +9,13 @@ def prettify_value(value):
         return "N/A"
     return value
 
+def limit_str(text, max = None):
+    text = str(text)
+    if max is not None and len(text) > max:
+        return text[:max] + ".."
+    else:
+        return text
+
 def prettify_dict(data, emojis = None):
     if emojis is not None and len(data) != len(emojis):
         raise Exception("Not equal!")

@@ -12,7 +12,7 @@ from src.discord.helpers.waiters import *
 from src.utils.country import Country
 from src.games.game.base import DiscordIdentity
 from src.discord.errors.base import SendableException
-from src.discord.helpers.pretty import prettify_dict, Table, Row
+from src.discord.helpers.pretty import prettify_dict, limit_str, Table, Row
 from src.discord.helpers.exploration_retrieval import ExplorationRetrieval, MailRetrieval
 from src.utils.enums import Gender
 from src.discord.helpers.converters import EnumConverter
@@ -420,19 +420,12 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         embed = discord.Embed(title = "Scoreboard")
 
-        def limit(text, max = None):
-            text = str(text)
-            if max is not None and len(text) > max:
-                return text[:max] + ".."
-            else:
-                return text
-
         table = Table()
         table.add_row(Row(["rank", "exp", "pigeon", "owner"], header = True))
         top = 1
         i = (top-1)
         for pigeon in query:
-            values = [f"{i+1}", str(pigeon.experience), limit(pigeon.name, 10), limit(pigeon.human.user, 10)]
+            values = [f"{i+1}", str(pigeon.experience), limit_str(pigeon.name, 10), limit_str(pigeon.human.user, 10)]
             table.add_row(Row(values))
             if table.row_count == 10+1:
                 break
