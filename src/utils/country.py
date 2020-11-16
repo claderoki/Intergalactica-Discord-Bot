@@ -1,5 +1,6 @@
 import random
 
+from emoji import emojize
 import pycountry
 from countryinfo import CountryInfo
 
@@ -21,6 +22,13 @@ class Country(CountryInfo):
     @classmethod
     def from_alpha_2(cls, alpha_2):
         return cls(alpha_2)
+
+    def flag(self):
+        return f"https://www.countryflags.io/{self.alpha_2.lower()}/flat/64.png"
+
+    @property
+    def flag_emoji(self):
+        return "".join([emojize(f":regional_indicator_symbol_letter_{x}:") for x in self.alpha_2.lower()])
 
     @classmethod
     def random(cls):
