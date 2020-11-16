@@ -450,48 +450,49 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
     @tasks.loop(seconds=30)
     async def fight_ticker(self):
-        query = Fight.select()
-        query = query.where(Fight.finished == False)
-        query = query.where(Fight.accepted == True)
-        query = query.where(Fight.start_date <= datetime.datetime.utcnow())
-        for fight in query:
-            won = random.randint(0, 1) == 0
-            guild = fight.guild
-            channel = self.get_pigeon_channel(guild)
+        with database.connection_context():
+            query = Fight.select()
+            query = query.where(Fight.finished == False)
+            query = query.where(Fight.accepted == True)
+            query = query.where(Fight.start_date <= datetime.datetime.utcnow())
+            for fight in query:
+                won = random.randint(0, 1) == 0
+                guild = fight.guild
+                channel = self.get_pigeon_channel(guild)
 
-            if won:
-                winner = fight.challenger
-                loser = fight.challengee
-            else:
-                winner = fight.challengee
-                loser = fight.challenger
+                if won:
+                    winner = fight.challenger
+                    loser = fight.challengee
+                else:
+                    winner = fight.challengee
+                    loser = fight.challenger
 
-            embed = self.get_base_embed(guild)
-            embed.title = f"{winner.name} creeps into {loser.name}’s room. {winner.name}’s jaw unhinges and swallows {loser.name} whole."
+                embed = self.get_base_embed(guild)
+                embed.description = f"{winner.name} creeps into {loser.name}’s room. {winner.name}’s jaw unhinges and swallows {loser.name} whole."
 
-            winner_data = {"experience" : 30, "health" : -10}
-            loser_data = {"experience" : 5, "health" : -25}
+                winner_data = {"experience" : 30, "health" : -10}
+                loser_data = {"experience" : 5, "health" : -25}
 
-            embed.add_field(name = f"💩 {loser.name}", value = get_winnings_value(**loser_data, gold = -fight.bet))
-            embed.add_field(name = f"🏆 {winner.name}", value = get_winnings_value(**winner_data, gold = fight.bet))
+                embed.add_field(name = f"💩 {loser.name}", value = get_winnings_value(**loser_data, gold = -fight.bet))
+                embed.add_field(name = f"🏆 {winner.name}", value = get_winnings_value(**winner_data, gold = fight.bet))
 
-            asyncio.gather(channel.send(embed = embed))
+                asyncio.gather(channel.send(embed = embed))
 
-            pigeon.update_stats(winner_data)
-            pigeon.update_stats(loser_data)
+                winner.update_stats(winner_data)
+                loser.update_stats(loser_data)
 
-            winner.human.gold += (fight.bet*2)
+                winner.human.gold += (fight.bet*2)
 
-            winner.status = Pigeon.Status.idle
-            loser.status = Pigeon.Status.idle
+                winner.status = Pigeon.Status.idle
+                loser.status = Pigeon.Status.idle
 
-            winner.save()
-            winner.human.save()
-            loser.save()
+                winner.save()
+                winner.human.save()
+                loser.save()
 
-            fight.won = won
-            fight.finished = True
-            fight.save()
+                fight.won = won
+                fight.finished = True
+                fight.save()
 
     @tasks.loop(hours = 1)
     async def stats_ticker(self):
