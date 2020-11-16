@@ -106,9 +106,9 @@ class ExplorationRetrieval(ActivityRetrieval):
         return self._winnings
 
     def fill_bonuses(self):
-        if percentage_chance(20):
-            self.bonuses.append(self.Bonus.language)
         if percentage_chance(33):
+            self.bonuses.append(self.Bonus.language)
+        if percentage_chance(50):
             self.bonuses.append(self.Bonus.item)
         if self.exploration.pigeon.explorations.count() % 10 == 0:
             self.bonuses.append(self.Bonus.tenth)
