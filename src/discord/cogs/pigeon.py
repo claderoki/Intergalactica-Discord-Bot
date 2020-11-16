@@ -115,11 +115,6 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         raise_if_not_enough_gold(ctx, fight.bet, ctx.pigeon.human, name = "challenger")
         raise_if_not_enough_gold(ctx, fight.bet, ctx.challengee.human, name = "challengee")
 
-        # if challenger.human.gold < fight.bet:
-        #     raise SendableException(ctx.translate("challenger_not_enough_gold").format(bet = fight.bet))
-        # if challengee.human.gold < fight.bet:
-        #     raise SendableException(ctx.translate("challengee_not_enough_gold").format(bet = fight.bet))
-
         fight.save()
 
         for pigeon in (fight.challenger, fight.challengee):
