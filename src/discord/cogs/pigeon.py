@@ -18,6 +18,10 @@ from src.utils.enums import Gender
 from src.discord.helpers.converters import EnumConverter
 
 class PigeonCog(commands.Cog, name = "Pigeon"):
+    subcommands_no_require_pigeon = ["buy", "scoreboard", "help"]
+    subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name"] + subcommands_no_require_pigeon
+    subcommands_no_require_stats = ["heal", "clean", "feed", "play"] + subcommands_no_require_available
+
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
@@ -38,9 +42,20 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         Pigeon.emojis["gold"] = self.bot.gold_emoji
         if self.bot.production:
             self.fight_ticker.start()
-        else:
             await asyncio.sleep(60 * 60)
             self.stats_ticker.start()
+        # else:
+
+    def pigeon_check(self, ctx, member = None, name = "pigeon"):
+        command_name = ctx.invoked_subcommand.name
+        if command_name not in self.subcommands_no_require_pigeon:
+            setattr(ctx, name, get_active_pigeon(member or ctx.author))
+            pigeon_raise_if_not_exist(ctx, getattr(ctx, name), name = name)
+        if command_name not in self.subcommands_no_require_available:
+            pigeon_raise_if_unavailable(ctx, getattr(ctx, name), name = name)
+        if command_name not in self.subcommands_no_require_stats:
+            pigeon_raise_if_stats_too_low(ctx, getattr(ctx, name), name = name)
+
 
     @commands.group()
     async def pigeon(self, ctx):
@@ -50,19 +65,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             message.read = True
             message.save()
 
-        subcommands_no_require_pigeon = ["buy", "scoreboard", "help"]
-        subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name"] + subcommands_no_require_pigeon
-        subcommands_no_require_stats = ["heal", "clean", "feed", "play"] + subcommands_no_require_available
-
-        subcommand = ctx.invoked_subcommand.name
-
-        if subcommand not in subcommands_no_require_pigeon:
-            ctx.pigeon = get_active_pigeon(ctx.author)
-            pigeon_raise_if_not_exist(ctx, ctx.pigeon)
-        if subcommand not in subcommands_no_require_available:
-            pigeon_raise_if_unavailable(ctx, ctx.pigeon)
-        if subcommand not in subcommands_no_require_stats:
-            pigeon_raise_if_stats_too_low(ctx, ctx.pigeon)
+        self.pigeon_check(ctx)
 
     @pigeon.command(name = "buy")
     async def pigeon_buy(self, ctx):
@@ -94,19 +97,13 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             raise SendableException(ctx.translate("cannot_challenge_self"))
 
         challenger = ctx.pigeon
+        self.pigeon_check(ctx, member, name = "challengee")
 
-        challengee = get_active_pigeon(member)
-        pigeon_raise_if_stats_too_low(ctx, challenger, name = "challenger")
-        pigeon_raise_if_stats_too_low(ctx, challengee, name = "challengee")
+        challengee = ctx.challengee
 
         fight = Fight(guild_id = ctx.guild.id, start_date = None)
 
-        prompt = lambda x : ctx.translate(f"fight_{x}_prompt")
-        waiter = IntWaiter(ctx, prompt = prompt("bet"), min = 0, max = min([challenger.human.gold, challengee.human.gold]), skippable = True)
-        try:
-            fight.bet = await waiter.wait()
-        except Skipped:
-            pass
+        await fight.editor_for("bet", min = 0, max = min([challenger.human.gold, challengee.human.gold]), skippable = True)
 
         if challenger.human.gold < fight.bet:
             raise SendableException(ctx.translate("challenger_not_enough_gold").format(bet = fight.bet))
@@ -137,7 +134,6 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             asyncio.gather(ctx.send("\n".join(lines)))
         else:
             asyncio.gather(ctx.send("No languages yet."))
-
 
     @pigeon.command(name = "gender")
     async def pigeon_gender(self, ctx, gender : EnumConverter(Gender)):
@@ -311,23 +307,27 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
     @pigeon.command(name = "stats")
     async def pigeon_stats(self, ctx, member : discord.Member = None):
+        if member is not None:
+            self.pigeon_check(ctx, member)
+
         member = member or ctx.author
+
         pigeon = ctx.pigeon
         embed = self.get_base_embed(ctx.guild)
 
         explorations = pigeon.explorations.where(Exploration.finished == True)
-        unique_countries_visited = {x.destination.alpha_2 for x in explorations}
+        # unique_countries_visited = {x.destination.alpha_2 for x in explorations}
 
         lines = []
-        lines.append(f"Total explorations: {len(explorations)}")
-        lines.append(f"Unique countries visited: {len(unique_countries_visited)}")
+        lines.append(f"Total explorations: {explorations.count()}")
+        # lines.append(f"Unique countries visited: {explorations.distinct(True).count()}")
         embed.add_field(name = f"Explorations {Pigeon.Status.exploring.value}", value = "\n".join(lines), inline = False)
 
         mails = pigeon.outbox.where(Mail.finished == True)
         total_gold_sent = sum([x.gold for x in mails if x.gold is not None])
 
         lines = []
-        lines.append(f"Total mails sent: {len(mails)}")
+        lines.append(f"Total mails sent: {mails.count()}")
         lines.append(f"Total gold sent: {total_gold_sent}")
         embed.add_field(name = f"Mails {Pigeon.Status.mailing.value}", value = "\n".join(lines), inline = False)
 
@@ -357,7 +357,9 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @pigeon.command(name = "status")
     async def pigeon_status(self, ctx, member : discord.Member = None):
         """Check the status of your pigeon."""
-        member = member or ctx.author
+        if member is not None:
+            self.pigeon_check(ctx, member = member)
+
         pigeon = ctx.pigeon
 
         data = {}
