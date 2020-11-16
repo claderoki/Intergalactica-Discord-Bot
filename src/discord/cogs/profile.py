@@ -10,7 +10,7 @@ import emoji
 from src.models import Human, Earthling, Mail, Item, database
 from src.discord.helpers.converters import convert_to_date
 from src.discord.helpers.waiters import *
-from src.discord.helpers.pretty import prettify_dict
+from src.discord.helpers.pretty import prettify_dict, Table, Row
 import src.config as config
 from src.utils.timezone import Timezone
 from src.discord.errors.base import SendableException
@@ -49,67 +49,61 @@ class Profile(commands.Cog):
 
     @commands.command()
     async def scoreboard(self, ctx):
-        query = Earthling.select().where(Earthling.guild_id == ctx.guild.id)
-        query = query.join(Human, on=(Earthling.human == Human.id))
+        query = Human.select()
+        query = query.join(Earthling, on=(Human.id == Earthling.human))
+        query = query.where(Earthling.guild_id == ctx.guild.id)
         query = query.order_by(Human.gold.desc())
 
         embed = discord.Embed(title = "Scoreboard")
 
+        table = Table()
+        table.add_row(Row(["rank", "gold", "member"], header = True))
+
         top = 1
-        rows = []
         i = (top-1)
-        for earthling in query:
-            values = []
-            member = earthling.member
-            if member:
-                values.append(f"{i+1}")
-                values.append(str(earthling.human.gold))
-                values.append(str(member))
-                rows.append(values)
-                if len(rows) == 10:
-                    break
-                i += 1
+        for human in query:
+            values = [f"{i+1}", str(human.gold), str(human.user)]
+            table.add_row(Row(values))
+            if table.row_count == 11:
+                break
+            i += 1
 
-        headers = ["rank", "gold", "member"]
-        sep = " | "
-        lines = []
-        longests = [len(x) for x in headers]
-        padding = 2
-        for row in rows:
-            row_text = []
-            for i in range(len(row)):
-                value = row[i]
-                if len(value) > longests[i]:
-                    longests[i] = len(value)
-
-                row_text.append(value.ljust(longests[i]+padding) )
-            lines.append(sep.join(row_text))
-
-        lines.insert(0, sep.join([x.ljust(longests[i]+padding) for i,x in enumerate(headers)]) )
-
-        equals = sum(longests) + (len(headers) * (padding) ) + len(sep) + padding
-        lines.insert(1, "=" * equals )
-
-        embed.description = "```md\n" + ( "\n".join(lines) ) + "```"
+        embed.description = table.generate()
 
         await ctx.send(embed = embed)
 
     @commands.group()
     async def profile(self, ctx, members : commands.Greedy[discord.Member]):
-        if ctx.invoked_subcommand is None:  
-            if ctx.author not in members:
-                members.insert(0, ctx.author)
+        if ctx.invoked_subcommand is not None:
+            return
 
-            embed = discord.Embed(color = ctx.author.color)
-            for member in members:
-                human, _ = Human.get_or_create(user_id = member.id)
-                field = human.get_embed_field(show_all = len(members) > 1)
-                unread_mail = human.inbox.where(Mail.read == False)
-                if len(unread_mail) > 0:
-                    field["name"] += f"  | {len(unread_mail)} 📥"
-                embed.add_field(**field)
+        member = members[0] if len(members) else ctx.author
 
-            await ctx.send(embed = embed)
+        embed = discord.Embed(color = ctx.author.color)
+        human, _ = Human.get_or_create(user_id = member.id)
+
+        field = human.get_embed_field()
+        embed.title = field["name"]
+        values = field["value"]
+
+        if human.country:
+            embed.set_thumbnail(url = human.country.flag())
+
+        footer = []
+        unread_mail = human.inbox.where(Mail.read == False)
+        if len(unread_mail) > 0:
+            footer.append(f"You have {unread_mail.count()} unread mail! use '{ctx.prefix}pigeon inbox' to view")
+
+        # embed.timestamp = human.next_birthday
+        # if embed.timestamp is not None:
+        #     footer.append("Next birthday at")
+
+        if len(footer) > 0:
+            embed.set_footer(text = "\n".join(footer))
+
+        embed.description = values
+
+        await ctx.send(embed = embed)
 
     @profile.command(name = "clear", aliases = ["reset"])
     async def profile_clear(self, ctx):
@@ -122,7 +116,7 @@ class Profile(commands.Cog):
         await ctx.send(ctx.translate("profile_cleared"))
 
     @profile.command(name = "setup")
-    async def profile_setup(self, ctx):
+    async def profile_setup(self, ctx, fields : commands.Greedy[discord.Member]):
         prompt = lambda x : ctx.translate(f"profile_{x}_prompt")
 
         human, _ = Human.get_or_create(user_id = ctx.author.id)
@@ -144,7 +138,7 @@ class Profile(commands.Cog):
         else:
             human.country = Country
             if human.city is not None:
-                city = self.bot.owm_api.by_q(human.city, human.country.alpha_2)
+                city = self.bot.owm_api.by_q(human.city, human.country.alpha_2 if human.country else None)
                 if city is not None:
                     human.timezone = str(city.timezone)
                     timezone_set = True
@@ -238,17 +232,16 @@ class Profile(commands.Cog):
 
     @item.command(name = "list")
     async def item_list(self, ctx):
-        lines = []
-        for item in Item:
-            if item.explorable:
-                line = f"{item.name} ({item.rarity.weight})"
-            else:
-                line = item.name
-            lines.append(line)
+        table = Table()
+        table.add_row(Row(("name", "rarity", "expl?"), header = True))
+        items = list(Item)
+        items.sort(key = lambda x : x.rarity.value, reverse = True)
 
-        embed = discord.Embed()
-        lines = "\n".join(lines)
-        embed.description = f"```\n{lines}```"
+        for item in items:
+            table.add_row(Row((item.name, item.rarity.name, ctx.translate("yes" if item.explorable else "no"))))
+
+        embed = discord.Embed(color = ctx.guild_color)
+        embed.description = table.generate()
         embed.set_footer(text = f"To view more information about a specific item type '{ctx.prefix}item view <name>'")
         asyncio.gather(ctx.send(embed = embed))
 

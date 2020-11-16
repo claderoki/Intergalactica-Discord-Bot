@@ -9,6 +9,7 @@ import emoji
 from .base import BaseModel, EnumField, CountryField
 from src.utils.timezone import Timezone
 import src.config as config
+from src.utils.zodiac import ZodiacSign
 
 emojize = lambda x : emoji.emojize(x, use_aliases=True)
 
@@ -33,7 +34,7 @@ class Human(BaseModel):
     @property
     def pigeon(self):
         for pigeon in self.pigeons:
-            if not pigeon.condition == pigeon.Condition.active:
+            if pigeon.condition == pigeon.Condition.active:
                 return pigeon
 
     @property
@@ -94,9 +95,10 @@ class Human(BaseModel):
         values = []
 
         if self.date_of_birth is not None:
+            zodiac_sign = ZodiacSign.from_date(self.date_of_birth)
             days_until_birthday = self.days_until_birthday
             age = self.age
-            value = f"🎂 {self.age}"
+            value = f"{zodiac_sign.emoji} {self.age}"
             if days_until_birthday < 10:
                 value += f" (days left: {days_until_birthday})"
             values.append(value)
@@ -110,9 +112,6 @@ class Human(BaseModel):
         elif show_all:
             values.append("🕑 N/A")
 
-        if self.country:
-            flag = "".join([emojize(f":regional_indicator_symbol_letter_{x}:") for x in self.country.alpha_2.lower()])
-            name += " " + flag
 
         if self.pigeon is not None:
             values.append("<:pigeon:767362416941203456> " + self.pigeon.name)
@@ -133,7 +132,7 @@ class Human(BaseModel):
         if len(values) == 0:
             values.append("N/A")
 
-        return {"name" : name, "value" : "\n".join(values), "inline" : True}
+        return {"name" : name, "value" : "\n\n".join(values), "inline" : True}
 
 
 class Item(BaseModel):
