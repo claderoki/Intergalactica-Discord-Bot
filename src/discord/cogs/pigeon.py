@@ -44,10 +44,12 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             self.fight_ticker.start()
             await asyncio.sleep(60 * 60)
             self.stats_ticker.start()
-        # else:
 
     def pigeon_check(self, ctx, member = None, name = "pigeon"):
-        command_name = ctx.invoked_subcommand.name
+        subcommand = ctx.invoked_subcommand
+        if subcommand is None:
+            return
+        command_name = subcommand.name
         if command_name not in self.subcommands_no_require_pigeon:
             setattr(ctx, name, get_active_pigeon(member or ctx.author))
             pigeon_raise_if_not_exist(ctx, getattr(ctx, name), name = name)
