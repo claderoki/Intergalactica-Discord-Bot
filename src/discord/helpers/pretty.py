@@ -30,20 +30,26 @@ def prettify_dict(data, emojis = None):
 
 class Table:
     def __init__(self, rows = None):
-        self.rows = rows or []
+        self._rows = rows or []
         self.sep = " | "
 
     @property
     def headers(self):
-        for row in self.rows:
+        for row in self._rows:
             if row.header:
                 return row
 
+    def add_row(self, row):
+        if row.header:
+            self._rows.insert(0, row)
+        else:
+            self._rows.append(row)
+
     @property
     def longests(self):
-        longests = [len(x) for x in self.rows[0]]
+        longests = [len(x) for x in self._rows[0]]
 
-        for row in self.rows:
+        for row in self._rows:
             for i in range(len(row)):
                 value = row[i]
                 if len(value) > longests[i]:
@@ -51,16 +57,16 @@ class Table:
 
         return longests
 
-    def sort(self):
-        self.rows.sort(key = lambda x : x.header, reverse = True)
+    @property
+    def row_count(self):
+        return len(self._rows)
 
     def generate(self):
-        self.sort()
         headers = self.headers
         lines = []
         longests = self.longests
         self.padding = 2
-        for row in self.rows:
+        for row in self._rows:
             row_text = []
             for i in range(len(row)):
                 row_text.append(row[i].ljust(longests[i]+self.padding) )
@@ -77,7 +83,8 @@ class Row(list):
         super().__init__(data)
 
 if __name__ == "__main__":
-    table = Table()
-    table.rows.append(Row(["1", "5000", "Martha"]))
-    table.rows.append(Row(["rank", "exp", "pigeon"], header = True))
-    print(table.generate())
+    pass
+    # table = Table()
+    # table.rows.append(Row(["1", "5000", "Martha"]))
+    # table.rows.append(Row(["rank", "exp", "pigeon"], header = True))
+    # print(table.generate())
