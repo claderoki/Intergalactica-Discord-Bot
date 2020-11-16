@@ -117,10 +117,12 @@ class JsonField(peewee.TextField):
 class LanguageField(peewee.TextField):
 
     def db_value(self, value):
-        return value.alpha_2
+        if value is not None:
+            return value.alpha_2
 
     def python_value(self, value):
-        return pycountry.languages.get(alpha_2 = value)
+        if value is not None:
+            return pycountry.languages.get(alpha_2 = value)
 
 class CountryField(peewee.TextField):
     def db_value(self, value):
