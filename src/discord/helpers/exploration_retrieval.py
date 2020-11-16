@@ -120,12 +120,16 @@ class MailRetrieval(ActivityRetrieval):
 
     @property
     def embed(self):
+        embed = self.base_embed
+
         embed.add_field(
             name = "Winnings",
             value = get_winnings_value(**self.winnings)
         )
 
         embed.description = f"{self.mail.pigeon.name} comes back from a long journey to deliver a message!"
+
+        return embed
 
     @property
     def winnings(self):
