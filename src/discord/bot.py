@@ -257,7 +257,7 @@ class Locus(commands.Bot):
                 settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
                 self._locales[ctx.guild.id] = settings.locale.name
 
-        ctx.translate = lambda x: self.translate(x, self._locales.get(ctx.get_id(ctx.guild.id), "en_US"))
+        ctx.translate = lambda x: self.translate(x, self._locales.get(ctx.get_id(ctx.guild), "en_US"))
 
         ctx.success = lambda: ctx.message.add_reaction("✅")
         ctx.error = lambda: ctx.message.add_reaction("❌")
