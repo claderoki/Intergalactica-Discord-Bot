@@ -43,6 +43,8 @@ class BaseModel(peewee.Model):
             return StrWaiter(ctx, max_words = None, **kwargs)
         if isinstance(field, (peewee.IntegerField, peewee.BigIntegerField)):
             return IntWaiter(ctx, **kwargs)
+        if isinstance(field, peewee.DateField):
+            return DateWaiter(ctx, **kwargs)
 
     async def editor_for(self, attr, ctx, on_skip = "pass", **kwargs):
         waiter = self.waiter_for(attr, ctx, **kwargs)
