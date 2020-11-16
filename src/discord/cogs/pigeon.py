@@ -17,6 +17,9 @@ from src.discord.helpers.exploration_retrieval import ExplorationRetrieval, Mail
 from src.utils.enums import Gender
 from src.discord.helpers.converters import EnumConverter
 
+def pigeon_validation():
+    pass
+
 class PigeonCog(commands.Cog, name = "Pigeon"):
     subcommands_no_require_pigeon = ["buy", "scoreboard", "help"]
     subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name"] + subcommands_no_require_pigeon
@@ -46,18 +49,18 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             self.stats_ticker.start()
 
     def pigeon_check(self, ctx, member = None, name = "pigeon"):
-        subcommand = ctx.invoked_subcommand
-        if subcommand is None:
-            return
-        command_name = subcommand.name
+        cmd = ctx.invoked_subcommand or ctx.command
+        command_name = cmd.name
+        pigeon = None
         if command_name not in self.subcommands_no_require_pigeon:
-            setattr(ctx, name, get_active_pigeon(member or ctx.author))
-            pigeon_raise_if_not_exist(ctx, getattr(ctx, name), name = name)
+            pigeon = get_active_pigeon(member or ctx.author)
+            setattr(ctx, name, pigeon)
+            pigeon_raise_if_not_exist(ctx, pigeon, name = name)
         if command_name not in self.subcommands_no_require_available:
-            pigeon_raise_if_unavailable(ctx, getattr(ctx, name), name = name)
+            pigeon_raise_if_unavailable(ctx, pigeon, name = name)
         if command_name not in self.subcommands_no_require_stats:
-            pigeon_raise_if_stats_too_low(ctx, getattr(ctx, name), name = name)
-
+            pigeon_raise_if_stats_too_low(ctx, pigeon, name = name)
+        return pigeon
 
     @commands.group()
     async def pigeon(self, ctx):
@@ -79,7 +82,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             return asyncio.gather(ctx.send(ctx.translate("pigeon_already_purchased").format(name = pigeon.name)))
 
         pigeon = Pigeon(human = Human.get(user_id = ctx.author.id))
-        await pigeon.editor_for("name")
+        await pigeon.editor_for("name", ctx)
         pigeon.save()
 
         cost = 50
@@ -98,25 +101,28 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         if member.id == ctx.author.id:
             raise SendableException(ctx.translate("cannot_challenge_self"))
 
-        challenger = ctx.pigeon
         self.pigeon_check(ctx, member, name = "challengee")
 
-        challengee = ctx.challengee
+        fight = Fight(
+            guild_id = ctx.guild.id,
+            start_date = None,
+            challenger = ctx.pigeon,
+            challengee = ctx.challengee
+        )
 
-        fight = Fight(guild_id = ctx.guild.id, start_date = None)
+        await fight.editor_for("bet", min = 0, max = min([pigeon.human.gold, ctx.challengee.human.gold]), skippable = True)
 
-        await fight.editor_for("bet", min = 0, max = min([challenger.human.gold, challengee.human.gold]), skippable = True)
+        raise_if_not_enough_gold(ctx, fight.bet, ctx.pigeon.human, name = "challenger")
+        raise_if_not_enough_gold(ctx, fight.bet, ctx.challengee.human, name = "challengee")
 
-        if challenger.human.gold < fight.bet:
-            raise SendableException(ctx.translate("challenger_not_enough_gold").format(bet = fight.bet))
-        if challengee.human.gold < fight.bet:
-            raise SendableException(ctx.translate("challengee_not_enough_gold").format(bet = fight.bet))
+        # if challenger.human.gold < fight.bet:
+        #     raise SendableException(ctx.translate("challenger_not_enough_gold").format(bet = fight.bet))
+        # if challengee.human.gold < fight.bet:
+        #     raise SendableException(ctx.translate("challengee_not_enough_gold").format(bet = fight.bet))
 
-        fight.challenger = challenger
-        fight.challengee = challengee
         fight.save()
 
-        for pigeon in (challenger, challengee):
+        for pigeon in (fight.challenger, fight.challengee):
             pigeon.status = Pigeon.Status.fighting
             pigeon.save()
 
