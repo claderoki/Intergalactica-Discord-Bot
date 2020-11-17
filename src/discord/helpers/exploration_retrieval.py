@@ -99,7 +99,7 @@ class ExplorationRetrieval(ActivityRetrieval):
                 "gold"        : int(self.exploration.gold_worth * multiplier),
                 "experience"  : int(self.exploration.xp_worth   * multiplier),
                 "food"        : -random.randint(10,40),
-                "happiness"   : (-10+(len(self.bonuses)*10)),
+                "happiness"   : (0+(len(self.bonuses)*10)),
                 "cleanliness" : -random.randint(10,40)
             }
         return self._winnings
