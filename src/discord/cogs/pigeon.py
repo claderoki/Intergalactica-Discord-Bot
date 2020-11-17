@@ -230,8 +230,9 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         if isinstance(activity, Exploration):
             if activity.end_date_passed:
                 retrieval = ExplorationRetrieval(activity)
+                asyncio.gather(ctx.send(embed = retrieval.embed))
                 retrieval.commit()
-                return await ctx.send(embed = retrieval.embed)
+                return
             else:
                 embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to explore!"
                 embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
@@ -239,8 +240,9 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         elif isinstance(activity, Mail):
             if activity.end_date_passed:
                 retrieval = MailRetrieval(activity)
+                asyncio.gather(ctx.send(embed = retrieval.embed))
                 retrieval.commit()
-                return await ctx.send(embed = retrieval.embed)
+                return
             else:
                 embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to send a message!"
                 embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")

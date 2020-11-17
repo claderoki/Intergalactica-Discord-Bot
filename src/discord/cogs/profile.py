@@ -221,7 +221,9 @@ class Profile(commands.Cog):
             item = Item.get(name = name)
         except Item.DoesNotExist:
             raise SendableException("Item not found.")
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
+
+        member = member or ctx.author
+        human, _ = Human.get_or_create(user_id = member.id)
         human.add_item(item, 1)
         await ctx.send("added")
 
