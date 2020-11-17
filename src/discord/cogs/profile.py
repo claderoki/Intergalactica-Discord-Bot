@@ -212,6 +212,19 @@ class Profile(commands.Cog):
         item.save()
         await ctx.send("OK")
 
+    @commands.is_owner()
+    @item.command(name = "give")
+    async def item_give(self, ctx, member : discord.Member, *, name):
+        if name == "":
+            raise commands.errors.MissingRequiredArgument("name")
+        try:
+            item = Item.get(name = name)
+        except Item.DoesNotExist:
+            raise SendableException("Item not found.")
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human.add_item(item, 1)
+        await ctx.send("added")
+
     @item.command(name = "list")
     async def item_list(self, ctx):
         table = Table()
