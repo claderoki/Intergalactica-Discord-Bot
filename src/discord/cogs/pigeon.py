@@ -230,25 +230,25 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         if isinstance(activity, Exploration):
             if activity.end_date_passed:
                 retrieval = ExplorationRetrieval(activity)
-                asyncio.gather(ctx.send(embed = retrieval.embed))
+                embed = retrieval.embed
                 retrieval.commit()
-                return
+                return asyncio.gather(ctx.send(embed = embed))
             else:
                 embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to explore!"
                 embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
                 embed.timestamp = activity.end_date
+                return asyncio.gather(ctx.send(embed = embed))
         elif isinstance(activity, Mail):
             if activity.end_date_passed:
                 retrieval = MailRetrieval(activity)
-                asyncio.gather(ctx.send(embed = retrieval.embed))
+                embed = retrieval.embed
                 retrieval.commit()
-                return
+                return asyncio.gather(ctx.send(embed = embed))
             else:
                 embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to send a message!"
                 embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
                 embed.timestamp = activity.end_date
-
-        asyncio.gather(ctx.send(embed = embed))
+                return asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "mail", aliases = ["message", "send", "letter"])
     async def pigeon_mail(self, ctx, user : discord.User):
