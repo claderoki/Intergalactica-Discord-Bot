@@ -18,7 +18,7 @@ from src.utils.enums import Gender
 from src.discord.helpers.converters import EnumConverter
 
 class PigeonCog(commands.Cog, name = "Pigeon"):
-    subcommands_no_require_pigeon = ["buy", "scoreboard", "help", "inbox"]
+    subcommands_no_require_pigeon = ["buy", "scoreboard", "help", "inbox", "pigeon"]
     subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name"] + subcommands_no_require_pigeon
     subcommands_no_require_stats = ["heal", "clean", "feed", "play"] + subcommands_no_require_available
 
@@ -499,14 +499,14 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                 if pigeon.food == 0:
                     data["health"] = -2
 
-                print(data)
                 pigeon.update_stats(data)
                 pigeon.save()
 
 def get_winnings_value(**kwargs):
     lines = []
     for key, value in kwargs.items():
-        lines.append(f"{Pigeon.emojis[key]} {'+' if value > 0 else ''}{value}")
+        if value != 0:
+            lines.append(f"{Pigeon.emojis[key]} {'+' if value > 0 else ''}{value}")
     return ", ".join(lines)
 
 def get_active_pigeon(user, raise_on_none = False):
