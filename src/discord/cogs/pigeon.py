@@ -19,7 +19,7 @@ from src.discord.helpers.converters import EnumConverter
 
 class PigeonCog(commands.Cog, name = "Pigeon"):
     subcommands_no_require_pigeon = ["buy", "scoreboard", "help", "inbox", "pigeon"]
-    subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name"] + subcommands_no_require_pigeon
+    subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name", "accept"] + subcommands_no_require_pigeon
     subcommands_no_require_stats = ["heal", "clean", "feed", "play"] + subcommands_no_require_available
 
     def __init__(self, bot):
