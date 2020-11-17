@@ -238,8 +238,15 @@ class TimezoneWaiter(StrWaiter):
     def __init__(self, ctx, **kwargs):
         super().__init__(ctx, **kwargs)
 
+    @property
+    def instructions(self):
+        return "https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+
     def convert(self, argument):
-        return pytz.timezone(argument.title())
+        try:
+            return pytz.timezone(argument.title())
+        except pytz.exceptions.UnknownTimeZoneError:
+            return ConversionFailed("Timezone not found.")
 
 class CountryWaiter(StrWaiter):
     def __init__(self, ctx, **kwargs):
