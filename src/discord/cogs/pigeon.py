@@ -79,7 +79,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             return asyncio.gather(ctx.send(ctx.translate("pigeon_already_purchased").format(name = pigeon.name)))
 
         pigeon = Pigeon(human = Human.get(user_id = ctx.author.id))
-        await pigeon.editor_for("name", ctx)
+        await pigeon.editor_for(ctx, "name")
         pigeon.save()
 
         cost = 50
@@ -107,7 +107,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             challengee = ctx.challengee
         )
 
-        await fight.editor_for("bet", ctx, min = 0, max = min([ctx.pigeon.human.gold, ctx.challengee.human.gold]), skippable = True)
+        await fight.editor_for(ctx, "bet", min = 0, max = min([ctx.pigeon.human.gold, ctx.challengee.human.gold]), skippable = True)
 
         raise_if_not_enough_gold(ctx, fight.bet, ctx.pigeon.human, name = "challenger")
         raise_if_not_enough_gold(ctx, fight.bet, ctx.challengee.human, name = "challengee")
@@ -264,8 +264,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         mail = Mail(recipient = recipient, sender = sender, read = False)
 
-        await mail.editor_for("message", ctx)
-        await mail.editor_for("gold", ctx, min = 0, max = sender.human.gold, skippable = True)
+        await mail.editor_for(ctx, "message")
+        await mail.editor_for(ctx, "gold", min = 0, max = sender.human.gold, skippable = True)
 
         mail.residence   = sender.human.country
         mail.destination = recipient.country

@@ -116,49 +116,31 @@ class Profile(commands.Cog):
         await ctx.send(ctx.translate("profile_cleared"))
 
     @profile.command(name = "setup")
-    async def profile_setup(self, ctx, fields : commands.Greedy[discord.Member]):
-        prompt = lambda x : ctx.translate(f"profile_{x}_prompt")
-
+    async def profile_setup(self, ctx, fields : commands.Greedy[lambda x : x]):
         human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-        waiter = CityWaiter(ctx, prompt = prompt("city"), skippable = True)
+        waiter = CityWaiter(ctx, prompt =  ctx.translate("human_city_prompt"), skippable = True)
         try:
-            city = await waiter.wait()
+            human.city = await waiter.wait()
         except Skipped:
             pass
-        else:
-            human.city = city.name
 
         timezone_set = False
-        waiter = CountryWaiter(ctx, prompt = prompt("country"), skippable = True)
-        try:
-            country = await waiter.wait()
-        except Skipped:
-            pass
-        else:
-            human.country = Country
-            if human.city is not None:
-                city = self.bot.owm_api.by_q(human.city, human.country.alpha_2 if human.country else None)
-                if city is not None:
-                    human.timezone = str(city.timezone)
-                    timezone_set = True
+        await human.editor_for(ctx, "country")
+
+        if human.city is not None and human.country is not None:
+            city = self.bot.owm_api.by_q(human.city.name, human.country.alpha_2)
+            if city is not None:
+                human.timezone = str(city.timezone)
+                timezone_set = True
 
         if not timezone_set:
-            waiter = TimezoneWaiter(ctx, prompt = prompt("timezone"), skippable = True)
-            try:
-                human.timezone = await waiter.wait()
-            except Skipped:
-                pass
+            await human.editor_for(ctx, "timezone")
 
-        await human.editor_for("date_of_birth")
-        waiter = DateWaiter(ctx, prompt = prompt("date_of_birth"), skippable = True)
-        try:
-            human.date_of_birth = await waiter.wait()
-        except Skipped:
-            pass
+        await human.editor_for(ctx, "date_of_birth")
 
         human.save()
-        await ctx.send(ctx.translate("profile_setup"))
+        await ctx.send(embed = Embed.success(ctx.translate("profile_setup")))
 
     @commands.command()
     async def events(self, ctx, month : int = None):
@@ -198,11 +180,11 @@ class Profile(commands.Cog):
         item, new = Item.get_or_create(name = name)
 
         if not new:
-            await item.editor_for("name", ctx, skippable = not new)
+            await item.editor_for(ctx, "name", skippable = not new)
 
-        await item.editor_for("description", ctx, skippable = not new)
-        await item.editor_for("rarity", ctx, skippable = True)
-        await item.editor_for("explorable", ctx, skippable = True)
+        await item.editor_for(ctx, "description", skippable = not new)
+        await item.editor_for(ctx, "rarity", skippable = True)
+        await item.editor_for(ctx, "explorable", skippable = True)
 
         waiter = AttachmentWaiter(ctx, prompt = ctx.translate("item_image_prompt"), skippable = not new)
         try:
@@ -224,8 +206,8 @@ class Profile(commands.Cog):
         except Item.DoesNotExist:
             raise SendableException("Item not found.")
 
-        await item.editor_for("rarity", ctx, skippable = True)
-        await item.editor_for("explorable", ctx, skippable = True)
+        await item.editor_for(ctx, "rarity", skippable = True)
+        await item.editor_for(ctx, "explorable", skippable = True)
 
         item.save()
         await ctx.send("OK")

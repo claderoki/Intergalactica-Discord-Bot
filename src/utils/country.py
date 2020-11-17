@@ -19,6 +19,9 @@ class Country(CountryInfo):
     def alpha_2(self):
         return self.iso()["alpha2"]
 
+    def __str__(self):
+        return self.alpha_2
+
     @classmethod
     def from_alpha_2(cls, alpha_2):
         return cls(alpha_2)
