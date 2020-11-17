@@ -30,11 +30,16 @@ class PollCog(commands.Cog, name = "Poll"):
 
         emoji = str(payload.emoji)
         member = payload.member
-
         if member.bot:
             return
 
-        with database:
+        channel = self.bot.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+
+        if not message.author.bot:
+            return
+
+        with database.connection_context():
             try:
                 poll = Poll.get(message_id = payload.message_id, ended = False)
             except Poll.DoesNotExist:
@@ -46,8 +51,6 @@ class PollCog(commands.Cog, name = "Poll"):
                 return
 
             if poll.anonymous:
-                channel = self.bot.get_channel(payload.channel_id)
-                message = await channel.fetch_message(payload.message_id)
                 await message.remove_reaction(emoji, member)
 
             option = allowed_reactions[emoji]
