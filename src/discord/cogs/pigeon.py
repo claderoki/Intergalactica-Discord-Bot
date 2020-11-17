@@ -441,6 +441,11 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     async def pigeon_heal(self, ctx):
         self.increase_stats(ctx, 'health', 20, 15, "You give **{pigeon.name}** some seed you found inside your couch and convince it of its healing effects.\n")
 
+    @commands.cooldown(1, (3600 * 2), type=commands.BucketType.user)
+    @pigeon.command(name = "play")
+    async def pigeon_play(self, ctx):
+        self.increase_stats(ctx, 'happiness', 20, 15, "You play a game of tennis with your pigeon. **{pigeon.name}** happily falls asleep.\n")
+
     @pigeon.command(name = "help")
     async def pigeon_help(self, ctx):
         await ctx.send_help(ctx.command.root_parent)
