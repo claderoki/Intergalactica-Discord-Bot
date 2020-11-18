@@ -26,11 +26,9 @@ class Personal(discord.ext.commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.user = self.bot.get_user(self.user_id)
-        if not self.bot.production:
+        if self.bot.production:
             await asyncio.sleep(60 * 60)
             self.water_reminder.start()
-        else:
-            pass
 
     def notify(self, block = True, **kwargs):
         notification = Notify()
