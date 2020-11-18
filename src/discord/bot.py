@@ -72,8 +72,6 @@ class Locus(commands.Bot):
 
         self.owm_api = OpenWeatherMapApi(os.environ["owm_key"])
 
-        self.load_all_cogs()
-
         self.before_invoke(self.before_any_command)
         self.after_invoke(self.after_any_command)
 
@@ -293,6 +291,7 @@ class Locus(commands.Bot):
         self.print_info()
         print("Ready")
         self.owner = (await self.application_info()).owner
+        self.owner_id = self.owner.id
 
         self._emoji_mapping = {}
         for emoji in self.guild.emojis:
