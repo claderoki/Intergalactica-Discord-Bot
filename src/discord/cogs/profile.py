@@ -114,9 +114,6 @@ class Profile(commands.Cog):
         for human in humans:
             embed.add_field(**human.get_embed_field(show_all = True))
 
-        # if human.country:
-            # embed.set_thumbnail(url = human.country.flag())
-
         await ctx.send(embed = embed)
 
     @profile.command(name = "clear", aliases = ["reset"])
@@ -130,29 +127,32 @@ class Profile(commands.Cog):
         await ctx.send(ctx.translate("profile_cleared"))
 
     @profile.command(name = "setup")
-    async def profile_setup(self, ctx, fields : commands.Greedy[lambda x : x]):
+    async def profile_setup(self, ctx, fields : commands.Greedy[str.lower]):
         human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-        waiter = CityWaiter(ctx, prompt =  ctx.translate("human_city_prompt"), skippable = True)
-        try:
-            city = await waiter.wait()
-            human.city = city.name
-        except Skipped:
-            pass
+        if len(fields) == 0 or "city" in fields:
+            waiter = CityWaiter(ctx, prompt =  ctx.translate("human_city_prompt"), skippable = True)
+            try:
+                city = await waiter.wait()
+                human.city = city.name
+            except Skipped:
+                pass
 
         timezone_set = False
-        await human.editor_for(ctx, "country")
+        if len(fields) == 0 or "country" in fields:
+            await human.editor_for(ctx, "country")
 
         if human.city is not None and human.country is not None:
-            city = self.bot.owm_api.by_q(city.name, human.country.alpha_2)
+            city = self.bot.owm_api.by_q(human.city, human.country.alpha_2)
             if city is not None:
                 human.timezone = str(city.timezone)
                 timezone_set = True
 
-        if not timezone_set:
+        if not timezone_set or "country" in fields:
             await human.editor_for(ctx, "timezone")
 
-        await human.editor_for(ctx, "date_of_birth")
+        if len(fields) == 0 or "dateofbirth" in fields:
+            await human.editor_for(ctx, "date_of_birth")
 
         human.save()
         await ctx.send(embed = Embed.success(ctx.translate("profile_setup")))
@@ -272,94 +272,6 @@ class Profile(commands.Cog):
     async def item_view(self, ctx,*, name):
         item = Item.get(name = name)
         await ctx.send(embed = item.embed)
-
-    async def edit_personal_role(self, ctx, **kwargs):
-        attr_name = ctx.command.name
-        attr_value = kwargs[attr_name]
-
-        if attr_name == "name":
-            kwargs["color"] = ctx.guild_color
-        elif attr_name == "color":
-            kwargs["name"] = ctx.author.display_name
-
-        earthling, _ = Earthling.get_or_create_for_member(ctx.author)
-        new = earthling.personal_role_id is None or earthling.personal_role is None
-        if new:
-            first_earthling = Earthling.select().where(Earthling.personal_role_id != None).limit(1).first()
-            position = first_earthling.personal_role.position if first_earthling else 0
-            role = await ctx.guild.create_role(**kwargs)
-            await role.edit(position = position)
-            earthling.personal_role = role
-            earthling.save()
-            await ctx.send(ctx.bot.translate("role_created").format(role = role))
-            await ctx.author.add_roles(role)
-        else:
-            role = earthling.personal_role
-            await role.edit(**{attr_name : attr_value})
-            msg = ctx.bot.translate(f"attr_added").format(name = "role's " + attr_name, value = attr_value)
-            embed = discord.Embed(color = role.color, title = msg)
-            await ctx.send(embed = embed)
-
-    @commands.group()
-    async def role(self, ctx):
-        if ctx.guild.id != 742146159711092757:
-            raise SendableException("Only in intergalactica")
-
-        human, _ = Earthling.get_or_create_for_member(ctx.author)
-        rank_role = human.rank_role
-
-        allowed = rank_role is not None or ctx.author.premium_since is not None
-
-        if not allowed:
-            raise SendableException("You are not allowed to run this command yet.")
-
-    @role.command(aliases = ["colour"])
-    async def color(self, ctx, color : discord.Color = None):
-        if color is None:
-            color = self.bot.get_random_color()
-
-        await self.edit_personal_role(ctx, color = color)
-
-    @commands.is_owner()
-    @role.command()
-    async def link(self, ctx, role : discord.Role):
-        members = role.members
-
-        if len(members) > 3:
-            await ctx.send("Too many people have this role.")
-        else:
-            for member in role.members:
-                human, _ = Earthling.get_or_create_for_member(ctx.author)
-                human.personal_role_id = role.id
-                human.save()
-
-            await ctx.send(ctx.translate("roles_linked"))
-
-    @role.command()
-    async def name(self, ctx, *, name : str):
-        await self.edit_personal_role(ctx, name = name)
-
-    @role.command(name = "delete")
-    async def delete_role(self, ctx):
-        earthling, _ = Earthling.get_or_create_for_member(ctx.author)
-        if earthling.personal_role_id is not None:
-            role = earthling.personal_role
-            if role is not None:
-                await role.delete()
-
-            earthling.personal_role_id = None
-            earthling.save()
-
-            await ctx.send(ctx.bot.translate("attr_removed").format(name = ctx.attr_name))
-
-    @role.command(name = "reset")
-    @commands.is_owner()
-    async def reset_roles(self, ctx):
-        for earthling in Earthling:
-            if earthling.personal_role_id is not None:
-                role = earthling.personal_role
-                if role is not None and earthling.member is None:
-                    await role.delete()
 
     async def cog_before_invoke(self, ctx):
         attr_name = (ctx.command.root_parent or ctx.command).callback.__name__

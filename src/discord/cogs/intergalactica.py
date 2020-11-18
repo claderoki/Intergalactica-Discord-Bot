@@ -7,7 +7,13 @@ from discord.ext import commands, tasks
 
 from src.models import Poll, PollTemplate, Option, Settings, NamedEmbed, Earthling, database
 
+def is_intergalactica():
+    def predicate(ctx):
+        return ctx.guild.id == Intergalactica.guild_id
+    return commands.check(predicate)
+
 class Intergalactica(commands.Cog):
+    guild_id = 742146159711092757
 
     _role_ids = \
     {
@@ -37,7 +43,6 @@ class Intergalactica(commands.Cog):
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
-        self.guild_id = 742146159711092757
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -124,6 +129,100 @@ class Intergalactica(commands.Cog):
         else:
             embed = named_embed.embed
         return embed
+
+    async def edit_personal_role(self, ctx, **kwargs):
+        attr_name = ctx.command.name
+        attr_value = kwargs[attr_name]
+
+        if attr_name == "name":
+            kwargs["color"] = ctx.guild_color
+        elif attr_name == "color":
+            kwargs["name"] = ctx.author.display_name
+
+        earthling, _ = Earthling.get_or_create_for_member(ctx.author)
+        new = earthling.personal_role_id is None or earthling.personal_role is None
+        if new:
+            first_earthling = Earthling.select().where(Earthling.personal_role_id != None).limit(1).first()
+            position = first_earthling.personal_role.position if first_earthling else 0
+            role = await ctx.guild.create_role(**kwargs)
+            await role.edit(position = position)
+            earthling.personal_role = role
+            earthling.save()
+            await ctx.send(ctx.bot.translate("role_created").format(role = role))
+            await ctx.author.add_roles(role)
+        else:
+            role = earthling.personal_role
+            await role.edit(**{attr_name : attr_value})
+            msg = ctx.bot.translate(f"attr_added").format(name = "role's " + attr_name, value = attr_value)
+            embed = discord.Embed(color = role.color, title = msg)
+            await ctx.send(embed = embed)
+
+    @commands.group()
+    @is_intergalactica()
+    async def role(self, ctx):
+        earthling, _ = Earthling.get_or_create_for_member(ctx.author)
+        rank_role = earthling.rank_role
+
+        allowed = rank_role is not None or ctx.author.premium_since is not None
+
+        if not allowed:
+            raise SendableException("You are not allowed to run this command yet.")
+
+    @role.command(aliases = ["colour"])
+    async def color(self, ctx, color : discord.Color = None):
+        if color is None:
+            color = self.bot.get_random_color()
+
+        await self.edit_personal_role(ctx, color = color)
+
+    @commands.is_owner()
+    @role.command()
+    async def link(self, ctx, role : discord.Role):
+        members = role.members
+
+        if len(members) > 3:
+            await ctx.send("Too many people have this role.")
+        else:
+            for member in role.members:
+                human, _ = Earthling.get_or_create_for_member(ctx.author)
+                human.personal_role_id = role.id
+                human.save()
+
+            await ctx.send(ctx.translate("roles_linked"))
+
+    @role.command()
+    async def name(self, ctx, *, name : str):
+        await self.edit_personal_role(ctx, name = name)
+
+    @role.command(name = "delete")
+    async def delete_role(self, ctx):
+        earthling, _ = Earthling.get_or_create_for_member(ctx.author)
+        if earthling.personal_role_id is not None:
+            role = earthling.personal_role
+            if role is not None:
+                await role.delete()
+
+            earthling.personal_role_id = None
+            earthling.save()
+
+            await ctx.send(ctx.bot.translate("attr_removed").format(name = "role"))
+
+    @role.command(name = "reset")
+    @commands.is_owner()
+    async def reset_roles(self, ctx):
+        roles_deleted = []
+        for earthling in Earthling:
+            if earthling.personal_role_id is not None:
+                role = earthling.personal_role
+                if role is not None and earthling.member is None:
+                    roles_deleted.append(role.name)
+                    asyncio.gather(role.delete())
+
+        embed = self.bot.get_base_embed()
+        embed.title = "The following roles were purged:"
+        lines = "`\n`".join(roles_deleted)
+        embed.description = f"`{lines}`"
+        asyncio.gather(ctx.send(embed = embed))
 
     @commands.command(aliases = [ x.name for x in NamedEmbed.select(NamedEmbed.name).where(NamedEmbed.settings == 2) ])
     async def getembed(self, ctx, numbers : commands.Greedy[int] = None):
