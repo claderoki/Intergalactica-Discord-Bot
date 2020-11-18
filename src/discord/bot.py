@@ -197,7 +197,8 @@ class Locus(commands.Bot):
             "staff_communication",
             "admin",
             "prank",
-            "pigeon"
+            "pigeon",
+            "personal",
         ]
 
         if True:
