@@ -93,12 +93,14 @@ class Personal(discord.ext.commands.Cog):
     async def water_reminder(self):
         if datetime.datetime.utcnow().hour not in range(16, 23):
             messages = [
-                "Drink some water right now!",
-                "Hello. Might I interest you in some water?",
-                "Hi there. I believe it is time for you to drink some liquid.",
-                "Ah, I didn't see you there. Greetings. Have you drank water yet?",
+                "Hey {mention}! Drink some water right now!",
+                "Hello, {mention}. Might I interest you in some water?",
+                "Hi there, {mention}. I believe it is time for you to drink some liquid.",
+                "Ah, I didn't see you there, {mention}. Greetings. Have you drank water yet?",
             ]
-            asyncio.gather(self.user.send(random.choice(messages)))
+            channel = self.bot.get_channel(755895328745455746)
+            message = random.choice(messages).format(mention = self.user.mention)
+            asyncio.gather(channel.send(message))
 
 def setup(bot):
     bot.add_cog(Personal(bot))
