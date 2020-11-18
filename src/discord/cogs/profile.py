@@ -10,7 +10,7 @@ import emoji
 from src.models import Human, Earthling, Mail, Item, database
 from src.discord.helpers.converters import convert_to_date
 from src.discord.helpers.waiters import *
-from src.discord.helpers.pretty import prettify_dict, Table, Row
+import src.discord.helpers.pretty as pretty
 import src.config as config
 from src.utils.timezone import Timezone
 from src.discord.errors.base import SendableException
@@ -56,14 +56,14 @@ class Profile(commands.Cog):
 
         embed = discord.Embed(title = "Scoreboard")
 
-        table = Table()
-        table.add_row(Row(["rank", "gold", "member"], header = True))
+        table = pretty.Table()
+        table.add_row(pretty.Row(["rank", "gold", "member"], header = True))
 
         top = 1
         i = (top-1)
         for human in query:
             values = [f"{i+1}", str(human.gold), str(human.user)]
-            table.add_row(Row(values))
+            table.add_row(pretty.Row(values))
             if table.row_count == 11:
                 break
             i += 1
@@ -244,13 +244,13 @@ class Profile(commands.Cog):
 
     @item.command(name = "list")
     async def item_list(self, ctx):
-        table = Table()
-        table.add_row(Row(("name", "rarity", "expl?"), header = True))
+        table = pretty.Table()
+        table.add_row(pretty.Row(("name", "rarity", "expl?"), header = True))
         items = list(Item)
         items.sort(key = lambda x : x.rarity.value, reverse = True)
 
         for item in items:
-            table.add_row(Row((item.name, item.rarity.name, ctx.translate("yes" if item.explorable else "no"))))
+            table.add_row(pretty.Row((item.name, item.rarity.name, ctx.translate("yes" if item.explorable else "no"))))
 
         embed = discord.Embed(color = ctx.guild_color)
         embed.description = table.generate()
@@ -261,11 +261,11 @@ class Profile(commands.Cog):
     async def inventory(self, ctx):
         human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-        data = {}
-        for human_item in human.human_items:
-            data[human_item.item.name] = human_item.amount
+        data = [(x.item.name, x.amount) for x in human.human_items]
+        data.insert(0, ("name", "amount"))
+        description = pretty.Table.from_list(data, first_header = True).generate()
 
-        embed = discord.Embed(color = ctx.guild_color, description = f"```\n{prettify_dict(data)}```")
+        embed = discord.Embed(color = ctx.guild_color, description = description)
         asyncio.gather(ctx.send(embed = embed))
 
     @item.command(name = "view")
