@@ -7,9 +7,9 @@ import discord
 from discord.ext import commands, tasks
 
 import src.config as config
-
-import cv2
-from notifypy import Notify
+if not config.bot.production:
+    import cv2
+    from notifypy import Notify
 
 def is_permitted():
     def predicate(ctx):
@@ -45,20 +45,18 @@ class Personal(discord.ext.commands.Cog):
         if self.bot.production:
             return
 
-        if ctx.author.id in (self.bot.owner_id, self.user_id):
+        icon_path = f"{config.path}/tmp/{ctx.author.id}.png"
+        if not os.path.exists(icon_path):
+            asset = ctx.author.avatar_url_as(size = 64)
+            await asset.save(icon_path)
 
-            icon_path = f"{config.path}/tmp/{ctx.author.id}.png"
-            if not os.path.exists(icon_path):
-                asset = ctx.author.avatar_url_as(size = 64)
-                await asset.save(icon_path)
-
-            notification = Notify()
-            notification.title = f"Message from {ctx.author}"
-            notification.message = message
-            notification.icon = icon_path
-            notification.application_name = None
-            notification.send(block = False)
-            asyncio.gather(ctx.send("Sent!"))
+        notification = Notify()
+        notification.title = f"Message from {ctx.author}"
+        notification.message = message
+        notification.icon = icon_path
+        notification.application_name = None
+        notification.send(block = False)
+        asyncio.gather(ctx.send("Sent!"))
 
     @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
     @commands.dm_only()
