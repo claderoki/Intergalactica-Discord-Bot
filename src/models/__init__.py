@@ -3,7 +3,7 @@ from .human import Human, Item, HumanItem
 from .intergalactica import Earthling
 from .analytics import EmojiUsage
 from .settings import Settings, NamedEmbed, NamedChannel, Translation, Locale
-from .staff_communication import Ticket, Reply
+from .ticket import Ticket, Reply
 from .poll import Change, Parameter, Poll, PollTemplate, Vote, Option
 from .scene import Scene, Scenario
 from .pigeon import Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage

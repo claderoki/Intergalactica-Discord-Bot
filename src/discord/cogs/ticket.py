@@ -7,7 +7,7 @@ from src.discord.helpers.converters import EnumConverter
 from src.models import Ticket, Reply, database
 import src.config as config
 
-class StaffCommunication(commands.Cog, name = "Staff communication"):
+class TicketCog(commands.Cog, name = "Ticket"):
 
     def __init__(self, bot):
         super().__init__()
@@ -87,4 +87,4 @@ class StaffCommunication(commands.Cog, name = "Staff communication"):
         await ticket.sync_message()
 
 def setup(bot):
-    bot.add_cog(StaffCommunication(bot))
+    bot.add_cog(TicketCog(bot))

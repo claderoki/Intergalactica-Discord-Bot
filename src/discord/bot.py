@@ -192,7 +192,7 @@ class Locus(commands.Bot):
             "poll",
             "games",
             "inactive",
-            "staff_communication",
+            "ticket",
             "admin",
             "prank",
             "pigeon",
