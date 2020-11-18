@@ -291,6 +291,7 @@ class PollCog(commands.Cog, name = "Poll"):
     @tasks.loop(minutes=2)
     async def poller(self):
         with database:
+            #TODO: due date passed in query instead.
             for poll in Poll.select().where(Poll.ended == False):
                 if poll.due_date_passed:
 
