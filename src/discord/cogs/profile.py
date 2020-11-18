@@ -105,6 +105,20 @@ class Profile(commands.Cog):
 
         await ctx.send(embed = embed)
 
+    @profile.command(name = "compare")
+    async def profile_compare(self, ctx, member : discord.Member):
+        embed = discord.Embed(color = ctx.guild_color)
+
+        humans = [Human.get_or_create(user_id = x.id)[0] for x in (ctx.author, member)]
+
+        for human in humans:
+            embed.add_field(**human.get_embed_field(show_all = True))
+
+        # if human.country:
+            # embed.set_thumbnail(url = human.country.flag())
+
+        await ctx.send(embed = embed)
+
     @profile.command(name = "clear", aliases = ["reset"])
     async def profile_clear(self, ctx):
         human, _ = Human.get_or_create(user_id = ctx.author.id)

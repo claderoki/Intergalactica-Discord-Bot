@@ -92,6 +92,8 @@ class Human(BaseModel):
     def get_embed_field(self, show_all = False):
 
         name = self.user.name
+        if show_all and self.country:
+            name += f" {self.country.flag_emoji}"
         values = []
 
         if self.date_of_birth is not None:
@@ -112,7 +114,6 @@ class Human(BaseModel):
         elif show_all:
             values.append("🕑 N/A")
 
-
         if self.pigeon is not None:
             values.append("<:pigeon:767362416941203456> " + self.pigeon.name)
         elif show_all:
@@ -132,7 +133,11 @@ class Human(BaseModel):
         if len(values) == 0:
             values.append("N/A")
 
-        return {"name" : name, "value" : "\n\n".join(values), "inline" : True}
+        sep  = "\n"
+        if not show_all:
+            sep += "\n"
+
+        return {"name" : name, "value" : sep.join(values), "inline" : True}
 
 
 class Item(BaseModel):
