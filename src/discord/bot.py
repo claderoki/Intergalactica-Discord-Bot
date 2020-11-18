@@ -196,9 +196,10 @@ class Locus(commands.Bot):
             "admin",
             "prank",
             "pigeon",
-            "personal",
         ]
 
+        if True:
+            cogs.append("personal")
         if True:
             cogs.append("intergalactica")
 
