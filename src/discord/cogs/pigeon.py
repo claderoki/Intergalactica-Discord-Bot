@@ -398,18 +398,18 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         embed = self.get_base_embed(ctx.guild )
         embed.description = message.format(pigeon = pigeon)
-        embed.description += get_winnings_value(**{attr_name : attr_increase, 'gold' : -cost})
+        embed.description += get_winnings_value(**{attr_name : attr_increase, "gold" : -cost})
         asyncio.gather(ctx.send(embed = embed))
 
     @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
     @pigeon.command(name = "clean")
     async def pigeon_clean(self, ctx):
-        self.increase_stats(ctx, 'cleanliness', 20, 15, "You happily clean up **{pigeon.name}s** fecal matter.\n")
+        self.increase_stats(ctx, "cleanliness", 20, 15, "You happily clean up **{pigeon.name}s** fecal matter.\n")
 
     @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
     @pigeon.command(name = "feed")
     async def pigeon_feed(self, ctx):
-        self.increase_stats(ctx, 'food', 20, 15, "You feed **{pigeon.name}** some seeds and whatever else they eat.\n")
+        self.increase_stats(ctx, "food", 20, 15, "You feed **{pigeon.name}** some seeds and whatever else they eat.\n")
 
     @pigeon.command(name = "scoreboard")
     async def pigeon_scoreboard(self, ctx):
@@ -439,12 +439,12 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
     @pigeon.command(name = "heal")
     async def pigeon_heal(self, ctx):
-        self.increase_stats(ctx, 'health', 20, 15, "You give **{pigeon.name}** some seed you found inside your couch and convince it of its healing effects.\n")
+        self.increase_stats(ctx, "health", 20, 15, "You give **{pigeon.name}** some seed you found inside your couch and convince it of its healing effects.\n")
 
     @commands.cooldown(1, (3600 * 2), type=commands.BucketType.user)
     @pigeon.command(name = "play")
     async def pigeon_play(self, ctx):
-        self.increase_stats(ctx, 'happiness', 20, 15, "You play a game of tennis with your pigeon. **{pigeon.name}** happily falls asleep.\n")
+        self.increase_stats(ctx, "happiness", 20, 15, "You play a game of tennis with your pigeon. **{pigeon.name}** happily falls asleep.\n")
 
     @pigeon.command(name = "help")
     async def pigeon_help(self, ctx):
