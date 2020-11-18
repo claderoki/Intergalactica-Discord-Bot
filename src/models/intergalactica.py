@@ -7,6 +7,32 @@ from .base import BaseModel
 from .human import Human
 import src.config as config
 
+class TemporaryChannel(BaseModel):
+    guild_id    = peewee.BigIntegerField (null = False)
+    name        = peewee.TextField       (null = False)
+    description = peewee.TextField       (null = False)
+    channel_id  = peewee.BigIntegerField (null = True)
+    user_id     = peewee.BigIntegerField (null = False)
+    expiry_date = peewee.DateTimeField   (null = True)
+    active      = peewee.BooleanField    (null = False, default = True)
+
+    # @property
+    # def expired(self):
+    #     return datetime.datetime.utcnow() >= self.expiry_date
+
+    async def create_channel(self):
+        for category in self.guild.categories:
+            if category.id == 742243893743190116:
+                break
+
+        channel = await self.guild.create_text_channel(
+            name = self.name,
+            description = self.description,
+            category = category
+        )
+        self.channel_id = channel.id
+        return channel
+
 class Earthling(BaseModel):
     user_id               = peewee.BigIntegerField  (null = False)
     guild_id              = peewee.BigIntegerField  (null = False)

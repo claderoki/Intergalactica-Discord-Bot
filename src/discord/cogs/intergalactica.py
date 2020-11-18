@@ -1,11 +1,14 @@
 import asyncio
 import datetime
+import typing
 
 from emoji import emojize
 import discord
 from discord.ext import commands, tasks
 
-from src.models import Poll, PollTemplate, Option, Settings, NamedEmbed, Earthling, database
+from src.discord.errors.base import SendableException
+from src.models import Poll, PollTemplate, Option, Settings, NamedEmbed, Human, Earthling, TemporaryChannel, HumanItem, database
+from src.discord.helpers.waiters import IntWaiter
 
 def is_intergalactica():
     def predicate(ctx):
@@ -18,10 +21,17 @@ class Intergalactica(commands.Cog):
     _role_ids = \
     {
         "selfies" : 748566253534445568,
-        "nova"    : 748494888844132442,
-        "luna"    : 748494880229163021,
+        "5k+"     : 778744417322139689,
         "age"     : {},
-        "gender"  : {}
+        "gender"  : {},
+        "ranks"   : {
+            "luna"      : 748494880229163021,
+            "nova"      : 748494888844132442,
+            "aurora"    : 748494890127851521,
+            "aquila"    : 748494890169794621,
+            "orion"     : 748494891419697152,
+            "andromeda" : 748494891751047183
+        }
     }
 
     _channel_ids = \
@@ -54,7 +64,7 @@ class Intergalactica(commands.Cog):
         #     self.introduction_purger.start()
             self.illegal_member_notifier.start()
             self.birthday_poller.start()
-
+        self.temp_channel_checker.start()
 
     async def log(self, channel_name, content = None, **kwargs):
         channel = self.get_channel(channel_name)
@@ -92,6 +102,43 @@ class Intergalactica(commands.Cog):
         await self.create_selfie_poll(member)
         await ctx.success()
 
+    @commands.is_owner()
+    @commands.command()
+    async def milkyway(self, ctx, channel : discord.TextChannel = None):
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human_item = HumanItem.get_or_none(human = human, item = 33)
+        if human_item is None or human_item.amount == 0:
+            raise SendableException(ctx.translate("no_milky_way"))
+        milky_way_count = human_item.amount
+
+        if channel is not None:
+            try:
+                temp_channel = TemporaryChannel.get(channel_id = channel.id, guild_id = ctx.guild.id)
+            except TemporaryChannel.DoesNotExist:
+                raise SendableException(ctx.translate("temp_channel_not_found"))
+        else:
+            temp_channel = TemporaryChannel(guild_id = ctx.guild.id, user_id = ctx.author.id)
+
+        poll_duration = datetime.timedelta(hours = 6)
+        if milky_way_count > 1:
+            waiter = IntWaiter(ctx, prompt = ctx.translate("milky_way_count_prompt"), min = 1, max = milky_way_count)
+            milky_ways_to_use = await waiter.wait()
+        else:
+            milky_ways_to_use = 1
+
+        if temp_channel.expiry_date is None:
+            temp_channel.expiry_date = datetime.datetime.utcnow()
+        temp_channel.expiry_date = temp_channel.expiry_date + datetime.timedelta(minutes = 7 * milky_ways_to_use )
+        human_item.amount -= milky_ways_to_use
+        human_item.save()
+        if temp_channel.id is None:
+            await temp_channel.editor_for(ctx, "name")
+            await temp_channel.editor_for(ctx, "description")
+            created_channel = await temp_channel.create_channel()
+            asyncio.gather(ctx.send(f"{created_channel.mention} created."))
+
+        temp_channel.save()
+
     @commands.Cog.listener()
     async def on_member_join(self, member):
         await self.on_member_leave_or_join(member, "join")
@@ -99,6 +146,11 @@ class Intergalactica(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         await self.on_member_leave_or_join(member, "leave")
+
+    async def on_luna(self, member):
+        asyncio.gather(self.log("bot_commands", f"**{after}** {after.mention} has achieved Luna!"))
+        role = self.guild.get_role(self._role_ids["5k+"])
+        asyncio.gather(member.add_roles(role))
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -118,8 +170,8 @@ class Intergalactica(commands.Cog):
                 if role.id == self._role_ids["selfies"]:
                     has_selfie_perms = True
 
-            if added_role.id == self._role_ids["luna"] and not has_selfie_perms:
-                await self.log("bot_commands", f"**{after}** {after.mention} has achieved Luna!")
+            if added_role.id == self._role_ids["ranks"]["luna"] and not has_selfie_perms:
+                await self.on_luna(after)
 
     def embed_from_name(self, name, indexes):
         with database.connection_context():
@@ -129,6 +181,23 @@ class Intergalactica(commands.Cog):
         else:
             embed = named_embed.embed
         return embed
+
+    @commands.command()
+    @commands.has_guild_permissions(administrator = True)
+    @is_intergalactica()
+    async def ensure5k(self, ctx):
+        encompassing_role = self.guild.get_role(self._role_ids["5k+"])
+        rank_ids = list(self._role_ids["ranks"].values())
+        for member in ctx.guild.members:
+            has_rank_role = False
+            has_encompassing_role = False
+            for role in member.roles:
+                if role.id in rank_ids:
+                    has_rank_role = True
+                if role.id == encompassing_role.id:
+                    has_encompassing_role = True
+            if has_rank_role and not has_encompassing_role:
+                asyncio.gather(member.add_roles(encompassing_role))
 
     async def edit_personal_role(self, ctx, **kwargs):
         attr_name = ctx.command.name
@@ -241,6 +310,20 @@ class Intergalactica(commands.Cog):
 
             if not member_is_legal(member):
                 yield member
+
+    @tasks.loop(hours = 1)
+    async def temp_channel_checker(self):
+        with database.connection_context():
+            query = TemporaryChannel.select()
+            query = query.where(TemporaryChannel.active == True)
+            query = query.where(TemporaryChannel.expiry_date != None)
+            query = query.where(TemporaryChannel.expiry_date <= datetime.datetime.utcnow())
+            for temp_channel in query:
+                channel = temp_channel.channel
+                temp_channel.active = False
+                await channel.delete(reason = "Expired")
+                temp_channel.channel_id = None
+                temp_channel.save()
 
     @tasks.loop(hours = 12)
     async def introduction_purger(self):
