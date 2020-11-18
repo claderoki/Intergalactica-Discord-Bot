@@ -121,7 +121,8 @@ class Profile(commands.Cog):
 
         waiter = CityWaiter(ctx, prompt =  ctx.translate("human_city_prompt"), skippable = True)
         try:
-            human.city = await waiter.wait()
+            city = await waiter.wait()
+            human.city = city.name
         except Skipped:
             pass
 
@@ -129,7 +130,7 @@ class Profile(commands.Cog):
         await human.editor_for(ctx, "country")
 
         if human.city is not None and human.country is not None:
-            city = self.bot.owm_api.by_q(human.city.name, human.country.alpha_2)
+            city = self.bot.owm_api.by_q(city.name, human.country.alpha_2)
             if city is not None:
                 human.timezone = str(city.timezone)
                 timezone_set = True
