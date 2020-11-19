@@ -14,6 +14,8 @@ import src.discord.helpers.pretty as pretty
 import src.config as config
 from src.utils.timezone import Timezone
 from src.discord.errors.base import SendableException
+from src.discord.helpers.paginating import Page, Paginator
+import src.utils.general as general
 
 def is_tester(member):
     with database.connection_context():
@@ -97,7 +99,7 @@ class Profile(commands.Cog):
         footer = []
         unread_mail = human.inbox.where(Mail.read == False)
         if len(unread_mail) > 0:
-            footer.append(f"You have {unread_mail.count()} unread mail! use '{ctx.prefix}pigeon inbox' to view")
+            footer.append(f"You have {unread_mail.count()} unread mail! use '{ctx.prefix}inbox' to view")
 
         # embed.timestamp = human.next_birthday
         # if embed.timestamp is not None:
@@ -249,18 +251,24 @@ class Profile(commands.Cog):
 
     @item.command(name = "list")
     async def item_list(self, ctx):
-        table = pretty.Table()
-        table.add_row(pretty.Row(("name", "rarity", "expl?"), header = True))
         items = list(Item)
         items.sort(key = lambda x : x.rarity.value, reverse = True)
+        items_per_page = 10
+        item_groups = general.split_list(items, items_per_page)
 
-        for item in items:
-            table.add_row(pretty.Row((item.name, item.rarity.name, ctx.translate("yes" if item.explorable else "no"))))
+        paginator = Paginator(ctx)
 
-        embed = discord.Embed(color = ctx.guild_color)
-        embed.description = table.generate()
-        embed.set_footer(text = f"To view more information about a specific item type '{ctx.prefix}item view <name>'")
-        asyncio.gather(ctx.send(embed = embed))
+        for items in item_groups:
+            table = pretty.Table()
+            table.add_row(pretty.Row(("name", "rarity", "expl?"), header = True))
+            for item in items:
+                table.add_row(pretty.Row((item.name, item.rarity.name, pretty.prettify_value(item.explorable))))
+            embed = discord.Embed(color = ctx.guild_color)
+            embed.description = table.generate()
+            # embed.set_footer(text = f"To view more information about a specific item type '{ctx.prefix}item view <name>'")
+            paginator.add_page(Page(embed))
+
+        await paginator.wait()
 
     @commands.command()
     async def inventory(self, ctx):
@@ -281,10 +289,6 @@ class Profile(commands.Cog):
     async def cog_before_invoke(self, ctx):
         attr_name = (ctx.command.root_parent or ctx.command).callback.__name__
         ctx.attr_name = attr_name
-
-
-
-
 
 def setup(bot):
     bot.add_cog(Profile(bot))
