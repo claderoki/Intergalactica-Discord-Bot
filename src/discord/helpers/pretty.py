@@ -36,9 +36,10 @@ def prettify_dict(data, emojis = None):
     return "\n".join(lines)
 
 class Table:
-    def __init__(self, rows = None, sep = " | "):
+    def __init__(self, rows = None, sep = " | ", padding = 2):
         self._rows = rows or []
         self.sep = sep
+        self.padding = padding
 
     @classmethod
     def from_list(cls, data, first_header = False, **kwargs):
@@ -81,7 +82,6 @@ class Table:
     def generate(self):
         lines = []
         longests = self.longests
-        self.padding = 2
         for row in self._rows:
             row_text = []
             for i in range(len(row)):
@@ -90,7 +90,7 @@ class Table:
 
         headers = self.headers
         if headers:
-            equals = sum(longests) + (len(headers) * (self.padding) ) + len(self.sep) + self.padding
+            equals = sum(longests) + ( len(headers) * max(self.padding, 2) ) + len(self.sep) + self.padding
             lines.insert(1, "=" * equals )
 
         return "```md\n" + ( "\n".join(lines) ) + "```"
@@ -102,7 +102,3 @@ class Row(list):
 
 if __name__ == "__main__":
     pass
-    # table = Table()
-    # table.rows.append(Row(["1", "5000", "Martha"]))
-    # table.rows.append(Row(["rank", "exp", "pigeon"], header = True))
-    # print(table.generate())

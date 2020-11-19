@@ -423,7 +423,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         embed = discord.Embed(title = "Scoreboard")
 
-        table = Table()
+        table = Table(padding = 0)
         table.add_row(Row(["rank", "exp", "pigeon", "owner"], header = True))
         top = 1
         i = (top-1)

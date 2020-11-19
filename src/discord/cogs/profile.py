@@ -265,7 +265,6 @@ class Profile(commands.Cog):
                 table.add_row(pretty.Row((item.name, item.rarity.name)))
             embed = discord.Embed(color = ctx.guild_color)
             embed.description = table.generate()
-            # embed.set_footer(text = f"To view more information about a specific item type '{ctx.prefix}item view <name>'")
             paginator.add_page(Page(embed))
 
         await paginator.wait()
