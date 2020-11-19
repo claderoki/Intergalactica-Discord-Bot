@@ -42,10 +42,15 @@ class Profile(commands.Cog):
 
     @commands.command()
     async def parrot(self, ctx, *, text):
-        if ctx.author.id == self.bot.owner.id:
-            asyncio.gather(ctx.message.delete())
+        cost = 10
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        if human.gold < cost:
+            raise SendableException(ctx.translate("not_enough_gold").format(cost = cost))
 
+        asyncio.gather(ctx.message.delete())
         asyncio.gather(ctx.send(text))
+        human.gold -= cost
+        human.save()
 
     @commands.command()
     async def scoreboard(self, ctx):
