@@ -31,6 +31,7 @@ class ExplorationRetrieval(ActivityRetrieval):
         self.bonuses     = []
         self.fill_bonuses()
         self.item = None
+        self.language = None
 
     @property
     def language(self):
@@ -48,10 +49,10 @@ class ExplorationRetrieval(ActivityRetrieval):
         text += f" until {pigeon.gender.get_pronoun()} finally reached **{self.exploration.destination.name()}**"
 
         embed.description = text
-        language = self.language
-        bonus_messages = []
 
+        bonus_messages = []
         if self.Bonus.language in self.bonuses:
+            language = self.language
             if language is not None:
                 bonus_messages.append(f"Some {self.exploration.destination.demonym()} person also taught {pigeon.gender.get_pronoun(object = True)} some {language.name}!")
             else:
@@ -76,21 +77,6 @@ class ExplorationRetrieval(ActivityRetrieval):
         )
         return embed
 
-    def commit(self):
-        pigeon = self.exploration.pigeon
-
-        if self.Bonus.language in self.bonuses:
-            if self.language is not None:
-                pigeon.study_language(self.language)
-        if self.item is not None:
-            pigeon.human.add_item(self.item, 1)
-        pigeon.update_stats(self.winnings)
-        self.exploration.finished = True
-        pigeon.status = pigeon.Status.idle
-        pigeon.human.save()
-        pigeon.save()
-        self.exploration.save()
-
     @property
     def winnings(self):
         if self._winnings is None:
@@ -111,6 +97,21 @@ class ExplorationRetrieval(ActivityRetrieval):
             self.bonuses.append(self.Bonus.item)
         if self.exploration.pigeon.explorations.count() % 10 == 0:
             self.bonuses.append(self.Bonus.tenth)
+
+    def commit(self):
+        pigeon = self.exploration.pigeon
+
+        if self.Bonus.language in self.bonuses:
+            if self.language is not None:
+                pigeon.study_language(self.language)
+        if self.item is not None:
+            pigeon.human.add_item(self.item, 1)
+        pigeon.update_stats(self.winnings)
+        self.exploration.finished = True
+        pigeon.status = pigeon.Status.idle
+        pigeon.human.save()
+        pigeon.save()
+        self.exploration.save()
 
 class MailRetrieval(ActivityRetrieval):
     def __init__(self, mail):
