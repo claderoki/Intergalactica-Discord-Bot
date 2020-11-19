@@ -44,7 +44,7 @@ class ExplorationRetrieval(ActivityRetrieval):
     def embed(self):
         embed = self.base_embed
         pigeon = self.exploration.pigeon
-        text = f"{pigeon.name} soared through the skies for **{self.exploration.duration_in_minutes}** minutes"
+        text = f"`{pigeon.name}` soared through the skies for **{self.exploration.duration_in_minutes}** minutes"
         text += f" over a distance of **{int(self.exploration.distance_in_km)}** km"
         text += f" until {pigeon.gender.get_pronoun()} finally reached **{self.exploration.destination.name()}**"
 
@@ -127,7 +127,7 @@ class MailRetrieval(ActivityRetrieval):
             value = get_winnings_value(**self.winnings)
         )
 
-        embed.description = f"{self.mail.sender.name} comes back from a long journey to deliver a message!"
+        embed.description = f"`{self.mail.sender.name}` comes back from a long journey to deliver a message!"
 
         return embed
 

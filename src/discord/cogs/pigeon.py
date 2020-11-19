@@ -171,7 +171,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         if fight.challengee.human.gold < fight.bet:
             error = ctx.translate("challengee_not_enough_gold").format(bet = fight.bet)
         if error is not None:
-            for pigeon in (challenger, challengee):
+            for pigeon in (fight.challenger, fight.challengee):
                 pigeon.status = Pigeon.Status.idle
                 pigeon.save()
             fight.delete_instance()
@@ -385,33 +385,6 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed.description = f"```\n{lines}```"
         asyncio.gather(ctx.send(embed = embed))
 
-    def increase_stats(self, ctx, attr_name, attr_increase, cost, message):
-        pigeon = ctx.pigeon
-
-        value = getattr(pigeon, attr_name)
-        if value == 100:
-            raise SendableException(ctx.translate(f"{attr_name}_already_max"))
-
-        pigeon.human.gold  -= cost
-        setattr(pigeon, attr_name, value+attr_increase )
-        pigeon.human.save()
-        pigeon.save()
-
-        embed = self.get_base_embed(ctx.guild )
-        embed.description = message.format(pigeon = pigeon)
-        embed.description += get_winnings_value(**{attr_name : attr_increase, "gold" : -cost})
-        asyncio.gather(ctx.send(embed = embed))
-
-    @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
-    @pigeon.command(name = "clean")
-    async def pigeon_clean(self, ctx):
-        self.increase_stats(ctx, "cleanliness", 20, 15, "You happily clean up **{pigeon.name}s** fecal matter.\n")
-
-    @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
-    @pigeon.command(name = "feed")
-    async def pigeon_feed(self, ctx):
-        self.increase_stats(ctx, "food", 20, 15, "You feed **{pigeon.name}** some seeds and whatever else they eat.\n")
-
     @pigeon.command(name = "scoreboard")
     async def pigeon_scoreboard(self, ctx):
         query = Pigeon.select()
@@ -437,15 +410,42 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed.description = table.generate()
         await ctx.send(embed = embed)
 
+    def increase_stats(self, ctx, attr_name, attr_increase, cost, message):
+        pigeon = ctx.pigeon
+
+        value = getattr(pigeon, attr_name)
+        if value == 100:
+            raise SendableException(ctx.translate(f"{attr_name}_already_max"))
+
+        pigeon.human.gold  -= cost
+        setattr(pigeon, attr_name, value+attr_increase )
+        pigeon.human.save()
+        pigeon.save()
+
+        embed = self.get_base_embed(ctx.guild )
+        embed.description = message.format(pigeon = pigeon)
+        embed.description += get_winnings_value(**{attr_name : attr_increase, "gold" : -cost})
+        asyncio.gather(ctx.send(embed = embed))
+
+    @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
+    @pigeon.command(name = "clean")
+    async def pigeon_clean(self, ctx):
+        self.increase_stats(ctx, "cleanliness", 20, 15, "You happily clean up the fecal matter of `{pigeon.name}`.\n")
+
+    @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
+    @pigeon.command(name = "feed")
+    async def pigeon_feed(self, ctx):
+        self.increase_stats(ctx, "food", 20, 15, "You feed `{pigeon.name}` some seeds and whatever else they eat.\n")
+
     @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
     @pigeon.command(name = "heal")
     async def pigeon_heal(self, ctx):
-        self.increase_stats(ctx, "health", 20, 15, "You give **{pigeon.name}** some seed you found inside your couch and convince it of its healing effects.\n")
+        self.increase_stats(ctx, "health", 20, 15, "You give `{pigeon.name}` some seed you found inside your couch and convince it of its healing effects.\n")
 
     @commands.cooldown(1, (3600 * 2), type=commands.BucketType.user)
     @pigeon.command(name = "play")
     async def pigeon_play(self, ctx):
-        self.increase_stats(ctx, "happiness", 20, 15, "You play a game of tennis with your pigeon. **{pigeon.name}** happily falls asleep.\n")
+        self.increase_stats(ctx, "happiness", 20, 15, "You play a game of tennis with your pigeon. `{pigeon.name}` happily falls asleep.\n")
 
     @pigeon.command(name = "help")
     async def pigeon_help(self, ctx):
@@ -471,13 +471,19 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                     loser = fight.challenger
 
                 embed = self.get_base_embed(guild)
-                embed.description = f"{winner.name} creeps into {loser.name}’s room. {winner.name}’s jaw unhinges and swallows {loser.name} whole."
+                embed.description = f"`{winner.name}` creeps into `{loser.name}`’s room. `{winner.name}`’s jaw unhinges and swallows `{loser.name}` whole."
 
                 winner_data = {"experience" : 30, "health" : -10}
                 loser_data = {"experience" : 5, "health" : -25}
 
-                embed.add_field(name = f"💩 {loser.name}", value = get_winnings_value(**loser_data, gold = -fight.bet))
-                embed.add_field(name = f"🏆 {winner.name}", value = get_winnings_value(**winner_data, gold = fight.bet))
+                embed.add_field(
+                    name = f"💩 {loser.name} ({loser.human.user})",
+                    value = get_winnings_value(**loser_data, gold = -fight.bet)
+                )
+                embed.add_field(
+                    name = f"🏆 {winner.name} ({winner.human.user})",
+                    value = get_winnings_value(**winner_data, gold = fight.bet)
+                )
 
                 asyncio.gather(channel.send(embed = embed))
 
@@ -534,13 +540,15 @@ def pigeon_raise_if_unavailable(ctx, pigeon, name = "pigeon"):
 
 def pigeon_raise_if_stats_too_low(ctx, pigeon, name = "pigeon"):
     if pigeon.cleanliness <= 10:
-        raise SendableException(ctx.translate(f"{name}_too_stinky"))
-    if pigeon.happiness <= 10:
-        raise SendableException(ctx.translate(f"{name}_too_sad"))
-    if pigeon.food <= 10:
-        raise SendableException(ctx.translate(f"{name}_too_hungry"))
-    if pigeon.health <= 10:
-        raise SendableException(ctx.translate(f"{name}_too_wounded"))
+        message = ctx.translate(f"{name}_too_stinky")
+    elif pigeon.happiness <= 10:
+        message = ctx.translate(f"{name}_too_sad")
+    elif pigeon.food <= 10:
+        message = ctx.translate(f"{name}_too_hungry")
+    elif pigeon.health <= 10:
+        message = ctx.translate(f"{name}_too_wounded")
+
+    raise SendableException(message.format(pigeon = pigeon))
 
 def raise_if_not_enough_gold(ctx, gold, human, name = "you"):
     if human.gold < gold:
