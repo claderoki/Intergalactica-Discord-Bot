@@ -148,7 +148,7 @@ class Intergalactica(commands.Cog):
         await self.on_member_leave_or_join(member, "leave")
 
     async def on_luna(self, member):
-        asyncio.gather(self.log("bot_commands", f"**{after}** {after.mention} has achieved Luna!"))
+        asyncio.gather(self.log("bot_commands", f"**{member}** {member.mention} has achieved Luna!"))
         role = self.guild.get_role(self._role_ids["5k+"])
         asyncio.gather(member.add_roles(role))
 
