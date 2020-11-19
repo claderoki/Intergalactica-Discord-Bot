@@ -31,7 +31,7 @@ class ExplorationRetrieval(ActivityRetrieval):
         self.bonuses     = []
         self.fill_bonuses()
         self.item = None
-        self.language = None
+        # self.language = None
 
     @property
     def language(self):
