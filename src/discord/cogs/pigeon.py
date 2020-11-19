@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 from countryinfo import CountryInfo
 
 import src.config as config
-from src.models import Scene, Scenario, Human, Fight, Pigeon, Earthling, Item, Exploration, Mail, Settings, SystemMessage, database
+from src.models import Scene, Scenario, Human, Fight, Pigeon, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, database
 from src.models.base import PercentageField
 from src.discord.helpers.waiters import *
 from src.utils.country import Country
@@ -126,13 +126,14 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
     @pigeon.command(name = "languages", aliases = ["lang"])
     async def pigeon_languages(self, ctx):
-        lines = []
-        for language_mastery in ctx.pigeon.language_masteries:
-            lines.append(f"{language_mastery.language.name} - {language_mastery.mastery}%")
-        if len(lines):
-            asyncio.gather(ctx.send("\n".join(lines)))
-        else:
-            asyncio.gather(ctx.send("No languages yet."))
+
+        embed = self.get_base_embed(ctx.guild)
+        embed.title = f"Language mastery of {ctx.pigeon.name}"
+
+        for language_mastery in ctx.pigeon.language_masteries.order_by(LanguageMastery.mastery.desc()):
+            embed.add_field(name = f"{language_mastery.language.name}", value = f"{language_mastery.mastery}% - {language_mastery.rank}")
+
+        asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "gender")
     async def pigeon_gender(self, ctx, gender : EnumConverter(Gender)):
@@ -284,8 +285,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed.set_footer(text = f"'{ctx.prefix}pigeon retrieve' to check on your pigeon")
         asyncio.gather(ctx.send(embed = embed))
 
-    @pigeon.command(name = "inbox")
-    async def pigeon_inbox(self, ctx):
+    @commands.command()
+    async def inbox(self, ctx):
         """Check your inbox."""
         human, _ = Human.get_or_create(user_id = ctx.author.id)
         unread_mail = human.inbox.where(Mail.read == False).where(Mail.finished == True)

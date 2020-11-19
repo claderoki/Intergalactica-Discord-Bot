@@ -131,6 +131,20 @@ class LanguageMastery(BaseModel):
     mastery  = PercentageField(null = False, default = 0)
     pigeon   = peewee.ForeignKeyField (Pigeon, null = False, backref = "language_masteries", on_delete = "CASCADE")
 
+    @property
+    def rank(self):
+        if self.mastery <= 20:
+            return "noob"
+        if self.mastery <= 40:
+            return "beginner"
+        if self.mastery <= 60:
+            return "strong"
+        if self.mastery <= 80:
+            return "fluent"
+        else:
+            return "native"
+        
+
 class SystemMessage(BaseModel):
     human = peewee.ForeignKeyField (Human, null = False, backref = "system_messages", on_delete = "CASCADE")
     text  = peewee.TextField(null = False)
