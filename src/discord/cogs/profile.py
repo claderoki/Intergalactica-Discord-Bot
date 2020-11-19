@@ -260,9 +260,9 @@ class Profile(commands.Cog):
 
         for items in item_groups:
             table = pretty.Table()
-            table.add_row(pretty.Row(("name", "rarity", "expl?"), header = True))
+            table.add_row(pretty.Row(("name", "rarity"), header = True))
             for item in items:
-                table.add_row(pretty.Row((item.name, item.rarity.name, pretty.prettify_value(item.explorable))))
+                table.add_row(pretty.Row((item.name, item.rarity.name)))
             embed = discord.Embed(color = ctx.guild_color)
             embed.description = table.generate()
             # embed.set_footer(text = f"To view more information about a specific item type '{ctx.prefix}item view <name>'")
