@@ -141,14 +141,14 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         ctx.pigeon.save()
         asyncio.gather(ctx.send(ctx.translate("gender_set").format(gender = gender.name)))
 
-    @pigeon.command(name = "name")
-    async def pigeon_name(self, ctx, *, name : str):
+    @pigeon.command(name = "name", aliases = ["rename"])
+    async def pigeon_name(self, ctx):
         cost = 50
         raise_if_not_enough_gold(ctx, cost, ctx.pigeon.human)
-        ctx.pigeon.name = name
+        await ctx.pigeon.editor_for(ctx, "name")
         ctx.pigeon.save()
         embed = self.get_base_embed(ctx.guild)
-        embed.description = f"Okay. Name has been set to {name}" + "\n" + get_winnings_value(gold = -cost)
+        embed.description = f"Okay. Name has been set to {ctx.pigeon.name}" + "\n" + get_winnings_value(gold = -cost)
         asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "accept")
@@ -521,6 +521,19 @@ def get_winnings_value(**kwargs):
     for key, value in kwargs.items():
         if value != 0:
             lines.append(f"{Pigeon.emojis[key]} {'+' if value > 0 else ''}{value}")
+    return ", ".join(lines)
+
+def get_winnings_value_included(pigeon, **kwargs):
+    lines = []
+    for key, value in kwargs.items():
+        if value != 0:
+            if key == "gold":
+                current_value = pigeon.human.gold
+            else:
+                current_value = getattr(pigeon, key)
+            new_value = current_value + value
+
+            lines.append(f"{Pigeon.emojis[key]} {current_value}/{new_value} {'+' if value > 0 else ''}{value}")
     return ", ".join(lines)
 
 def get_active_pigeon(user, raise_on_none = False):
