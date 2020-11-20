@@ -246,7 +246,7 @@ class TimezoneWaiter(StrWaiter):
         try:
             return pytz.timezone(argument.title())
         except pytz.exceptions.UnknownTimeZoneError:
-            return ConversionFailed("Timezone not found.")
+            raise ConversionFailed("Timezone not found.")
 
 class CountryWaiter(StrWaiter):
     def __init__(self, ctx, **kwargs):
