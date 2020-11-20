@@ -86,20 +86,20 @@ class Intergalactica(commands.Cog):
 
         await welcome_channel.send(embed = embed)
 
-    async def create_selfie_poll(self, member):
-        with database.connection_context():
-            poll = Poll.from_template(PollTemplate.get(name = "selfies"))
-            poll.question = f"Should {member} be given selfie access?"
-            poll.save()
-            poll.create_options(("Yes", "No", "I don't know them well enough yet"))
-            await poll.send()
-            poll.save()
-            return poll
+    async def create_selfie_poll(self, ctx, member):
+        poll = Poll.from_template(PollTemplate.get(name = "selfies"))
+        poll.question = f"Should {member} be given selfie access?"
+        poll.author_id = ctx.author.id
+        poll.save()
+        poll.create_options(("Yes", "No", "I don't know them well enough yet"))
+        await poll.send()
+        poll.save()
+        return poll
 
     @commands.has_guild_permissions(administrator = True)
     @commands.command()
     async def selfiepoll(self, ctx, member : discord.Member):
-        await self.create_selfie_poll(member)
+        await self.create_selfie_poll(ctx, member)
         await ctx.success()
 
     @commands.is_owner()

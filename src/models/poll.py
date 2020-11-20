@@ -103,6 +103,7 @@ class Poll(BaseModel):
             await msg.add_reaction(option.reaction)
         if self.pin:
             asyncio.gather(msg.pin())
+        self.message_id = msg.id
         return msg
 
     def generate_question(self, mention = False):
