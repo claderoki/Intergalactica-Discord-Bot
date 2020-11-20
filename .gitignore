@@ -2,3 +2,4 @@ __pycache__/
 envs.json
 env
 tmp
+.vscode
