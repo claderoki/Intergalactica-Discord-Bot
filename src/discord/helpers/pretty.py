@@ -51,6 +51,9 @@ class Table:
 
         return table
 
+    def to_paginator(self):
+        pass
+
     @property
     def headers(self):
         for row in self._rows:
