@@ -547,7 +547,8 @@ def pigeon_raise_if_stats_too_low(ctx, pigeon, name = "pigeon"):
         message = ctx.translate(f"{name}_too_hungry")
     elif pigeon.health <= 10:
         message = ctx.translate(f"{name}_too_wounded")
-
+    else:
+        return
     raise SendableException(message.format(pigeon = pigeon))
 
 def raise_if_not_enough_gold(ctx, gold, human, name = "you"):
