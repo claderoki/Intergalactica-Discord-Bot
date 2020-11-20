@@ -67,6 +67,5 @@ class Inactive(discord.ext.commands.Cog):
                 for member in inactive_members:
                     await member.kick(reason = "Inactivity")
 
-
 def setup(bot):
     bot.add_cog(Inactive(bot))

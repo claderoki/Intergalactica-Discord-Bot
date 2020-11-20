@@ -8,9 +8,6 @@ from discord.ext import commands, tasks
 from src.models import Game, Player, Settings, KillMessage, database
 from src.discord.errors.assassins import NotSetup, GameRunning
 
-
-
-
 def is_setup():
     def predicate(ctx):
         return True
