@@ -97,7 +97,7 @@ class Profile(commands.Cog):
             embed.set_thumbnail(url = human.country.flag())
 
         footer = []
-        unread_mail = human.inbox.where(Mail.read == False)
+        unread_mail = human.inbox.where(Mail.read == False).where(Mail.finished == True)
         if len(unread_mail) > 0:
             footer.append(f"You have {unread_mail.count()} unread mail! use '{ctx.prefix}inbox' to view")
 
