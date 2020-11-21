@@ -21,7 +21,7 @@ class Country(CountryInfo):
         return [pycountry.languages.get(alpha_2 = x) for x in super().languages()]
 
     def currencies(self):
-        return [pycountry.currencies.get(alpha_2 = x) for x in super().currencies()]
+        return [pycountry.currencies.get(alpha_3 = x) for x in super().currencies()]
 
     @property
     def alpha_2(self):
