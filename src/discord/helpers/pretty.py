@@ -1,5 +1,10 @@
 from enum import Enum
 
+import discord
+
+from src.utils.general import split_list
+from src.discord.helpers.paginating import Page, Paginator
+
 def prettify_value(value):
     if isinstance(value, bool):
         return "Yes" if value else "No"
@@ -51,11 +56,21 @@ class Table:
 
         return table
 
-    def to_paginator(self):
-        pass
+    def to_paginator(self, ctx, rows_per_page):
+        paginator = Paginator(ctx)
+        row_groups = split_list([x for x in self._rows if not x.header], rows_per_page)
+        header = self.header
+        for rows in row_groups:
+            table = self.__class__(rows = rows)
+            table.add_row(header)
+            embed = discord.Embed(color = ctx.guild_color)
+            embed.description = table.generate()
+            paginator.add_page(Page(embed))
+
+        return paginator
 
     @property
-    def headers(self):
+    def header(self):
         for row in self._rows:
             if row.header:
                 return row
@@ -91,9 +106,9 @@ class Table:
                 row_text.append(row[i].ljust(longests[i]+self.padding) )
             lines.append(self.sep.join(row_text))
 
-        headers = self.headers
-        if headers:
-            equals = sum(longests) + ( len(headers) * max(self.padding, 2) ) + len(self.sep) + self.padding
+        header = self.header
+        if header:
+            equals = sum(longests) + ( len(header) * max(self.padding, 2) ) + len(self.sep) + self.padding
             lines.insert(1, "=" * equals )
 
         return "```md\n" + ( "\n".join(lines) ) + "```"

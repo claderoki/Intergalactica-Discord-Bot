@@ -253,20 +253,12 @@ class Profile(commands.Cog):
     async def item_list(self, ctx):
         items = list(Item)
         items.sort(key = lambda x : x.rarity.value, reverse = True)
-        items_per_page = 10
-        item_groups = general.split_list(items, items_per_page)
 
-        paginator = Paginator(ctx)
-
-        for items in item_groups:
-            table = pretty.Table()
-            table.add_row(pretty.Row(("name", "rarity"), header = True))
-            for item in items:
-                table.add_row(pretty.Row((item.name, item.rarity.name)))
-            embed = discord.Embed(color = ctx.guild_color)
-            embed.description = table.generate()
-            paginator.add_page(Page(embed))
-
+        table = pretty.Table()
+        table.add_row(pretty.Row(("name", "rarity"), header = True))
+        for item in items:
+            table.add_row(pretty.Row((item.name, item.rarity.name)))
+        paginator = table.to_paginator(ctx, 10)
         await paginator.wait()
 
     @commands.command()
