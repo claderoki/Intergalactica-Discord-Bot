@@ -39,6 +39,7 @@ class Intergalactica(commands.Cog):
         "selfies"       : 744703465086779393,
         "concerns"      : 758296826549108746,
         "staff_chat"    : 750067502352171078,
+        "bot_spam"      : 742163352712642600,
         "bot_commands"  : 754056523277271170,
         "introductions" : 742567349613232249,
         "tabs"          : 757961433911787592,
@@ -58,13 +59,30 @@ class Intergalactica(commands.Cog):
     async def on_ready(self):
         self.guild = self.bot.get_guild(self.guild_id)
         self.bot.get_dominant_color(self.guild)
+        self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = 120)
 
         if self.bot.production:
+            self.temp_channel_checker.start()
+            self.disboard_bump_available_notifier.start()
             await asyncio.sleep( (60 * 60) * 3 )
-        #     self.introduction_purger.start()
             self.illegal_member_notifier.start()
             self.birthday_poller.start()
-        self.temp_channel_checker.start()
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if not self.bot.production:
+            return
+        if message.content != "!d bump":
+            return
+        disboard_response = await self.bot.wait_for("message", check = lambda x : x.author.id == 302050872383242240 and x.channel.id == message.channel.id)
+        embed = disboard_response.embeds[0]
+        text = embed.description
+
+        if "minutes until the server can be bumped" in text:
+            minutes = int([x for x in text.split() if x.isdigit()][0])
+        elif "Bump done" in text:
+            minutes = 120
+        self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = minutes)
 
     async def log(self, channel_name, content = None, **kwargs):
         channel = self.get_channel(channel_name)
@@ -380,6 +398,11 @@ class Intergalactica(commands.Cog):
                     await channel.delete(reason = "Expired")
                 temp_channel.channel_id = None
                 temp_channel.save()
+
+    @tasks.loop(minutes = 1)
+    async def disboard_bump_available_notifier(self):
+        if self.bump_available <= datetime.datetime.utcnow():
+            await self.log("bot_spam", "A bump is available!")
 
     @tasks.loop(hours = 12)
     async def introduction_purger(self):
