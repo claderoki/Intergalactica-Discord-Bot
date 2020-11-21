@@ -50,7 +50,7 @@ class TemporaryChannel(BaseModel):
 
     async def create_channel(self):
         for category in self.guild.categories:
-            if category.id == 742243893743190116:
+            if category.id == 764486536783462442:
                 break
 
         channel = await self.guild.create_text_channel(
