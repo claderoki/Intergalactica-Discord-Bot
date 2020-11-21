@@ -1,24 +1,52 @@
 import datetime
+from enum import Enum
 
 import peewee
 import discord
 
-from .base import BaseModel
+from .base import BaseModel, EnumField
 from .human import Human
 import src.config as config
 
 class TemporaryChannel(BaseModel):
-    guild_id    = peewee.BigIntegerField (null = False)
-    name        = peewee.TextField       (null = False)
-    description = peewee.TextField       (null = False)
-    channel_id  = peewee.BigIntegerField (null = True)
-    user_id     = peewee.BigIntegerField (null = False)
-    expiry_date = peewee.DateTimeField   (null = True)
-    active      = peewee.BooleanField    (null = False, default = True)
+    class Status(Enum):
+        pending  = 0
+        accepted = 1
+        denied   = 2
 
-    # @property
-    # def expired(self):
-    #     return datetime.datetime.utcnow() >= self.expiry_date
+    guild_id            = peewee.BigIntegerField (null = False)
+    name                = peewee.TextField       (null = False)
+    topic               = peewee.TextField       (null = False)
+    channel_id          = peewee.BigIntegerField (null = True)
+    user_id             = peewee.BigIntegerField (null = False)
+    expiry_date         = peewee.DateTimeField   (null = True)
+    active              = peewee.BooleanField    (null = False, default = True)
+    status              = EnumField              (Status, null = False, default = Status.pending)
+    deny_reason         = peewee.TextField       (null = True)
+    pending_milky_ways  = peewee.IntegerField    (null = True)
+
+    @property
+    def ticket_embed(self):
+        embed = discord.Embed(color = self.bot.get_dominant_color(None))
+        embed.set_author(icon_url = self.user.avatar_url, name = str(self.user))
+
+        embed.description = f"A milkyway channel was requested.\nName: `{self.name}`\Topic: `{self.topic}`"
+
+        footer = []
+        footer.append(f"Use '/milkyway deny {self.id} <reason>' to deny this milkyway request")
+        footer.append(f"Use '/milkyway accept {self.id}' to accept this milkyway request")
+        embed.set_footer(text = "\n".join(footer))
+
+        return embed
+
+    async def update_channel_topic(self):
+        await self.channel.edit(topic = f"{self.topic}\nexpires at {self.expiry_date} UTC")
+
+
+    def set_expiry_date(self, delta):
+        if self.expiry_date is None:
+            self.expiry_date = datetime.datetime.utcnow()
+        self.expiry_date = self.expiry_date + delta
 
     async def create_channel(self):
         for category in self.guild.categories:
@@ -27,7 +55,7 @@ class TemporaryChannel(BaseModel):
 
         channel = await self.guild.create_text_channel(
             name = self.name,
-            description = self.description,
+            topic = self.topic,
             category = category
         )
         self.channel_id = channel.id
