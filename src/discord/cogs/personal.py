@@ -16,7 +16,6 @@ def is_permitted():
         return ctx.author.id in (ctx.bot.owner.id, ctx.cog.user_id)
     return commands.check(predicate)
 
-
 class Personal(discord.ext.commands.Cog):
     user_id = 396362827822268416
     def __init__(self, bot):
