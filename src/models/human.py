@@ -44,7 +44,6 @@ class Human(BaseModel):
         if self.currencies is not None:
             for currency in self.currencies:
                 currencies.add(currency)
-        print(currencies)
         return currencies
 
     @property
