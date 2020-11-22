@@ -39,9 +39,11 @@ class TemporaryChannel(BaseModel):
 
         return embed
 
-    async def update_channel_topic(self):
-        await self.channel.edit(topic = f"{self.topic}\nexpires at {self.expiry_date} UTC")
+    def get_topic(self):
+        return f"{self.topic}\nexpires at {self.expiry_date} UTC"
 
+    async def update_channel_topic(self):
+        await self.channel.edit(topic = self.get_topic())
 
     def set_expiry_date(self, delta):
         if self.expiry_date is None:
@@ -55,7 +57,7 @@ class TemporaryChannel(BaseModel):
 
         channel = await self.guild.create_text_channel(
             name = self.name,
-            topic = self.topic,
+            topic = self.get_topic(),
             category = category
         )
         self.channel_id = channel.id

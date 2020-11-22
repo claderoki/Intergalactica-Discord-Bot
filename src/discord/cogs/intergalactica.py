@@ -141,7 +141,6 @@ class Intergalactica(commands.Cog):
             raise SendableException(ctx.translate("temp_channel_not_active"))
         temp_channel.set_expiry_date(datetime.timedelta(days = 7 * temp_channel.pending_milky_ways))
         temp_channel.pending_milky_ways = 0
-        asyncio.gather(temp_channel.update_channel_topic())
         await temp_channel.create_channel()
         temp_channel.status = TemporaryChannel.Status.accepted
         temp_channel.save()
