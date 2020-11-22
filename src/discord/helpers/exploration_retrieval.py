@@ -84,9 +84,9 @@ class ExplorationRetrieval(ActivityRetrieval):
             self._winnings = {
                 "gold"        : int(self.exploration.gold_worth * multiplier),
                 "experience"  : int(self.exploration.xp_worth   * multiplier),
-                "food"        : -random.randint(10,40),
+                "food"        : -random.randint(5,35),
                 "happiness"   : (0+(len(self.bonuses)*10)),
-                "cleanliness" : -random.randint(10,40)
+                "cleanliness" : -random.randint(5,35)
             }
         return self._winnings
 
@@ -100,17 +100,13 @@ class ExplorationRetrieval(ActivityRetrieval):
 
     def commit(self):
         pigeon = self.exploration.pigeon
-
-        if self.Bonus.language in self.bonuses:
-            if self.language is not None:
-                pigeon.study_language(self.language)
+        if self.Bonus.language in self.bonuses and self.language is not None:
+            pigeon.study_language(self.language)
         if self.item is not None:
             pigeon.human.add_item(self.item, 1)
+        pigeon.status = pigeon.Status.idle
         pigeon.update_stats(self.winnings)
         self.exploration.finished = True
-        pigeon.status = pigeon.Status.idle
-        pigeon.human.save()
-        pigeon.save()
         self.exploration.save()
 
 class MailRetrieval(ActivityRetrieval):
@@ -136,23 +132,21 @@ class MailRetrieval(ActivityRetrieval):
         if self._winnings is None:
             self._winnings = {
                     "experience"  : int(self.mail.duration_in_minutes * 0.6),
-                    "food"        : -random.randint(10,40),
-                    "happiness"   : int(random.randint(10,40)),
-                    "cleanliness" : -random.randint(10,40),
+                    "food"        : -random.randint(5,35),
+                    "cleanliness" : -random.randint(5,35),
                 }
         return self._winnings
 
     def commit(self):
         pigeon = self.mail.sender
+        pigeon.status = Pigeon.Status.idle
         pigeon.update_stats(self.winnings)
         self.mail.finished = True
-        pigeon.status = Pigeon.Status.idle
-        pigeon.human.save()
-        pigeon.save()
         self.mail.save()
 
 def get_winnings_value(**kwargs):
     lines = []
     for key, value in kwargs.items():
-        lines.append(f"{Pigeon.emojis[key]} {'+' if value > 0 else ''}{value}")
+        if value != 0:
+            lines.append(f"{Pigeon.emojis[key]} {'+' if value > 0 else ''}{value}")
     return ", ".join(lines)

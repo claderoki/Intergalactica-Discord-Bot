@@ -187,8 +187,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         fight.save()
 
         embed = self.get_base_embed(ctx.guild)
-        embed.description = f"{ctx.author.mention} has accepted the challenge!"
-        embed.set_footer(text = "Fight will start at")
+        embed.description = f"{ctx.author.mention} has accepted the challenge!\nThe pigeons have now started fighting."
+        embed.set_footer(text = "Fight will end at", icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/779844965705842718/JJAIhfX.gif")
         embed.timestamp = fight.start_date
 
         channel = self.get_pigeon_channel(ctx.guild)
@@ -398,17 +398,14 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         table = Table(padding = 0)
         table.add_row(Row(["rank", "exp", "pigeon", "owner"], header = True))
-        top = 1
-        i = (top-1)
+
+        i = 0
         for pigeon in query:
             values = [f"{i+1}", str(pigeon.experience), limit_str(pigeon.name, 10), limit_str(pigeon.human.user, 10)]
             table.add_row(Row(values))
-            if table.row_count == 10+1:
-                break
             i += 1
 
-        embed.description = table.generate()
-        await ctx.send(embed = embed)
+        await table.to_paginator(ctx, 10).wait()
 
     def increase_stats(self, ctx, attr_name, attr_increase, cost, message):
         pigeon = ctx.pigeon
@@ -487,17 +484,11 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
                 asyncio.gather(channel.send(embed = embed))
 
-                winner.update_stats(winner_data)
-                loser.update_stats(loser_data)
-
-                winner.human.gold += (fight.bet*2)
-
                 winner.status = Pigeon.Status.idle
                 loser.status = Pigeon.Status.idle
 
-                winner.save()
-                winner.human.save()
-                loser.save()
+                winner.update_stats(winner_data, gold = fight.bet*2)
+                loser.update_stats(loser_data)
 
                 fight.won = won
                 fight.finished = True
