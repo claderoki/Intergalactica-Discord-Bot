@@ -402,7 +402,12 @@ class Intergalactica(commands.Cog):
     @tasks.loop(minutes = 1)
     async def disboard_bump_available_notifier(self):
         if self.bump_available <= datetime.datetime.utcnow():
-            await self.log("bot_spam", "A bump is available!")
+            bot_spam = self.get_channel("bot_spam")
+            last_message = bot_spam.last_message
+            content = "A bump is available!"
+
+            if last_message is None or last_message.content != content:
+                await bot_spam.send(content)
 
     @tasks.loop(hours = 12)
     async def introduction_purger(self):
@@ -427,13 +432,6 @@ class Intergalactica(commands.Cog):
             days = (datetime.datetime.utcnow() - member.joined_at).days
             if days > 1:
                 await self.log("bot_commands", f"**{member}** {member.mention} is missing one or more of the mandatory roles.")
-                continue
-                # try:
-                #     await member.send(content = f"Hello. In the **{self.guild.name}**  server, both the gender role and the age role are mandatory. Please pick these roles up.")
-                # except discord.Forbidden:
-                # else:
-                #     await self.log("tabs", f"DMed **{member}** {member.mention} to ask them to pick up mandatory roles.")
-                # embed = self.embed_from_name("rules", [7])
 
     @tasks.loop(hours = 12)
     async def birthday_poller(self):
