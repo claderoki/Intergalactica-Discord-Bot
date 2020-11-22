@@ -5,13 +5,22 @@ from enum import Enum
 import peewee
 import discord
 import emoji
+import pycountry
 
 from .base import BaseModel, EnumField, CountryField
 from src.utils.timezone import Timezone
 import src.config as config
 from src.utils.zodiac import ZodiacSign
 
-emojize = lambda x : emoji.emojize(x, use_aliases=True)
+class CurrenciesField(peewee.TextField):
+    def db_value(self, value):
+        if value is not None:
+            return ";".join(set(x.alpha_3 for x in value))
+
+    def python_value(self, value):
+        if value is not None:
+            return set(pycountry.currencies.get(alpha_3 = x) for x in value.split(";"))
+
 
 class Human(BaseModel):
     user_id               = peewee.BigIntegerField  (null = False, unique = True)
@@ -21,11 +30,20 @@ class Human(BaseModel):
     city                  = peewee.TextField        (null = True)
     country               = CountryField            (null = True, column_name = "country_code")
     tester                = peewee.BooleanField     (null = False, default = False)
+    currencies            = CurrenciesField         (null = True)
 
     class Meta:
         indexes = (
             (('user_id',), True),
         )
+    @property
+    def all_currencies(self):
+        if self.country:
+            for currency in self.country.currencies():
+                yield currency
+        if self.currencies is not None:
+            for currency in self.currencies:
+                yield currency
 
     @property
     def mention(self):

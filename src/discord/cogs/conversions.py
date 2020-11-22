@@ -55,19 +55,26 @@ all_units.append("°f")
 all_units.append("°c")
 all_units.append('"')
 
-all_currencies = [x.alpha_3.lower() for x in pycountry.currencies]
+currency_converter = CurrencyConverter()
+
+class Conversion:
+    def __init__(self, base, ):
+        pass
 
 class Conversions(discord.ext.commands.Cog):
     measures = (Weight, Temperature, Distance)
-    global_pattern = '([+-]?\d+(\.\d+)*)({})(?!\w)'.format("|".join(all_units + all_currencies))
+    global_pattern = '([+-]?\d+(\.\d+)*)({})(?!\w)'.format("|".join(all_units + [x.lower() for x in currency_converter.currencies] ))
 
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
-        self.currency_converter = CurrencyConverter()
+        self.currency_converter = currency_converter
 
-    async def convert(self, member, currencies, measurements):
-        color = self.bot.get_dominant_color(None)
+    def convert_currency(self, base, others):
+        pass
+
+    def convert(self, member, currencies, measurements):
+        color = self.bot.get_dominant_color(member.guild)
         embed = discord.Embed(color = color)
 
         for measurement in measurements:
@@ -82,19 +89,18 @@ class Conversions(discord.ext.commands.Cog):
 
         if len(currencies) > 0:
             human, _ = Human.get_or_create(user_id = member.id)
-            if human.country is not None:
-                for currency in currencies:
-                    values = []
-                    for other_currency in human.country.currencies():
-                        if other_currency.alpha_3 == currency.alpha_3:
-                            continue
-                        try:
-                            converted = clean_value(self.currency_converter.convert(currencies[currency], currency.alpha_3, other_currency.alpha_3))
-                        except ValueError:
-                            continue
-                        values.append(f"{other_currency.name} {converted}")
-                    if len(values) > 0:
-                        embed.add_field(name = currency.name, value = "\n".join(values))
+            for currency in currencies:
+                values = []
+                for other_currency in human.all_currencies:
+                    if other_currency.alpha_3 == currency.alpha_3:
+                        continue
+                    try:
+                        converted = clean_value(self.currency_converter.convert(currencies[currency], currency.alpha_3, other_currency.alpha_3))
+                    except ValueError:
+                        continue
+                    values.append(f"{other_currency.name} {converted}")
+                if len(values) > 0:
+                    embed.add_field(name = currency.name, value = "\n".join(values))
         if len(embed.fields) > 0:
             return embed
 
@@ -115,13 +121,13 @@ class Conversions(discord.ext.commands.Cog):
             for match in matches:
                 value = float(match[0])
                 unit = match[-1].replace("°", "").replace('"', "in")
-                if unit in all_currencies:
+                if unit.upper() in self.currency_converter.currencies:
                     currencies[(pycountry.currencies.get(alpha_3 = unit.upper()))] = value
                 else:
                     measurement = guess(value, unit, measures = self.measures)
                     measurements.append(measurement)
 
-            embed = await self.convert(message.author, currencies, measurements)
+            embed = self.convert(message.author, currencies, measurements)
             if embed is not None:
                 asyncio.gather(message.channel.send(embed = embed))
 

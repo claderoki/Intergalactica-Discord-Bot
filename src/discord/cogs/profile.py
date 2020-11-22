@@ -6,6 +6,7 @@ import string
 import discord
 from discord.ext import commands, tasks
 import emoji
+import pycountry
 
 from src.models import Human, Earthling, Mail, Item, database
 from src.discord.helpers.converters import convert_to_date
@@ -167,6 +168,27 @@ class Profile(commands.Cog):
     @commands.command(aliases = ["timezone", "dateofbirth", "city"])
     async def country(self, ctx):
         await self.profile_setup(ctx, ctx.invoked_with)
+
+    @commands.group()
+    async def currency(self, ctx):
+        pass
+
+    @currency.command(name = "add")
+    async def currency_add(self, ctx, currency : lambda x : pycountry.currencies.get(alpha_3 = x.upper()) ):
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        if human.currencies is None:
+            human.currencies = set()
+        human.currencies.add(currency)
+        human.save()
+        await ctx.success()
+
+    @currency.command(name = "remove")
+    async def currency_remove(self, ctx, currency : lambda x : pycountry.currencies.get(alpha_3 = x.upper()) ):
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human.currencies.remove(currency)
+        human.save()
+        await ctx.success()
+
 
     @commands.command()
     async def events(self, ctx, month : int = None):
