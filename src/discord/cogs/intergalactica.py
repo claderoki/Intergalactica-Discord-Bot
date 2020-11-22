@@ -22,6 +22,7 @@ class Intergalactica(commands.Cog):
     {
         "selfies" : 748566253534445568,
         "5k+"     : 778744417322139689,
+        "bumper"  : 780001849335742476,
         "age"     : {},
         "gender"  : {},
         "ranks"   : {
@@ -404,7 +405,8 @@ class Intergalactica(commands.Cog):
         if self.bump_available <= datetime.datetime.utcnow():
             bot_spam = self.get_channel("bot_spam")
             last_message = bot_spam.last_message
-            content = "A bump is available!"
+            bumper_role_mention = f"<@&{self._role_ids['bumper']}!>"
+            content = bumper_role_mention + ", a bump is available!"
 
             if last_message is None or last_message.content != content:
                 await bot_spam.send(content)
