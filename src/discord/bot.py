@@ -8,6 +8,7 @@ import io
 import datetime
 
 import requests
+import praw
 import emoji
 import discord
 from discord.ext import commands
@@ -38,8 +39,7 @@ class Locus(commands.Bot):
     missing_translations = {}
     owner = None
 
-    sendables = \
-    (
+    sendables = (
         commands.errors.BotMissingPermissions,
         commands.errors.MissingRequiredArgument,
         commands.errors.MissingPermissions,
@@ -54,8 +54,7 @@ class Locus(commands.Bot):
         SendableException
     )
 
-    ignorables = \
-    (
+    ignorables = (
         commands.errors.CommandNotFound
     )
 
@@ -71,6 +70,12 @@ class Locus(commands.Bot):
         super().__init__(intents = intents, command_prefix = prefix)
 
         self.owm_api = OpenWeatherMapApi(os.environ["owm_key"])
+
+        self.reddit = praw.Reddit(
+            client_id=os.environ["reddit_client_id"],
+            client_secret=os.environ["reddit_client_secret"],
+            user_agent=os.environ["reddit_user_agent"]
+        )
 
         self.before_invoke(self.before_any_command)
         self.after_invoke(self.after_any_command)
@@ -193,6 +198,7 @@ class Locus(commands.Bot):
             "games",
             "inactive",
             "ticket",
+            "reddit",
             "admin",
             "prank",
             "pigeon",

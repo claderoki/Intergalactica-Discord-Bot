@@ -9,6 +9,7 @@ from .scene import Scene, Scenario
 from .pigeon import Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage
 from .admin import SavedEmoji
 from .prank import NicknamePrank, Prankster
+from .reddit import Subreddit
 
 database = Human._meta.database
 
@@ -20,6 +21,9 @@ def setup():
         # database.drop_tables([SavedEmoji])
         database.create_tables([SavedEmoji])
 
+        # database.drop_tables([Subreddit])
+        database.create_tables([Subreddit])
+
         # database.drop_tables([NicknamePrank, Prankster])
         database.create_tables([NicknamePrank, Prankster])
 
@@ -30,7 +34,6 @@ def setup():
         database.create_tables([Human, Item, HumanItem])
 
         # database.drop_tables([Earthling, TemporaryChannel])
-        # database.drop_tables([TemporaryChannel])
         database.create_tables([Earthling, TemporaryChannel])
 
         # database.drop_tables([Settings, NamedEmbed, NamedChannel, Locale, Translation])

@@ -14,3 +14,4 @@ matplotlib
 numpy
 countryinfo
 currencyconverter
+praw

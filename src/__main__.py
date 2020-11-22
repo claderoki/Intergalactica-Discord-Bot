@@ -19,7 +19,7 @@ if service != "heroku":
     except FileNotFoundError:
         with open(config.path + "/env", "w") as f:
             lines = []
-            for var in ("mysql_user", "mysql_password", "mysql_port", "mysql_host", "discord_token", "owm_key"):
+            for var in ("mysql_user", "mysql_password", "mysql_port", "mysql_host", "discord_token", "owm_key", "reddit_client_id", "reddit_client_secret", "reddit_user_agent"):
                 lines.append(f"{var}=")
             f.write("\n".join(lines))
         raise Exception("Please fill in the 'env' file.")
