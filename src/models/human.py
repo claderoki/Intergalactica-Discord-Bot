@@ -14,13 +14,12 @@ from src.utils.zodiac import ZodiacSign
 
 class CurrenciesField(peewee.TextField):
     def db_value(self, value):
-        if value is not None:
+        if value is not None and value != "":
             return ";".join(set(x.alpha_3 for x in value))
 
     def python_value(self, value):
         if value is not None:
             return set(pycountry.currencies.get(alpha_3 = x) for x in value.split(";"))
-
 
 class Human(BaseModel):
     user_id               = peewee.BigIntegerField  (null = False, unique = True)
@@ -30,7 +29,7 @@ class Human(BaseModel):
     city                  = peewee.TextField        (null = True)
     country               = CountryField            (null = True, column_name = "country_code")
     tester                = peewee.BooleanField     (null = False, default = False)
-    currencies            = CurrenciesField         (null = True)
+    currencies            = CurrenciesField         (null = False, default = lambda : set())
 
     class Meta:
         indexes = (
@@ -38,12 +37,15 @@ class Human(BaseModel):
         )
     @property
     def all_currencies(self):
+        currencies = set()
         if self.country:
             for currency in self.country.currencies():
-                yield currency
+                currencies.add(currency)
         if self.currencies is not None:
             for currency in self.currencies:
-                yield currency
+                currencies.add(currency)
+        print(currencies)
+        return currencies
 
     @property
     def mention(self):
