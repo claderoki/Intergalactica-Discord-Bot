@@ -265,12 +265,10 @@ class Profile(commands.Cog):
     async def inventory(self, ctx):
         human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-        data = [(x.item.name, x.amount) for x in human.human_items]
+        data = [(x.item.name, x.amount) for x in human.human_items if x.amount > 0]
         data.insert(0, ("name", "amount"))
-        description = pretty.Table.from_list(data, first_header = True).generate()
-
-        embed = discord.Embed(color = ctx.guild_color, description = description)
-        asyncio.gather(ctx.send(embed = embed))
+        table = pretty.Table.from_list(data, first_header = True)
+        await table.to_paginator(ctx, 10).wait()
 
     @item.command(name = "view")
     async def item_view(self, ctx,*, name):

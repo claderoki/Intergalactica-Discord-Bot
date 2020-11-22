@@ -70,6 +70,8 @@ class Paginator:
     async def wait(self, timeout = 360):
         self.__show_pages()
         await self.reload()
+        if len(self._pages) == 1:
+            return
         for emoji in self._actions.keys():
             asyncio.gather(self._message.add_reaction(emoji))
         try:
