@@ -155,7 +155,7 @@ class Profile(commands.Cog):
                 human.timezone = str(city.timezone)
                 timezone_set = True
 
-        if not timezone_set or "country" in fields:
+        if not timezone_set or "timezone" in fields:
             await human.editor_for(ctx, "timezone")
 
         if len(fields) == 0 or "dateofbirth" in fields:
@@ -163,6 +163,10 @@ class Profile(commands.Cog):
 
         human.save()
         await ctx.send(embed = Embed.success(ctx.translate("profile_setup")))
+
+    @commands.command(aliases = ["timezone", "dateofbirth", "city"])
+    async def country(self, ctx):
+        await self.profile_setup(ctx, ctx.invoked_with)
 
     @commands.command()
     async def events(self, ctx, month : int = None):
@@ -258,8 +262,7 @@ class Profile(commands.Cog):
         table.add_row(pretty.Row(("name", "rarity"), header = True))
         for item in items:
             table.add_row(pretty.Row((item.name, item.rarity.name)))
-        paginator = table.to_paginator(ctx, 10)
-        await paginator.wait()
+        await table.to_paginator(ctx, 10).wait()
 
     @commands.command()
     async def inventory(self, ctx):
