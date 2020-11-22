@@ -23,8 +23,8 @@ class Intergalactica(commands.Cog):
         "selfies" : 748566253534445568,
         "5k+"     : 778744417322139689,
         "bumper"  : 780001849335742476,
-        "age"     : {},
-        "gender"  : {},
+        "age"     : {"18-20": 748606669902053387, "21-24": 748606823229030500, "25-29": 748606893387153448, "30+": 748606902363095206},
+        "gender"  : {"male": 742301620062388226, "female": 742301646004027472, "other" : 742301672918745141},
         "ranks"   : {
             "luna"      : 748494880229163021,
             "nova"      : 748494888844132442,
@@ -46,8 +46,6 @@ class Intergalactica(commands.Cog):
         "tabs"          : 757961433911787592,
         "logs"          : 745010147083944099
     }
-
-    selfie_poll_question = "Should {member} get selfie perms?"
 
     def get_channel(self, name):
         return self.bot.get_channel(self._channel_ids[name])
@@ -110,7 +108,7 @@ class Intergalactica(commands.Cog):
         poll.question = f"Should {member} be given selfie access?"
         poll.author_id = ctx.author.id
         poll.save()
-        poll.create_options(("Yes", "No", "I don't know them well enough yet"))
+        poll.create_options(("Yes", "No", "Idk them well enough yet"))
         await poll.send()
         poll.save()
         return poll
@@ -228,24 +226,26 @@ class Intergalactica(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        if len(after.roles) > len(before.roles):
-            if after.guild.id != self.guild_id:
-                return
+        if not self.bot.production:
+            return
+        if after.guild.id != self.guild_id:
+            return
+        if len(after.roles) <= len(before.roles):
+            return
 
-            if not self.bot.production:
-                return
+        added_role = None
+        has_selfie_perms = None
 
-            added_role = None
-            has_selfie_perms = None
+        for role in after.roles:
+            if role not in before.roles:
+                added_role = role
+            if role.id == self._role_ids["selfies"]:
+                has_selfie_perms = True
 
-            for role in after.roles:
-                if role not in before.roles:
-                    added_role = role
-                if role.id == self._role_ids["selfies"]:
-                    has_selfie_perms = True
-
-            if added_role.id == self._role_ids["ranks"]["luna"] and not has_selfie_perms:
-                await self.on_luna(after)
+        if added_role.id == self._role_ids["ranks"]["luna"]:
+            await self.on_luna(after)
+            if not has_selfie_perms:
+                pass #TODO: make a poll here
 
     def embed_from_name(self, name, indexes):
         with database.connection_context():
