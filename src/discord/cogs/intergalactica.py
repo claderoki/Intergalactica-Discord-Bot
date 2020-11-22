@@ -405,7 +405,7 @@ class Intergalactica(commands.Cog):
         if self.bump_available <= datetime.datetime.utcnow():
             bot_spam = self.get_channel("bot_spam")
             last_message = bot_spam.last_message
-            bumper_role_mention = f"<@&{self._role_ids['bumper']}!>"
+            bumper_role_mention = f"<@&{self._role_ids['bumper']}>"
             content = bumper_role_mention + ", a bump is available!"
 
             if last_message is None or last_message.content != content:
