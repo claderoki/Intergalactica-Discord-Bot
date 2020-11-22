@@ -108,8 +108,11 @@ class Pigeon(BaseModel):
                     if self.health <= 0:
                         self.condition = self.Condition.dead
                         SystemMessage.create(text = self.bot.translate("pigeon_dead"), human = self.human)
-        self.save(only = self.dirty_fields)
-        self.human.save(only = self.human.dirty_fields)
+        try:
+            self.save(only = self.dirty_fields)
+            self.human.save(only = self.human.dirty_fields)
+        except ValueError:
+            pass
 
     @property
     def current_activity(self):
