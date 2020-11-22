@@ -30,7 +30,7 @@ class TemporaryChannel(BaseModel):
         embed = discord.Embed(color = self.bot.get_dominant_color(None))
         embed.set_author(icon_url = self.user.avatar_url, name = str(self.user))
 
-        embed.description = f"A milkyway channel was requested.\nName: `{self.name}`\Topic: `{self.topic}`"
+        embed.description = f"A milkyway channel was requested.\nName: `{self.name}`\nTopic: `{self.topic}`"
 
         footer = []
         footer.append(f"Use '/milkyway deny {self.id} <reason>' to deny this milkyway request")
