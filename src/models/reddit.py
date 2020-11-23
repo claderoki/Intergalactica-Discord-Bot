@@ -1,7 +1,9 @@
+from enum import Enum
+
 import peewee
 import discord
 
-from .base import BaseModel, JsonField
+from .base import BaseModel, JsonField, EnumField
 import src.config as config
 
 class SubredditField(peewee.TextField):
@@ -14,12 +16,18 @@ class SubredditField(peewee.TextField):
             return config.bot.reddit.subreddit(value)
 
 class Subreddit(BaseModel):
+    class PostType(Enum):
+        top = 0
+        new = 1
+        hot = 2
+
     history_limit = 3
 
     guild_id    = peewee.BigIntegerField()
     channel_id  = peewee.BigIntegerField()
     subreddit   = SubredditField()
     url_history = JsonField(default = lambda : [] )
+    post_type   = EnumField(PostType, default = PostType.top)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -48,7 +56,9 @@ class Subreddit(BaseModel):
     @property
     def latest_post(self):
 
-        for submission in self.subreddit.top(limit = 1):
+        submissions = getattr(self.subreddit, self.post_type.name)(limit = 1)
+
+        for submission in submissions:
             post = submission
 
         if len(self.url_history) >= self.history_limit:
