@@ -8,6 +8,7 @@ import peewee
 
 from src.discord.helpers.waiters import *
 from src.discord.helpers.pretty import prettify_dict
+from src.discord.helpers.embed import Embed
 from src.discord.errors.base import SendableException
 import src.config as config
 from src.models import Change, Parameter, Poll, PollTemplate, Vote, database
@@ -51,27 +52,28 @@ class PollCog(commands.Cog, name = "Poll"):
                 return
 
             if poll.anonymous:
-                await message.remove_reaction(emoji, member)
+                asyncio.gather(message.remove_reaction(emoji, member))
 
             option = allowed_reactions[emoji]
 
-            user_votes = [list(x.votes.where(Vote.user_id == member.id)) for x in poll.options]
+            user_votes = []
+            for option in poll.options:
+                vote = option.votes.where(Vote.user_id == member.id).first()
+                if vote is not None:
+                    user_votes.append(vote)
+            user_votes.sort(key = lambda x : x.voted_on)
 
-            if len(user_votes) == poll.max_votes_per_user:
-                first_vote = user_votes[0]
-                first_vote.delete_instance()
+            for i in range(0, (len(user_votes)+1)-poll.max_votes_per_user):
+                vote = user_votes[i]
+                vote.delete_instance()
 
             if poll.role_id_needed_to_vote is not None:
                 role = member.guild.get_role(poll.role_id_needed_to_vote)
-
                 if role not in member.roles:
                     #TODO: translate!
-                    return await member.send(f"To vote for this poll you need the **{role}** role.")
+                    return asyncio.gather(member.send(embed = Embed.error(f"To vote for this poll you need the **{role}** role.")))
 
             vote, created = Vote.get_or_create(option = option, user_id = member.id)
-
-            if created:
-                pass
 
     async def setup_poll(self, ctx, poll):
         prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
@@ -201,8 +203,6 @@ class PollCog(commands.Cog, name = "Poll"):
         )
         return asyncio.gather(ctx.send(embed = embed))
 
-
-
     @poll_group.command(name = "create")
     async def create_poll(self, ctx, template_name):
         prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
@@ -219,7 +219,7 @@ class PollCog(commands.Cog, name = "Poll"):
 
         if poll.type == Poll.Type.custom:
             options = []
-            option_range = range(2, 5)
+            option_range = range(2, 10)
             waiter = IntWaiter(ctx, range = option_range, prompt = ctx.translate("option_count_prompt") )
             for i in range(await waiter.wait()):
                 waiter = StrWaiter(ctx, max_words = None, prompt = ctx.translate("option_value_prompt").format(index = i+1))
