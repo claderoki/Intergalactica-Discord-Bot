@@ -67,18 +67,12 @@ class Profile(commands.Cog):
         table = pretty.Table()
         table.add_row(pretty.Row(["rank", "gold", "member"], header = True))
 
-        top = 1
-        i = (top-1)
+        i = 0
         for human in query:
             values = [f"{i+1}", str(human.gold), str(human.user)]
             table.add_row(pretty.Row(values))
-            if table.row_count == 11:
-                break
             i += 1
-
-        embed.description = table.generate()
-
-        await ctx.send(embed = embed)
+        await table.to_paginator(ctx, 10).wait()
 
     @commands.group()
     async def profile(self, ctx, members : commands.Greedy[discord.Member]):
