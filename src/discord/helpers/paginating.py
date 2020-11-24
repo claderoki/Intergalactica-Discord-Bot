@@ -77,9 +77,9 @@ class Paginator:
         try:
             await self._ctx.bot.wait_for("reaction_add", timeout = timeout, check = self.__check)
         except asyncio.TimeoutError:
-            asyncio.gather(self._message.clear_reactions())
-        else:
-            asyncio.gather(self._message.clear_reactions())
+            pass
+
+        asyncio.gather(self._message.clear_reactions())
 
     def __show_pages(self):
         for i, page in enumerate(self._pages):
