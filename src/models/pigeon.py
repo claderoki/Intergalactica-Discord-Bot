@@ -76,6 +76,7 @@ class Pigeon(BaseModel):
         mailing   = "📧"
         exploring = "🗺️"
         fighting  = "⚔️"
+        dating    = "❤️"
 
     class Condition(Enum):
         active   = 1
@@ -146,7 +147,6 @@ class LanguageMastery(BaseModel):
             return "fluent"
         else:
             return "native"
-        
 
 class SystemMessage(BaseModel):
     human = peewee.ForeignKeyField (Human, null = False, backref = "system_messages", on_delete = "CASCADE")
@@ -184,3 +184,12 @@ class Fight(Activity):
     bet        = peewee.BigIntegerField (null = False, default = 50)
     accepted   = peewee.BooleanField    (null = True) # null is pending, true is accepted, false is declined.
     won        = peewee.BooleanField    (null = True) # null is not ended yet, true means challenger won, false means challengee won
+
+class Date(Activity):
+    pigeon1    = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
+    pigeon2    = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
+    created_at = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow())
+    guild_id   = peewee.BigIntegerField (null = False)
+    gift       = peewee.ForeignKeyField (Item, null = True)
+    accepted   = peewee.BooleanField    (null = True) # null is pending, true is accepted, false is declined.
+    score      = peewee.IntegerField    (null = False, default = 0) # max 100, min -100

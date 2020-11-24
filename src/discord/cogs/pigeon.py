@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 from countryinfo import CountryInfo
 
 import src.config as config
-from src.models import Scene, Scenario, Human, Fight, Pigeon, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, database
+from src.models import Scene, Scenario, Human, Fight, Pigeon, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
 from src.models.base import PercentageField
 from src.discord.helpers.waiters import *
 from src.utils.country import Country
@@ -19,8 +19,8 @@ from src.discord.helpers.converters import EnumConverter
 
 class PigeonCog(commands.Cog, name = "Pigeon"):
     subcommands_no_require_pigeon = ["buy", "scoreboard", "help", "inbox", "pigeon"]
-    subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name", "accept"] + subcommands_no_require_pigeon
-    subcommands_no_require_stats = ["heal", "clean", "feed", "play"] + subcommands_no_require_available
+    subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name", "accept", "acceptdate"] + subcommands_no_require_pigeon
+    subcommands_no_require_stats = ["heal", "clean", "feed", "play", "date"] + subcommands_no_require_available
 
     def __init__(self, bot):
         super().__init__()
@@ -40,6 +40,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @commands.Cog.listener()
     async def on_ready(self):
         Pigeon.emojis["gold"] = self.bot.gold_emoji
+        self.date_ticker.start()
         if self.bot.production:
             self.fight_ticker.start()
             await asyncio.sleep(60 * 60)
@@ -190,6 +191,66 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed.description = f"{ctx.author.mention} has accepted the challenge!\nThe pigeons have now started fighting."
         embed.set_footer(text = "Fight will end at", icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/779844965705842718/JJAIhfX.gif")
         embed.timestamp = fight.start_date
+
+        channel = self.get_pigeon_channel(ctx.guild)
+
+        await channel.send(embed = embed)
+
+    @pigeon.command(name = "date")
+    async def pigeon_date(self, ctx, member : discord.Member ):
+        """Have your pigeon date another pigeon"""
+        if member.id == self.bot.owner_id or ctx.author.id == self.bot.owner_id:
+            raise SendableException(ctx.translate("pigeon_undateable"))
+
+        channel = self.get_pigeon_channel(ctx.guild)
+        if member.id == ctx.author.id:
+            raise SendableException(ctx.translate("cannot_date_self"))
+
+        self.pigeon_check(ctx, member, name = "pigeon2")
+        pigeon1 = ctx.pigeon
+        pigeon2 = ctx.pigeon2
+
+        date = Date(guild_id = ctx.guild.id, start_date = None, pigeon1 = pigeon1, pigeon2 = pigeon2)
+
+        date.save()
+
+        for pigeon in (date.pigeon1, date.pigeon2):
+            pigeon.status = Pigeon.Status.dating
+            pigeon.save()
+
+        embed = self.get_base_embed(ctx.guild)
+        embed.title = "Pigeon Dating"
+        embed.description = f"{pigeon1.name} has invited {pigeon2.name} to a date."
+        embed.set_footer(text = f"use '{ctx.prefix}pigeon acceptdate' to accept") 
+        asyncio.gather(channel.send(embed = embed))
+
+    @pigeon.command(name = "acceptdate")
+    async def pigeon_accept_date(self, ctx):
+        """Accept a pending date."""
+
+        pigeon2 = ctx.pigeon
+
+        query = Date.select()
+        query = query.where(Date.finished == False)
+        query = query.where(Date.pigeon2 == pigeon2)
+        date = query.first()
+
+        if date is None:
+            raise SendableException(ctx.translate("no_date"))
+        for pigeon in (date.pigeon1, date.pigeon2):
+            pigeon.status = Pigeon.Status.idle
+            pigeon.save()
+
+        date.accepted   = True
+        date.start_date = datetime.datetime.utcnow()
+        date.end_date   = date.start_date + datetime.timedelta(minutes = 5)
+
+        date.save()
+
+        embed = self.get_base_embed(ctx.guild)
+        embed.description = f"{ctx.author.mention} has accepted the date!\nThe pigeons have now started dating."
+        embed.set_footer(text = "Date will end at", icon_url = "https://tubelife.org/wp-content/uploads/2019/08/Valentines-Heart-GIF.gif")
+        embed.timestamp = date.end_date
 
         channel = self.get_pigeon_channel(ctx.guild)
 
@@ -447,6 +508,72 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @pigeon.command(name = "help")
     async def pigeon_help(self, ctx):
         await ctx.send_help(ctx.command.root_parent)
+
+
+    @tasks.loop(seconds=30)
+    async def date_ticker(self):
+        with database.connection_context():
+            query = Date.select()
+            query = query.where(Date.finished == False)
+            query = query.where(Date.accepted == True)
+            query = query.where(Date.end_date <= datetime.datetime.utcnow())
+
+            for date in query:
+                guild = date.guild
+                channel = self.get_pigeon_channel(guild)
+
+                embed = self.get_base_embed(guild)
+
+                score = 0
+                lines = []
+                for pigeon in (date.pigeon1, date.pigeon2):
+                    other = date.pigeon1 if pigeon == date.pigeon2 else date.pigeon2
+
+                    if pigeon.cleanliness >= 60:
+                        lines.append(f"{pigeon.name} smells like fresh fries, delicious (+10)")
+                        score += 10
+                    elif pigeon.cleanliness >= 40:
+                        lines.append(f"{pigeon.name} has a slight body odor, but it's tolerable (+0)")
+                    elif pigeon.cleanliness >= 20:
+                        lines.append(f"{pigeon.name} has a clear body odor. (-10)")
+                        score -= 10
+                    else:
+                        lines.append(f"{pigeon.name} is caked in feces, absolutely disgusting! (-20)")
+                        score -= 20
+
+                    if pigeon.food >= 60:
+                        lines.append(f"{pigeon.name} ellegantly and majestically enjoys {pigeon.gender.get_pronoun()} fry. (+10)")
+                        score += 10
+                    elif pigeon.food >= 30:
+                        lines.append(f"{pigeon.name} is clearly a bit hungry but still manages to (barely) not embarrass {pigeon.gender.get_pronoun(object = True)} (+0)")
+                    else:
+                        lines.append(f"{pigeon.name} is starving. As soon as {pigeon.gender.get_pronoun()} sees a fry {pigeon.gender.get_pronoun()} starts to drool, runs at it like a wild animal and devours it in one go. How unappealing. (-10)")
+                        score -= 10
+
+                    if pigeon.health >= 30:
+                        lines.append(f"{pigeon.name} is covered in blood. {pigeon.gender.get_pronoun()} tries to make it work, but failed. As {pigeon.gender.get_pronoun()} moved in to steal a kiss from {other.name} {pigeon.gender.get_pronoun()} and accidentally drips some blood on {other.name}s fry . Not a good sauce. (-10)")
+                        score -= 10
+
+                    if pigeon.happiness >= 60:
+                        lines.append(f"{pigeon.name} smiled in confidence the entire date. (+10)")
+                        score += 10
+                    elif pigeon.happiness >= 30:
+                        lines.append(f"{pigeon.name} was clearly not in his best spirits. Slightly bringing his date down as well. (-5)")
+                        score -= 5
+                    else:
+                        lines.append(f"{pigeon.name} is miserable. From the start, {pigeon.gender.get_pronoun()} starts asking what the point of this date even is, what the point of anything is, and why {pigeon.gender.get_pronoun()} should even bother eating at all. (-10)")
+                        score -= 10
+
+                embed.description = f"score: {score}\n- " + ("\n\n- ".join(lines))
+                asyncio.gather(channel.send(embed = embed))
+
+                for pigeon in (date.pigeon1, date.pigeon2):
+                    pigeon.status = Pigeon.Status.idle
+                    pigeon.save()
+
+                date.score = score
+                date.finished = True
+                date.save()
 
     @tasks.loop(seconds=30)
     async def fight_ticker(self):
