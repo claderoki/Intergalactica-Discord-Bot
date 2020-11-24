@@ -542,16 +542,16 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                         score -= 20
 
                     if pigeon.food >= 60:
-                        lines.append(f"{pigeon.name} ellegantly and majestically enjoys {pigeon.gender.get_pronoun()} fry. (+10)")
+                        lines.append(f"{pigeon.name} ellegantly and majestically enjoys {pigeon.gender.get_posessive_pronoun()} fry. (+10)")
                         score += 10
                     elif pigeon.food >= 30:
-                        lines.append(f"{pigeon.name} is clearly a bit hungry but still manages to (barely) not embarrass {pigeon.gender.get_pronoun(object = True)} (+0)")
+                        lines.append(f"{pigeon.name} is clearly a bit hungry but still manages to (barely) not embarrass {pigeon.gender.get_pronoun(object = True)}self (+0)")
                     else:
                         lines.append(f"{pigeon.name} is starving. As soon as {pigeon.gender.get_pronoun()} sees a fry {pigeon.gender.get_pronoun()} starts to drool, runs at it like a wild animal and devours it in one go. How unappealing. (-10)")
                         score -= 10
 
-                    if pigeon.health >= 30:
-                        lines.append(f"{pigeon.name} is covered in blood. {pigeon.gender.get_pronoun()} tries to make it work, but failed. As {pigeon.gender.get_pronoun()} moved in to steal a kiss from {other.name} {pigeon.gender.get_pronoun()} and accidentally drips some blood on {other.name}s fry . Not a good sauce. (-10)")
+                    if pigeon.health <= 30:
+                        lines.append(f"{pigeon.name} is covered in blood. {pigeon.gender.get_pronoun()} tries to make it work but accidentally drips some blood on {other.name}s fry . Not a good sauce. (-10)")
                         score -= 10
 
                     if pigeon.happiness >= 60:
@@ -564,7 +564,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                         lines.append(f"{pigeon.name} is miserable. From the start, {pigeon.gender.get_pronoun()} starts asking what the point of this date even is, what the point of anything is, and why {pigeon.gender.get_pronoun()} should even bother eating at all. (-10)")
                         score -= 10
 
-                embed.description = f"score: {score}\n- " + ("\n\n- ".join(lines))
+                lines = "\n- " + ("\n\n- ".join(lines))
+                embed.description = f"{lines}\n\nScore: **{score}**"
                 asyncio.gather(channel.send(embed = embed))
 
                 for pigeon in (date.pigeon1, date.pigeon2):
