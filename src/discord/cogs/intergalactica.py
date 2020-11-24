@@ -79,7 +79,7 @@ class Intergalactica(commands.Cog):
 
         if "minutes until the server can be bumped" in text:
             minutes = int([x for x in text.split() if x.isdigit()][0])
-        elif "Bump done" in text:
+        elif "👍" in text:
             minutes = 120
         self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = minutes)
 
