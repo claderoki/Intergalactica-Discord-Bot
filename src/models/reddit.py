@@ -76,17 +76,17 @@ class Subreddit(BaseModel):
         embed = None
 
         if post.selftext:
-            embed = discord.Embed(description=post.selftext, color=0x8ec07c)
-            embed.set_footer(text=post.subreddit_name_prefixed)
-            embed.set_author(name="".join(post.title[:255]), url=f"https://reddit.com{post.permalink}")
+            embed = discord.Embed(description = post.selftext, color = 0x8ec07c)
+            embed.set_footer(text = post.subreddit_name_prefixed)
+            embed.set_author(name = "".join(post.title[:255]), url = post.shortlink)
 
-        elif post.post_hint == "image" or post.url[-3:] in ("jpg","png") or post.url.startswith("https://imgur.com/a"):
+        elif (hasattr(post, "post_hint") and post.post_hint == "image") or post.url[-3:] in ("jpg","png") or post.url.startswith("https://imgur.com/a"):
             if post.url.startswith("https://imgur.com/a"):
                 post.url = post.url + ".jpg"
 
             embed = discord.Embed(color=0x8ec07c)
-            embed.set_image(url=post.url)
-            embed.set_footer(text=post.subreddit_name_prefixed)
-            embed.set_author(name="".join(post.title[:255]), url=f"https://reddit.com{post.permalink}")
+            embed.set_image(url = post.url)
+            embed.set_footer(text = post.subreddit_name_prefixed)
+            embed.set_author(name = "".join(post.title[:255]), url = post.shortlink)
 
         return embed
