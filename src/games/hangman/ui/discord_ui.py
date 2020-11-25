@@ -12,14 +12,26 @@ class DiscordUI(UI):
     def __init__(self, ctx):
         self.message = None
         self.ctx = ctx
+    def __check(self, word, letters_used):
+        def __check2(message):
+            if not self.ctx.channel.id == message.channel.id:
+                return False
+            if not self.ctx.author.id == message.author.id:
+                return False
+            if len(message.content) == len(word):
+                return True
+            if len(message.content) == 1 and message.content.lower() not in letters_used:
+                return True
 
+            return False
+
+        return __check2
 
     async def get_guess(self, word, player, letters_used):
-
-        # guess = await self.ctx.wait_for_message(
-        #     channel = self.ctx.channel,
-        #     author = str(player),
-        #     check = lambda m : (len(m.content) == 1 or len(m.content) == len(word) and m.content.lower() not in letters_used ))
+        try:
+            guess = await self.ctx.bot.wait_for("message", check = self.__check(word, letters_used) )
+        except asyncio.TimeoutError:
+            guess = None
 
         try:
             await guess.delete()
@@ -27,9 +39,7 @@ class DiscordUI(UI):
 
         return guess.content.lower() if guess is not None else None
 
-
     async def refresh_board(self, game, current_player = None):
-
         embed = discord.Embed(title=" ".join(game.board))
 
         for player in game.players:
@@ -43,8 +53,6 @@ class DiscordUI(UI):
             embed.add_field(
                 name = str(player),
                 value = f"```\n{self.game_states[player.incorrect_guesses]}```" + (arrows if player == current_player else "") )
-
-
 
         guess_info = []
         guess_info.append("letters used: " + ", ".join(game.letters_used))
@@ -69,15 +77,10 @@ class DiscordUI(UI):
             if player.dead:
                 player.identity.remove_points(player.bet)
                 lines.append(f"Player {player} has lost **{player.bet}** gold")
-
             else:
-
                 percentage_guessed = player.get_percentage_guessed(game.word)
-
                 won = math.ceil(percentage_guessed / 100 * bet_pool)
-
-                player.identity.add_point(won)
-
+                player.identity.add_points(won)
                 lines.append(f"Player {player} has won **{won}** gold, percentage guessed: **{int(percentage_guessed)}**")
 
         lines.append(f"The word was {game.word}")
