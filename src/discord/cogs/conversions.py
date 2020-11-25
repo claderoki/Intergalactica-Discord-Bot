@@ -15,7 +15,7 @@ measurements = [
     ("kg", "lb"),
     ("g", "oz"),
     ("cm", "inch", "ft"),
-    ("ml", "cup"),
+    ("ml", "us_cup"),
     ("km", "mi"),
     ("m", "yd", "ft"),
 ]
