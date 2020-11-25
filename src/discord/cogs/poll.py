@@ -179,10 +179,10 @@ class PollCog(commands.Cog, name = "Poll"):
         del columns["guild_id"]
 
         if columns["result_channel_id"] is not None:
-            columns["result_channel"] = str(ctx.guild.get_channel(columns["result_channel_id"]))
+            columns["result_channel"] = "#" + str(ctx.guild.get_channel(columns["result_channel_id"]))
             del columns["result_channel_id"]
         if columns["channel_id"] is not None:
-            columns["channel"] = str(template.channel)
+            columns["channel"] = "#" + str(template.channel)
             del columns["channel_id"]
         if columns["role_id_needed_to_vote"] is not None:
             columns["role_needed_to_vote"] = str(ctx.guild.get_role(template.role_id_needed_to_vote))
@@ -202,18 +202,16 @@ class PollCog(commands.Cog, name = "Poll"):
             title       = f"Config of poll-template '{name}'",
             description = f"```\n{lines}```"
         )
-        return asyncio.gather(ctx.send(embed = embed))
+        asyncio.gather(ctx.send(embed = embed))
 
     @poll_group.command(name = "create")
-    async def create_poll(self, ctx, template_name):
-        prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
-
+    async def poll_create(self, ctx, template_name):
         template       = PollTemplate.get(name = template_name, guild_id = ctx.guild.id)
 
         poll           = Poll.from_template(template)
         poll.author_id = ctx.author.id
 
-        waiter = StrWaiter(ctx, prompt = prompt("question"), max_words = None)
+        waiter = StrWaiter(ctx, prompt = ctx.translate(f"poll_question_prompt"), max_words = None)
         poll.question = await waiter.wait()
 
         await self.setup_poll(ctx, poll)
@@ -227,7 +225,7 @@ class PollCog(commands.Cog, name = "Poll"):
                 options.append(await waiter.wait())
 
         if poll.due_date is None:
-            waiter = TimeDeltaWaiter(ctx, prompt = prompt("due_date"), max_words = 2)
+            waiter = TimeDeltaWaiter(ctx, prompt = ctx.translate(f"poll_due_date_prompt"), max_words = 2)
             delta = await waiter.wait()
             poll.due_date = datetime.datetime.utcnow() + delta
 
@@ -242,7 +240,6 @@ class PollCog(commands.Cog, name = "Poll"):
         poll.message_id = message.id
 
         poll.save()
-
 
     @poll_group.group(name = "change")
     async def change(self, ctx):
