@@ -51,7 +51,8 @@ class Locus(commands.Bot):
         commands.errors.UserNotFound,
         commands.errors.ChannelNotFound,
         commands.errors.RoleNotFound,
-        SendableException
+        commands.errors.MaxConcurrencyReached,
+        SendableException,
     )
 
     ignorables = (

@@ -79,6 +79,17 @@ class Human(BaseModel):
         current_date = datetime.datetime.utcnow()
         return self.date_of_birth.day == current_date.day and self.date_of_birth.month == current_date.month
 
+    def calculate_timezone(self):
+        if self.city is not None and self.country is not None:
+            city = self.bot.owm_api.by_q(self.city, self.country.alpha_2)
+            if city is not None:
+                return str(city.timezone)
+
+        elif self.country is not None:
+            if self.country.alpha_2 not in ("US", "CA"):
+                latlng = self.country.capital_latlng()
+                return Timezone.from_location(*latlng[::-1]).name
+
     def add_item(self, item, amount):
         human_item, created = HumanItem.get_or_create(item = item, human = self)
         if created:

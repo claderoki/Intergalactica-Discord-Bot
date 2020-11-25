@@ -284,7 +284,7 @@ class Intergalactica(commands.Cog):
         earthling, _ = Earthling.get_or_create_for_member(ctx.author)
         new = earthling.personal_role_id is None or earthling.personal_role is None
         if new:
-            first_earthling = Earthling.select().where(Earthling.personal_role_id != None).limit(1).first()
+            first_earthling = Earthling.select().where(Earthling.personal_role_id != None).first()
             position = first_earthling.personal_role.position if first_earthling else 0
             role = await ctx.guild.create_role(**kwargs)
             await role.edit(position = position)

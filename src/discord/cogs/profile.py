@@ -120,20 +120,27 @@ class Profile(commands.Cog):
         await ctx.send(embed = embed)
 
     @profile.command(name = "clear", aliases = ["reset"])
-    async def profile_clear(self, ctx):
+    async def profile_clear(self, ctx, fields : commands.Greedy[str.lower]):
+        if len(fields) == 0:
+            fields = ["city", "country", "dateofbirth", "timezone"]
+
         human, _ = Human.get_or_create(user_id = ctx.author.id)
-        human.timezone      = None
-        human.city          = None
-        human.country       = None
-        human.date_of_birth = None
+        human.timezone      = None if "timezone" in fields else human.timezone
+        human.city          = None if "city" in fields else human.city
+        human.country       = None if "country" in fields else human.country
+        human.date_of_birth = None if "dateofbirth" in fields else human.date_of_birth
         human.save()
-        await ctx.send(ctx.translate("profile_cleared"))
+        asyncio.gather(ctx.success())
 
     @profile.command(name = "setup")
+    @commands.max_concurrency(1, per = commands.BucketType.user)
     async def profile_setup(self, ctx, fields : commands.Greedy[str.lower]):
+        if len(fields) == 0:
+            fields = ["city", "country", "dateofbirth"]
+
         human, _ = Human.get_or_create(user_id = ctx.author.id)
 
-        if len(fields) == 0 or "city" in fields:
+        if "city" in fields:
             waiter = CityWaiter(ctx, prompt =  ctx.translate("human_city_prompt"), skippable = True)
             try:
                 city = await waiter.wait()
@@ -141,20 +148,17 @@ class Profile(commands.Cog):
             except Skipped:
                 pass
 
-        timezone_set = False
-        if len(fields) == 0 or "country" in fields:
+        if "country" in fields:
             await human.editor_for(ctx, "country")
 
-        if human.city is not None and human.country is not None:
-            city = self.bot.owm_api.by_q(human.city, human.country.alpha_2)
-            if city is not None:
-                human.timezone = str(city.timezone)
-                timezone_set = True
+        timezone = human.calculate_timezone()
+        if timezone is not None:
+            human.timezone = timezone
 
-        if not timezone_set or "timezone" in fields:
+        if "timezone" in fields:
             await human.editor_for(ctx, "timezone")
 
-        if len(fields) == 0 or "dateofbirth" in fields:
+        if "dateofbirth" in fields:
             await human.editor_for(ctx, "date_of_birth")
 
         human.save()

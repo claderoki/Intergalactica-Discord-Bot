@@ -71,6 +71,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         self.pigeon_check(ctx)
 
     @pigeon.command(name = "buy")
+    @commands.max_concurrency(1, per = commands.BucketType.user)
     async def pigeon_buy(self, ctx):
         """Buy a pigeon."""
 
@@ -92,6 +93,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "challenge", aliases = ["fight"])
+    @commands.max_concurrency(1, per = commands.BucketType.user)
     async def pigeon_challenge(self, ctx, member : discord.Member):
         """Challenge another user to a fight."""
 
@@ -197,6 +199,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         await channel.send(embed = embed)
 
     @pigeon.command(name = "date")
+    @commands.max_concurrency(1, per = commands.BucketType.user)
     async def pigeon_date(self, ctx, member : discord.Member ):
         """Have your pigeon date another pigeon"""
         if member.id == self.bot.owner_id or ctx.author.id == self.bot.owner_id:
@@ -313,6 +316,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                 return asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "mail", aliases = ["message", "send", "letter"])
+    @commands.max_concurrency(1, per = commands.BucketType.user)
     async def pigeon_mail(self, ctx, user : discord.User):
         """Send someone a pigeon letter."""
         if user.id == ctx.author.id:
