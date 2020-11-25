@@ -10,6 +10,7 @@ from discord.ext import commands
 import src.config as config
 from src.models import Settings, EmojiUsage, NamedEmbed, NamedChannel, Translation, Locale, database
 from src.discord.helpers.waiters import *
+from src.discord.errors.base import SendableException
 
 emoji_match = lambda x : [int(x) for x in re.findall(r'<a?:[a-zA-Z0-9\_]+:([0-9]+)>', x)]
 
@@ -130,11 +131,21 @@ class Management(discord.ext.commands.Cog):
         else:
             asyncio.gather(ctx.success())
 
-    @translation.command()
-    async def keys(self, ctx):
-        locale = "en_US"
+    @translation.command(name = "remove")
+    async def translation_remove(self, ctx, key, locale = "en_US"):
+        missing_translations = self.bot.get_missing_translations(locale)
+        try:
+            translation = Translation.get(message_key = key)
+        except Translation.DoesNotExist:
+            raise SendableException(ctx.translate("key_not_found"))
 
-        missing_translations = self.bot.missing_translations.get(locale, [])
+        translation.delete_instance()
+        missing_translations.add(key)
+        asyncio.gather(ctx.success())
+
+    @translation.command()
+    async def keys(self, ctx, locale = "en_US"):
+        missing_translations = self.bot.get_missing_translations(locale)
         for key in [x for x in missing_translations]:
             waiter = StrWaiter(ctx, prompt = f"Translate: {key}", max_words = None, skippable = True)
             try:

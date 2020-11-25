@@ -304,18 +304,19 @@ class Locus(commands.Bot):
         for emoji in self.guild.emojis:
             self._emoji_mapping[emoji.name] = emoji
 
-    def translate(self, key, locale = "en_US"):
+
+    def get_missing_translations(self, locale):
         if locale not in self.missing_translations:
             self.missing_translations[locale] = set()
+        return self.missing_translations[locale]
 
-        missing_translations = self.missing_translations[locale]
-
-        with database.connection_context():
-            try:
-                translation = Translation.get(locale = locale, message_key = key)
-                if key in missing_translations:
-                    missing_translations.remove(key)
-                return translation.value
-            except Translation.DoesNotExist:
-                missing_translations.add(key)
-                return key
+    def translate(self, key, locale = "en_US"):
+        missing_translations = self.get_missing_translations(locale)
+        try:
+            translation = Translation.get(locale = locale, message_key = key)
+            if key in missing_translations:
+                missing_translations.remove(key)
+            return translation.value
+        except Translation.DoesNotExist:
+            missing_translations.add(key)
+            return key
