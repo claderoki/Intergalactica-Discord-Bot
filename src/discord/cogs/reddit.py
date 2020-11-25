@@ -53,7 +53,10 @@ class RedditCog(commands.Cog, name = "Reddit"):
     @tasks.loop(hours = 1)
     async def feed_sender(self):
         for subreddit in Subreddit.select().order_by(Subreddit.guild_id.desc()):
-            await subreddit.send()
+            try:
+                await subreddit.send()
+            except Exception as e:
+                pass
 
 def setup(bot):
     bot.add_cog(RedditCog(bot))
