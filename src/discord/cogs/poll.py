@@ -56,24 +56,25 @@ class PollCog(commands.Cog, name = "Poll"):
 
             option = allowed_reactions[emoji]
 
-            user_votes = []
-            for option in poll.options:
-                vote = option.votes.where(Vote.user_id == member.id).first()
-                if vote is not None:
-                    user_votes.append(vote)
-            user_votes.sort(key = lambda x : x.voted_on)
-
-            for i in range(0, (len(user_votes)+1)-poll.max_votes_per_user):
-                vote = user_votes[i]
-                vote.delete_instance()
-
             if poll.role_id_needed_to_vote is not None:
                 role = member.guild.get_role(poll.role_id_needed_to_vote)
                 if role not in member.roles:
                     #TODO: translate!
                     return asyncio.gather(member.send(embed = Embed.error(f"To vote for this poll you need the **{role}** role.")))
 
-            vote, created = Vote.get_or_create(option = option, user_id = member.id)
+            new_vote, created = Vote.get_or_create(option = option, user_id = member.id)
+
+            votes = [new_vote]
+            for option in poll.options:
+                vote = option.votes.where(Vote.user_id == member.id).first()
+                if vote is not None:
+                    votes.append(vote)
+            votes.sort(key = lambda x : x.voted_on)
+
+            for i in range(0, (len(votes)+0)-poll.max_votes_per_user):
+                vote = votes[i]
+                vote.delete_instance()
+
 
     async def setup_poll(self, ctx, poll):
         prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
