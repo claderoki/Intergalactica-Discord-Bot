@@ -138,11 +138,11 @@ class LanguageMastery(BaseModel):
     @property
     def rank(self):
         if self.mastery <= 20:
-            return "noob"
-        if self.mastery <= 40:
             return "beginner"
+        if self.mastery <= 40:
+            return "intermediate"
         if self.mastery <= 60:
-            return "strong"
+            return "advanced"
         if self.mastery <= 80:
             return "fluent"
         else:
