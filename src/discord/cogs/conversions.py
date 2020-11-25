@@ -58,7 +58,7 @@ all_units.append('"')
 currency_converter = CurrencyConverter()
 
 class Conversions(discord.ext.commands.Cog):
-    measures = (Weight, Temperature, Distance)
+    measures = (Weight, Temperature, Distance, Volume)
     global_pattern = '([+-]?\d+(\.\d+)*)({})(?!\w)'.format("|".join(all_units + [x.lower() for x in currency_converter.currencies] ))
 
     def __init__(self, bot):
