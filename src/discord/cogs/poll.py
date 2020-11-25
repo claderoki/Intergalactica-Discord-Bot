@@ -67,11 +67,11 @@ class PollCog(commands.Cog, name = "Poll"):
             votes = [new_vote]
             for option in poll.options:
                 vote = option.votes.where(Vote.user_id == member.id).first()
-                if vote is not None:
+                if vote is not None and vote not in votes:
                     votes.append(vote)
             votes.sort(key = lambda x : x.voted_on)
 
-            for i in range(0, (len(votes)+0)-poll.max_votes_per_user):
+            for i in range(0, len(votes)-poll.max_votes_per_user):
                 vote = votes[i]
                 vote.delete_instance()
 
