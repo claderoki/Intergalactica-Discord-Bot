@@ -54,7 +54,7 @@ class ExplorationRetrieval(ActivityRetrieval):
         if self.Bonus.language in self.bonuses:
             language = self.language
             if language is not None:
-                bonus_messages.append(f"Some {self.exploration.destination.demonym()} person also taught {pigeon.gender.get_pronoun(object = True)} some {language.name}!")
+                bonus_messages.append(f"A helpful {self.exploration.destination.demonym()} person also taught {pigeon.gender.get_pronoun(object = True)} some {language.name}!")
             else:
                 bonus_messages.append(f"{pigeon.gender.get_pronoun().title()} even picked up some of the local language!")
 
