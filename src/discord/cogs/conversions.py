@@ -31,11 +31,11 @@ for equivalents in measurements:
                 else:
                     other_measurements[unit].append(other_unit)
 
-units = \
-{
-    "f" : "°F",
-    "c" : "°C",
-    "inch" : '"'
+units = {
+    "f"      : "°F",
+    "c"      : "°C",
+    "inch"   : '"',
+    "us_cup" : "cup"
 }
 
 def clean_value(value):
@@ -54,6 +54,8 @@ all_units = list(other_measurements.keys())
 all_units.append("°f")
 all_units.append("°c")
 all_units.append('"')
+all_units.append('cup')
+
 
 currency_converter = CurrencyConverter()
 
@@ -106,7 +108,7 @@ class Conversions(discord.ext.commands.Cog):
             currencies   = {}
             for match in matches:
                 value = float(match[0])
-                unit = match[-1].replace("°", "").replace('"', "in")
+                unit = match[-1].replace("°", "").replace('"', "in").replace("cup", "us_cup")
                 if unit.upper() in self.currency_converter.currencies:
                     currencies[(pycountry.currencies.get(alpha_3 = unit.upper()))] = value
                 else:
