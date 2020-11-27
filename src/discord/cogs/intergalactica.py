@@ -12,7 +12,7 @@ from src.discord.helpers.waiters import IntWaiter
 
 def is_intergalactica():
     def predicate(ctx):
-        return ctx.guild.id == Intergalactica.guild_id
+        return ctx.guild and ctx.guild.id == Intergalactica.guild_id
     return commands.check(predicate)
 
 class Intergalactica(commands.Cog):
