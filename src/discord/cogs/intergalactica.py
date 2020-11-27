@@ -18,8 +18,7 @@ def is_intergalactica():
 class Intergalactica(commands.Cog):
     guild_id = 742146159711092757
 
-    _role_ids = \
-    {
+    _role_ids = {
         "selfies" : 748566253534445568,
         "5k+"     : 778744417322139689,
         "bumper"  : 780001849335742476,
@@ -35,8 +34,7 @@ class Intergalactica(commands.Cog):
         }
     }
 
-    _channel_ids = \
-    {
+    _channel_ids = {
         "selfies"       : 744703465086779393,
         "concerns"      : 758296826549108746,
         "staff_chat"    : 750067502352171078,
