@@ -8,6 +8,7 @@ import src.config as config
 from src.models import Subreddit, database
 from src.discord.errors.base import SendableException
 from src.discord.helpers.converters import EnumConverter
+from src.discord.helpers.checks import is_tester
 
 class SubredditConverter(commands.Converter):
     @classmethod
@@ -15,7 +16,6 @@ class SubredditConverter(commands.Converter):
         return config.bot.reddit.subreddit(argument)
 
 class RedditCog(commands.Cog, name = "Reddit"):
-
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
@@ -25,7 +25,7 @@ class RedditCog(commands.Cog, name = "Reddit"):
         if self.bot.production:
             self.feed_sender.start()
 
-    @commands.has_guild_permissions(administrator = True)
+    @commands.check_any(is_tester(), commands.has_guild_permissions(administrator = True))
     @commands.group()
     async def reddit(self, ctx):
         pass
