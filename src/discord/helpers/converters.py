@@ -1,6 +1,8 @@
 import datetime
 from discord.ext import commands
 
+from src.discord.errors.base import SendableException
+
 def convert_to_date(argument):
     text = argument
 
@@ -23,10 +25,15 @@ def convert_to_date(argument):
 
     return datetime.date(year, month, day)
 
+class ArgumentNotInEnum(commands.errors.BadArgument): pass
 
 class EnumConverter(commands.Converter):
     def __init__(self, enum):
         self.enum = enum
 
     async def convert(self, ctx, argument):
-        return self.enum[argument]
+        if hasattr(self.enum, argument):
+            return self.enum[argument]
+        else:
+            lines = "`, `".join(x.name for x in self.enum)
+            raise ArgumentNotInEnum(f"**{argument}** is not a valid argument. Valid arguments are:\n`{lines}`") from None
