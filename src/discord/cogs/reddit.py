@@ -54,8 +54,9 @@ class RedditCog(commands.Cog, name = "Reddit"):
     async def feed_sender(self):
         for subreddit in Subreddit.select().order_by(Subreddit.guild_id.desc()):
             try:
-                await subreddit.send()
+                asyncio.gather(subreddit.send())
             except Exception as e:
+                print(subreddit.id, e)
                 pass
 
 def setup(bot):

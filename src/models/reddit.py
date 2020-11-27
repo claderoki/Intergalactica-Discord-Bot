@@ -21,6 +21,10 @@ class Subreddit(BaseModel):
         new = 1
         hot = 2
 
+    class EmbedType(Enum):
+        full  = 0
+        basic = 1
+
     history_limit = 3
 
     guild_id    = peewee.BigIntegerField()
@@ -28,6 +32,7 @@ class Subreddit(BaseModel):
     subreddit   = SubredditField()
     url_history = JsonField(default = lambda : [] )
     post_type   = EnumField(PostType, default = PostType.top)
+    embed_type  = EnumField(EmbedType, default = EmbedType.full)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -45,21 +50,27 @@ class Subreddit(BaseModel):
         if post.over_18 and not self.channel.is_nsfw():
             return
 
-        embed = self.get_post_embed(post)
+        args = []
+        kwargs = {}
 
+        embed = self.get_post_embed(post)
         if embed is None:
             lines = [post.url, f"<https://reddit.com{post.permalink}>", post.title]
-            await self.channel.send("\n".join(lines))
+            args.append("\n".join(lines))
         else:
-            await self.channel.send(embed = embed)
+            kwargs["embed"] = embed
+
+        await self.channel.send(*args, **kwargs)
 
     @property
     def latest_post(self):
 
-        submissions = getattr(self.subreddit, self.post_type.name)(limit = 1)
+        submissions = getattr(self.subreddit, self.post_type.name)(limit = 5)
 
         for submission in submissions:
-            post = submission
+            if not submission.stickied:
+                post = submission
+                break
 
         if len(self.url_history) >= self.history_limit:
             self.url_history = self.url_history[-(self.history_limit-1):]
@@ -72,21 +83,28 @@ class Subreddit(BaseModel):
 
         return post
 
+    def __post_is_image(self, post):
+        if hasattr(post, "post_hint") and post.post_hint == "image":
+            return True
+        if post.url[-3:] in ("jpg", "png"):
+            return True
+        if post.url.startswith("https://imgur.com/a"):
+            post.url += ".jpg"
+            return True
+        return False
+
     def get_post_embed(self, post):
-        embed = None
+        embed = discord.Embed(color = self.bot.get_dominant_color(self.guild))
 
         if post.selftext:
-            embed = discord.Embed(description = post.selftext, color = 0x8ec07c)
-            embed.set_footer(text = post.subreddit_name_prefixed)
-            embed.set_author(name = "".join(post.title[:255]), url = post.shortlink)
-
-        elif (hasattr(post, "post_hint") and post.post_hint == "image") or post.url[-3:] in ("jpg","png") or post.url.startswith("https://imgur.com/a"):
-            if post.url.startswith("https://imgur.com/a"):
-                post.url = post.url + ".jpg"
-
-            embed = discord.Embed(color=0x8ec07c)
+            embed.description = post.selftext
+        if self.__post_is_image(post):
             embed.set_image(url = post.url)
-            embed.set_footer(text = post.subreddit_name_prefixed)
+        else:
+            return None
+
+        if self.embed_type == self.EmbedType.full:
             embed.set_author(name = "".join(post.title[:255]), url = post.shortlink)
+            embed.set_footer(text = post.subreddit_name_prefixed)
 
         return embed
