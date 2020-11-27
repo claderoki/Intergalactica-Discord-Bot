@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands, tasks
 
 import src.config as config
-if not config.bot.production:
+if not config.bot.heroku:
     import cv2
     from notifypy import Notify
 
@@ -41,7 +41,7 @@ class Personal(discord.ext.commands.Cog):
     @is_permitted()
     @commands.command(name = "notify")
     async def notify_command(self, ctx, *, message):
-        if self.bot.production:
+        if self.bot.heroku:
             return
 
         icon_path = f"{config.path}/tmp/{ctx.author.id}.png"
@@ -62,7 +62,7 @@ class Personal(discord.ext.commands.Cog):
     @is_permitted()
     @commands.command()
     async def crna(self, ctx):
-        if self.bot.production:
+        if self.bot.heroku:
             return
 
         async with ctx.typing():

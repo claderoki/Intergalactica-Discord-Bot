@@ -26,5 +26,6 @@ if service != "heroku":
 
 from src.discord.bot import Locus
 config.bot = Locus(mode)
+config.bot.heroku = service == "heroku"
 config.bot.load_all_cogs()
 config.bot.run(os.environ["discord_token"])

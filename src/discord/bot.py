@@ -62,6 +62,7 @@ class Locus(commands.Bot):
     def __init__(self, mode, prefix = "/"):
         self.mode = mode
         self.production = mode == config.Mode.production
+        self.heroku = False
 
         if not self.production:
             prefix = "."
