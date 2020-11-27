@@ -45,6 +45,7 @@ class Locus(commands.Bot):
         commands.errors.MissingPermissions,
         commands.errors.PrivateMessageOnly,
         commands.errors.NoPrivateMessage,
+        commands.errors.BadArgument,
         commands.errors.ConversionError,
         commands.errors.CommandOnCooldown,
         commands.errors.MemberNotFound,
