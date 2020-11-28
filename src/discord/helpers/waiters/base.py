@@ -128,7 +128,6 @@ class MessageWaiter(Waiter):
             else:
                 return message
 
-
 class IntWaiter(MessageWaiter):
 
     __slots__ = ("range", "min", "max")
@@ -229,9 +228,13 @@ class AttachmentWaiter(MessageWaiter):
 
     async def wait(self, store = False, raw = False):
         message = await super().wait(raw = True)
-        if not raw and store:
+        if not raw:
             attachment = message.attachments[0]
-            return await self.bot.store_file(await attachment.read(), attachment.filename)
+            if store:
+                return await self.bot.store_file(await attachment.read(), attachment.filename)
+            else:
+                return attachment.url
+
         return message
 
 class TimezoneWaiter(StrWaiter):
