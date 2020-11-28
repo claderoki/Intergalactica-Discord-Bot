@@ -17,8 +17,6 @@ class City:
         self.unit = unit
         self.__init_data(data)
 
-
-
     def __init_data(self, data):
         self.id                 = data["id"]
         self.coordinates        = Coordinate(data["coord"]["lat"], data["coord"]["lon"])
