@@ -31,6 +31,8 @@ class PollCog(commands.Cog, name = "Poll"):
 
         emoji = str(payload.emoji)
         member = payload.member
+        if member is None:
+            return
         if member.bot:
             return
 
