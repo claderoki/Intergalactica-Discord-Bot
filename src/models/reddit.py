@@ -96,7 +96,7 @@ class Subreddit(BaseModel):
     def get_post_embed(self, post):
         embed = discord.Embed(color = self.bot.get_dominant_color(self.guild))
         if post.selftext:
-            embed.description = post.selftext
+            embed.description = post.selftext[:2000]
         elif self.__post_is_image(post):
             embed.set_image(url = post.url)
         else:
