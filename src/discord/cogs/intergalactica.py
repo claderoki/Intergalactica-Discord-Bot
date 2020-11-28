@@ -62,8 +62,8 @@ class Intergalactica(commands.Cog):
             self.temp_channel_checker.start()
             self.disboard_bump_available_notifier.start()
             await asyncio.sleep( (60 * 60) * 3 )
-            self.illegal_member_notifier.start()
             self.birthday_poller.start()
+            self.illegal_member_notifier.start()
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -434,11 +434,19 @@ class Intergalactica(commands.Cog):
 
     @tasks.loop(hours = 12)
     async def birthday_poller(self):
+        now = datetime.datetime.utcnow()
+
+        query = Human.select()
+        query = query.join(Earthling, on = (Human.id == Earthling.human))
+        query = query.where(Earthling.guild_id == self.guild.id)
+        query = query.where(Human.date_of_birth != None)
+        query = query.where(Human.date_of_birth.month == now.month)
+        query = query.where(Human.date_of_birth.day == now.day)
+        query = query.order_by(Human.date_of_birth.asc())
+
         with database.connection_context():
-            for earthling in Earthling.select().where( Earthling.guild_id == self.guild_id ):
-                human = earthling.human
-                if human.birthday:
-                    await self.log("bot_commands", f"**{human.user}** {human.mention} Should be celebrating their birthday today.")
+            for human in query:
+                await self.log("bot_commands", f"**{human.user}** {human.mention} Should be celebrating their birthday today.")
 
 def member_is_legal(member):
     age_roles       = [748606669902053387,748606823229030500,748606893387153448,748606902363095206]
