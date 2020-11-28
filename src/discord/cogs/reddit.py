@@ -43,6 +43,7 @@ class RedditCog(commands.Cog, name = "Reddit"):
             post_type = post_type
         )
         await sr.send()
+        asyncio.gather(ctx.success())
 
     @reddit.command(name = "remove", aliases = ["-"])
     async def reddit_remove(self, ctx, subreddit : SubredditConverter, post_type : EnumConverter(Subreddit.PostType) = Subreddit.PostType.hot):
