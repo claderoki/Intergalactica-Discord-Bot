@@ -58,7 +58,7 @@ class RedditCog(commands.Cog, name = "Reddit"):
 
     @tasks.loop(hours = 1)
     async def feed_sender(self):
-        for subreddit in Subreddit.select().order_by(Subreddit.channel_id.desc()):
+        for subreddit in Subreddit.select().where(Subreddit.automatic == True).order_by(Subreddit.channel_id.desc()):
             try:
                 asyncio.gather(subreddit.send())
             except Exception as e:

@@ -16,7 +16,7 @@ class SubredditField(peewee.TextField):
             return config.bot.reddit.subreddit(value)
 
 class Subreddit(BaseModel):
-    history_limit = 5
+    history_limit = 15
 
     class PostType(Enum):
         top = 0
@@ -36,6 +36,7 @@ class Subreddit(BaseModel):
     post_type   = EnumField              (PostType, null = False, default = PostType.top)
     embed_type  = EnumField              (EmbedType, null = False, default = EmbedType.full)
     dm          = peewee.BooleanField    (null = False, default = False)
+    automatic   = peewee.BooleanField    (null = False, default = True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -44,6 +45,10 @@ class Subreddit(BaseModel):
     @property
     def channel(self):
         return self.bot.get_channel(self.channel_id)
+
+    @property
+    def sendable(self):
+        return self.channel if not self.dm else self.user
 
     async def send(self):
         post = self.latest_post
@@ -61,7 +66,7 @@ class Subreddit(BaseModel):
         else:
             kwargs["embed"] = embed
 
-        await (self.channel if not self.dm else self.user).send(*args, **kwargs)
+        await self.sendable.send(*args, **kwargs)
 
     @property
     def latest_post(self):
