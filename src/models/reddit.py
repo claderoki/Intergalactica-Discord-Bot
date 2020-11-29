@@ -16,6 +16,8 @@ class SubredditField(peewee.TextField):
             return config.bot.reddit.subreddit(value)
 
 class Subreddit(BaseModel):
+    history_limit = 5
+
     class PostType(Enum):
         top = 0
         new = 1
@@ -25,29 +27,28 @@ class Subreddit(BaseModel):
         full  = 0
         basic = 1
 
-    history_limit = 3
 
-    guild_id    = peewee.BigIntegerField()
-    channel_id  = peewee.BigIntegerField()
-    subreddit   = SubredditField()
-    url_history = JsonField(default = lambda : [] )
-    post_type   = EnumField(PostType, default = PostType.top)
-    embed_type  = EnumField(EmbedType, default = EmbedType.full)
+    guild_id    = peewee.BigIntegerField (null = True)
+    channel_id  = peewee.BigIntegerField (null = True)
+    user_id     = peewee.BigIntegerField (null = False)
+    subreddit   = SubredditField         (null = False)
+    url_history = JsonField              (null = False, default = lambda : [] )
+    post_type   = EnumField              (PostType, null = False, default = PostType.top)
+    embed_type  = EnumField              (EmbedType, null = False, default = EmbedType.full)
+    dm          = peewee.BooleanField    (null = False, default = False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._subreddit = None
 
-    async def send(self):
-        if self.guild is None or self.channel is None:
-            return
+    @property
+    def channel(self):
+        return self.bot.get_channel(self.channel_id)
 
+    async def send(self):
         post = self.latest_post
 
         if post is None:
-            return
-
-        if post.over_18 and not self.channel.is_nsfw():
             return
 
         args = []
@@ -60,28 +61,28 @@ class Subreddit(BaseModel):
         else:
             kwargs["embed"] = embed
 
-        await self.channel.send(*args, **kwargs)
+        await (self.channel if not self.dm else self.user).send(*args, **kwargs)
 
     @property
     def latest_post(self):
-
         submissions = getattr(self.subreddit, self.post_type.name)(limit = 5)
 
         for submission in submissions:
-            if not submission.stickied:
-                post = submission
-                break
+            if submission.stickied:
+                continue
 
-        if len(self.url_history) >= self.history_limit:
-            self.url_history = self.url_history[-(self.history_limit-1):]
+            if submission.over_18 and not self.channel.is_nsfw():
+                continue
 
-        if post.url in self.url_history:
-            return None
+            if len(self.url_history) >= self.history_limit:
+                self.url_history = self.url_history[-(self.history_limit-1):]
 
-        self.url_history.append(post.url)
-        self.save(only = [Subreddit.url_history])
+            if submission.url in self.url_history:
+                continue
 
-        return post
+            self.url_history.append(submission.url)
+            self.save(only = [Subreddit.url_history])
+            return submission
 
     def __post_is_image(self, post):
         if hasattr(post, "post_hint") and post.post_hint == "image":

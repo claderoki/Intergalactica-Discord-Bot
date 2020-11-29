@@ -23,6 +23,7 @@ class RedditCog(commands.Cog, name = "Reddit"):
     @commands.Cog.listener()
     async def on_ready(self):
         if self.bot.production:
+            await asyncio.sleep(60 * 60)
             self.feed_sender.start()
 
     @commands.check_any(is_tester(), commands.has_guild_permissions(administrator = True))
@@ -36,13 +37,17 @@ class RedditCog(commands.Cog, name = "Reddit"):
         if Subreddit.select().where(Subreddit.channel_id == ctx.channel.id, Subreddit.subreddit == subreddit).count() > 0:
             raise SendableException(ctx.translate("subreddit_already_added"))
 
-        sr = Subreddit.create(
-            guild_id = ctx.guild.id,
+        guild_id = ctx.guild.id if ctx.guild else None
+        subreddit = Subreddit.create(
+            guild_id   = guild_id,
             channel_id = ctx.channel.id,
-            subreddit = subreddit,
-            post_type = post_type
+            user_id    = ctx.author.id,
+            subreddit  = subreddit,
+            post_type  = post_type,
+            dm         = ctx.guild is None
         )
-        await sr.send()
+
+        await subreddit.send()
         asyncio.gather(ctx.success())
 
     @reddit.command(name = "remove", aliases = ["-"])
@@ -53,7 +58,7 @@ class RedditCog(commands.Cog, name = "Reddit"):
 
     @tasks.loop(hours = 1)
     async def feed_sender(self):
-        for subreddit in Subreddit.select().order_by(Subreddit.guild_id.desc()):
+        for subreddit in Subreddit.select().order_by(Subreddit.channel_id.desc()):
             try:
                 asyncio.gather(subreddit.send())
             except Exception as e:
