@@ -47,7 +47,7 @@ class Management(discord.ext.commands.Cog):
 
         emoji = payload.emoji
 
-        if payload.member.bot or emoji.id is None:
+        if payload.member is None or payload.member.bot or emoji.id is None:
             return
 
         member = payload.member
