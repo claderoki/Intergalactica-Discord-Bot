@@ -61,14 +61,32 @@ class Intergalactica(commands.Cog):
         if self.bot.production:
             self.temp_channel_checker.start()
             self.disboard_bump_available_notifier.start()
+            self.introduction_purger.start()
             await asyncio.sleep( (60 * 60) * 3 )
             self.birthday_poller.start()
             self.illegal_member_notifier.start()
+
+    async def on_milkyway_purchased(self, channel, member):
+        item = Item.get(name = "Milky way")
+        human, _ = Human.get_or_create(user_id = member.id)
+        human.add_item(item, 1)
+
+        embed = discord.Embed(color = self.bot.get_dominant_color(None))
+        embed.description = "Good job in purchasing a milky way.\nInstructions:\n`/milkyway create` or `/milkyway extend #channel`"
+        asyncio.gather(channel.send(embed = embed))
 
     @commands.Cog.listener()
     async def on_message(self, message):
         if not self.bot.production:
             return
+
+        if message.author.id == 172002275412279296: # tatsu
+            if len(message.embeds) > 0:
+                embed = message.embeds[0]
+                if embed.title == "Your Purchase: Milky Way" and embed.description == "Thank you for purchasing the Milky Way! Don't forget to DM a mod about your channel vision. Have fun!":
+                    await self.on_milkyway_purchased(message.channel, message.author)
+                    return asyncio.gather(message.delete())
+
         if message.content != "!d bump":
             return
         disboard_response = await self.bot.wait_for("message", check = lambda x : x.author.id == 302050872383242240 and x.channel.id == message.channel.id)
@@ -143,6 +161,7 @@ class Intergalactica(commands.Cog):
         temp_channel.status = TemporaryChannel.Status.accepted
         temp_channel.save()
         await temp_channel.user.send(f"Your request for a milkyway channel was accepted.")
+        asyncio.gather(ctx.success())
 
     @commands.has_guild_permissions(administrator = True)
     @milkyway.command(name = "deny")
@@ -160,6 +179,7 @@ class Intergalactica(commands.Cog):
         human_item.save()
         temp_channel.save()
         await temp_channel.user.send(f"Your request for a milkyway channel was denied. Reason: `{temp_channel.deny_reason}`")
+        asyncio.gather(ctx.success())
 
     @milkyway.command(name = "create")
     async def milkyway_create(self, ctx):
@@ -308,16 +328,16 @@ class Intergalactica(commands.Cog):
         if not allowed:
             raise SendableException("You are not allowed to run this command yet.")
 
-    @role.command(aliases = ["colour"])
-    async def color(self, ctx, color : discord.Color = None):
+    @role.command(name = "color", aliases = ["colour"])
+    async def role_color(self, ctx, color : discord.Color = None):
         if color is None:
             color = self.bot.get_random_color()
 
         await self.edit_personal_role(ctx, color = color)
 
     @commands.is_owner()
-    @role.command()
-    async def link(self, ctx, role : discord.Role):
+    @role.command(name = "link")
+    async def role_link(self, ctx, role : discord.Role):
         members = role.members
 
         if len(members) > 3:
@@ -330,8 +350,8 @@ class Intergalactica(commands.Cog):
 
             await ctx.send(ctx.translate("roles_linked"))
 
-    @role.command()
-    async def name(self, ctx, *, name : str):
+    @role.command(name = "name")
+    async def role_name(self, ctx, *, name : str):
         await self.edit_personal_role(ctx, name = name)
 
     @role.command(name = "delete")
@@ -349,7 +369,7 @@ class Intergalactica(commands.Cog):
 
     @role.command(name = "reset")
     @commands.is_owner()
-    async def reset_roles(self, ctx):
+    async def role_reset(self, ctx):
         roles_deleted = []
         for earthling in Earthling:
             if earthling.personal_role_id is not None:
@@ -368,11 +388,6 @@ class Intergalactica(commands.Cog):
     async def getembed(self, ctx, numbers : commands.Greedy[int] = None):
         embed = self.embed_from_name(ctx.invoked_with, numbers)
         await ctx.send(embed = embed)
-
-    async def introductions_to_purge(self):
-        async for message in self.get_channel("introductions").history(limit=200):
-            if isinstance(message.author, discord.User):
-                yield message
 
     def illegal_member_iterator(self):
         for member in self.guild.members:
@@ -410,20 +425,28 @@ class Intergalactica(commands.Cog):
 
     @tasks.loop(hours = 12)
     async def introduction_purger(self):
-        return
         tasks = []
-        async for introduction in self.introductions_to_purge():
+        total_messages = 0
+        messages_to_remove = []
+
+        async for introduction in self.get_channel("introductions").history(limit=200):
+            if isinstance(introduction.author, discord.User):
+                messages_to_remove.append(introduction)
+            total_messages += 1
+
+        if len(messages_to_remove) >= (total_messages//2):
+            return
+
+        for introduction in messages_to_remove:
             embed = discord.Embed(
                 color = self.bot.get_dominant_color(self.guild),
                 title = f"Purged: Introduction by {introduction.author}",
-                description = introduction.content)
+                description = introduction.content
+            )
             tasks.append(self.log("logs", embed = embed))
             tasks.append(introduction.delete())
 
-        if len(tasks) > 3*2:
-            pass
-        else:
-            asyncio.gather(*tasks)
+        asyncio.gather(*tasks)
 
     @tasks.loop(hours = 24)
     async def illegal_member_notifier(self):
