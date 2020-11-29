@@ -10,12 +10,14 @@ from measurement.utils import guess
 from measurement.measures import Distance, Temperature, Volume, Weight
 
 import src.config as config
+from src.discord.helpers.currency_converter_mappings import mapping
 from src.discord.helpers.converters import convert_to_time
 from src.models import Human, database
 
+currency_converter = CurrencyConverter()
+
 class Conversion:
     pass
-
 class CurrencyConversion(Conversion):
     pass
 class TimezoneConversion(Conversion):
@@ -44,7 +46,10 @@ for equivalents in measurements:
                 else:
                     other_measurements[unit].append(other_unit)
 
-currency_symbols = {"usd": "$", "gbp": "£", "eur": "€"}
+currency_symbols = {}
+for alpha_3, symbol in mapping.items():
+    if alpha_3 in currency_converter.currencies:
+        currency_symbols[alpha_3.lower()] = symbol
 
 units = {
     "f"      : "°F",
@@ -52,8 +57,8 @@ units = {
     "inch"   : '"',
     "us_cup" : "cup",
 }
-for alpha_2, symbol in currency_symbols.items():
-    units[alpha_2] = symbol
+for alpha_3, symbol in currency_symbols.items():
+    units[alpha_3] = symbol
 
 def clean_value(value):
     return int(value) if value % 1 == 0 else round(value, 2)
@@ -73,8 +78,6 @@ all_units.append("°c")
 all_units.append('"')
 all_units.append('cup')
 
-currency_converter = CurrencyConverter()
-
 class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
     measures = (Weight, Temperature, Distance, Volume)
     time_format = "%H:%M (%I%p)"
@@ -90,7 +93,7 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
             else:
                 currency_regex_symbols.append(symbol)
 
-        for  currency in currency_converter.currencies:
+        for currency in currency_converter.currencies:
             _units.append(currency.lower())
         _units += currency_regex_symbols
 
@@ -122,7 +125,7 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
                         continue
                     values.append(f"{other.name} {converted}")
                 if len(values) > 0:
-                    embed.add_field(name = currency.name, value = "\n".join(values))
+                    embed.add_field(name = f"{currency.name} ({currencies[currency]})", value = "\n".join(values))
         if len(embed.fields) > 0:
             return embed
 
@@ -134,25 +137,22 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
             for match in matches:
                 value = float(match[0])
                 unit = match[-1]
+                aliases_found = False
                 for _unit, alias in units.items():
                     if alias.lower() == unit:
-                        unit = _unit
-                cleaned_matches.append({"value" : value, "unit" : unit})
+                        aliases_found = True
+                        cleaned_matches.append({"value" : value, "unit" : _unit})
+                if not aliases_found:
+                    cleaned_matches.append({"value" : value, "unit" : unit})
 
         matches = re.findall(self.currency_pattern, content)
         if matches:
             for match in matches:
                 symbol = match[0]
                 value = match[1]
-                if symbol == "$":
-                    cleaned_matches.append({"value" : value, "unit" : "usd"})
-                    cleaned_matches.append({"value" : value, "unit" : "cad"})
-                else:
-                    for alpha_2, _symbol in currency_symbols.items():
-                        if symbol == _symbol:
-                            unit = alpha_2.lower()
-                            break
-                    cleaned_matches.append({"value" : value, "unit" : unit})
+                for alpha_2, _symbol in currency_symbols.items():
+                    if symbol == _symbol:
+                        cleaned_matches.append({"value" : value, "unit" : alpha_2.lower()})
 
         return cleaned_matches
 
@@ -199,42 +199,43 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
 
                     embed = discord.Embed(color = self.bot.get_dominant_color(message.guild))
                     for timezone, time in times.items():
-                        embed.add_field(name = timezone.upper(), value = time.strftime("%H:%M"))
+                        embed.add_field(name = timezone.upper(), value = time.strftime(self.time_format))
                     asyncio.gather(message.channel.send(embed = embed))
 
         else:
-            time = convert_to_time(message.content.lower())
-            if time is not None:
-                human, _ = Human.get_or_create(user_id = message.author.id)
-                if human.timezone is not None:
-                    tz = pytz.timezone(human.timezone)
-                    local_time = tz.localize(datetime.datetime(2020,11,28, hour = time.hour, minute = time.minute))
-                    users_added = [human.user_id]
+            pass
+    #         time = convert_to_time(message.content.lower())
+    #         if time is not None:
+    #             human, _ = Human.get_or_create(user_id = message.author.id)
+    #             if human.timezone is not None:
+    #                 tz = pytz.timezone(human.timezone)
+    #                 local_time = tz.localize(datetime.datetime(2020,11,28, hour = time.hour, minute = time.minute))
+    #                 users_added = [human.user_id]
 
-                    embed = discord.Embed(color = self.bot.get_dominant_color(None))
-                    embed.title = f"{time.strftime(self.time_format)} for {message.author}"
-                    embed.set_footer(text = "React to show your time.")
-                    embed_message = await message.channel.send(embed = embed)
-                    try:
-                        await self.bot.wait_for("reaction_add", timeout = 360, check = self.__check(embed_message, local_time, users_added))
-                    except asyncio.TimeoutError:
-                        asyncio.gather(embed_message.clear_reactions())
+    #                 embed = discord.Embed(color = self.bot.get_dominant_color(None))
+    #                 embed.title = f"{time.strftime(self.time_format)} for {message.author}"
+    #                 embed.set_footer(text = "React to show your time.")
+    #                 embed_message = await message.channel.send(embed = embed)
+    #                 try:
+    #                     await self.bot.wait_for("reaction_add", timeout = 360, check = self.__check(embed_message, local_time, users_added))
+    #                 except asyncio.TimeoutError:
+    #                     asyncio.gather(embed_message.clear_reactions())
 
-    def __check(self, message, local_time, users_added):
-        emoji = "✅"
-        asyncio.gather(message.add_reaction(emoji))
+    # def __check(self, message, local_time, users_added):
+    #     emoji = "✅"
+    #     asyncio.gather(message.add_reaction(emoji))
 
-        def _check(reaction, user):
-            if str(reaction.emoji) == emoji and reaction.message.id == message.id and user.id not in users_added:
-                human, _ = Human.get_or_create(user_id = user.id)
-                if human.timezone is not None:
-                    time = local_time.astimezone(pytz.timezone(human.timezone))
-                    embed = message.embeds[0]
-                    embed.add_field(name = f"{human.user}", value = time.strftime(self.time_format))
-                    asyncio.gather(message.edit(embed = embed))
-                    users_added.append(user.id)
+    #     def _check(reaction, user):
+    #         if str(reaction.emoji) == emoji and reaction.message.id == message.id and user.id not in users_added:
+    #             human, _ = Human.get_or_create(user_id = user.id)
+    #             if human.timezone is not None:
+    #                 time = local_time.astimezone(pytz.timezone(human.timezone))
+    #                 embed = message.embeds[0]
+    #                 embed.add_field(name = f"{human.user}", value = time.strftime(self.time_format))
+    #                 asyncio.gather(message.edit(embed = embed))
+    #                 users_added.append(user.id)
 
-        return _check
+    #     return _check
 
 
 def setup(bot):
