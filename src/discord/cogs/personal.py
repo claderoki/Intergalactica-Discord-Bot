@@ -7,6 +7,8 @@ import discord
 from discord.ext import commands, tasks
 
 import src.config as config
+from src.models import database, Subreddit
+
 if not config.bot.heroku:
     import cv2
     from notifypy import Notify
@@ -26,6 +28,7 @@ class Personal(discord.ext.commands.Cog):
     async def on_ready(self):
         self.user = self.bot.get_user(self.user_id)
         if self.bot.production:
+            self.free_games_notifier.start()
             await asyncio.sleep(60 * 60)
             self.water_reminder.start()
 
@@ -98,6 +101,23 @@ class Personal(discord.ext.commands.Cog):
             channel = self.bot.get_channel(755895328745455746)
             message = random.choice(messages).format(mention = self.user.mention)
             asyncio.gather(channel.send(message))
+
+    @tasks.loop(minutes = 1)
+    async def free_games_notifier(self):
+        with database.connection_context():
+            for subreddit in Subreddit.select().where(Subreddit.subreddit == self.bot.reddit.subreddit("GameDealsFree")):
+                post = subreddit.latest_post
+
+                if post is None:
+                    return
+
+                id = post.url.split("comments/")[1].split("/")[0]
+                submission = self.bot.reddit.submission(id)
+
+                embed = discord.Embed(color = self.bot.get_dominant_color(None))
+                embed.title = submission.title
+                embed.description = submission.url
+                await subreddit.sendable.send(embed = embed)
 
 def setup(bot):
     bot.add_cog(Personal(bot))
