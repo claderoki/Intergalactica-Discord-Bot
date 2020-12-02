@@ -65,8 +65,9 @@ class Subreddit(BaseModel):
             args.append("\n".join(lines))
         else:
             kwargs["embed"] = embed
-
-        await self.sendable.send(*args, **kwargs)
+        sendable = self.sendable
+        if sendable is not None:
+            await self.sendable.send(*args, **kwargs)
 
     @property
     def latest_post(self):
@@ -76,8 +77,8 @@ class Subreddit(BaseModel):
             if submission.stickied:
                 continue
 
-            if submission.over_18 and not self.channel.is_nsfw():
-                continue
+            # if submission.over_18 and not self.channel.is_nsfw():
+            #     continue
 
             if len(self.url_history) >= self.history_limit:
                 self.url_history = self.url_history[-(self.history_limit-1):]
