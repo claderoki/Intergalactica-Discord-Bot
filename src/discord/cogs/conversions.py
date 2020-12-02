@@ -48,6 +48,8 @@ for equivalents in measurements:
 
 currency_symbols = {}
 for alpha_3, symbol in mapping.items():
+    if symbol == "$":
+        continue
     if alpha_3 in currency_converter.currencies:
         currency_symbols[alpha_3.lower()] = symbol
 
