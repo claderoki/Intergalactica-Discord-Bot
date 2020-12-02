@@ -330,6 +330,9 @@ class Intergalactica(commands.Cog):
 
     @role.command(name = "color", aliases = ["colour"])
     async def role_color(self, ctx, color : discord.Color = None):
+        if ctx.author.id == 355186573119324161:
+            return
+
         if color is None:
             color = self.bot.get_random_color()
 
