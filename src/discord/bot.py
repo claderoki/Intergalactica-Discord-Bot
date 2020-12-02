@@ -207,7 +207,7 @@ class Locus(commands.Bot):
             "pigeon",
         ]
 
-        if True:
+        if False:
             cogs.append("personal")
         if True:
             cogs.append("intergalactica")
