@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands, tasks
 
 import src.config as config
-from src.models import database, Subreddit
+from src.models import database, Subreddit, Location
 
 if not config.bot.heroku:
     import cv2
@@ -59,6 +59,19 @@ class Personal(discord.ext.commands.Cog):
         notification.application_name = None
         notification.send(block = False)
         asyncio.gather(ctx.send("Sent!"))
+
+    @commands.dm_only()
+    @is_permitted()
+    @commands.command()
+    async def gps(self, ctx):
+        last_location = Location.select().where(Location.name == "Clark").order_by(Location.created_on.desc()).first()
+        url = last_location.google_maps_url
+
+        embed = discord.Embed(color = self.bot.get_dominant_color(None))
+        embed.description = f"[Google maps url]({url})"
+        embed.set_footer(text = "Last seen at")
+        embed.timestamp = last_location.created_on
+        asyncio.gather(ctx.send(embed = embed))
 
     @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
     @commands.dm_only()
