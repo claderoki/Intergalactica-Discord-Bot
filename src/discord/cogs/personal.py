@@ -30,7 +30,7 @@ class Personal(discord.ext.commands.Cog):
         if self.bot.production:
             self.free_games_notifier.start()
             await asyncio.sleep(60 * 60)
-            self.water_reminder.start()
+            # self.water_reminder.start()
 
     def notify(self, block = True, **kwargs):
         notification = Notify()
@@ -102,23 +102,24 @@ class Personal(discord.ext.commands.Cog):
             text = "empty"
         await self.user.send(text)
 
-    @tasks.loop(hours = 1)
-    async def water_reminder(self):
-        if datetime.datetime.utcnow().hour not in range(16, 23):
-            messages = [
-                "Hey {mention}! Drink some water right now!",
-                "Hello, {mention}. Might I interest you in some water?",
-                "Hi there, {mention}. I believe it is time for you to drink some liquid.",
-                "Ah, I didn't see you there, {mention}. Greetings. Have you drank water yet?",
-            ]
-            channel = self.bot.get_channel(755895328745455746)
-            message = random.choice(messages).format(mention = self.user.mention)
-            asyncio.gather(channel.send(message))
+    # @tasks.loop(hours = 1)
+    # async def water_reminder(self):
+    #     if datetime.datetime.utcnow().hour not in range(16, 23):
+    #         messages = [
+    #             "Hey {mention}! Drink some water right now!",
+    #             "Hello, {mention}. Might I interest you in some water?",
+    #             "Hi there, {mention}. I believe it is time for you to drink some liquid.",
+    #             "Ah, I didn't see you there, {mention}. Greetings. Have you drank water yet?",
+    #         ]
+    #         channel = self.bot.get_channel(755895328745455746)
+    #         message = random.choice(messages).format(mention = self.user.mention)
+    #         asyncio.gather(channel.send(message))
 
     @tasks.loop(minutes = 1)
     async def free_games_notifier(self):
         with database.connection_context():
-            for subreddit in Subreddit.select().where(Subreddit.subreddit == self.bot.reddit.subreddit("GameDealsFree")):
+            #  == self.bot.reddit.subreddit("GameDealsFree")
+            for subreddit in Subreddit.select().where(Subreddit.automatic == False):
                 post = subreddit.latest_post
 
                 if post is None:
