@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands, tasks
 
 from src.discord.errors.base import SendableException
-from src.models import Poll, PollTemplate, Option, Settings, NamedEmbed, Human, Earthling, TemporaryChannel, HumanItem, database
+from src.models import Poll, PollTemplate, Option, Settings, Item, NamedEmbed, Human, Earthling, TemporaryChannel, HumanItem, database
 from src.discord.helpers.waiters import IntWaiter
 
 def is_intergalactica():
@@ -66,13 +66,14 @@ class Intergalactica(commands.Cog):
             self.birthday_poller.start()
             self.illegal_member_notifier.start()
 
-    async def on_milkyway_purchased(self, channel, member):
-        item = Item.get(name = "Milky way")
-        human, _ = Human.get_or_create(user_id = member.id)
-        human.add_item(item, 1)
+    def on_milkyway_purchased(self, channel, member, amount):
+        with database.connection_context():
+            item = Item.get(name = "Milky way")
+            human, _ = Human.get_or_create(user_id = member.id)
+            human.add_item(item, amount)
 
         embed = discord.Embed(color = self.bot.get_dominant_color(None))
-        embed.description = "Good job in purchasing a milky way.\nInstructions:\n`/milkyway create` or `/milkyway extend #channel`"
+        embed.description = f"Good job in purchasing {amount} milky way(s).\nInstructions:\n`/milkyway create` or `/milkyway extend #channel`"
         asyncio.gather(channel.send(embed = embed))
 
     @commands.Cog.listener()
@@ -83,21 +84,32 @@ class Intergalactica(commands.Cog):
         if message.author.id == 172002275412279296: # tatsu
             if len(message.embeds) > 0:
                 embed = message.embeds[0]
-                if embed.title == "Your Purchase: Milky Way" and embed.description == "Thank you for purchasing the Milky Way! Don't forget to DM a mod about your channel vision. Have fun!":
-                    await self.on_milkyway_purchased(message.channel, message.author)
-                    return asyncio.gather(message.delete())
+                if embed.title == "Purchase Successful!":
+                    field = embed.fields[0]
+                    if field.name == "You Bought" and "Milky way" in field.value:
+                        member_name = embed.footer.text.replace(" bought an item!", "")
 
-        if message.content != "!d bump":
-            return
-        disboard_response = await self.bot.wait_for("message", check = lambda x : x.author.id == 302050872383242240 and x.channel.id == message.channel.id)
-        embed = disboard_response.embeds[0]
-        text = embed.description
+                        class FakeCtx:
+                            pass
+                        ctx = FakeCtx()
+                        ctx.bot = self.bot
+                        ctx.guild = message.guild
+                        member = await commands.MemberConverter().convert(ctx, member_name)
 
-        if "minutes until the server can be bumped" in text:
-            minutes = int([x for x in text.split() if x.isdigit()][0])
-        elif "👍" in text or "Bump done" in text:
-            minutes = 120
-        self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = minutes)
+                        amount = int(field.value.split("`")[1])
+                        self.on_milkyway_purchased(message.channel, member, amount)
+                        return asyncio.gather(message.delete())
+
+        if message.content == "!d bump":
+            disboard_response = await self.bot.wait_for("message", check = lambda x : x.author.id == 302050872383242240 and x.channel.id == message.channel.id)
+            embed = disboard_response.embeds[0]
+            text = embed.description
+
+            if "minutes until the server can be bumped" in text:
+                minutes = int([x for x in text.split() if x.isdigit()][0])
+            elif "👍" in text or "Bump done" in text:
+                minutes = 120
+            self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = minutes)
 
     async def log(self, channel_name, content = None, **kwargs):
         channel = self.get_channel(channel_name)
@@ -236,8 +248,8 @@ class Intergalactica(commands.Cog):
     async def on_member_remove(self, member):
         await self.on_member_leave_or_join(member, "leave")
 
-    async def on_luna(self, member):
-        asyncio.gather(self.log("bot_commands", f"**{member}** {member.mention} has achieved Luna!"))
+    async def on_rank(self, member, role):
+        asyncio.gather(self.log("bot_commands", f"**{member}** {member.mention} has achieved {role.name}!"))
         role = self.guild.get_role(self._role_ids["5k+"])
         asyncio.gather(member.add_roles(role))
 
@@ -251,18 +263,14 @@ class Intergalactica(commands.Cog):
             return
 
         added_role = None
-        has_selfie_perms = None
 
         for role in after.roles:
             if role not in before.roles:
                 added_role = role
-            if role.id == self._role_ids["selfies"]:
-                has_selfie_perms = True
 
-        if added_role.id == self._role_ids["ranks"]["luna"]:
-            await self.on_luna(after)
-            if not has_selfie_perms:
-                pass #TODO: make a poll here
+        for rank_id in self._role_ids["ranks"]:
+            if added_role.id == rank_id:
+                await self.on_rank(after, added_role)
 
     def embed_from_name(self, name, indexes):
         with database.connection_context():
