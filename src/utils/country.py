@@ -3,16 +3,20 @@ import random
 from emoji import emojize
 import pycountry
 from countryinfo import CountryInfo
+from covid import Covid
 
 class CountryNotFound(Exception):
     pass
 
 class Country(CountryInfo):
-    def __init__(self, alpha_2):
-        super().__init__(alpha_2)
-        if super().name() == alpha_2:
+    def __init__(self, argument):
+        super().__init__(argument)
+        if super().name() == argument:
             raise CountryNotFound("Not found.")
-        self._country = pycountry.countries.get(alpha_2 = alpha_2)
+
+        self._country = pycountry.countries.get(alpha_2 = self.iso()["alpha2"])
+
+        self._covid_status = None
 
     def name(self):
         return self._country.name
@@ -24,6 +28,14 @@ class Country(CountryInfo):
         return [pycountry.currencies.get(alpha_3 = x) for x in super().currencies()]
 
     @property
+    def covid_status(self):
+        if self._covid_status is None:
+            covid = Covid()
+            self._covid_status = covid.get_status_by_country_name(self.name())
+
+        return self._covid_status
+
+    @property
     def alpha_2(self):
         return self.iso()["alpha2"]
 
@@ -33,6 +45,14 @@ class Country(CountryInfo):
     @classmethod
     def from_alpha_2(cls, alpha_2):
         return cls(alpha_2)
+
+    @classmethod
+    def from_alpha_3(cls, alpha_3):
+        return cls(alpha_3)
+
+    @classmethod
+    def from_name(cls, name):
+        return cls(name)
 
     def flag(self):
         return f"https://www.countryflags.io/{self.alpha_2.lower()}/flat/64.png"
@@ -55,5 +75,5 @@ class Country(CountryInfo):
         return cls.from_alpha_2(alpha_2)
 
 if __name__ == "__main__":
-    country = Country.from_alpha_2("efw")
-    print(country.name())
+    country = Country.from_alpha_2("nl")
+    print(country.covid_status)

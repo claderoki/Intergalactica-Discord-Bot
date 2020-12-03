@@ -205,6 +205,7 @@ class Locus(commands.Bot):
             "admin",
             "prank",
             "pigeon",
+            "covid",
         ]
 
         if False:
@@ -266,7 +267,8 @@ class Locus(commands.Bot):
                 settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
                 self._locales[ctx.guild.id] = settings.locale.name
 
-        ctx.translate = lambda x: self.translate(x, self._locales.get(ctx.get_id(ctx.guild), "en_US"))
+        ctx.locale = self._locales.get(ctx.get_id(ctx.guild), "en_US")
+        ctx.translate = lambda x: self.translate(x, ctx.locale)
 
         ctx.success = lambda: ctx.message.add_reaction("✅")
         ctx.error = lambda: ctx.message.add_reaction("❌")
@@ -306,7 +308,6 @@ class Locus(commands.Bot):
         self._emoji_mapping = {}
         for emoji in self.guild.emojis:
             self._emoji_mapping[emoji.name] = emoji
-
 
     def get_missing_translations(self, locale):
         if locale not in self.missing_translations:
