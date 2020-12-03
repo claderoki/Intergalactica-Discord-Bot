@@ -1,6 +1,7 @@
 import datetime
 from discord.ext import commands
 
+from src.utils.country import Country, CountryNotFound
 from src.discord.errors.base import SendableException
 
 def convert_to_time(argument):
@@ -30,26 +31,18 @@ def convert_to_time(argument):
     return datetime.time(hour = hour, minute = minute)
 
 def convert_to_date(argument):
-    text = argument
-
-    if text.count("-") == 2:
-        dates = [int(x) for x in text.split("-")]
-    elif text.count("/") == 2:
-        dates = [int(x) for x in text.split("/")]
-    elif text == "today":
-        return datetime.datetime.now().date().strftime("%Y-%m-%d")
+    if argument.count("-") == 2:
+        year, month, day = [int(x) for x in argument.split("-")]
+    elif argument.count("/") == 2:
+        year, month, day = [int(x) for x in argument.split("/")]
+    elif argument == "today":
+        return datetime.datetime.utcnow().date()
     else:
         return None
 
-    if dates[1] > 12:
-        return None
+    date = datetime.date(year, month, day)
 
-    if len(str(dates[0])) == 4:
-        year,month,day = dates
-    else:
-        day,month,year = dates
-
-    return datetime.date(year, month, day)
+    return date
 
 class ArgumentNotInEnum(commands.errors.BadArgument): pass
 
@@ -63,3 +56,18 @@ class EnumConverter(commands.Converter):
         else:
             lines = "`, `".join(x.name for x in self.enum)
             raise ArgumentNotInEnum(f"**{argument}** is not a valid argument. Valid arguments are:\n`{lines}`") from None
+
+class CountryConverter(commands.Converter):
+    @classmethod
+    async def convert(cls, ctx, argument):
+        if len(argument) == 2:
+            country = Country.from_alpha_2(argument.upper())
+        elif len(argument) == 3:
+            country = Country.from_alpha_3(argument.upper())
+        else:
+            country = Country.from_name(argument.title())
+
+        if country is None:
+            raise ConversionFailed("Country not found.")
+
+        return country
