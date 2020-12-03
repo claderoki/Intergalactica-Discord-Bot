@@ -259,7 +259,7 @@ class Profile(commands.Cog):
         item.save()
         await ctx.send("OK")
 
-    @commands.is_owner()
+    @commands.has_guild_permissions(administrator = True)
     @item.command(name = "give")
     async def item_give(self, ctx, member : discord.Member, *, name):
         if name == "":
