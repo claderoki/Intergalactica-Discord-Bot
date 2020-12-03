@@ -208,7 +208,7 @@ class Locus(commands.Bot):
             "covid",
         ]
 
-        if False:
+        if True:
             cogs.append("personal")
         if True:
             cogs.append("intergalactica")
