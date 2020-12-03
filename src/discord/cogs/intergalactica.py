@@ -80,15 +80,16 @@ class Intergalactica(commands.Cog):
     async def on_message(self, message):
         if not self.bot.production:
             return
+        if message.guild and message.guild.id != self.guild_id:
+            return
 
         if message.author.id == 172002275412279296: # tatsu
             if len(message.embeds) > 0:
                 embed = message.embeds[0]
                 if embed.title == "Purchase Successful!":
                     field = embed.fields[0]
-                    if field.name == "You Bought" and "Milky way" in field.value:
+                    if field.name == "You Bought" and "milky way" in field.value.lower():
                         member_name = embed.footer.text.replace(" bought an item!", "")
-
                         class FakeCtx:
                             pass
                         ctx = FakeCtx()
