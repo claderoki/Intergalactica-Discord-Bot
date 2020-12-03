@@ -5,7 +5,7 @@ import re
 import pytz
 import discord
 
-from src.utils.country import Country
+from src.utils.country import Country, CountryNotFound
 import src.config as config
 from src.discord.helpers.embed import Embed
 
@@ -253,19 +253,12 @@ class TimezoneWaiter(StrWaiter):
 
 class CountryWaiter(StrWaiter):
     def __init__(self, ctx, **kwargs):
-        super().__init__(ctx, min_length = 2, max_length = 3, **kwargs)
-
-    @property
-    def instructions(self):
-        return "NL / NLD"
+        super().__init__(ctx, **kwargs)
 
     def convert(self, argument):
-        if len(argument) not in (2,3):
-            raise ConversionFailed("Message needs to be a country code.")
-
-        country = Country.from_alpha_2(argument.upper())
-
-        if country is None:
+        try:
+            country = Country(argument.upper())
+        except CountryNotFound:
             raise ConversionFailed("Country not found.")
 
         return country
@@ -416,7 +409,6 @@ class DateWaiter(StrWaiter):
             return datetime.datetime.strptime(year + month + day,"%Y%m%d").date()
         except ValueError:
             raise ConversionFailed("Message needs to be a date: YYYY-MM-DD.")
-
 
     def check(self, message):
         if not super().check(message):

@@ -37,6 +37,7 @@ class Human(BaseModel):
         indexes = (
             (('user_id',), True),
         )
+
     @property
     def all_currencies(self):
         currencies = set()
