@@ -37,7 +37,10 @@ class PollCog(commands.Cog, name = "Poll"):
             return
 
         channel = self.bot.get_channel(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
+        try:
+            message = await channel.fetch_message(payload.message_id)
+        except discord.errors.NotFound:
+            return
 
         if not message.author.bot:
             return
