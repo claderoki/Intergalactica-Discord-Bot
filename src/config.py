@@ -7,8 +7,8 @@ class Mode(Enum):
     development = 2
 
 
-path = __file__.replace("/src/config.py", "")
-path = path.replace("\\src\\config.py", "")
+path = __file__.replace("\\", "/").replace("/src/config.py", "")
+
 bot = None
 
 xp_timeout = 120
