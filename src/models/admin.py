@@ -18,4 +18,3 @@ class Location(BaseModel):
     @property
     def google_maps_url(self):
         return f"https://www.google.com/maps/search/?api=1&query={self.latitude},{self.longitude}"
-# 
