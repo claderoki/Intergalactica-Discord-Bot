@@ -268,8 +268,9 @@ class Intergalactica(commands.Cog):
         for role in after.roles:
             if role not in before.roles:
                 added_role = role
+                break
 
-        for rank_id in self._role_ids["ranks"]:
+        for rank_name, rank_id in self._role_ids["ranks"].items():
             if added_role.id == rank_id:
                 await self.on_rank(after, added_role)
 
