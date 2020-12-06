@@ -96,11 +96,11 @@ class BaseModel(peewee.Model):
         legacy_table_names = False
 
         database = peewee.MySQLDatabase(
-            os.environ["mysql_db_name"],
-            user     = os.environ["mysql_user"],
-            password = os.environ["mysql_password"],
-            host     = os.environ["mysql_host"],
-            port     = int(os.environ["mysql_port"])
+            config.environ["mysql_db_name"],
+            user     = config.environ["mysql_user"],
+            password = config.environ["mysql_password"],
+            host     = config.environ["mysql_host"],
+            port     = int(config.environ["mysql_port"])
         )
 
 class JsonField(peewee.TextField):

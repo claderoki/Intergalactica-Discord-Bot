@@ -72,12 +72,12 @@ class Locus(commands.Bot):
         intents.members = True
         super().__init__(intents = intents, command_prefix = prefix)
 
-        self.owm_api = OpenWeatherMapApi(os.environ["owm_key"])
+        self.owm_api = OpenWeatherMapApi(config.environ["owm_key"])
 
         self.reddit = praw.Reddit(
-            client_id=os.environ["reddit_client_id"],
-            client_secret=os.environ["reddit_client_secret"],
-            user_agent=os.environ["reddit_user_agent"]
+            client_id=config.environ["reddit_client_id"],
+            client_secret=config.environ["reddit_client_secret"],
+            user_agent=config.environ["reddit_user_agent"]
         )
 
         self.before_invoke(self.before_any_command)
