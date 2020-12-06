@@ -12,7 +12,7 @@ mode = config.Mode[args.mode]
 service = args.service
 
 if service == "heroku":
-    config.environ = EnvironmentalVariables.from_environ(os.environ)
+    config.environ = EnvironmentalVariables.from_environ()
 else:
     path = config.path + "/env"
     try:
