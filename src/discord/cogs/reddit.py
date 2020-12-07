@@ -31,6 +31,25 @@ class RedditCog(commands.Cog, name = "Reddit"):
     async def reddit(self, ctx):
         pass
 
+    @reddit.command(name = "list")
+    async def reddit_list(self, ctx):
+        query = Subreddit.select()
+        if isinstance(ctx.channel, discord.DMChannel):
+            query = query.where(Subreddit.dm == True)
+            query = query.where(Subreddit.user_id == ctx.author.id)
+        else:
+            query = query.where(Subreddit.channel_id == ctx.channel.id)
+        names = []
+        for subreddit in query:
+            names.append(subreddit.subreddit.display_name)
+
+        embed = discord.Embed(color = ctx.guild_color)
+        embed.title = ctx.translate("subreddit_list")
+
+        names = "\n".join(names)
+        embed.description = f"```\n{names}```"
+        asyncio.gather(ctx.send(embed = embed))
+
     @reddit.command(name = "add", aliases = ["+"])
     async def reddit_add(self, ctx, subreddit : SubredditConverter, post_type : EnumConverter(Subreddit.PostType) = Subreddit.PostType.hot):
         """Adds a subreddit to the database, this will be sent periodically to the specified channel."""
