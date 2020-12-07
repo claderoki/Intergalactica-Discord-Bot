@@ -3,7 +3,7 @@ import datetime
 
 import peewee
 
-from .base import BaseModel, EnumField
+from .base import BaseModel, EnumField, EmojiField
 
 class Prankster(BaseModel):
     class PrankType(Enum):
@@ -33,8 +33,8 @@ class Prank(BaseModel):
         return datetime.datetime.utcnow() >= self.end_date
 
 class NicknamePrank(Prank):
-    new_nickname     = peewee.TextField        (null = False)
-    old_nickname     = peewee.TextField        (null = False)
+    new_nickname     = EmojiField (null = False)
+    old_nickname     = EmojiField (null = False)
 
     async def apply(self):
         member = self.victim.member
