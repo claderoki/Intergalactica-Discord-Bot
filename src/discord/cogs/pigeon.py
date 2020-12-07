@@ -129,14 +129,14 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
     @pigeon.command(name = "languages", aliases = ["lang"])
     async def pigeon_languages(self, ctx):
-
-        embed = self.get_base_embed(ctx.guild)
-        embed.title = f"Language mastery of {ctx.pigeon.name}"
+        table = Table(padding = 0)
+        table.add_row(Row(["name", "%", "rank"], header = True))
 
         for language_mastery in ctx.pigeon.language_masteries.order_by(LanguageMastery.mastery.desc()):
-            embed.add_field(name = f"{language_mastery.language.name}", value = f"{language_mastery.mastery}% - {language_mastery.rank}")
+            values = [str(language_mastery.language.name), str(language_mastery.mastery)+"%", str(language_mastery.rank)]
+            table.add_row(Row(values))
 
-        asyncio.gather(ctx.send(embed = embed))
+        await table.to_paginator(ctx, 10).wait()
 
     @pigeon.command(name = "gender")
     async def pigeon_gender(self, ctx, gender : EnumConverter(Gender)):
