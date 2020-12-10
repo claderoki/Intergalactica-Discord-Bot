@@ -319,13 +319,15 @@ class Intergalactica(commands.Cog):
             earthling.personal_role = role
             earthling.save()
             await ctx.send(ctx.bot.translate("role_created").format(role = role))
-            await ctx.author.add_roles(role)
         else:
             role = earthling.personal_role
             await role.edit(**{attr_name : attr_value})
             msg = ctx.bot.translate(f"attr_added").format(name = "role's " + attr_name, value = attr_value)
             embed = discord.Embed(color = role.color, title = msg)
             await ctx.send(embed = embed)
+
+        await ctx.author.add_roles(role)
+
 
     @commands.group()
     @is_intergalactica()
@@ -348,6 +350,10 @@ class Intergalactica(commands.Cog):
 
         await self.edit_personal_role(ctx, color = color)
 
+    @role.command(name = "name")
+    async def role_name(self, ctx, *, name : str):
+        await self.edit_personal_role(ctx, name = name)
+
     @commands.is_owner()
     @role.command(name = "link")
     async def role_link(self, ctx, role : discord.Role):
@@ -362,10 +368,6 @@ class Intergalactica(commands.Cog):
                 human.save()
 
             await ctx.send(ctx.translate("roles_linked"))
-
-    @role.command(name = "name")
-    async def role_name(self, ctx, *, name : str):
-        await self.edit_personal_role(ctx, name = name)
 
     @role.command(name = "delete")
     async def delete_role(self, ctx):
