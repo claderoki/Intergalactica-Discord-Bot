@@ -42,7 +42,9 @@ class Prank(discord.ext.commands.Cog):
         lines = []
         for prankster in Prankster.select().where(Prankster.guild_id == ctx.guild.id).where(Prankster.enabled == True):
             lines.append(str(prankster.member))
-        asyncio.gather(ctx.send("\n".join(lines)))
+
+        lines = "\n".join(lines)
+        asyncio.gather(ctx.send(f"```\n{lines}```"))
 
     @commands.guild_only()
     @prank.command(name = "nickname", aliases = ["nick"] )
@@ -71,7 +73,7 @@ class Prank(discord.ext.commands.Cog):
         if not await waiter.wait():
             return asyncio.gather(ctx.send(ctx.translate("canceled")))
 
-        waiter = StrWaiter(ctx, max_words = None, prompt = ctx.translate("nickname_prank_prompt") )
+        waiter = StrWaiter(ctx, max_words = None, prompt = ctx.translate("nickname_prank_prompt"), max_length = 32)
         new_nickname = await waiter.wait()
 
         prankster.last_pranked = datetime.datetime.utcnow()
