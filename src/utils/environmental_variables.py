@@ -46,12 +46,3 @@ class EnvironmentalVariables(dict):
     @classmethod
     def from_environ(cls):
         return cls(os.environ)
-
-if __name__ == "__main__":
-    path = "C:/Users/Clark/Projects/Intergalactica-Discord-Bot/env2"
-    try:
-        variables = EnvironmentalVariables.from_path(path)
-    except FileNotFoundError:
-        EnvironmentalVariables.create_env_file(path)
-
-    print(variables)
