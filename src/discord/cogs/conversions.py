@@ -12,7 +12,7 @@ from measurement.measures import Distance, Temperature, Volume, Weight
 import src.config as config
 from src.discord.helpers.currency_converter_mappings import mapping
 from src.discord.helpers.converters import convert_to_time
-from src.models import Human, database
+from src.models import Human, Earthling, database
 
 currency_converter = CurrencyConverter()
 
@@ -105,7 +105,7 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
         self.bot = bot
         self.currency_converter = currency_converter
 
-    def convert(self, member, currencies, measurements):
+    async def convert(self, message, currencies, measurements):
         color = self.bot.get_dominant_color(None)
         embed = discord.Embed(color = color)
 
@@ -117,10 +117,11 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
             embed.add_field(name = clean_measurement(measurement), value = "\n".join(values))
 
         if len(currencies) > 0:
-            human, _ = Human.get_or_create(user_id = member.id)
+            human, _ = Human.get_or_create(user_id = message.author.id)
             for currency in currencies:
                 values = []
-                for other in (x for x in human.all_currencies if x.alpha_3 != currency.alpha_3):
+                all_currencies = await self.get_all_currencies(message, human)
+                for other in (x for x in all_currencies if x.alpha_3 != currency.alpha_3):
                     try:
                         converted = clean_value(self.currency_converter.convert(currencies[currency], currency.alpha_3, other.alpha_3))
                     except ValueError:
@@ -177,7 +178,7 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
                 else:
                     measurements.append(guess(value, unit, measures = self.measures))
 
-            embed = self.convert(message.author, currencies, measurements)
+            embed = await self.convert(message, currencies, measurements)
             if embed is not None:
                 asyncio.gather(message.channel.send(embed = embed))
 
@@ -204,40 +205,34 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
                         embed.add_field(name = timezone.upper(), value = time.strftime(self.time_format))
                     asyncio.gather(message.channel.send(embed = embed))
 
-        else:
-            pass
-    #         time = convert_to_time(message.content.lower())
-    #         if time is not None:
-    #             human, _ = Human.get_or_create(user_id = message.author.id)
-    #             if human.timezone is not None:
-    #                 tz = pytz.timezone(human.timezone)
-    #                 local_time = tz.localize(datetime.datetime(2020,11,28, hour = time.hour, minute = time.minute))
-    #                 users_added = [human.user_id]
+    async def get_all_currencies(self, message, human):
+        currencies = set()
 
-    #                 embed = discord.Embed(color = self.bot.get_dominant_color(None))
-    #                 embed.title = f"{time.strftime(self.time_format)} for {message.author}"
-    #                 embed.set_footer(text = "React to show your time.")
-    #                 embed_message = await message.channel.send(embed = embed)
-    #                 try:
-    #                     await self.bot.wait_for("reaction_add", timeout = 360, check = self.__check(embed_message, local_time, users_added))
-    #                 except asyncio.TimeoutError:
-    #                     asyncio.gather(embed_message.clear_reactions())
+        if message.guild is not None:
+            query = Human.select(Human.country)
+            query = query.join(Earthling, on=(Human.id == Earthling.human))
+            query = query.where(Human.country != None)
 
-    # def __check(self, message, local_time, users_added):
-    #     emoji = "✅"
-    #     asyncio.gather(message.add_reaction(emoji))
+            if True:
+                ids = set()
+                async for msg in message.channel.history(limit=20):
+                    if not msg.author.bot:
+                        ids.add(msg.author.id)
+                query = query.where(Human.user_id.in_(ids))
+            else:
+                query = query.where(Earthling.guild_id == message.guild.id)
 
-    #     def _check(reaction, user):
-    #         if str(reaction.emoji) == emoji and reaction.message.id == message.id and user.id not in users_added:
-    #             human, _ = Human.get_or_create(user_id = user.id)
-    #             if human.timezone is not None:
-    #                 time = local_time.astimezone(pytz.timezone(human.timezone))
-    #                 embed = message.embeds[0]
-    #                 embed.add_field(name = f"{human.user}", value = time.strftime(self.time_format))
-    #                 asyncio.gather(message.edit(embed = embed))
-    #                 users_added.append(user.id)
+            countries = set(x.country for x in query)
 
-    #     return _check
+            for country in countries:
+                for currency in country.currencies():
+                    if currency is not None:
+                        currencies.add(currency)
+
+        for currency in human.all_currencies:
+            currencies.add(currency)
+
+        return currencies
 
 
 def setup(bot):
