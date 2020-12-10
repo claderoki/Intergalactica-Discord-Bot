@@ -294,23 +294,26 @@ class PollCog(commands.Cog, name = "Poll"):
     @tasks.loop(minutes=2)
     async def poller(self):
         with database:
-            #TODO: due date passed in query instead.
-            for poll in Poll.select().where(Poll.ended == False):
-                if poll.due_date_passed:
+            query = Poll.select()
+            query = query.where(Poll.ended == False)
+            query = query.where(Poll.due_date <= datetime.datetime.utcnow())
+            for poll in query:
+                if poll.type == Poll.Type.bool and poll.passed:
+                    for change in poll.changes:
+                        await change.implement()
+                        change.implemented = True
+                        change.save()
 
-                    if poll.type == Poll.Type.bool and poll.passed:
-                        for change in poll.changes:
-                            await change.implement()
-                            change.implemented = True
-                            change.save()
-
-                    await poll.send_results()
-                    poll.ended = True
-                    if poll.delete_after_results:
+                await poll.send_results()
+                poll.ended = True
+                if poll.delete_after_results:
+                    try:
                         message = await poll.channel.fetch_message(poll.message_id)
                         asyncio.gather(message.delete())
+                    except:
+                        pass
 
-                    poll.save()
+                poll.save()
 
 
 def setup(bot):
