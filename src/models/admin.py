@@ -2,7 +2,7 @@ import datetime
 
 import peewee
 
-from .base import BaseModel
+from .base import BaseModel, EmojiField
 
 class SavedEmoji(BaseModel):
     name        = peewee.CharField        (null = False, unique = True)
@@ -18,3 +18,11 @@ class Location(BaseModel):
     @property
     def google_maps_url(self):
         return f"https://www.google.com/maps/place/{self.latitude}+{self.longitude}/@{self.latitude},{self.longitude},20z"
+
+class DailyReminder(BaseModel):
+    time       = peewee.TimeField       (null = False)
+    text       = EmojiField             (null = False)
+    weekend    = peewee.BooleanField    (null = True)
+    weekday    = peewee.BooleanField    (null = True)
+    user_id    = peewee.BigIntegerField (null = False)
+    last_reminded = peewee.DateField    (null = True)

@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands, tasks
 
 import src.config as config
-from src.models import database, Subreddit, Location
+from src.models import database, Subreddit, DailyReminder, Location
 
 if not config.bot.heroku:
     import cv2
@@ -23,14 +23,20 @@ class Personal(discord.ext.commands.Cog):
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
+        self._user = None
+
+    @property
+    def user(self):
+        if self._user is None:
+            self._user = self.bot.get_user(self.user_id)
+        return self._user
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.user = self.bot.get_user(self.user_id)
         if self.bot.production:
+            self.water_reminder.start()
             self.free_games_notifier.start()
             await asyncio.sleep(60 * 60)
-            # self.water_reminder.start()
 
     def notify(self, block = True, **kwargs):
         notification = Notify()
@@ -77,8 +83,12 @@ class Personal(discord.ext.commands.Cog):
     @commands.dm_only()
     @is_permitted()
     @commands.command()
-    async def crna(self, ctx):
+    async def crna(self, ctx, user : discord.User = None):
         if self.bot.heroku:
+            return
+
+        user = user or ctx.author
+        if user.id not in (ctx.bot.owner.id, ctx.cog.user_id):
             return
 
         async with ctx.typing():
@@ -91,7 +101,7 @@ class Personal(discord.ext.commands.Cog):
             cv2.imwrite(full_path, frame)
             cam.release()
             url = await self.bot.store_file(full_path, "frame.png")
-            await ctx.send(url)
+            await user.send(url)
 
     @commands.is_owner()
     @commands.dm_only()
@@ -102,23 +112,30 @@ class Personal(discord.ext.commands.Cog):
             text = "empty"
         await self.user.send(text)
 
-    # @tasks.loop(hours = 1)
-    # async def water_reminder(self):
-    #     if datetime.datetime.utcnow().hour not in range(16, 23):
-    #         messages = [
-    #             "Hey {mention}! Drink some water right now!",
-    #             "Hello, {mention}. Might I interest you in some water?",
-    #             "Hi there, {mention}. I believe it is time for you to drink some liquid.",
-    #             "Ah, I didn't see you there, {mention}. Greetings. Have you drank water yet?",
-    #         ]
-    #         channel = self.bot.get_channel(755895328745455746)
-    #         message = random.choice(messages).format(mention = self.user.mention)
-    #         asyncio.gather(channel.send(message))
+    @tasks.loop(seconds = 10)
+    async def water_reminder(self):
+        now = datetime.datetime.utcnow()
+        weekend = now.weekday() in range(5, 7)
+        weekday = not weekend
+
+        query = DailyReminder.select()
+        query = query.where(DailyReminder.time <= now.time())
+        query = query.where(DailyReminder.time.hour == now.time().hour)
+        query = query.where( (DailyReminder.weekday == weekday) | (DailyReminder.weekend == weekend) )
+        query = query.order_by(DailyReminder.time.desc())
+
+        for reminder in query:
+            if reminder.last_reminded != now.date():
+                # channel = self.bot.get_channel(784104014173962301)
+                # message = f"{reminder.user.mention} {reminder.text}"
+                asyncio.gather(reminder.user.send(reminder.text))
+                reminder.last_reminded = now.date()
+                reminder.save()
+                break
 
     @tasks.loop(minutes = 1)
     async def free_games_notifier(self):
         with database.connection_context():
-            #  == self.bot.reddit.subreddit("GameDealsFree")
             for subreddit in Subreddit.select().where(Subreddit.automatic == False):
                 post = subreddit.latest_post
 
