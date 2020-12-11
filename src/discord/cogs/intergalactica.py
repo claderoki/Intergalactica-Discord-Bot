@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import typing
 
-from emoji import emojize
+from emoji import emojize, demojize
 import discord
 from discord.ext import commands, tasks
 
@@ -105,12 +105,15 @@ class Intergalactica(commands.Cog):
             disboard_response = await self.bot.wait_for("message", check = lambda x : x.author.id == 302050872383242240 and x.channel.id == message.channel.id)
             embed = disboard_response.embeds[0]
             text = embed.description
-
+            print(":thumbs_up:" in demojize(text))
+            minutes = None
             if "minutes until the server can be bumped" in text:
                 minutes = int([x for x in text.split() if x.isdigit()][0])
-            elif "👍" in text or "Bump done" in text:
+            elif ":thumbs_up:" in demojize(text) or "Bump done" in text:
                 minutes = 120
-            self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = minutes)
+
+            if minutes is None:
+                self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = minutes)
 
     async def log(self, channel_name, content = None, **kwargs):
         channel = self.get_channel(channel_name)
