@@ -203,6 +203,7 @@ class Locus(commands.Bot):
             "ticket",
             "reddit",
             "admin",
+            "misc",
             "prank",
             "pigeon",
             "covid",
