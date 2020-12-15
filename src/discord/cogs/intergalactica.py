@@ -105,7 +105,6 @@ class Intergalactica(commands.Cog):
             disboard_response = await self.bot.wait_for("message", check = lambda x : x.author.id == 302050872383242240 and x.channel.id == message.channel.id)
             embed = disboard_response.embeds[0]
             text = embed.description
-            print(":thumbs_up:" in demojize(text))
             minutes = None
             if "minutes until the server can be bumped" in text:
                 minutes = int([x for x in text.split() if x.isdigit()][0])
