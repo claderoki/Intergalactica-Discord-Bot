@@ -144,6 +144,18 @@ class Intergalactica(commands.Cog):
         poll.save()
         return poll
 
+    @commands.command()
+    async def bumper(self, ctx):
+        role = ctx.guild.get_role(780001849335742476)
+
+        for _role in ctx.author.roles:
+            if _role == role:
+                asyncio.gather(ctx.send("The bumper role has been removed."))
+                return asyncio.gather(ctx.author.remove_roles(role))
+
+        asyncio.gather(ctx.send("The bumper role has been added."))
+        asyncio.gather(ctx.author.add_roles(role))
+
     @commands.has_guild_permissions(administrator = True)
     @commands.command()
     async def selfiepoll(self, ctx, member : discord.Member):
