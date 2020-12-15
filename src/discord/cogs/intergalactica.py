@@ -109,7 +109,7 @@ class Intergalactica(commands.Cog):
             minutes = None
             if "minutes until the server can be bumped" in text:
                 minutes = int([x for x in text.split() if x.isdigit()][0])
-            elif ":thumbs_up:" in demojize(text) or "Bump done" in text:
+            else:
                 minutes = 120
 
             if minutes is None:
