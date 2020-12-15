@@ -145,6 +145,7 @@ class Intergalactica(commands.Cog):
         return poll
 
     @commands.command()
+    @is_intergalactica()
     async def bumper(self, ctx):
         role = ctx.guild.get_role(780001849335742476)
 
