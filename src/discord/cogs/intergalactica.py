@@ -111,7 +111,7 @@ class Intergalactica(commands.Cog):
             else:
                 minutes = 120
 
-            if minutes is None:
+            if minutes is  not None:
                 self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = minutes)
 
     async def log(self, channel_name, content = None, **kwargs):
