@@ -36,7 +36,7 @@ class Personal(discord.ext.commands.Cog):
         if self.bot.production:
             self.water_reminder.start()
             self.free_games_notifier.start()
-            await asyncio.sleep(60 * 60)
+            # await asyncio.sleep(60 * 60)
 
     def notify(self, block = True, **kwargs):
         notification = Notify()
@@ -44,6 +44,16 @@ class Personal(discord.ext.commands.Cog):
             setattr(notification, key, value)
 
         notification.send(block = block)
+
+    @commands.cooldown(1, 2, type=commands.BucketType.user)
+    @commands.command()
+    @is_permitted()
+    async def ring(self, ctx):
+        if self.bot.heroku:
+            return
+
+        from playsound import playsound
+        playsound("resources/sounds/buzz.mp3")
 
     @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
     @commands.dm_only()
@@ -126,8 +136,6 @@ class Personal(discord.ext.commands.Cog):
 
         for reminder in query:
             if reminder.last_reminded != now.date():
-                # channel = self.bot.get_channel(784104014173962301)
-                # message = f"{reminder.user.mention} {reminder.text}"
                 asyncio.gather(reminder.user.send(reminder.text))
                 reminder.last_reminded = now.date()
                 reminder.save()
