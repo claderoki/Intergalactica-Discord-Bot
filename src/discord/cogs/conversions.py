@@ -128,7 +128,7 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
                         continue
                     values.append(f"{other.name} {converted}")
                 if len(values) > 0:
-                    embed.add_field(name = f"{currency.name} ({currencies[currency]})", value = "\n".join(values))
+                    embed.add_field(name = f"{currency.name} ({clean_value(currencies[currency])})", value = "\n".join(values))
         if len(embed.fields) > 0:
             return embed
 
