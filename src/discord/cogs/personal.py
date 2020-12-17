@@ -135,6 +135,8 @@ class Personal(discord.ext.commands.Cog):
 
     @tasks.loop(minutes = 1)
     async def free_games_notifier(self):
+        extra_games_channel = self.bot.get_channel(742205149862428702)
+
         with database.connection_context():
             for subreddit in Subreddit.select().where(Subreddit.automatic == False):
                 post = subreddit.latest_post
@@ -146,9 +148,14 @@ class Personal(discord.ext.commands.Cog):
                 submission = self.bot.reddit.submission(id)
 
                 embed = discord.Embed(color = self.bot.get_dominant_color(None))
-                embed.title = submission.title
+                embed.set_author(name = submission.title, url = post.url)
                 embed.description = submission.url
-                await subreddit.sendable.send(embed = embed)
+                asyncio.gather(subreddit.sendable.send(embed = embed))
+
+                if extra_games_channel is not None:
+                    asyncio.gather(extra_games_channel.send(embed = embed))
+
+
 
 def setup(bot):
     bot.add_cog(Personal(bot))
