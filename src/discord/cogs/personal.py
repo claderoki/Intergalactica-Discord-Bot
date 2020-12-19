@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands, tasks
 
 import src.config as config
-from src.models import database, Subreddit, DailyReminder, Location
+from src.models import database, Subreddit, DailyReminder, Location, PersonalQuestion
 
 if not config.bot.heroku:
     import cv2
@@ -36,7 +36,6 @@ class Personal(discord.ext.commands.Cog):
         if self.bot.production:
             self.water_reminder.start()
             self.free_games_notifier.start()
-            # await asyncio.sleep(60 * 60)
 
     def notify(self, block = True, **kwargs):
         notification = Notify()
@@ -92,14 +91,11 @@ class Personal(discord.ext.commands.Cog):
     @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
     @commands.dm_only()
     @is_permitted()
-    @commands.command()
-    async def crna(self, ctx, user : discord.User = None):
+    @commands.command(aliases = ["crna"])
+    async def cam(self, ctx):
         if self.bot.heroku:
             return
-
-        user = user or ctx.author
-        if user.id not in (ctx.bot.owner.id, ctx.cog.user_id):
-            return
+        user = self.user if ctx.invoked_with == "crna" else ctx.author
 
         async with ctx.typing():
             cam = cv2.VideoCapture(0)
@@ -112,6 +108,19 @@ class Personal(discord.ext.commands.Cog):
             cam.release()
             url = await self.bot.store_file(full_path, "frame.png")
             await user.send(url)
+
+    @commands.command()
+    @is_permitted()
+    async def question(self, ctx):
+        question = PersonalQuestion.get_random()
+        if question is None:
+            return asyncio.gather(ctx.send("None found."))
+
+        await ctx.send(embed = question.embed)
+        try:
+            self.bot.wait_for("message", check = lambda m : m.channel.id == ctx.channel.id, timeout = 30)
+        except asyncio.TimeoutError:
+            return asyncio.gather(ctx.send("Timed out"))
 
     @commands.is_owner()
     @commands.dm_only()
