@@ -265,10 +265,6 @@ class KillMessage(BaseModel):
 
     value = peewee.CharField(unique = True, max_length = 130)
 
-    @classmethod
-    def get_random(cls):
-        return cls.select().order_by(peewee.fn.Rand()).first()
-
 class Player(BaseModel):
     class Meta:
         table_name = "assassins_player"

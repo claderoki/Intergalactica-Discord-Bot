@@ -53,6 +53,10 @@ class BaseModel(peewee.Model):
             elif on_skip == "default":
                 setattr(self, getattr(self.__class__, attr).default, await waiter.wait())
 
+    @classmethod
+    def get_random(cls):
+        return cls.select().order_by(peewee.fn.Rand()).first()
+
     @property
     def bot(self):
         return config.bot
