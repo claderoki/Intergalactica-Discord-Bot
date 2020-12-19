@@ -550,8 +550,8 @@ class Intergalactica(commands.Cog):
                 await self.log("bot_commands", f"**{human.user}** {human.mention} Should be celebrating their birthday today.")
 
 def member_is_legal(member):
-    age_roles = self._role_ids["age"].values()
-    gender_roles = self._role_ids["gender"].values()
+    age_roles = Intergalactica._role_ids["age"].values()
+    gender_roles = Intergalactica._role_ids["gender"].values()
 
     has_age_role = False
     has_gender_role = False
