@@ -121,6 +121,7 @@ class RedditAdvertisement(BaseModel):
     last_advertised = peewee.DateTimeField   (null = True)
     automatic       = peewee.BooleanField    (null = False, default = False)
     guild_id        = peewee.BigIntegerField (null = False)
+    description     = peewee.TextField       (null = False)
 
     @property
     def available(self):
@@ -128,14 +129,6 @@ class RedditAdvertisement(BaseModel):
             return True
 
         return (self.last_advertised + datetime.timedelta(hours = 24)) < datetime.datetime.utcnow()
-
-    @property
-    def title(self):
-        title = []
-        title.append("☆‧͙⁺˚･༓ Welcome to Intergalactica! ༓･˚⁺‧͙☆ ")
-        title.append("We are a group for 18+ people to make authentic friendships in a non-toxic environment.")
-        title.append("We have a small but active close community and we are looking to welcome new people to join our galaxy.")
-        return " ".join(title)
 
     async def get_invite_url(self):
         for invite in await self.guild.invites():
@@ -146,7 +139,7 @@ class RedditAdvertisement(BaseModel):
         assert self.available
 
         subreddit = self.bot.reddit.subreddit("discordservers")
-        submission = subreddit.submit(self.title, url = await self.get_invite_url())
+        submission = subreddit.submit(self.description, url = await self.get_invite_url())
         self.last_advertised = datetime.datetime.utcnow()
         self.save()
         return submission
