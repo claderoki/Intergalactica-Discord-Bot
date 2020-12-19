@@ -75,9 +75,11 @@ class Locus(commands.Bot):
         self.owm_api = OpenWeatherMapApi(config.environ["owm_key"])
 
         self.reddit = praw.Reddit(
-            client_id=config.environ["reddit_client_id"],
-            client_secret=config.environ["reddit_client_secret"],
-            user_agent=config.environ["reddit_user_agent"]
+            client_id     = config.environ["reddit_client_id"],
+            client_secret = config.environ["reddit_client_secret"],
+            user_agent    = config.environ["reddit_user_agent"],
+            username      = config.environ["reddit_username"],
+            password      = config.environ["reddit_password"]
         )
 
         self.before_invoke(self.before_any_command)
@@ -284,7 +286,7 @@ class Locus(commands.Bot):
 
         if isinstance(exception, commands.errors.CommandOnCooldown):
             embed = Embed.error(f"You are on cooldown. Try again in {seconds_readable(exception.retry_after)}")
-            embed.set_footer(text = "Available again at")
+            embed.set_footer(text = ctx.translate("available_again_at"))
             embed.timestamp = datetime.datetime.utcnow() + datetime.timedelta(seconds = exception.retry_after)
             asyncio.gather(ctx.send(embed = embed))
         elif isinstance(exception, self.sendables):
