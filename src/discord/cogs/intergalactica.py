@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import typing
+import re
 
 from emoji import emojize, demojize
 import discord
@@ -47,6 +48,13 @@ class Intergalactica(commands.Cog):
         "logs"          : 745010147083944099
     }
 
+    async def get_invites(self, message):
+        regex = re.compile(r'discord(?:\.com|app\.com|\.gg)/(?:invite/)?([a-zA-Z0-9\-]{2,32})')
+
+        invites = regex.findall(message)
+        if len(invites) > 0:
+            return [await self.bot.fetch_invite(x) for x in invites]
+
     def get_channel(self, name):
         return self.bot.get_channel(self._channel_ids[name])
 
@@ -78,12 +86,27 @@ class Intergalactica(commands.Cog):
         embed.description = f"Good job in purchasing {amount} milky way(s).\nInstructions:\n`/milkyway create` or `/milkyway extend #channel`"
         asyncio.gather(channel.send(embed = embed))
 
+    def member_is_new(self, member):
+        for role in member.roles:
+            if role.id == self._role_ids["vc_access"]:
+                return False
+            if role.id == self._role_ids["5k+"]:
+                return False
+        return True
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if not self.bot.production:
             return
         if message.guild and message.guild.id != self.guild_id:
             return
+
+        invites = await self.get_invites(message.content)
+        if invites:
+            for invite in invites:
+                if invite.guild.id != message.guild.id:
+                    if self.member_is_new(message.author):
+                        await message.author.ban(reason = "Advertising")
 
         if message.author.id == 172002275412279296: # tatsu
             if len(message.embeds) > 0:
