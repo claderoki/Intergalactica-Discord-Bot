@@ -160,8 +160,8 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
 
     @discord.ext.commands.Cog.listener()
     async def on_message(self, message):
-        # if message.author.bot or not self.bot.production:
-        #     return
+        if message.author.bot or not self.bot.production:
+            return
 
         if "http" in message.content:
             return
