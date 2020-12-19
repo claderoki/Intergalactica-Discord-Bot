@@ -7,6 +7,7 @@ from discord.ext import commands, tasks
 import src.config as config
 from src.models import Human, Prankster, NicknamePrank, database
 from src.discord.errors.base import SendableException
+import src.discord.helpers.pretty as pretty
 from src.discord.helpers.waiters import StrWaiter, BoolWaiter
 
 class Prank(discord.ext.commands.Cog):
@@ -35,16 +36,17 @@ class Prank(discord.ext.commands.Cog):
         prankster.enabled = not prankster.enabled
         prankster.last_pranked = None
         prankster.save()
-        asyncio.gather(ctx.send(ctx.translate("saved")))
+        asyncio.gather(ctx.send(f"Okay. Pranking is now " + ("on" if prankster.enabled else "off")))
 
     @prank.command(name = "list")
     async def prank_list(self, ctx):
-        lines = []
+        table = pretty.Table()
+        table.add_row(pretty.Row(("Prankster",), header = True))
         for prankster in Prankster.select().where(Prankster.guild_id == ctx.guild.id).where(Prankster.enabled == True):
-            lines.append(str(prankster.member))
-
-        lines = "\n".join(lines)
-        asyncio.gather(ctx.send(f"```\n{lines}```"))
+            member = prankster.member
+            if member is not None:
+                table.add_row(pretty.Row((str(member), )))
+        await table.to_paginator(ctx, 10).wait()
 
     @commands.guild_only()
     @prank.command(name = "nickname", aliases = ["nick"] )
