@@ -62,7 +62,8 @@ class Table:
         header = self.header
         for rows in row_groups:
             table = self.__class__(rows = rows)
-            table.add_row(header)
+            if header is not None:
+                table.add_row(header)
             embed = discord.Embed(color = ctx.guild_color)
             embed.description = table.generate()
             paginator.add_page(Page(embed))
