@@ -40,12 +40,18 @@ class Prank(discord.ext.commands.Cog):
 
     @prank.command(name = "list")
     async def prank_list(self, ctx):
+        query = Prankster.select()
+        query = query.where(Prankster.guild_id == ctx.guild.id)
+        query = query.where(Prankster.enabled == True)
+        query = query.order_by(Prankster.pranked.desc())
+
         table = pretty.Table()
-        table.add_row(pretty.Row(("Prankster",), header = True))
-        for prankster in Prankster.select().where(Prankster.guild_id == ctx.guild.id).where(Prankster.enabled == True):
+        table.add_row(pretty.Row(("Prankster", "Pranked?"), header = True))
+
+        for prankster in query:
             member = prankster.member
             if member is not None:
-                table.add_row(pretty.Row((str(member), )))
+                table.add_row(pretty.Row((str(member), pretty.prettify_value(prankster.pranked))))
         await table.to_paginator(ctx, 10).wait()
 
     @commands.guild_only()
