@@ -117,10 +117,9 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
             embed.add_field(name = clean_measurement(measurement), value = "\n".join(values))
 
         if len(currencies) > 0:
-            human, _ = Human.get_or_create(user_id = message.author.id)
             for currency in currencies:
                 values = []
-                all_currencies = await self.get_all_currencies(message, human)
+                all_currencies = await self.get_all_currencies(message)
                 for other in (x for x in all_currencies if x.alpha_3 != currency.alpha_3):
                     try:
                         converted = clean_value(self.currency_converter.convert(currencies[currency], currency.alpha_3, other.alpha_3))
@@ -161,8 +160,8 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
 
     @discord.ext.commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot or not self.bot.production:
-            return
+        # if message.author.bot or not self.bot.production:
+        #     return
 
         if "http" in message.content:
             return
@@ -205,35 +204,26 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
                         embed.add_field(name = timezone.upper(), value = time.strftime(self.time_format))
                     asyncio.gather(message.channel.send(embed = embed))
 
-    async def get_all_currencies(self, message, human):
-        currencies = set()
+    async def get_all_currencies(self, message):
+        query = Human.select()
+        query = query.join(Earthling, on=(Human.id == Earthling.human))
+        query = query.where((Human.country != None) | (Human.currencies != None))
+        ids = set()
+        ids.add(message.author.id)
 
         if message.guild is not None:
-            query = Human.select(Human.country)
-            query = query.join(Earthling, on=(Human.id == Earthling.human))
-            query = query.where(Human.country != None)
+            async for msg in message.channel.history(limit=20):
+                if not msg.author.bot:
+                    ids.add(msg.author.id)
 
-            if True:
-                ids = set()
-                async for msg in message.channel.history(limit=20):
-                    if not msg.author.bot:
-                        ids.add(msg.author.id)
-                query = query.where(Human.user_id.in_(ids))
-            else:
-                query = query.where(Earthling.guild_id == message.guild.id)
-
-            countries = set(x.country for x in query)
-
-            for country in countries:
-                for currency in country.currencies():
-                    if currency is not None:
-                        currencies.add(currency)
-
-        for currency in human.all_currencies:
-            currencies.add(currency)
+        currencies = set()
+        query = query.where(Human.user_id.in_(ids))
+        for human in query:
+            for currency in human.all_currencies:
+                if currency is not None:
+                    currencies.add(currency)
 
         return currencies
-
 
 def setup(bot):
     bot.add_cog(ConversionCog(bot))
