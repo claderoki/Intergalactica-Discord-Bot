@@ -52,8 +52,12 @@ class Intergalactica(commands.Cog):
         regex = re.compile(r'discord(?:\.com|app\.com|\.gg)/(?:invite/)?([a-zA-Z0-9\-]{2,32})')
 
         invites = regex.findall(message)
+        print(invites)
         if len(invites) > 0:
-            return [await self.bot.fetch_invite(x) for x in invites]
+            try:
+                return [await self.bot.fetch_invite(x) for x in invites]
+            except discord.errors.NotFound:
+                return
 
     def get_channel(self, name):
         return self.bot.get_channel(self._channel_ids[name])
