@@ -7,7 +7,8 @@ import discord
 from discord.ext import commands, tasks
 
 from src.discord.errors.base import SendableException
-from src.models import Poll, PollTemplate, Option, Settings, Item, NamedEmbed, Human, Earthling, TemporaryChannel, HumanItem, database
+from src.discord.helpers.embed import Embed
+from src.models import Poll, PollTemplate, Option, Settings, Item, NamedEmbed, Human, Earthling, TemporaryChannel, HumanItem, RedditAdvertisement, database
 from src.discord.helpers.waiters import IntWaiter
 
 def is_intergalactica():
@@ -62,6 +63,7 @@ class Intergalactica(commands.Cog):
             self.temp_channel_checker.start()
             self.disboard_bump_available_notifier.start()
             self.introduction_purger.start()
+            # self.discord_advertiser.start()
             await asyncio.sleep( (60 * 60) * 3 )
             self.birthday_poller.start()
             self.illegal_member_notifier.start()
@@ -143,6 +145,26 @@ class Intergalactica(commands.Cog):
         await poll.send()
         poll.save()
         return poll
+
+    @commands.command()
+    @is_intergalactica()
+    @commands.has_guild_permissions(administrator = True)
+    async def bump(self, ctx):
+        try:
+            reddit_advertisement = RedditAdvertisement.get(guild_id = ctx.guild.id)
+        except RedditAdvertisement.DoesNotExist:
+            return
+
+        if not reddit_advertisement.available:
+            embed = Embed.error(None)
+            embed.set_footer(text = ctx.translate("available_again_at"))
+            embed.timestamp = reddit_advertisement.last_advertised + datetime.timedelta(hours = 24)
+        else:
+            embed = Embed.success(None)
+            submission = await reddit_advertisement.advertise()
+            embed.set_author(name = ctx.translate("bump_successful"), url = submission.shortlink)
+
+        asyncio.gather(ctx.send(embed = embed))
 
     @commands.command()
     @is_intergalactica()
@@ -343,7 +365,6 @@ class Intergalactica(commands.Cog):
 
         await ctx.author.add_roles(role)
 
-
     @commands.group()
     @is_intergalactica()
     async def role(self, ctx):
@@ -441,6 +462,18 @@ class Intergalactica(commands.Cog):
                     await channel.delete(reason = "Expired")
                 temp_channel.channel_id = None
                 temp_channel.save()
+
+
+    @tasks.loop(minutes = 1)
+    async def discord_advertiser(self):
+        with database.connection_context():
+            try:
+                reddit_advertisement = RedditAdvertisement.get(guild_id = ctx.guild.id, automatic = True)
+            except RedditAdvertisement.DoesNotExist:
+                return
+            if not reddit_advertisement.available:
+                return
+            await reddit_advertisement.advertise()
 
     @tasks.loop(minutes = 1)
     async def disboard_bump_available_notifier(self):
