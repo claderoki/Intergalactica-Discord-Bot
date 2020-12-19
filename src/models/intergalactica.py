@@ -116,3 +116,38 @@ class Earthling(BaseModel):
             user_id = member.id,
             human = Human.get_or_create(user_id = member.id)[0]
         )
+
+class RedditAdvertisement(BaseModel):
+    last_advertised = peewee.DateTimeField   (null = True)
+    automatic       = peewee.BooleanField    (null = False, default = False)
+    guild_id        = peewee.BigIntegerField (null = False)
+
+    @property
+    def available(self):
+        if self.last_advertised is None:
+            return True
+
+        return (self.last_advertised + datetime.timedelta(hours = 24)) < datetime.datetime.utcnow()
+
+    @property
+    def title(self):
+        title = []
+        title.append("☆‧͙⁺˚･༓ Welcome to Intergalactica! ༓･˚⁺‧͙☆ ")
+        title.append("We are a group for 18+ people to make authentic friendships in a non-toxic environment.")
+        title.append("We have a small but active close community and we are looking to welcome new people to join our galaxy.")
+        return " ".join(title)
+
+    async def get_invite_url(self):
+        for invite in await self.guild.invites():
+            if invite.max_age == 0 and invite.max_uses == 0:
+                return invite.url
+
+    async def advertise(self):
+        assert self.available
+
+        subreddit = self.bot.reddit.subreddit("discordservers")
+        return
+        submission = subreddit.submit(self.title, url = await self.get_invite_url())
+        self.last_advertised = datetime.datetime.utcnow()
+        self.save()
+        return submission
