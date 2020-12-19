@@ -146,7 +146,6 @@ class RedditAdvertisement(BaseModel):
         assert self.available
 
         subreddit = self.bot.reddit.subreddit("discordservers")
-        return
         submission = subreddit.submit(self.title, url = await self.get_invite_url())
         self.last_advertised = datetime.datetime.utcnow()
         self.save()
