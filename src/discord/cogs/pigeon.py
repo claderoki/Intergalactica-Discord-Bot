@@ -466,7 +466,10 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         i = 0
         for pigeon in query:
-            values = [f"{i+1}", str(pigeon.experience), limit_str(pigeon.name, 10), limit_str(pigeon.human.user, 10)]
+            user = pigeon.human.user
+            if user is None:
+                continue
+            values = [f"{i+1}", str(pigeon.experience), limit_str(pigeon.name, 10), limit_str(user, 10)]
             table.add_row(Row(values))
             i += 1
 
