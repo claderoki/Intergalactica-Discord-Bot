@@ -70,7 +70,10 @@ class Profile(commands.Cog):
 
         i = 0
         for human in query:
-            values = [f"{i+1}", str(human.gold), str(human.user)]
+            user = human.user
+            if user is None:
+                continue
+            values = [f"{i+1}", str(human.gold), str(user)]
             table.add_row(pretty.Row(values))
             i += 1
         await table.to_paginator(ctx, 10).wait()
