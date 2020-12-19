@@ -20,19 +20,20 @@ class Intergalactica(commands.Cog):
     guild_id = 742146159711092757
 
     _role_ids = {
-        "selfies" : 748566253534445568,
-        "5k+"     : 778744417322139689,
-        "bumper"  : 780001849335742476,
-        "age"     : {"18-20": 748606669902053387, "21-24": 748606823229030500, "25-29": 748606893387153448, "30+": 748606902363095206},
-        "gender"  : {"male": 742301620062388226, "female": 742301646004027472, "other" : 742301672918745141},
-        "ranks"   : {
+        "selfies"   : 748566253534445568,
+        "vc_access" : 761599311967420418,
+        "5k+"       : 778744417322139689,
+        "bumper"    : 780001849335742476,
+        "age"       : {"18-20": 748606669902053387, "21-24": 748606823229030500, "25-29": 748606893387153448, "30+": 748606902363095206},
+        "gender"    : {"male": 742301620062388226, "female": 742301646004027472, "other" : 742301672918745141},
+        "ranks"     : {
             "luna"      : 748494880229163021,
             "nova"      : 748494888844132442,
             "aurora"    : 748494890127851521,
             "aquila"    : 748494890169794621,
             "orion"     : 748494891419697152,
             "andromeda" : 748494891751047183
-        }
+        },
     }
 
     _channel_ids = {
@@ -63,7 +64,6 @@ class Intergalactica(commands.Cog):
             self.temp_channel_checker.start()
             self.disboard_bump_available_notifier.start()
             self.introduction_purger.start()
-            # self.discord_advertiser.start()
             await asyncio.sleep( (60 * 60) * 3 )
             self.birthday_poller.start()
             self.illegal_member_notifier.start()
@@ -458,17 +458,6 @@ class Intergalactica(commands.Cog):
                     await channel.delete(reason = "Expired")
                 temp_channel.channel_id = None
                 temp_channel.save()
-
-    # @tasks.loop(minutes = 1)
-    # async def discord_advertiser(self):
-    #     with database.connection_context():
-    #         try:
-    #             reddit_advertisement = RedditAdvertisement.get(guild_id = ctx.guild.id, automatic = True)
-    #         except RedditAdvertisement.DoesNotExist:
-    #             return
-    #         if not reddit_advertisement.available:
-    #             return
-    #         await reddit_advertisement.advertise()
 
     @tasks.loop(minutes = 1)
     async def disboard_bump_available_notifier(self):
