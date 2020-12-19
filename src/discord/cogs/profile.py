@@ -117,6 +117,12 @@ class Profile(commands.Cog):
         for human in humans:
             embed.add_field(**human.get_embed_field(show_all = True))
 
+        cities = [x.city for x in humans]
+        if None not in cities:
+            cities = [self.bot.owm_api.by_q(x.city, x.country.alpha_2 if self.country else None) for x in humans]
+            distance_in_km = int(cities[0].get_distance(cities[1]))
+            embed.set_footer(text = f"{distance_in_km}km away")
+
         await ctx.send(embed = embed)
 
     @profile.command(name = "clear", aliases = ["reset"])
