@@ -430,23 +430,19 @@ class Intergalactica(commands.Cog):
                     asyncio.gather(role.delete())
 
         embed = self.bot.get_base_embed()
-        embed.title = "The following roles were purged:"
-        lines = "`\n`".join(roles_deleted)
-        embed.description = f"`{lines}`"
+        if len(roles_deleted) > 0:
+            embed.title = "The following roles were purged:"
+            lines = "`\n`".join(roles_deleted)
+            embed.description = f"`{lines}`"
+        else:
+            embed.description = "No roles needed purging."
+
         asyncio.gather(ctx.send(embed = embed))
 
     @commands.command(aliases = [ x.name for x in NamedEmbed.select(NamedEmbed.name).where(NamedEmbed.settings == 2) ])
     async def getembed(self, ctx, numbers : commands.Greedy[int] = None):
         embed = self.embed_from_name(ctx.invoked_with, numbers)
         await ctx.send(embed = embed)
-
-    def illegal_member_iterator(self):
-        for member in self.guild.members:
-            if member.bot:
-                continue
-
-            if not member_is_legal(member):
-                yield member
 
     @tasks.loop(hours = 1)
     async def temp_channel_checker(self):
@@ -463,17 +459,16 @@ class Intergalactica(commands.Cog):
                 temp_channel.channel_id = None
                 temp_channel.save()
 
-
-    @tasks.loop(minutes = 1)
-    async def discord_advertiser(self):
-        with database.connection_context():
-            try:
-                reddit_advertisement = RedditAdvertisement.get(guild_id = ctx.guild.id, automatic = True)
-            except RedditAdvertisement.DoesNotExist:
-                return
-            if not reddit_advertisement.available:
-                return
-            await reddit_advertisement.advertise()
+    # @tasks.loop(minutes = 1)
+    # async def discord_advertiser(self):
+    #     with database.connection_context():
+    #         try:
+    #             reddit_advertisement = RedditAdvertisement.get(guild_id = ctx.guild.id, automatic = True)
+    #         except RedditAdvertisement.DoesNotExist:
+    #             return
+    #         if not reddit_advertisement.available:
+    #             return
+    #         await reddit_advertisement.advertise()
 
     @tasks.loop(minutes = 1)
     async def disboard_bump_available_notifier(self):
@@ -486,7 +481,7 @@ class Intergalactica(commands.Cog):
             if last_message is None or last_message.content != content:
                 await bot_spam.send(content)
 
-    @tasks.loop(hours = 12)
+    @tasks.loop(hours = 3)
     async def introduction_purger(self):
         tasks = []
         total_messages = 0
@@ -513,10 +508,14 @@ class Intergalactica(commands.Cog):
 
     @tasks.loop(hours = 24)
     async def illegal_member_notifier(self):
-        for member in self.illegal_member_iterator():
-            days = (datetime.datetime.utcnow() - member.joined_at).days
-            if days > 1:
-                await self.log("bot_commands", f"**{member}** {member.mention} is missing one or more of the mandatory roles.")
+        for member in self.guild.members:
+            if member.bot:
+                continue
+
+            if not member_is_legal(member):
+                days = (datetime.datetime.utcnow() - member.joined_at).days
+                if days > 1:
+                    await self.log("bot_commands", f"**{member}** {member.mention} is missing one or more of the mandatory roles.")
 
     @tasks.loop(hours = 12)
     async def birthday_poller(self):
@@ -535,8 +534,8 @@ class Intergalactica(commands.Cog):
                 await self.log("bot_commands", f"**{human.user}** {human.mention} Should be celebrating their birthday today.")
 
 def member_is_legal(member):
-    age_roles       = [748606669902053387,748606823229030500,748606893387153448,748606902363095206]
-    gender_roles    = [742301620062388226, 742301646004027472, 742301672918745141]
+    age_roles = self._role_ids["age"].values()
+    gender_roles = self._role_ids["gender"].values()
 
     has_age_role = False
     has_gender_role = False
