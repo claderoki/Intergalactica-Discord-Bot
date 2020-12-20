@@ -122,6 +122,11 @@ class Human(BaseModel):
     def days_until_birthday(self):
         return abs((datetime.datetime.utcnow() - self.next_birthday).days)
 
+    @property
+    def zodiac_sign(self):
+        if self.date_of_birth is not None:
+            return ZodiacSign.from_date(self.date_of_birth)
+
     def get_embed_field(self, show_all = False):
 
         name = self.user.name
@@ -130,10 +135,9 @@ class Human(BaseModel):
         values = []
 
         if self.date_of_birth is not None:
-            zodiac_sign = ZodiacSign.from_date(self.date_of_birth)
             days_until_birthday = self.days_until_birthday
             age = self.age
-            value = f"{zodiac_sign.emoji} {self.age}"
+            value = f"{self.zodiac_sign.emoji} {self.age}"
             if days_until_birthday < 10:
                 value += f" (days left: {days_until_birthday})"
             values.append(value)
