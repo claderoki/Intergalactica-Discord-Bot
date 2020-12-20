@@ -101,11 +101,12 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
 
         self.global_pattern = "([+-]?\d+(\.\d+)*)({})(?!\w)".format("|".join(_units))
         self.currency_pattern = "({})(\d+(\.\d+)*)(?!\w)".format("|".join(currency_regex_symbols))
+        self.timezone_pattern = "({})([+-])?(\d+)?(?!\w)".format("|".join(("gmt", "utc")))
 
         self.bot = bot
         self.currency_converter = currency_converter
 
-    async def convert(self, message, currencies, measurements):
+    async def convert(self, message, currencies, measurements, timezones):
         color = self.bot.get_dominant_color(None)
         embed = discord.Embed(color = color)
 
@@ -116,18 +117,25 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
                 values.append(clean_measurement(value, other))
             embed.add_field(name = clean_measurement(measurement), value = "\n".join(values))
 
-        if len(currencies) > 0:
-            for currency in currencies:
-                values = []
-                all_currencies = await self.get_all_currencies(message)
-                for other in (x for x in all_currencies if x.alpha_3 != currency.alpha_3):
-                    try:
-                        converted = clean_value(self.currency_converter.convert(currencies[currency], currency.alpha_3, other.alpha_3))
-                    except ValueError:
-                        continue
-                    values.append(f"{other.name} {converted}")
-                if len(values) > 0:
-                    embed.add_field(name = f"{currency.name} ({clean_value(currencies[currency])})", value = "\n".join(values))
+        for currency in currencies:
+            values = []
+            all_currencies = await self.get_all_currencies(message)
+            for other in (x for x in all_currencies if x.alpha_3 != currency.alpha_3):
+                try:
+                    converted = clean_value(self.currency_converter.convert(currencies[currency], currency.alpha_3, other.alpha_3))
+                except ValueError:
+                    continue
+                values.append(f"{other.name} {converted}")
+            if len(values) > 0:
+                embed.add_field(name = f"{currency.name} ({clean_value(currencies[currency])})", value = "\n".join(values))
+
+        for timezone in timezones:
+            now = datetime.datetime.now(timezone)
+            value = timezones[timezone]
+            symbol = "+" if value > 0 else "-"
+            time = now + datetime.timedelta(hours = value)
+            embed.add_field(name = f"{timezone}{symbol}{value}", value = time.strftime(self.time_format))
+
         if len(embed.fields) > 0:
             return embed
 
@@ -139,13 +147,16 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
             for match in matches:
                 value = float(match[0])
                 unit = match[-1]
+                is_currency = unit.upper() in self.currency_converter.currencies
+                type = "currency" if is_currency else "measurement"
+
                 aliases_found = False
                 for _unit, alias in units.items():
                     if alias.lower() == unit:
                         aliases_found = True
-                        cleaned_matches.append({"value" : value, "unit" : _unit})
+                        cleaned_matches.append({"value" : value, "unit" : _unit, "type": type})
                 if not aliases_found:
-                    cleaned_matches.append({"value" : value, "unit" : unit})
+                    cleaned_matches.append({"value" : value, "unit" : unit, "type": type})
 
         matches = re.findall(self.currency_pattern, content)
         if matches:
@@ -154,7 +165,18 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
                 value = match[1]
                 for alpha_2, _symbol in currency_symbols.items():
                     if symbol == _symbol:
-                        cleaned_matches.append({"value" : value, "unit" : alpha_2.lower()})
+                        cleaned_matches.append({"value" : value, "unit" : alpha_2.lower(), "type": "currency"})
+
+        matches = re.findall(self.timezone_pattern, content)
+        if matches:
+            for match in matches:
+                timezone, symbol, amount = match
+                symbol = symbol or "+"
+                amount = amount or "0"
+                amount = int(amount)
+                value = amount if symbol != "-" else -amount
+                cleaned_matches.append({"value" : value, "unit" : timezone, "type": "timezone"})
+
 
         return cleaned_matches
 
@@ -170,54 +192,33 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
         if len(matches):
             measurements = []
             currencies   = {}
+            timezones    = {}
             for match in matches:
-                unit, value = match["unit"], match["value"]
-                if unit.upper() in self.currency_converter.currencies:
+                unit, value, type = match["unit"], match["value"], match["type"]
+                if type == "currency":
                     currencies[(pycountry.currencies.get(alpha_3 = unit.upper()))] = value
-                else:
+                elif type == "measurement":
                     measurements.append(guess(value, unit, measures = self.measures))
+                elif type == "timezone":
+                    timezones[pytz.timezone(unit)] = value
 
-            embed = await self.convert(message, currencies, measurements)
+            embed = await self.convert(message, currencies, measurements, timezones)
             if embed is not None:
                 asyncio.gather(message.channel.send(embed = embed))
-
-        elif "utc" in message.content.lower() or "gmt" in message.content.lower():
-            times = {}
-            for word in message.content.lower().split():
-                if word.startswith("utc") or word.startswith("gmt"):
-                    timezone = word[:3]
-                    remaining = word.replace(timezone, "")
-                    now = datetime.datetime.now(pytz.timezone(timezone))
-                    if remaining == "":
-                        symbol = "+"
-                        numbers = 0
-                    else:
-                        symbol = remaining[0]
-                        numbers = int("".join(x for x in remaining[1:] if x.isdigit()))
-                    if symbol == "+":
-                        times[f"{timezone}{symbol}{numbers}"] = now + datetime.timedelta(hours = numbers)
-                    elif symbol == "-":
-                        times[f"{timezone}{symbol}{numbers}"] = now - datetime.timedelta(hours = numbers)
-
-                    embed = discord.Embed(color = self.bot.get_dominant_color(message.guild))
-                    for timezone, time in times.items():
-                        embed.add_field(name = timezone.upper(), value = time.strftime(self.time_format))
-                    asyncio.gather(message.channel.send(embed = embed))
 
     async def get_all_currencies(self, message):
         query = Human.select()
         query = query.join(Earthling, on=(Human.id == Earthling.human))
         query = query.where((Human.country != None) | (Human.currencies != None))
-        ids = set()
-        ids.add(message.author.id)
 
+        ids = set((message.author.id, ))
         if message.guild is not None:
             async for msg in message.channel.history(limit=20):
                 if not msg.author.bot:
                     ids.add(msg.author.id)
+        query = query.where(Human.user_id.in_(ids))
 
         currencies = set()
-        query = query.where(Human.user_id.in_(ids))
         for human in query:
             for currency in human.all_currencies:
                 if currency is not None:
