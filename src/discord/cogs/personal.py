@@ -111,16 +111,17 @@ class Personal(discord.ext.commands.Cog):
 
     @commands.command()
     @is_permitted()
-    async def question(self, ctx):
-        question = PersonalQuestion.get_random()
+    async def question(self, ctx, question : PersonalQuestion):
         if question is None:
             return asyncio.gather(ctx.send("None found."))
+        if question.asked:
+            raise SendableException(ctx.translate("question_already_asked"))
 
         await ctx.send(embed = question.embed)
         try:
             self.bot.wait_for("message", check = lambda m : m.channel.id == ctx.channel.id, timeout = 30)
         except asyncio.TimeoutError:
-            return asyncio.gather(ctx.send("Timed out"))
+            raise SendableException(ctx.translate("question_timed_out"))
 
     @commands.is_owner()
     @commands.dm_only()
