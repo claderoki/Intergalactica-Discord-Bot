@@ -50,14 +50,18 @@ class Intergalactica(commands.Cog):
 
     async def get_invites(self, message):
         regex = re.compile(r'discord(?:\.com|app\.com|\.gg)/(?:invite/)?([a-zA-Z0-9\-]{2,32})')
+        invite_urls = regex.findall(message)
+        if len(invite_urls) == 0:
+            return None
 
-        invites = regex.findall(message)
-        if len(invites) > 0:
-            print(invites)
+        invites = []
+        for url in invite_urls:
             try:
-                return [await self.bot.fetch_invite(x) for x in invites]
+                invite = await self.bot.fetch_invite(url)
             except discord.errors.NotFound:
-                return
+                continue
+            else:
+                invites.append(invite)
 
     def get_channel(self, name):
         return self.bot.get_channel(self._channel_ids[name])
