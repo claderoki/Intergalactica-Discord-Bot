@@ -7,6 +7,7 @@ import discord
 from discord.ext import commands, tasks
 
 import src.config as config
+from src.discord.errors.base import SendableException
 from src.models import database, Subreddit, DailyReminder, Location, PersonalQuestion
 
 if not config.bot.heroku:
@@ -118,10 +119,8 @@ class Personal(discord.ext.commands.Cog):
             raise SendableException(ctx.translate("question_already_asked"))
 
         await ctx.send(embed = question.embed)
-        try:
-            self.bot.wait_for("message", check = lambda m : m.channel.id == ctx.channel.id, timeout = 30)
-        except asyncio.TimeoutError:
-            raise SendableException(ctx.translate("question_timed_out"))
+        question.asked = True
+        question.save()
 
     @commands.is_owner()
     @commands.dm_only()
