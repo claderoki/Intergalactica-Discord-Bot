@@ -9,12 +9,13 @@ import emoji
 import pycountry
 
 from src.models import Human, Earthling, Mail, Item, database
-from src.discord.helpers.converters import convert_to_date
+from src.discord.helpers.converters import convert_to_date, EnumConverter
 from src.discord.helpers.waiters import *
 import src.discord.helpers.pretty as pretty
 import src.config as config
 from src.utils.timezone import Timezone
 from src.discord.errors.base import SendableException
+from src.utils.zodiac import ZodiacSign
 from src.discord.helpers.paginating import Page, Paginator
 import src.utils.general as general
 
@@ -43,6 +44,11 @@ class Profile(commands.Cog):
         super().__init__()
         self.bot = bot
 
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await asyncio.sleep(datetime.timedelta(hours = 1).seconds)
+        self.earthling_purger.start()
+
     @commands.command()
     async def parrot(self, ctx, *, text):
         asyncio.gather(ctx.message.delete())
@@ -57,13 +63,39 @@ class Profile(commands.Cog):
             human.save()
 
     @commands.command()
+    async def zodiac(self, ctx, sign : EnumConverter(ZodiacSign) = None):
+        if sign is None:
+            human, _ = Human.get_or_create(user_id = ctx.author.id)
+            if human.date_of_birth is None:
+                raise SendableException(ctx.translate("date_of_birth_not_set"))
+            sign = human.zodiac_sign
+
+        query = Human.select()
+        query = query.join(Earthling, on=(Human.id == Earthling.human))
+        query = query.where(Earthling.guild_id == ctx.guild.id)
+        query = query.where(Human.date_of_birth != None)
+
+        table = pretty.Table()
+        table.add_row(pretty.Row(["member", "sign"], header = True))
+
+        i = 0
+
+        for human in query:
+            if sign != human.zodiac_sign:
+                continue
+            if human.user is None:
+                continue
+            values = [str(human.user), str(sign.name)]
+            table.add_row(pretty.Row(values))
+            i += 1
+        await table.to_paginator(ctx, 10).wait()
+
+    @commands.command()
     async def scoreboard(self, ctx):
         query = Human.select()
         query = query.join(Earthling, on=(Human.id == Earthling.human))
         query = query.where(Earthling.guild_id == ctx.guild.id)
         query = query.order_by(Human.gold.desc())
-
-        embed = discord.Embed(title = "Scoreboard")
 
         table = pretty.Table()
         table.add_row(pretty.Row(["rank", "gold", "member"], header = True))
@@ -311,6 +343,20 @@ class Profile(commands.Cog):
     async def cog_before_invoke(self, ctx):
         attr_name = (ctx.command.root_parent or ctx.command).callback.__name__
         ctx.attr_name = attr_name
+
+    @tasks.loop(hours = 24)
+    async def earthling_purger(self):
+        with database.connection_context():
+            to_purge = []
+            earthlings = list(Earthling)
+            for earthling in earthlings:
+                if earthling.guild is None or earthling.member is None:
+                    to_purge.append(earthling)
+
+            if len(to_purge) != len(earthlings):
+                for earthling in to_purge:
+                    earthling.delete_instance()
+            print(f"Purged {len(to_purge)} earthlings.")
 
 def setup(bot):
     bot.add_cog(Profile(bot))
