@@ -134,7 +134,7 @@ class Intergalactica(commands.Cog):
                         self.on_milkyway_purchased(message.channel, member, amount)
                         return asyncio.gather(message.delete())
 
-        if message.content == "!d bump":
+        if message.content and message.content.lower() == "!d bump":
             disboard_response = await self.bot.wait_for("message", check = lambda x : x.author.id == 302050872383242240 and x.channel.id == message.channel.id)
             embed = disboard_response.embeds[0]
             text = embed.description
