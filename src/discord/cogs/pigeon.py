@@ -622,7 +622,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                 winner.status = Pigeon.Status.idle
                 loser.status = Pigeon.Status.idle
 
-                winner.update_stats(winner_data, gold = fight.bet*2)
+                winner_data["gold"] = fight.bet*2
+                winner.update_stats(winner_data)
                 loser.update_stats(loser_data)
 
                 fight.won = won
