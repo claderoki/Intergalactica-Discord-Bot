@@ -355,8 +355,10 @@ class Profile(commands.Cog):
 
             if len(to_purge) != len(earthlings):
                 for earthling in to_purge:
+                    role = earthling.personal_role
+                    if role is not None:
+                        await role.delete()
                     earthling.delete_instance()
-            print(f"Purged {len(to_purge)} earthlings.")
 
 def setup(bot):
     bot.add_cog(Profile(bot))
