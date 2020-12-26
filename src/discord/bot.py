@@ -220,7 +220,7 @@ class Locus(commands.Bot):
             self.load_cog(cog)
 
     def get_random_color(self, start_range=80, end_range=255):
-        # from 80 to 255 because most people use the dark theme, and anything under 80 is too bright to be comfortably visible.
+        # from 80 to 255 because the majority of discord users use the dark theme, and anything under 80 is too bright to be comfortably visible.
         if end_range > 255:
             end_range = 255
 
@@ -228,26 +228,8 @@ class Locus(commands.Bot):
             start_range = 0
 
         r, g, b = [random.randint(start_range, end_range) for _ in range(3)]
-        random_color = discord.Colour(0).from_rgb(r, g, b)
+        random_color = discord.Color(0).from_rgb(r, g, b)
         return random_color
-
-    def text_to_emojis(self, text):
-        text = str(text)
-        emojis = []
-
-        for char in text:
-            if char.isdigit():
-                emoji_format = ":keycap_{char}:"
-            elif char == "-":
-                emoji_format = ":heavy_minus_sign:"
-            elif char == ".":
-                emoji_format = ":black_small_square:"
-            else:
-                emoji_format = ":regional_indicator_symbol_letter_{char}:"
-
-            emojis.append(emoji.emojize(emoji_format.format(char = char), use_aliases=True))
-
-        return emojis
 
     def get_id(self, obj):
         if hasattr(obj, "id"):
@@ -258,23 +240,36 @@ class Locus(commands.Bot):
     async def after_any_command(self, ctx):
         ctx.db.__exit__(None, None, None)
 
+    def success(self, ctx):
+        async def wrapper(content = None): 
+            if content is None:
+                await ctx.message.add_reaction("✅")
+            else:
+                await ctx.send(embed = Embed.success(content))
+        return wrapper
+
+    def error(self, ctx):
+        async def wrapper(content = None): 
+            if content is None:
+                await ctx.message.add_reaction("❌")
+            else:
+                await ctx.send(embed = Embed.error(content))
+        return wrapper
+
     async def before_any_command(self, ctx):
         ctx.db = database.connection_context()
         ctx.db.__enter__()
         ctx.get_id = self.get_id
 
-        if ctx.guild is None:
-            locale_name = "en_US"
-        else:
-            if ctx.guild.id not in self._locales:
-                settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
-                self._locales[ctx.guild.id] = settings.locale.name
+        if ctx.guild is not None and ctx.guild.id not in self._locales:
+            settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
+            self._locales[ctx.guild.id] = settings.locale.name
 
         ctx.locale = self._locales.get(ctx.get_id(ctx.guild), "en_US")
         ctx.translate = lambda x: self.translate(x, ctx.locale)
 
-        ctx.success = lambda: ctx.message.add_reaction("✅")
-        ctx.error = lambda: ctx.message.add_reaction("❌")
+        ctx.success = self.success(ctx)
+        ctx.error = self.error(ctx)
 
         ctx.guild_color = self.get_dominant_color(ctx.guild)
 
