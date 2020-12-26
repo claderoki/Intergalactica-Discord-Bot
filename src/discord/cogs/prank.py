@@ -126,11 +126,8 @@ class Prank(discord.ext.commands.Cog):
         prankster, _ = Prankster.get_or_create(user_id = member.id, guild_id = ctx.guild.id)
         if prankster.pranked:
             prank = NicknamePrank.select().where(NicknamePrank.victim == prankster).where(NicknamePrank.finished == False).first()
-            prank.finished = True
-            prank.victim.pranked = False
-            prank.victim.prank_type = None
+            prank.end_date = datetime.datetime.utcnow()
             prank.save()
-            await prank.revert()
 
             human, _ = Human.get_or_create(user_id = prank.pranked_by.user_id)
             human.gold += 500
@@ -140,7 +137,10 @@ class Prank(discord.ext.commands.Cog):
     @tasks.loop(minutes = 1)
     async def prank_poller(self):
         with database.connection_context():
-            for prank in NicknamePrank.select().where(NicknamePrank.finished == False):
+            query = NicknamePrank.select()
+            query = query.where(NicknamePrank.finished == False)
+
+            for prank in query:
                 if prank.end_date_passed:
                     prank.finished = True
                     prank.victim.pranked = False
