@@ -633,7 +633,11 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @tasks.loop(hours = 1)
     async def stats_ticker(self):
         with database.connection_context():
-            for pigeon in Pigeon.select().where(Pigeon.condition == Pigeon.Condition.active).where(Pigeon.status == Pigeon.Status.idle):
+            query = Pigeon.select()
+            query = query.where(Pigeon.condition == Pigeon.Condition.active)
+            query = query.where(Pigeon.status == Pigeon.Status.idle)
+
+            for pigeon in query:
                 data = {"food": -1, "cleanliness" : -1, "happiness": -1}
                 if pigeon.food <= 20 or pigeon.cleanliness <= 20:
                     data["health"] = -1
