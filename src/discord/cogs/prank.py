@@ -112,6 +112,31 @@ class Prank(discord.ext.commands.Cog):
 
         asyncio.gather(ctx.send(embed = embed))
 
+    @commands.guild_only()
+    @commands.has_guild_permissions(administrator = True)
+    @prank.command(name = "revert")
+    async def prank_revert(self, ctx, member : discord.Member = None):
+        """
+        3 types:
+            1. Admin revert (when admin wants to revert a prank and give the pranker their gold back)
+            2. Member reverts their own prank by spending gold (1k?)
+            3. Someone who pranked someone reverts their prank on them 
+        """
+
+        prankster, _ = Prankster.get_or_create(user_id = member.id, guild_id = ctx.guild.id)
+        if prankster.pranked:
+            prank = NicknamePrank.select().where(NicknamePrank.victim == prankster).where(NicknamePrank.finished == False).first()
+            prank.finished = True
+            prank.victim.pranked = False
+            prank.victim.prank_type = None
+            prank.save()
+            await prank.revert()
+
+            human, _ = Human.get_or_create(user_id = prank.pranked_by.user_id)
+            human.gold += 500
+            human.save()
+            await ctx.success(ctx.translate("prank_reverted"))
+
     @tasks.loop(minutes = 1)
     async def prank_poller(self):
         with database.connection_context():
@@ -122,9 +147,10 @@ class Prank(discord.ext.commands.Cog):
                     prank.victim.prank_type = None
                     prank.save()
                     prank.victim.save()
-                    asyncio.gather(prank.revert())
+                    if prank.victim.member:
+                        asyncio.gather(prank.revert())
                 else:
-                    if prank.victim.member.display_name != prank.new_nickname:
+                    if prank.victim.member and prank.victim.member.display_name != prank.new_nickname:
                         asyncio.gather(prank.apply())
 
 def raise_if_not_enough_gold(ctx, gold, human, name = "you"):
