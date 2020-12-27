@@ -10,6 +10,7 @@ import numpy as np
 import peewee
 from emoji import emojize
 
+from src.utils.general import text_to_emojis
 import src.config as config
 from .base import BaseModel, EnumField, EmojiField
 from src.discord.helpers.waiters import TimeDeltaWaiter
@@ -75,7 +76,7 @@ class Poll(BaseModel):
         if self.type == self.Type.custom:
             values = []
             for i, option in enumerate(self.options):
-                emoji = self.bot.text_to_emojis(i+1)[0]
+                emoji = text_to_emojis(i+1)[0]
                 values.append(f"{emoji}: {option.value}")
             embed.description +=  "\n\n" + ( "\n".join(values) )
         embed.set_footer(text = "Due date", icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/761134294277029888/c.gif")
