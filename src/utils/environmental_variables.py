@@ -2,6 +2,7 @@ import os
 
 class EnvironmentalVariables(dict):
     required = (
+        "mysql_db_name",
         "mysql_user",
         "mysql_password",
         "mysql_port",
@@ -10,7 +11,9 @@ class EnvironmentalVariables(dict):
         "owm_key",
         "reddit_client_id",
         "reddit_client_secret",
-        "reddit_user_agent"
+        "reddit_user_agent",
+        "reddit_username",
+        "reddit_password"
     )
 
     def __init__(self, data):
