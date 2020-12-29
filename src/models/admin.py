@@ -38,4 +38,4 @@ class PersonalQuestion(BaseModel):
 
     @property
     def embed(self):
-        return discord.Embed(title = "Question", description = self.value)
+        return discord.Embed(title = f"Question {self.id}", color = discord.Color.gold(),description = self.value)
