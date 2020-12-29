@@ -150,10 +150,12 @@ class EnumField(peewee.TextField):
 class EmojiField(peewee.TextField):
 
     def db_value(self, value):
-        return emoji.demojize(value)
+        if value is not None:
+            return emoji.demojize(value)
 
     def python_value(self, value):
-        return emoji.emojize(value)
+        if value is not None:
+            return emoji.emojize(value)
 
 class PercentageField(peewee.IntegerField):
     def db_value(self, value):
