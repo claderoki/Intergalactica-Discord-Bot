@@ -65,12 +65,12 @@ class Prank(discord.ext.commands.Cog):
 
         prankster, _ = Prankster.get_or_create(user_id = ctx.author.id, guild_id = ctx.guild.id)
         if not prankster.enabled:
-            raise SendableException(ctx.translate("pranking_disabled"))
+            raise SendableException(ctx.translate("prankster_pranking_disabled"))
 
-        prankstee, _ = Prankster.get_or_create(user_id = member.id, guild_id = ctx.guild.id)
-        if not prankstee.enabled:
-            raise SendableException(ctx.translate("pranking_disabled"))
-        if prankstee.pranked:
+        victim, _ = Prankster.get_or_create(user_id = member.id, guild_id = ctx.guild.id)
+        if not victim.enabled:
+            raise SendableException(ctx.translate("victim_pranking_disabled"))
+        if victim.pranked:
             raise SendableException(ctx.translate("already_pranked"))
 
         human, _ = Human.get_or_create(user_id = ctx.author.id)
@@ -85,22 +85,22 @@ class Prank(discord.ext.commands.Cog):
         new_nickname = await waiter.wait()
 
         prankster.last_pranked = datetime.datetime.utcnow()
-        prankstee.pranked = True
-        prankstee.prank_type = Prankster.PrankType.nickname
+        victim.pranked = True
+        victim.prank_type = Prankster.PrankType.nickname
 
         prank = NicknamePrank(
             new_nickname = new_nickname,
-            old_nickname = member.display_name,
+            old_nickname = member.nick,
             start_date = datetime.datetime.utcnow(),
             end_date = datetime.datetime.utcnow() + datetime.timedelta(days = 1),
-            victim = prankstee,
+            victim = victim,
             pranked_by = prankster
         )
 
         human.gold -= cost
         human.save()
         prank.save()
-        prankstee.save()
+        victim.save()
         prankster.save()
 
         await prank.apply()
