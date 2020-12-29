@@ -201,9 +201,13 @@ class StrWaiter(MessageWaiter):
             return False
 
         if len(content) > self.max_length:
+            error_msg = f"Message is too long. Max length: {self.max_length}"
+            asyncio.gather(message.channel.send(embed = Embed.error(error_msg)))
             return False
 
         if len(content) < self.min_length:
+            error_msg = f"Message is too short. Min length: {self.min_length}"
+            asyncio.gather(message.channel.send(embed = Embed.error(error_msg)))
             return False
 
         return True
