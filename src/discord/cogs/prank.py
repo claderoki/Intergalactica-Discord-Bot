@@ -59,6 +59,9 @@ class Prank(discord.ext.commands.Cog):
     async def prank_nickname(self, ctx, member : discord.Member):
         if member.bot:
             raise SendableException(ctx.translate("cannot_prank_bot"))
+    
+        if member.id == ctx.author.id:
+            raise SendableException(ctx.translate("cannot_prank_self"))
 
         if ctx.guild.me.top_role.position <= member.top_role.position or member.id == ctx.guild.owner_id:
             raise SendableException(ctx.translate("cannot_change_nickname"))
