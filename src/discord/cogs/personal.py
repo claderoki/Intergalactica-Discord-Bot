@@ -10,10 +10,6 @@ import src.config as config
 from src.discord.errors.base import SendableException
 from src.models import database, Subreddit, DailyReminder, Location, PersonalQuestion
 
-if not config.bot.heroku:
-    import cv2
-    from notifypy import Notify
-
 def is_permitted():
     def predicate(ctx):
         return ctx.author.id in (ctx.bot.owner.id, ctx.cog.user_id)
@@ -39,6 +35,8 @@ class Personal(discord.ext.commands.Cog):
             self.free_games_notifier.start()
 
     def notify(self, block = True, **kwargs):
+
+        from notifypy import Notify
         notification = Notify()
         for key, value in kwargs.items():
             setattr(notification, key, value)
@@ -58,44 +56,12 @@ class Personal(discord.ext.commands.Cog):
     @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
     @commands.dm_only()
     @is_permitted()
-    @commands.command(name = "notify")
-    async def notify_command(self, ctx, *, message):
-        if self.bot.heroku:
-            return
-
-        icon_path = f"{config.path}/tmp/{ctx.author.id}.png"
-        if not os.path.exists(icon_path):
-            asset = ctx.author.avatar_url_as(size = 64)
-            await asset.save(icon_path)
-
-        notification = Notify()
-        notification.title = f"Message from {ctx.author}"
-        notification.message = message
-        notification.icon = icon_path
-        notification.application_name = None
-        notification.send(block = False)
-        asyncio.gather(ctx.send("Sent!"))
-
-    @commands.dm_only()
-    @is_permitted()
-    @commands.command()
-    async def gps(self, ctx):
-        last_location = Location.select().where(Location.name == "Clark").order_by(Location.created_on.desc()).first()
-        url = last_location.google_maps_url
-
-        embed = discord.Embed(color = self.bot.get_dominant_color(None))
-        embed.description = f"[Google maps url]({url})"
-        embed.set_footer(text = "Last seen at")
-        embed.timestamp = last_location.created_on
-        asyncio.gather(ctx.send(embed = embed))
-
-    @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
-    @commands.dm_only()
-    @is_permitted()
     @commands.command(aliases = ["crna"])
     async def cam(self, ctx):
         if self.bot.heroku:
             return
+
+        import cv2
         user = self.user if ctx.invoked_with == "crna" else ctx.author
 
         async with ctx.typing():
@@ -112,9 +78,11 @@ class Personal(discord.ext.commands.Cog):
 
     @commands.command()
     @is_permitted()
-    async def question(self, ctx, question : PersonalQuestion):
+    async def question(self, ctx, question : PersonalQuestion = None):
         if question is None:
-            return asyncio.gather(ctx.send("None found."))
+            question = PersonalQuestion.get_random()
+        if question is None or PersonalQuestion.select().where(PersonalQuestion.asked == False).count() == 0:
+            raise SendableException(ctx.translate("all_questions_asked"))
         if question.asked:
             raise SendableException(ctx.translate("question_already_asked"))
 
