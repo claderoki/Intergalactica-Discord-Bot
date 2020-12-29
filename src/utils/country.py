@@ -13,8 +13,12 @@ class Country(CountryInfo):
         super().__init__(argument)
         if super().name() == argument:
             raise CountryNotFound("Not found.")
+        try:
+            iso = self.iso()
+        except KeyError:
+            raise CountryNotFound("Not found.")
 
-        self._country = pycountry.countries.get(alpha_2 = self.iso()["alpha2"])
+        self._country = pycountry.countries.get(alpha_2 = iso["alpha2"])
 
         self._covid_status = None
 
