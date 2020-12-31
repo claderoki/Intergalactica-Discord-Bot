@@ -56,10 +56,11 @@ class Games(commands.Cog):
         await game.start()
 
     @commands.command()
-    async def hangman(self, ctx):
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def hangman(self, ctx, timeout : int = 30):
         players = []
 
-        members = await self.get_members(ctx, timeout = 60)
+        members = await self.get_members(ctx, timeout = timeout)
         for member in members:
             players.append(hangman.game.Player(DiscordIdentity(member), 5))
 
