@@ -241,20 +241,25 @@ class Locus(commands.Bot):
         ctx.db.__exit__(None, None, None)
 
     def success(self, ctx):
-        async def wrapper(content = None): 
+        async def wrapper(content = None, delete_after = None):
             if content is None:
                 await ctx.message.add_reaction("✅")
             else:
-                await ctx.send(embed = Embed.success(content))
+                await ctx.send(embed = Embed.success(content), delete_after = delete_after)
         return wrapper
 
     def error(self, ctx):
-        async def wrapper(content = None): 
+        async def wrapper(content = None, delete_after = None):
             if content is None:
                 await ctx.message.add_reaction("❌")
             else:
-                await ctx.send(embed = Embed.error(content))
+                await ctx.send(embed = Embed.error(content), delete_after = delete_after)
         return wrapper
+
+    def can_change_nick(self, member, other = None):
+        guild = member.guild
+        other = other or guild.me
+        return not (other.top_role.position <= member.top_role.position or member.id == guild.owner_id)
 
     async def before_any_command(self, ctx):
         ctx.db = database.connection_context()
