@@ -216,11 +216,11 @@ class Item(BaseModel):
     image_url   = peewee.TextField    (null = False)
     rarity      = EnumField           (Rarity, null = False, default = Rarity.common)
     explorable  = peewee.BooleanField (null = False, default = False)
+    code        = peewee.CharField    (max_length = 45)
 
     @property
     def embed(self):
-        embed = discord.Embed()
-        # embed.color = self.bot.calculate_dominant_color(self.image_url)
+        embed = discord.Embed(color = self.rarity.color)
         embed.set_thumbnail(url = self.image_url)
         embed.title = self.name
         embed.description = self.description
