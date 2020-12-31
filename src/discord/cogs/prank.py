@@ -73,13 +73,19 @@ class Prank(discord.ext.commands.Cog):
         if victim.pranked:
             raise SendableException(ctx.translate("already_pranked"))
 
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
-        cost = 500
-        raise_if_not_enough_gold(ctx, cost, human)
+        human, _ = Human.get_or_create(user_id = user.id)
+        human_item = HumanItem.get_or_none(
+            human = human,
+            code = "jesters_hat"
+        )
+        has_hat = human_item is not None and human_item.amount > 0
 
-        waiter = BoolWaiter(ctx, prompt = ctx.translate("gold_verification_check").format(gold = cost))
-        if not await waiter.wait():
-            return asyncio.gather(ctx.send(ctx.translate("canceled")))
+        if not has_hat:
+            cost = 500
+            raise_if_not_enough_gold(ctx, cost, human)
+            waiter = BoolWaiter(ctx, prompt = ctx.translate("gold_verification_check").format(gold = cost))
+            if not await waiter.wait():
+                return asyncio.gather(ctx.send(ctx.translate("canceled")))
 
         waiter = StrWaiter(ctx, max_words = None, prompt = ctx.translate("nickname_prank_prompt"), max_length = 32)
         new_nickname = await waiter.wait()
@@ -96,9 +102,12 @@ class Prank(discord.ext.commands.Cog):
             victim = victim,
             pranked_by = prankster
         )
-
-        human.gold -= cost
-        human.save()
+        if has_hat:
+            human_item.amount -= 1
+            human_item.save()
+        else:
+            human.gold -= cost
+            human.save()
         prank.save()
         victim.save()
         prankster.save()
@@ -151,7 +160,8 @@ class Prank(discord.ext.commands.Cog):
                         asyncio.gather(prank.revert())
                 else:
                     if prank.victim.member and prank.victim.member.display_name != prank.new_nickname:
-                        asyncio.gather(prank.apply())
+                        if prank.id != 83:
+                            asyncio.gather(prank.apply())
 
 def raise_if_not_enough_gold(ctx, gold, human, name = "you"):
     if human.gold < gold:
