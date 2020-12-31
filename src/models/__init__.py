@@ -7,7 +7,7 @@ from .ticket import Ticket, Reply
 from .poll import Change, Parameter, Poll, PollTemplate, Vote, Option
 from .scene import Scene, Scenario
 from .pigeon import Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date
-from .admin import SavedEmoji, Location, DailyReminder, PersonalQuestion
+from .admin import SavedEmoji, Location, DailyReminder, PersonalQuestion, Word
 from .prank import NicknamePrank, Prankster
 from .reddit import Subreddit
 
@@ -18,8 +18,8 @@ def setup():
         # database.drop_tables([Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
         database.create_tables([Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
 
-        # database.drop_tables([SavedEmoji, Location, DailyReminder, PersonalQuestion])
-        database.create_tables([SavedEmoji, Location, DailyReminder, PersonalQuestion])
+        # database.drop_tables([SavedEmoji, Location, DailyReminder, PersonalQuestion, Word])
+        database.create_tables([SavedEmoji, Location, DailyReminder, PersonalQuestion, Word])
 
         # database.drop_tables([Subreddit])
         database.create_tables([Subreddit])
