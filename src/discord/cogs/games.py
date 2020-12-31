@@ -1,6 +1,10 @@
+import asyncio
+import datetime
+
 import discord
 from discord.ext import commands
 
+from src.models import Word
 import src.config as config
 import src.games.blackjack as blackjack
 import src.games.slotmachine as slotmachine
@@ -13,8 +17,32 @@ class Games(commands.Cog):
         super().__init__()
         self.bot = bot
 
-    async def get_players(self, timeout=15.0):
-        players = []
+    async def get_members(self, ctx, timeout = 15):
+        members = [ctx.author]
+        join_emoji = "✅"
+
+        embed = discord.Embed(color = ctx.guild_color)
+        embed.description = f"React with {join_emoji} to join\nCurrent players:\n{members[0].mention}"
+        embed.set_footer(text = "Game will start at")
+        embed.timestamp = datetime.datetime.utcnow() + datetime.timedelta(seconds = timeout)
+        message = await ctx.send(embed = embed)
+        asyncio.gather(message.add_reaction(join_emoji))
+
+        def check(reaction, user):
+            if str(reaction.emoji) == join_emoji and not user.bot:
+                if user.id not in [x.id for x in members]:
+                    members.append(user)
+                    embed = message.embeds[0]
+                    embed.description += f"\n{user.mention}"
+                    asyncio.gather(message.edit(embed = embed))
+            return False
+
+        try:
+            await self.bot.wait_for("reaction_add", check = check, timeout = timeout)
+        except asyncio.TimeoutError:
+            return members
+
+
 
     @commands.command()
     async def blackjack(self, ctx):
@@ -31,10 +59,12 @@ class Games(commands.Cog):
     async def hangman(self, ctx):
         players = []
 
-        players.append(hangman.game.Player(DiscordIdentity(ctx.author), 5))
-        game = hangman.game.Game(players, "appelsap", hangman.ui.DiscordUI(ctx))
-        await game.start()
+        members = await self.get_members(ctx, timeout = 60)
+        for member in members:
+            players.append(hangman.game.Player(DiscordIdentity(member), 5))
 
+        game = hangman.game.Game(players, Word.get_random().value, hangman.ui.DiscordUI(ctx))
+        await game.start()
 
 def setup(bot):
     bot.add_cog(Games(bot))
