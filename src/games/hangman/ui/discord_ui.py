@@ -1,3 +1,4 @@
+import asyncio
 from enum import Enum
 import math
 
@@ -6,12 +7,10 @@ import discord
 from .ui import UI
 
 class DiscordUI(UI):
-
-
-
     def __init__(self, ctx):
         self.message = None
         self.ctx = ctx
+
     def __check(self, word, letters_used, player):
         def __check2(message):
             if not self.ctx.channel.id == message.channel.id:
@@ -20,11 +19,15 @@ class DiscordUI(UI):
                 return False
             if len(message.content) == len(word):
                 return True
-            if len(message.content) == 1 and message.content.lower() not in letters_used:
-                return True
+            if len(message.content) == 1:
+                letter = message.content.lower()
+                asyncio.gather(message.delete())
+                if letter not in letters_used:
+                    return True
+                else:
+                    asyncio.gather(self.ctx.error(f"Letter '{letter}' has already been used", delete_after = 10))
 
             return False
-
         return __check2
 
     async def get_guess(self, word, player, letters_used):
@@ -33,14 +36,10 @@ class DiscordUI(UI):
         except asyncio.TimeoutError:
             guess = None
 
-        try:
-            await guess.delete()
-        except: pass
-
         return guess.content.lower() if guess is not None else None
 
     async def refresh_board(self, game, current_player = None):
-        embed = discord.Embed(title=" ".join(game.board))
+        embed = discord.Embed(color = self.ctx.guild_color, title=" ".join(game.board))
 
         for player in game.players:
             if player.dead:
@@ -48,7 +47,8 @@ class DiscordUI(UI):
 
             length = len(str(player))
 
-            arrows = "`" + (((length // 2) - 1) * " ") + "↑`"
+            # arrows = "`" + (((length // 2) - 1) * " ") + "↑`"
+            arrows = ""
 
             embed.add_field(
                 name = str(player),
@@ -57,6 +57,8 @@ class DiscordUI(UI):
         guess_info = []
         guess_info.append("letters used: " + ", ".join(game.letters_used))
         guess_info.append("words used: " + ", ".join(game.words_used))
+        if current_player is not None:
+            guess_info.append(f"{current_player.identity.member.mention}s turn")
 
         embed.add_field(name = "\uFEFF", value = "\n".join(guess_info), inline = False)
 
@@ -65,24 +67,26 @@ class DiscordUI(UI):
         else:
             await self.message.edit(embed=embed)
 
-
     async def stop(self, reason, game):
-        lines = ["Game has ended."]
-        lines.append(reason.value)
+        embed = discord.Embed(title = f"Game has ended: {reason.value}", color = self.ctx.guild_color)
+        lines = []
 
         bet_pool = sum([x.bet for x in game.players])
-        bet_pool = int(bet_pool * 1.25)
+        bet_pool *= 1.25
+        bet_pool += (15 * len(game.players))
+        bet_pool = int(bet_pool)
 
         for player in game.players:
             if player.dead:
                 player.identity.remove_points(player.bet)
-                lines.append(f"Player {player} has lost **{player.bet}** gold")
+                lines.append(f"{player.identity.member.mention} lost **{player.bet}** gold")
             else:
                 percentage_guessed = player.get_percentage_guessed(game.word)
                 won = math.ceil(percentage_guessed / 100 * bet_pool)
                 player.identity.add_points(won)
-                lines.append(f"Player {player} has won **{won}** gold, percentage guessed: **{int(percentage_guessed)}**")
+                lines.append(f"{player.identity.member.mention} won **{won}** gold ({int(percentage_guessed)}%)")
 
-        lines.append(f"The word was {game.word}")
+        embed.description = "\n".join(lines)
+        embed.set_footer(text = f"word: {game.word}")
 
-        await self.ctx.send("\n".join(lines))
+        await self.ctx.send(embed = embed)
