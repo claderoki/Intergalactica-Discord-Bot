@@ -98,7 +98,8 @@ class BaseModel(peewee.Model):
 
     class Meta:
         legacy_table_names = False
-
+        only_save_dirty = True
+        table_settings = ["DEFAULT CHARSET=utf8"]
         database = peewee.MySQLDatabase(
             config.environ["mysql_db_name"],
             user     = config.environ["mysql_user"],
