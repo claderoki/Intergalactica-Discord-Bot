@@ -12,11 +12,11 @@ class DiscordUI(UI):
     def __init__(self, ctx):
         self.message = None
         self.ctx = ctx
-    def __check(self, word, letters_used):
+    def __check(self, word, letters_used, player):
         def __check2(message):
             if not self.ctx.channel.id == message.channel.id:
                 return False
-            if not self.ctx.author.id == message.author.id:
+            if not player.identity.member.id == message.author.id:
                 return False
             if len(message.content) == len(word):
                 return True
@@ -29,7 +29,7 @@ class DiscordUI(UI):
 
     async def get_guess(self, word, player, letters_used):
         try:
-            guess = await self.ctx.bot.wait_for("message", check = self.__check(word, letters_used) )
+            guess = await self.ctx.bot.wait_for("message", check = self.__check(word, letters_used, player) )
         except asyncio.TimeoutError:
             guess = None
 
