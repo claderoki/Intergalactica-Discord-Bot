@@ -5,29 +5,31 @@ import discord
 from discord.ext import commands, tasks
 
 import src.config as config
-from src.models import Human, Prankster, NicknamePrank, database
+from src.models import Human, Prankster, NicknamePrank, HumanItem, Item, database
 from src.discord.errors.base import SendableException
 import src.discord.helpers.pretty as pretty
 from src.discord.helpers.waiters import StrWaiter, BoolWaiter
 
 class Prank(discord.ext.commands.Cog):
-
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_ready(self):
-
         if self.bot.production:
             self.prank_poller.start()
 
     @commands.group()
+    @commands.guild_only()
     async def prank(self, ctx):
         pass
 
     @prank.command(name = "toggle")
     async def prank_toggle(self, ctx):
+        if not self.bot.can_change_nick(ctx.author):
+            raise SendableException(ctx.translate("cannot_toggle_because_cannot_change_nickname"))
+
         prankster, _ = Prankster.get_or_create(user_id = ctx.author.id, guild_id = ctx.guild.id)
 
         if prankster.enabled and prankster.days_ago_last_pranked == 0:
@@ -54,13 +56,11 @@ class Prank(discord.ext.commands.Cog):
                 table.add_row(pretty.Row((str(member), pretty.prettify_value(prankster.pranked))))
         await table.to_paginator(ctx, 10).wait()
 
-    @commands.guild_only()
     @prank.command(name = "nickname", aliases = ["nick"] )
     async def prank_nickname(self, ctx, member : discord.Member):
         if member.bot:
             raise SendableException(ctx.translate("cannot_prank_bot"))
-
-        if ctx.guild.me.top_role.position <= member.top_role.position or member.id == ctx.guild.owner_id:
+        if not self.bot.can_change_nick(member):
             raise SendableException(ctx.translate("cannot_change_nickname"))
 
         prankster, _ = Prankster.get_or_create(user_id = ctx.author.id, guild_id = ctx.guild.id)
@@ -73,10 +73,10 @@ class Prank(discord.ext.commands.Cog):
         if victim.pranked:
             raise SendableException(ctx.translate("already_pranked"))
 
-        human, _ = Human.get_or_create(user_id = user.id)
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
         human_item = HumanItem.get_or_none(
             human = human,
-            code = "jesters_hat"
+            item = Item.get(Item.code == "jester_hat")
         )
         has_hat = human_item is not None and human_item.amount > 0
 
@@ -160,8 +160,7 @@ class Prank(discord.ext.commands.Cog):
                         asyncio.gather(prank.revert())
                 else:
                     if prank.victim.member and prank.victim.member.display_name != prank.new_nickname:
-                        if prank.id != 83:
-                            asyncio.gather(prank.apply())
+                        asyncio.gather(prank.apply())
 
 def raise_if_not_enough_gold(ctx, gold, human, name = "you"):
     if human.gold < gold:
