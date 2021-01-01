@@ -116,6 +116,9 @@ def get_word_definition(word):
     soup = BeautifulSoup(request.text, features = "html5lib")
 
     definition = soup.find(id = "Definition")
+    if definition is None:
+        return
+
     ds = definition.find(class_ = "ds-single") or definition.find(class_ = "ds-list")
     if ds is not None:
         return ds.text.strip()
