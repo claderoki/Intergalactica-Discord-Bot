@@ -42,8 +42,6 @@ class Games(commands.Cog):
         except asyncio.TimeoutError:
             return members
 
-
-
     @commands.command()
     async def blackjack(self, ctx):
         player = blackjack.game.Player(5, ctx.author)
