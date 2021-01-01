@@ -38,6 +38,8 @@ class Intergalactica(commands.Cog):
     }
 
     _channel_ids = {
+        "general"       : 744650481682481233,
+        "roles"         : 742303560988885044,
         "selfies"       : 744703465086779393,
         "concerns"      : 758296826549108746,
         "staff_chat"    : 750067502352171078,
@@ -154,6 +156,7 @@ class Intergalactica(commands.Cog):
     async def on_member_leave_or_join(self, member, type):
         if not self.bot.production or member.guild.id != self.guild_id:
             return
+
         welcome_channel = member.guild.system_channel
         text = self.bot.translate("member_" + type)
 
@@ -165,7 +168,11 @@ class Intergalactica(commands.Cog):
         embed.set_author(name = name, icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/768460504649695282/c3p0.png")
         embed.description = text.format(member = member)
 
-        await welcome_channel.send(embed = embed)
+        asyncio.gather(welcome_channel.send(embed = embed))
+
+        if type == "join":
+            msg = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introduction']}>"
+            asyncio.gather(self.get_channel("general").send(msg))
 
     async def create_selfie_poll(self, ctx, member):
         poll = Poll.from_template(PollTemplate.get(name = "selfies"))
