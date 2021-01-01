@@ -17,3 +17,4 @@ currencyconverter
 praw
 covid
 beautifulsoup4
+html5lib
