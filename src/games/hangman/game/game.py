@@ -53,6 +53,8 @@ class Game:
 
             if guess is None:
                 player.increment_incorrect()
+                if player.dead:
+                    self.ui.send_error(f"{player.identity.member.mention} has perished.")
 
             elif len(guess) == 1:
                 if guess in self.word and guess not in self.letters_used:
@@ -61,7 +63,6 @@ class Game:
                             self.board[i] = guess
                             player.increment_correct()
 
-    
                     if self.word_guessed():
                         self.winner = player
                 else:
