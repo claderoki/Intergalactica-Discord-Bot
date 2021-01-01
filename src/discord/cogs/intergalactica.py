@@ -171,7 +171,7 @@ class Intergalactica(commands.Cog):
         asyncio.gather(welcome_channel.send(embed = embed))
 
         if type == "join":
-            msg = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introduction']}>"
+            msg = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
             asyncio.gather(self.get_channel("general").send(msg))
 
     async def create_selfie_poll(self, ctx, member):
