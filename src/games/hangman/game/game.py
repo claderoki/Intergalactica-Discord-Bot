@@ -40,6 +40,11 @@ class Game:
             if i > len(self.players)-1:
                 i = 0
 
+    def increment_incorrect(self, player):
+        player.increment_incorrect()
+        if player.dead and not self.all_players_dead():
+            self.ui.send_error(f"{player.identity.member.mention} has perished.")
+
     async def start(self):
         await self.ui.refresh_board(self)
         living_players = self.living_players()
@@ -52,10 +57,7 @@ class Game:
             guess = await self.ui.get_guess(self.word, player, self.letters_used)
 
             if guess is None:
-                player.increment_incorrect()
-                if player.dead:
-                    self.ui.send_error(f"{player.identity.member.mention} has perished.")
-
+                self.increment_incorrect(player)
             elif len(guess) == 1:
                 if guess in self.word and guess not in self.letters_used:
                     for i in range(len(self.word)):
@@ -66,7 +68,7 @@ class Game:
                     if self.word_guessed():
                         self.winner = player
                 else:
-                    player.increment_incorrect()
+                    self.increment_incorrect(player)
 
                 self.letters_used.append(guess)
 
@@ -80,7 +82,7 @@ class Game:
                     self.winner = player
                 else:
                     self.words_used.append(guess)
-                    player.increment_incorrect()
+                    self.increment_incorrect(player)
 
         await self.ui.refresh_board(self)
 
