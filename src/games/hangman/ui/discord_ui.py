@@ -12,6 +12,7 @@ class DiscordUI(UI):
         self.message = None
         self.ctx = ctx
         self.invalid_messages = 0
+        self.timeout = 60
 
     def __check(self, word, letters_used, player):
         def __check2(message):
@@ -22,13 +23,13 @@ class DiscordUI(UI):
                 return False
             if len(message.content) == 1:
                 letter = message.content.lower()
-                asyncio.gather(message.delete())
+                asyncio.gather(message.delete(), return_exceptions = False)
                 if letter not in letters_used:
                     return True
                 else:
                     self.send_error(f"Letter '{letter}' has already been used")
             elif len(message.content) == len(word):
-                asyncio.gather(message.delete())
+                asyncio.gather(message.delete(), return_exceptions = False)
                 return True
             else:
                 self.invalid_messages += 1
@@ -42,11 +43,12 @@ class DiscordUI(UI):
 
     async def get_guess(self, word, player, letters_used):
         try:
-            guess = await self.ctx.bot.wait_for("message", check = self.__check(word, letters_used, player) )
+            guess = await self.ctx.bot.wait_for("message", check = self.__check(word, letters_used, player), timeout = self.timeout)
         except asyncio.TimeoutError:
             guess = None
 
         return guess.content.lower() if guess is not None else None
+    
 
     async def refresh_board(self, game, current_player = None):
         embed = discord.Embed(color = self.ctx.guild_color, title=" ".join(game.board))
@@ -63,7 +65,7 @@ class DiscordUI(UI):
 
         guess_info = []
         guess_info.append("letters used: " + ", ".join(game.letters_used))
-        guess_info.append("words used: " + ", ".join(game.words_used))
+        guess_info.append("words tried: " + ", ".join(game.words_used))
         if current_player is not None:
             guess_info.append(f"{current_player.identity.member.mention}s turn")
 
@@ -95,7 +97,25 @@ class DiscordUI(UI):
                 player.identity.add_points(won)
                 lines.append(f"{player.identity.member.mention} won **{won}** gold ({int(percentage_guessed)}%)")
 
+        lines.append("\n")
+        lines.append(f"word: {game.word}")
+        definition = get_word_definition(game.word)
+        if definition is not None:
+            lines.append(f"description: `{definition}`")
+
         embed.description = "\n".join(lines)
-        embed.set_footer(text = f"word: {game.word}")
 
         await self.ctx.send(embed = embed)
+
+
+def get_word_definition(word):
+    from bs4 import BeautifulSoup
+
+    url = "https://www.thefreedictionary.com/" + word
+    request = requests.get(url)
+    soup = BeautifulSoup(request.text, features = "html5lib")
+
+    definition = soup.find(id = "Definition")
+    ds = definition.find(class_ = "ds-single") or definition.find(class_ = "ds-list")
+    if ds is not None:
+        return ds.text.strip()
