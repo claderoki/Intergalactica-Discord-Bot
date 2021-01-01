@@ -148,8 +148,16 @@ class EnumField(peewee.TextField):
         if value is not None:
             return self.enum[value]
 
-class EmojiField(peewee.TextField):
+class UnicodeField(peewee.CharField):
+    def db_value(self, value):
+        if value is not None:
+            return value.encode("utf8")
 
+    def python_value(self, value):
+        if value is not None:
+            return value.decode()
+
+class EmojiField(peewee.TextField):
     def db_value(self, value):
         if value is not None:
             return emoji.demojize(value)
