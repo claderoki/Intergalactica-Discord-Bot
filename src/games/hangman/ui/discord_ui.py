@@ -2,7 +2,8 @@ import asyncio
 from enum import Enum
 import math
 
-import discord 
+import discord
+import requests
 
 from .ui import UI
 
@@ -10,25 +11,34 @@ class DiscordUI(UI):
     def __init__(self, ctx):
         self.message = None
         self.ctx = ctx
+        self.invalid_messages = 0
 
     def __check(self, word, letters_used, player):
         def __check2(message):
-            if not self.ctx.channel.id == message.channel.id:
+            if self.ctx.channel.id != message.channel.id:
                 return False
-            if not player.identity.member.id == message.author.id:
+            if player.identity.member.id != message.author.id:
+                self.invalid_messages += 1
                 return False
-            if len(message.content) == len(word):
-                return True
             if len(message.content) == 1:
                 letter = message.content.lower()
                 asyncio.gather(message.delete())
                 if letter not in letters_used:
                     return True
                 else:
-                    asyncio.gather(self.ctx.error(f"Letter '{letter}' has already been used", delete_after = 10))
+                    self.send_error(f"Letter '{letter}' has already been used")
+            elif len(message.content) == len(word):
+                asyncio.gather(message.delete())
+                return True
+            else:
+                self.invalid_messages += 1
+                return False
 
             return False
         return __check2
+
+    def send_error(self, text, delete_after = 10):
+        asyncio.gather(self.ctx.error(text, delete_after = delete_after))
 
     async def get_guess(self, word, player, letters_used):
         try:
@@ -47,12 +57,9 @@ class DiscordUI(UI):
 
             length = len(str(player))
 
-            # arrows = "`" + (((length // 2) - 1) * " ") + "↑`"
-            arrows = ""
-
             embed.add_field(
                 name = str(player),
-                value = f"```\n{self.game_states[player.incorrect_guesses]}```" + (arrows if player == current_player else "") )
+                value = f"```\n{self.game_states[player.incorrect_guesses]}```")
 
         guess_info = []
         guess_info.append("letters used: " + ", ".join(game.letters_used))
@@ -61,9 +68,11 @@ class DiscordUI(UI):
             guess_info.append(f"{current_player.identity.member.mention}s turn")
 
         embed.add_field(name = "\uFEFF", value = "\n".join(guess_info), inline = False)
-
-        if self.message is None:
+        if self.message is None or self.invalid_messages > 3:
+            if self.message is not None:
+                asyncio.gather(self.message.delete())
             self.message = await self.ctx.send(embed=embed)
+            self.invalid_messages = 0
         else:
             await self.message.edit(embed=embed)
 
