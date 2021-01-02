@@ -21,7 +21,7 @@ class DiscordUI(UI):
             if player.identity.member.id != message.author.id:
                 self.invalid_messages += 1
                 return False
-            if len(message.content) == 1:
+            if len(message.content) == 1 and " " not in message.content:
                 letter = message.content.lower()
                 asyncio.gather(message.delete(), return_exceptions = False)
                 if letter not in letters_used:
@@ -48,7 +48,6 @@ class DiscordUI(UI):
             guess = None
 
         return guess.content.lower() if guess is not None else None
-    
 
     async def refresh_board(self, game, current_player = None):
         embed = discord.Embed(color = self.ctx.guild_color, title=" ".join(game.board))
@@ -61,22 +60,24 @@ class DiscordUI(UI):
 
             embed.add_field(
                 name = str(player),
-                value = f"```\n{self.game_states[player.incorrect_guesses]}```")
+                value = f">>> ```\n{self.game_states[player.incorrect_guesses]}```")
 
         guess_info = []
         guess_info.append("letters used: " + ", ".join(game.letters_used))
         guess_info.append("words tried: " + ", ".join(game.words_used))
+
+        content = None
         if current_player is not None:
-            guess_info.append(f"{current_player.identity.member.mention}s turn")
+            content = f"{current_player.identity.member.mention}, your turn! {self.timeout}s"
 
         embed.add_field(name = "\uFEFF", value = "\n".join(guess_info), inline = False)
         if self.message is None or self.invalid_messages > 3:
             if self.message is not None:
                 asyncio.gather(self.message.delete())
-            self.message = await self.ctx.send(embed=embed)
+            self.message = await self.ctx.send(content = content, embed = embed)
             self.invalid_messages = 0
         else:
-            await self.message.edit(embed=embed)
+            asyncio.gather(self.message.edit(content = content, embed = embed))
 
     async def stop(self, reason, game):
         embed = discord.Embed(title = f"Game has ended: {reason.value}", color = self.ctx.guild_color)
