@@ -67,7 +67,7 @@ class DiscordUI(UI):
                 value = f">>> ```\n{self.game_states[player.incorrect_guesses]}```")
 
         guess_info = []
-        guess_info.append("letters used: " + ", ".join([f"**{x}**" for x in game.letters_used]))
+        guess_info.append("letters used: " + ", ".join([f"**{x}**" for x in sorted(game.letters_used)]))
 
         if len(game.words_used) > 0:
             guess_info.append("words tried: " + ", ".join(game.words_used))
