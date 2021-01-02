@@ -74,7 +74,7 @@ class DiscordUI(UI):
 
         content = None
         if current_player is not None:
-            content = f"{current_player.identity.member.mention}, your turn! {self.timeout}s"
+            content = current_player.identity.member.mention
 
         embed.add_field(name = "\uFEFF", value = "\n".join(guess_info), inline = False)
         if self.message is None or self.invalid_messages > 3:
@@ -85,8 +85,8 @@ class DiscordUI(UI):
         else:
             asyncio.gather(self.message.edit(content = content, embed = embed))
 
-        if current_player is not None:
-            self.mention_message = await self.ctx.send(content, delete_after = self.timeout)
+        if current_player is not None and len(game.players) > 1:
+            self.mention_message = await self.ctx.send(f"{current_player.identity.member.mention}, your turn! {self.timeout}s...", delete_after = self.timeout)
 
     async def stop(self, reason, game):
         embed = discord.Embed(title = f"Game has ended: {reason.value}", color = self.ctx.guild_color)
