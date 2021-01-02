@@ -98,10 +98,10 @@ class DiscordUI(UI):
                 lines.append(f"{player.identity.member.mention} won **{won}** gold ({int(percentage_guessed)}%)")
 
         lines.append("\n")
-        lines.append(f"word: {game.word}")
+        lines.append(f"**{game.word}**")
         definition = get_word_definition(game.word)
         if definition is not None:
-            lines.append(f"description: `{definition}`")
+            lines.append(f"*{definition}*")
 
         embed.description = "\n".join(lines)
 
