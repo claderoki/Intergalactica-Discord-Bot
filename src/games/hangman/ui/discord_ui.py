@@ -10,6 +10,7 @@ from .ui import UI
 class DiscordUI(UI):
     def __init__(self, ctx):
         self.message = None
+        self.mention_message = None
         self.ctx = ctx
         self.invalid_messages = 0
         self.timeout = 60
@@ -47,6 +48,9 @@ class DiscordUI(UI):
         except asyncio.TimeoutError:
             guess = None
 
+        if self.mention_message is not None:
+            asyncio.gather(self.mention_message.delete())
+
         return guess.content.lower() if guess is not None else None
 
     async def refresh_board(self, game, current_player = None):
@@ -63,8 +67,10 @@ class DiscordUI(UI):
                 value = f">>> ```\n{self.game_states[player.incorrect_guesses]}```")
 
         guess_info = []
-        guess_info.append("letters used: " + ", ".join(game.letters_used))
-        guess_info.append("words tried: " + ", ".join(game.words_used))
+        guess_info.append("letters used: " + ", ".join([f"**{x}**" for x in game.letters_used]))
+
+        if len(game.words_used) > 0:
+            guess_info.append("words tried: " + ", ".join(game.words_used))
 
         content = None
         if current_player is not None:
@@ -78,6 +84,9 @@ class DiscordUI(UI):
             self.invalid_messages = 0
         else:
             asyncio.gather(self.message.edit(content = content, embed = embed))
+
+        if current_player is not None:
+            self.mention_message = await self.ctx.send(content, delete_after = self.timeout)
 
     async def stop(self, reason, game):
         embed = discord.Embed(title = f"Game has ended: {reason.value}", color = self.ctx.guild_color)
