@@ -90,14 +90,13 @@ class Game:
 
     def calculate_reason(self):
         if self.winner is None:
-            return self.Reasons.AllPlayersDead
+            return self.Reasons.all_players_dead
         else:
-            return self.Reasons.WordGuessed
-
+            return self.Reasons.word_guessed
 
     async def stop(self, reason):
         await self.ui.stop(reason, self)
 
     class Reasons(Enum):
-        AllPlayersDead = "Everybody lost"
-        WordGuessed    = "Word has been guessed"
+        all_players_dead = "Everybody lost"
+        word_guessed     = "Word has been guessed"
