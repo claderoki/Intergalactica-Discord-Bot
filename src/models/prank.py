@@ -38,7 +38,10 @@ class NicknamePrank(Prank):
 
     async def apply(self):
         member = self.victim.member
-        await member.edit(nick = self.new_nickname)
+        try:
+            await member.edit(nick = self.new_nickname)
+        except Exception as e:
+            pass
 
     async def revert(self):
         member = self.victim.member
