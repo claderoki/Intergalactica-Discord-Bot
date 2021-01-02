@@ -48,6 +48,7 @@ class Games(commands.Cog):
         game = blackjack.game.Game(player, blackjack.ui.DiscordUI(ctx))
         await game.start()
 
+    @commands.max_concurrency(1, per = commands.BucketType.user)
     @commands.command(aliases = ["slots"])
     async def slotmachine(self, ctx):
         game = slotmachine.game.Game(slotmachine.ui.DiscordUI(ctx))
