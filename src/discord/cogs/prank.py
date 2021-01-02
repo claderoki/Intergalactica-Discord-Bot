@@ -117,7 +117,10 @@ class Prank(discord.ext.commands.Cog):
         embed = self.bot.get_base_embed()
         embed.description = f"Nickname of {member.mention} has been changed to **{new_nickname}**."
         embed.timestamp = prank.end_date
-        embed.set_footer(text = f"-{cost}\nWill stay into effect until")
+        if has_hat:
+            embed.set_footer(text = f"-{human_item.item.name} `x1`\nWill stay into effect until")
+        else:
+            embed.set_footer(text = f"-{cost}\nWill stay into effect until")
 
         asyncio.gather(ctx.send(embed = embed))
 
