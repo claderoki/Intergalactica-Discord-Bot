@@ -137,9 +137,13 @@ class RedditAdvertisement(BaseModel):
 
     async def advertise(self):
         assert self.available
+        subreddit_names = ["DiscordAdvertising", "discordservers", "DiscordAppServers"]
+        subreddits = [self.bot.reddit.subreddit(x) for x in subreddit_names]
+        submissions = []
+        for subreddit in subreddits:
+            submission = subreddit.submit(self.description, url = await self.get_invite_url())
+            self.last_advertised = datetime.datetime.utcnow()
+            self.save()
+            submissions.append(submission)
 
-        subreddit = self.bot.reddit.subreddit("discordservers")
-        submission = subreddit.submit(self.description, url = await self.get_invite_url())
-        self.last_advertised = datetime.datetime.utcnow()
-        self.save()
-        return submission
+        return submissions[0]
