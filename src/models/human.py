@@ -158,7 +158,8 @@ class Human(BaseModel):
 
         if self.city is not None:
             city = self.bot.owm_api.by_q(self.city, self.country.alpha_2 if self.country else None)
-            values.append(f"{city.weather_infos[0].emoji} {city.temperature_info.temperature}{city.unit.symbol}")
+            if city is not None:
+                values.append(f"{city.weather_infos[0].emoji} {city.temperature_info.temperature}{city.unit.symbol}")
         elif show_all:
             values.append("🌡️ N/A")
 
