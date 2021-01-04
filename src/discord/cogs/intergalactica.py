@@ -226,7 +226,7 @@ class Intergalactica(commands.Cog):
     def get_milkyway_human_item(self, user):
         human_item = HumanItem.get_or_none(
             human = Human.get_or_create(user_id = user.id)[0],
-            code = "milky_way"
+            item = Item.get(code = "milky_way")
         )
         if human_item is None or human_item.amount == 0:
             raise SendableException("no_milky_way")
