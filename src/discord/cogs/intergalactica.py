@@ -545,9 +545,21 @@ class Intergalactica(commands.Cog):
                 continue
 
             if not member_is_legal(member):
-                days = (datetime.datetime.utcnow() - member.joined_at).days
-                if days > 1:
-                    await self.log("bot_commands", f"**{member}** {member.mention} is missing one or more of the mandatory roles.")
+                with database.connection_context():
+                    earthling, _ = Earthling.get_or_create_for_member(member)
+                    warns_before_kick = 2
+                    if earthling.mandatory_role_warns < warns_before_kick:
+                        content = "(Warning #{warning_nr}: Hello. In the {guild.name}, the age and gender roles are mandatory. On warning {warning_limit} you will be removed from the server."
+                        try:
+                            await member.send(content = content)
+                        except discord.errors.Forbidden:
+                            await self.log("bot_commands", f"**{member}** {member.mention} is missing one or more of the mandatory roles: unable to warn through DMs.")
+                        else:
+                            earthling.mandatory_role_warns += 1
+                            earthling.save()
+                    else:
+                        asyncio.gather(member.kick(reason = "Missing mandatory roles."))
+                        await self.log("bot_commands", f"**{member}** {member.mention} was kicked due to missing roles")
 
     @tasks.loop(hours = 12)
     async def birthday_poller(self):
