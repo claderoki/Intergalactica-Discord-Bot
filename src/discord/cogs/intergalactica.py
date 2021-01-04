@@ -38,16 +38,17 @@ class Intergalactica(commands.Cog):
     }
 
     _channel_ids = {
-        "general"       : 744650481682481233,
-        "roles"         : 742303560988885044,
-        "selfies"       : 744703465086779393,
-        "concerns"      : 758296826549108746,
-        "staff_chat"    : 750067502352171078,
-        "bot_spam"      : 742163352712642600,
-        "bot_commands"  : 754056523277271170,
-        "introductions" : 742567349613232249,
-        "tabs"          : 757961433911787592,
-        "logs"          : 745010147083944099
+        "general"        : 744650481682481233,
+        "roles"          : 742303560988885044,
+        "selfies"        : 744703465086779393,
+        "concerns"       : 758296826549108746,
+        "selfie_updates" : 795644055979294720,
+        "staff_chat"     : 750067502352171078,
+        "bot_spam"       : 742163352712642600,
+        "bot_commands"   : 754056523277271170,
+        "introductions"  : 742567349613232249,
+        "tabs"           : 757961433911787592,
+        "logs"           : 745010147083944099
     }
 
     async def get_invites(self, message):
@@ -77,6 +78,7 @@ class Intergalactica(commands.Cog):
         self.guild = self.bot.get_guild(self.guild_id)
         self.bot.get_dominant_color(self.guild)
         self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = 120)
+        self.role_needed_for_selfie_vote = self.guild.get_role(self._role_ids["ranks"]["nova"])
 
         if self.bot.production:
             self.temp_channel_checker.start()
@@ -325,6 +327,9 @@ class Intergalactica(commands.Cog):
         await self.on_member_leave_or_join(member, "leave")
 
     async def on_rank(self, member, role):
+        if role == self.role_needed_for_selfie_vote:
+            asyncio.gather(self.log("selfie_updates", f"**{member}** {member.mention} has achieved {role.name}!"))
+
         asyncio.gather(self.log("bot_commands", f"**{member}** {member.mention} has achieved {role.name}!"))
         role = self.guild.get_role(self._role_ids["5k+"])
         asyncio.gather(member.add_roles(role))
