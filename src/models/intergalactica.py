@@ -64,11 +64,12 @@ class TemporaryChannel(BaseModel):
         return channel
 
 class Earthling(BaseModel):
-    user_id               = peewee.BigIntegerField  (null = False)
-    guild_id              = peewee.BigIntegerField  (null = False)
-    personal_role_id      = peewee.BigIntegerField  (null = True)
-    human                 = peewee.ForeignKeyField  (Human, column_name = "global_human_id" )
-    last_active           = peewee.DateTimeField    (null = True)
+    user_id              = peewee.BigIntegerField  (null = False)
+    guild_id             = peewee.BigIntegerField  (null = False)
+    personal_role_id     = peewee.BigIntegerField  (null = True)
+    human                = peewee.ForeignKeyField  (Human, column_name = "global_human_id" )
+    last_active          = peewee.DateTimeField    (null = True)
+    mandatory_role_warns = peewee.IntegerField     (null = False, default = 0)
 
     class Meta:
         indexes = (
