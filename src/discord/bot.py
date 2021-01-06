@@ -261,6 +261,12 @@ class Locus(commands.Bot):
         other = other or guild.me
         return not (other.top_role.position <= member.top_role.position or member.id == guild.owner_id)
 
+    def raise_if_not_enough_gold(self, ctx):
+        def wrapper(gold, human, name = "you"):
+            if human.gold < gold:
+                raise SendableException(ctx.translate(f"{name}_not_enough_gold"))
+        return wrapper
+
     async def before_any_command(self, ctx):
         ctx.db = database.connection_context()
         ctx.db.__enter__()
@@ -275,6 +281,8 @@ class Locus(commands.Bot):
 
         ctx.success = self.success(ctx)
         ctx.error = self.error(ctx)
+
+        ctx.raise_if_not_enough_gold = self.raise_if_not_enough_gold(ctx)
 
         ctx.guild_color = self.get_dominant_color(ctx.guild)
 
