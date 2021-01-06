@@ -18,7 +18,8 @@ class Games(commands.Cog):
         self.bot = bot
 
     async def get_members(self, ctx, timeout = 15, gold_needed = 0):
-        members = [ctx.author]
+        creator = ctx.author
+        members = [creator]
         emojis = {"join": "✅", "start": "💪"}
 
         embed = discord.Embed(color = ctx.guild_color)
@@ -40,13 +41,13 @@ class Games(commands.Cog):
 
             emoji = str(reaction.emoji)
 
-            if emoji == emojis["start"] and user.id == members[0].id:
+            if emoji == emojis["start"] and user.id == creator.id:
                 return True
 
             elif emoji == emojis["join"] and user.id not in [x.id for x in members]:
                 if gold_needed is not None and gold_needed > 0:
                     human, _ = Human.get_or_create(user_id = user.id)
-                    if human < gold_needed:
+                    if human.gold < gold_needed:
                         asyncio.gather(message.channel.send(f"{user.mention}, you do not have enough gold to join this game. Gold needed: {gold_needed}"))
                         return False
                 members.append(user)
