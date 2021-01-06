@@ -112,8 +112,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         await fight.editor_for(ctx, "bet", min = 0, max = min([ctx.pigeon.human.gold, ctx.challengee.human.gold]), skippable = True)
 
-        raise_if_not_enough_gold(ctx, fight.bet, ctx.pigeon.human, name = "challenger")
-        raise_if_not_enough_gold(ctx, fight.bet, ctx.challengee.human, name = "challengee")
+        ctx.raise_if_not_enough_gold(fight.bet, ctx.pigeon.human, name = "challenger")
+        ctx.raise_if_not_enough_gold(fight.bet, ctx.challengee.human, name = "challengee")
 
         fight.save()
 
@@ -147,7 +147,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @pigeon.command(name = "name", aliases = ["rename"])
     async def pigeon_name(self, ctx):
         cost = 50
-        raise_if_not_enough_gold(ctx, cost, ctx.pigeon.human)
+        ctx.raise_if_not_enough_gold(cost, ctx.pigeon.human)
         await ctx.pigeon.editor_for(ctx, "name")
         ctx.pigeon.save()
         embed = self.get_base_embed(ctx.guild)
@@ -694,10 +694,6 @@ def pigeon_raise_if_stats_too_low(ctx, pigeon, name = "pigeon"):
     else:
         return
     raise SendableException(message.format(pigeon = pigeon))
-
-def raise_if_not_enough_gold(ctx, gold, human, name = "you"):
-    if human.gold < gold:
-        raise SendableException(ctx.translate(f"{name}_not_enough_gold"))
 
 def setup(bot):
     bot.add_cog(PigeonCog(bot))
