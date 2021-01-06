@@ -5,7 +5,9 @@ import math
 import discord
 import requests
 
+import src.config as config
 from .ui import UI
+from src.utils.general import html_to_discord
 
 class DiscordUI(UI):
     def __init__(self, ctx):
@@ -117,18 +119,12 @@ class DiscordUI(UI):
 
         await self.ctx.send(embed = embed)
 
-
 def get_word_definition(word):
-    from bs4 import BeautifulSoup
-
-    url = "https://www.thefreedictionary.com/" + word
-    request = requests.get(url)
-    soup = BeautifulSoup(request.text, features = "html5lib")
-
-    definition = soup.find(id = "Definition")
-    if definition is None:
-        return
-
-    ds = definition.find(class_ = "ds-single") or definition.find(class_ = "ds-list")
-    if ds is not None:
-        return ds.text.strip()
+    url = f"https://api.wordnik.com/v4/word.json/{word}/definitions"
+    params = {
+        "api_key": config.environ["wordnik_api_key"],
+        "limit": 1,
+        "includeRelated": False,
+    }
+    request = requests.get(url, params = params)
+    return html_to_discord(request.json()[0]["text"])
