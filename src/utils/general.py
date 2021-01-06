@@ -26,3 +26,17 @@ def text_to_emojis(text):
         emojis.append(emoji.emojize(emoji_format.format(char = char), use_aliases=True))
 
     return emojis
+
+def html_to_discord(text):
+    tags = {
+        "i"      : "*",
+        "strong" : "**"
+    }
+
+    for tag, replacement in tags.items():
+        text = text.replace(f"<{tag}>", replacement)
+        text = text.replace(f"</{tag}>", replacement)
+
+    return text
+
+
