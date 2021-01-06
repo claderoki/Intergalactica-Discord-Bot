@@ -147,7 +147,7 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
             for match in matches:
                 value = float(match[0])
                 unit = match[-1]
-                is_currency = unit.upper() in self.currency_converter.currencies
+                is_currency = unit.upper() in self.currency_converter.currencies or unit.lower() in currency_symbols
                 type = "currency" if is_currency else "measurement"
 
                 aliases_found = False
