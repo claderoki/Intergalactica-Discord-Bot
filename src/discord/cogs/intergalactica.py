@@ -43,9 +43,9 @@ class Intergalactica(commands.Cog):
         "selfies"        : 744703465086779393,
         "concerns"       : 758296826549108746,
         "selfie_updates" : 795644055979294720,
-        "staff_chat"     : 750067502352171078,
+        "staff_chat"     : 796413284105453589,
         "bot_spam"       : 742163352712642600,
-        "bot_commands"   : 754056523277271170,
+        "bot_commands"   : 796413360706682933,
         "introductions"  : 742567349613232249,
         "tabs"           : 757961433911787592,
         "logs"           : 745010147083944099
