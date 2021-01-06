@@ -48,7 +48,7 @@ class Intergalactica(commands.Cog):
         "bot_commands"   : 796413360706682933,
         "introductions"  : 742567349613232249,
         "tabs"           : 757961433911787592,
-        "logs"           : 745010147083944099
+        "logs"           : 796438050091171870
     }
 
     async def get_invites(self, message):
