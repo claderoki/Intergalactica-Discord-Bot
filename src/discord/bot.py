@@ -17,7 +17,7 @@ from dateutil.relativedelta import relativedelta
 import src.config as config
 from src.wrappers.openweathermap import OpenWeatherMapApi
 from src.wrappers.color_thief import ColorThief
-from src.models import Settings, Translation, NamedChannel, database
+from src.models import Settings, Translation, Human, NamedChannel, database
 from src.discord.errors.base import SendableException
 from src.discord.helpers.embed import Embed
 
@@ -262,7 +262,9 @@ class Locus(commands.Bot):
         return not (other.top_role.position <= member.top_role.position or member.id == guild.owner_id)
 
     def raise_if_not_enough_gold(self, ctx):
-        def wrapper(gold, human, name = "you"):
+        def wrapper(gold, human = None, name = "you"):
+            if human is None:
+                human, _ = Human.get_or_create(user_id = ctx.author.id)
             if human.gold < gold:
                 raise SendableException(ctx.translate(f"{name}_not_enough_gold"))
         return wrapper
