@@ -147,4 +147,4 @@ class RedditAdvertisement(BaseModel):
             self.save()
             submissions.append(submission)
 
-        return submissions[0]
+        return submissions
