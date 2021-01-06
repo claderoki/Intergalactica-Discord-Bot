@@ -18,6 +18,9 @@ class Games(commands.Cog):
         self.bot = bot
 
     async def get_members(self, ctx, timeout = 15, gold_needed = 0):
+        if isinstance(ctx.channel, discord.DMChannel):
+            return [ctx.author]
+
         creator = ctx.author
         members = [creator]
         emojis = {"join": "✅", "start": "💪"}
@@ -61,7 +64,7 @@ class Games(commands.Cog):
         except asyncio.TimeoutError:
             pass
         finally:
-            asyncio.gather(message.clear_reactions())
+            asyncio.gather(message.clear_reactions(), return_exceptions = False)
             return members
 
     @commands.command()
@@ -90,7 +93,10 @@ class Games(commands.Cog):
         for member in members:
             players.append(hangman.game.Player(DiscordIdentity(member), cost))
 
-        game = hangman.game.Game(players, Word.get_random().value, hangman.ui.DiscordUI(ctx))
+        async with ctx.typing():
+            word = Word.get_random()
+
+        game = hangman.game.Game(players, word.value, hangman.ui.DiscordUI(ctx))
         await game.start()
 
 def setup(bot):
