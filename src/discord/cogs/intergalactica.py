@@ -199,12 +199,16 @@ class Intergalactica(commands.Cog):
             embed = Embed.error(None)
             embed.set_footer(text = ctx.translate("available_again_at"))
             embed.timestamp = reddit_advertisement.last_advertised + datetime.timedelta(hours = 24)
+            asyncio.gather(ctx.send(embed = embed))
         else:
             embed = Embed.success(None)
-            submission = await reddit_advertisement.advertise()
-            embed.set_author(name = ctx.translate("bump_successful"), url = submission.shortlink)
+            submissions = await reddit_advertisement.advertise()
+            embed.set_author(name = ctx.translate("bump_successful"), url = submissions[0].shortlink)
+            asyncio.gather(ctx.send(embed = embed))
 
-        asyncio.gather(ctx.send(embed = embed))
+            await asyncio.sleep(10)
+            for submission in submissions:
+                submission.mod.sfw()
 
     @commands.command()
     @is_intergalactica()
