@@ -82,7 +82,7 @@ class Prank(discord.ext.commands.Cog):
 
         if not has_hat:
             cost = 500
-            raise_if_not_enough_gold(ctx, cost, human)
+            ctx.raise_if_not_enough_gold(cost, human)
             waiter = BoolWaiter(ctx, prompt = ctx.translate("gold_verification_check").format(gold = cost))
             if not await waiter.wait():
                 return asyncio.gather(ctx.send(ctx.translate("canceled")))
@@ -164,10 +164,6 @@ class Prank(discord.ext.commands.Cog):
                 else:
                     if prank.victim.member and prank.victim.member.display_name != prank.new_nickname:
                         asyncio.gather(prank.apply())
-
-def raise_if_not_enough_gold(ctx, gold, human, name = "you"):
-    if human.gold < gold:
-        raise SendableException(ctx.translate(f"{name}_not_enough_gold"))
 
 def setup(bot):
     bot.add_cog(Prank(bot))
