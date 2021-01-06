@@ -3,6 +3,7 @@ import datetime
 
 import discord
 from discord.ext import commands
+import requests
 
 from src.models import Word, Human
 import src.config as config
@@ -93,11 +94,20 @@ class Games(commands.Cog):
         for member in members:
             players.append(hangman.game.Player(DiscordIdentity(member), cost))
 
-        async with ctx.typing():
-            word = Word.get_random()
-
-        game = hangman.game.Game(players, word.value, hangman.ui.DiscordUI(ctx))
+        game = hangman.game.Game(players, get_random_word(), hangman.ui.DiscordUI(ctx))
         await game.start()
 
 def setup(bot):
     bot.add_cog(Games(bot))
+
+def get_random_word():
+    url = "https://api.wordnik.com/v4/words.json/randomWord"
+    params = {
+        "api_key": config.environ["wordnik_api_key"],
+        "hasDictionaryDef": True,
+        "minLength": 6,
+        "minCorpusCount": 100,
+        "minDictionaryCount": 5
+    }
+    request = requests.get(url, params = params)
+    return request.json()["word"]
