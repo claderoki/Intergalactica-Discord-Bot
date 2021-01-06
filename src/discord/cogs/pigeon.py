@@ -482,6 +482,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         if value == 100:
             raise SendableException(ctx.translate(f"{attr_name}_already_max"))
 
+        ctx.raise_if_not_enough_gold(cost, pigeon.human)
+
         pigeon.human.gold  -= cost
         setattr(pigeon, attr_name, value+attr_increase )
         pigeon.human.save()
