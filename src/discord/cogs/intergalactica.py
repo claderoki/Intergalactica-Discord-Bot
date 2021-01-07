@@ -65,6 +65,7 @@ class Intergalactica(commands.Cog):
                 continue
             else:
                 invites.append(invite)
+        return invites
 
     def get_channel(self, name):
         return self.bot.get_channel(self._channel_ids[name])
