@@ -147,7 +147,8 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
             for match in matches:
                 value = float(match[0])
                 unit = match[-1]
-                is_currency = unit.upper() in self.currency_converter.currencies or unit.lower() in currency_symbols
+                is_currency = unit.upper() in self.currency_converter.currencies or unit.lower() in currency_symbols.values()
+
                 type = "currency" if is_currency else "measurement"
 
                 aliases_found = False
@@ -177,15 +178,14 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
                 value = amount if symbol != "-" else -amount
                 cleaned_matches.append({"value" : value, "unit" : timezone, "type": "timezone"})
 
-
         return cleaned_matches
 
     @discord.ext.commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot or not self.bot.production:
+        if message.author.bot or "http" in message.content:
             return
 
-        if "http" in message.content:
+        if not self.bot.production:
             return
 
         matches = self._get_matches(message.content.lower())
