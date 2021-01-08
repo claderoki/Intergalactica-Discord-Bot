@@ -116,10 +116,12 @@ class Intergalactica(commands.Cog):
 
         invites = await self.get_invites(message.content)
         if invites:
+            asyncio.gather(message.delete())
             for invite in invites:
                 if invite.guild.id != message.guild.id:
                     if self.member_is_new(message.author):
                         await message.author.ban(reason = "Advertising")
+            return
 
         if message.author.id == 172002275412279296: # tatsu
             if len(message.embeds) > 0:
