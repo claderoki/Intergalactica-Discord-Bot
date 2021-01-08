@@ -432,7 +432,7 @@ class Intergalactica(commands.Cog):
             return
 
         if color is None:
-            color = self.bot.get_random_color()
+            color = self.bot.calculate_dominant_color(self.bot._get_icon_url(ctx.author))
 
         await self.edit_personal_role(ctx, color = color)
 
