@@ -151,7 +151,7 @@ class Locus(commands.Bot):
 
     def _get_icon_url(self, obj):
         options = {"format": "png", "static_format": "png", "size": 16}
-        if isinstance(obj, (discord.User, discord.ClientUser)):
+        if isinstance(obj, (discord.User, discord.ClientUser, discord.Member)):
             return obj.avatar_url_as(**options)
         elif isinstance(obj, discord.Guild):
             return obj.icon_url_as(**options)
