@@ -418,13 +418,12 @@ class Intergalactica(commands.Cog):
     @commands.group()
     @is_intergalactica()
     async def role(self, ctx):
-        earthling, _ = Earthling.get_or_create_for_member(ctx.author)
-        rank_role = earthling.rank_role
-
-        allowed = rank_role is not None or ctx.author.premium_since is not None
+        has_5k = ctx.guild.get_role(self._role_ids["5k+"]) in ctx.author.roles
+        is_nitro_booster = ctx.author.premium_since is not None
+        allowed = has_5k or is_nitro_booster
 
         if not allowed:
-            raise SendableException("You are not allowed to run this command yet.")
+            raise SendableException("You are not allowed to run this command yet, needed: 5k+ XP or Nitro Booster")
 
     @role.command(name = "color", aliases = ["colour"])
     async def role_color(self, ctx, color : discord.Color = None):
