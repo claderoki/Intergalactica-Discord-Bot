@@ -82,20 +82,6 @@ class Earthling(BaseModel):
         return (last_active + config.inactive_delta) < datetime.datetime.utcnow()
 
     @property
-    def rank_role(self):
-        ranks = [
-            748494880229163021,
-            748494888844132442,
-            748494890127851521,
-            748494890169794621,
-            748494891419697152,
-            748494891751047183
-        ]
-        for role in self.member.roles:
-            if role.id in ranks:
-                return role
-
-    @property
     def base_embed(self):
         member = self.member
         embed = discord.Embed(color = member.color or self.bot.get_dominant_color(self.guild) )
