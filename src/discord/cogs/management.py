@@ -46,11 +46,11 @@ class Management(discord.ext.commands.Cog):
             return
 
         emoji = payload.emoji
+        member = payload.member
 
-        if payload.member is None or payload.member.bot or emoji.id is None:
+        if member is None or member.bot or emoji.id is None:
             return
 
-        member = payload.member
 
         if emoji in member.guild.emojis:
             increment_emoji(member.guild, emoji)
