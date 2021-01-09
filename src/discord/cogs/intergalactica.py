@@ -18,6 +18,7 @@ def is_intergalactica():
     return commands.check(predicate)
 
 class Intergalactica(commands.Cog):
+    vote_emojis = ("✅", "❎")
     guild_id = 742146159711092757
 
     _role_ids = {
@@ -42,7 +43,7 @@ class Intergalactica(commands.Cog):
         "roles"          : 742303560988885044,
         "selfies"        : 744703465086779393,
         "concerns"       : 758296826549108746,
-        "selfie_updates" : 795644055979294720,
+        "staff_votes"    : 795644055979294720,
         "staff_chat"     : 796413284105453589,
         "bot_spam"       : 742163352712642600,
         "bot_commands"   : 796413360706682933,
@@ -108,6 +109,37 @@ class Intergalactica(commands.Cog):
         return True
 
     @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if not self.bot.production:
+            return
+        if payload.guild_id != self.guild_id:
+            return
+        if payload.member is None or payload.member.bot:
+            return
+        if payload.channel_id != self._channel_ids["staff_votes"]:
+            return
+
+        if str(payload.emoji) in self.vote_emojis:
+            def clean_value(value):
+                return int(value) if value % 1 == 0 else round(value, 2)
+            channel = self.bot.get_channel(payload.channel_id)
+            staff_members = [x for x in channel.members if not x.bot]
+            message = await channel.fetch_message(payload.message_id)
+            positive, negative = [x for x in message.reactions if str(x.emoji) in self.vote_emojis]
+            positive_users = [x for x in await positive.users().flatten() if not x.bot]
+            negative_users = [x for x in await negative.users().flatten() if not x.bot and x not in positive_users]
+            if len(positive_users)+len(negative_users) == len(staff_members):
+                embed = discord.Embed(color = self.bot.get_dominant_color(None))
+                lines = []
+                lines.append("*(all staff members finished voting)*")
+                lines.append(message.content)
+                lines.append("")
+                lines.append(f"{self.vote_emojis[0]}: {len(positive_users)} **{clean_value(len(positive_users)/len(staff_members)*100)}%**")
+                lines.append(f"{self.vote_emojis[1]}: {len(negative_users)} **{clean_value(len(negative_users)/len(staff_members)*100)}%**")
+                embed.description = "\n".join(lines)
+                asyncio.gather(self.get_channel("staff_chat").send(embed = embed))
+
+    @commands.Cog.listener()
     async def on_message(self, message):
         if not self.bot.production:
             return
@@ -122,6 +154,9 @@ class Intergalactica(commands.Cog):
                     if self.member_is_new(message.author):
                         await message.author.ban(reason = "Advertising")
             return
+        if message.channel.id == self._channel_ids["staff_votes"]:
+            coros = [message.add_reaction(x) for x in self.vote_emojis]
+            asyncio.gather(*coros)
 
         if message.author.id == 172002275412279296: # tatsu
             if len(message.embeds) > 0:
@@ -335,7 +370,7 @@ class Intergalactica(commands.Cog):
 
     async def on_rank(self, member, role):
         if role == self.role_needed_for_selfie_vote:
-            asyncio.gather(self.log("selfie_updates", f"**{member}** {member.mention} has achieved {role.name}!"))
+            asyncio.gather(self.log("bot_commands", f"**{member}** {member.mention} has achieved {role.name}!"))
 
         asyncio.gather(self.log("bot_commands", f"**{member}** {member.mention} has achieved {role.name}!"))
         role = self.guild.get_role(self._role_ids["5k+"])
