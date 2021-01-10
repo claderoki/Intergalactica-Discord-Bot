@@ -125,6 +125,7 @@ class Intergalactica(commands.Cog):
             channel = self.bot.get_channel(payload.channel_id)
             staff_members = [x for x in channel.members if not x.bot]
             message = await channel.fetch_message(payload.message_id)
+
             positive, negative = [x for x in message.reactions if str(x.emoji) in self.vote_emojis]
             positive_users = [x for x in await positive.users().flatten() if not x.bot]
             negative_users = [x for x in await negative.users().flatten() if not x.bot and x not in positive_users]
@@ -154,6 +155,7 @@ class Intergalactica(commands.Cog):
                     if self.member_is_new(message.author):
                         await message.author.ban(reason = "Advertising")
             return
+
         if message.channel.id == self._channel_ids["staff_votes"]:
             coros = [message.add_reaction(x) for x in self.vote_emojis]
             asyncio.gather(*coros)
