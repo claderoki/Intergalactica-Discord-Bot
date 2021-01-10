@@ -30,7 +30,8 @@ def text_to_emojis(text):
 def html_to_discord(text):
     tags = {
         "i"      : "*",
-        "strong" : "**"
+        "strong" : "**",
+        "em"     : ""
     }
 
     for tag, replacement in tags.items():
