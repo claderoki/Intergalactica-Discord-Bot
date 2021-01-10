@@ -623,7 +623,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                     value = get_winnings_value(**winner_data, gold = fight.bet)
                 )
 
-                asyncio.gather(channel.send(content = f"{winner.human.mention}, {loser.human.mention}", embed = embed))
+                asyncio.gather(channel.send(content = f"{winner.human.mention} | {loser.human.mention}", embed = embed))
 
                 winner.status = Pigeon.Status.idle
                 loser.status = Pigeon.Status.idle
