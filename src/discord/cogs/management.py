@@ -51,7 +51,6 @@ class Management(discord.ext.commands.Cog):
         if member is None or member.bot or emoji.id is None:
             return
 
-
         if emoji in member.guild.emojis:
             increment_emoji(member.guild, emoji)
 
