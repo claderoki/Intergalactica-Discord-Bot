@@ -333,7 +333,7 @@ class Profile(commands.Cog):
         elif item.code == "milky_way":
             #TODO: redirect to /milkyway create command
             pass
-        elif item.code == "jesters_hat":
+        elif item.code == "jester_hat":
             #TODO: redirect to /prank nick command
             pass
 
