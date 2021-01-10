@@ -218,6 +218,7 @@ class Item(BaseModel):
     rarity      = EnumField           (Rarity, null = False, default = Rarity.common)
     explorable  = peewee.BooleanField (null = False, default = False)
     code        = peewee.CharField    (max_length = 45)
+    usable      = peewee.BooleanField (null = False, default = False)
 
     @property
     def embed(self):
