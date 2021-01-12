@@ -234,6 +234,7 @@ class Profile(commands.Cog):
     async def events(self, ctx, month : int = None):
         if month is None:
             month = datetime.datetime.utcnow().month
+
         month = max(min(month, 12), 1)
 
         query = Human.select()
@@ -253,6 +254,10 @@ class Profile(commands.Cog):
             await ctx.send(embed = embed)
         else:
             await ctx.send("No events this month")
+
+    @commands.command()
+    async def daily(self, ctx):
+        asyncio.gather(ctx.send(ctx.translate("not_implemented_yet")))
 
     @commands.group()
     async def item(self, ctx):
@@ -341,10 +346,6 @@ class Profile(commands.Cog):
             human_item.amount -= 1
             human_item.save()
             await ctx.success("Item has been successfully used.")
-
-
-
-
 
     @item.command(name = "explorable", aliases = ["exp"])
     async def item_explorable(self, ctx,*, name):
