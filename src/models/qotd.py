@@ -27,7 +27,6 @@ class CategoryChannel(BaseModel):
     last_day     = peewee.DateField       (null = True)
 
 class QuestionConfig(BaseModel):
-    guild_id         = peewee.BigIntegerField (null = False)
     question         = peewee.ForeignKeyField (Question, backref = "question_configs", on_delete = "CASCADE")
-    category_channel = peewee.ForeignKeyField (CategoryChannel, backref = "category_channels", on_delete = "CASCADE")
+    category_channel = peewee.ForeignKeyField (CategoryChannel, backref = "question_configs", on_delete = "CASCADE")
     asked            = peewee.BooleanField    (null = False, default = False)
