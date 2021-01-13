@@ -10,11 +10,16 @@ from .pigeon import Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMes
 from .admin import SavedEmoji, Location, DailyReminder, PersonalQuestion, Word
 from .prank import NicknamePrank, Prankster
 from .reddit import Subreddit
+from .qotd import Category, Question, CategoryChannel, QuestionConfig
 
 database = Human._meta.database
 
 def setup():
     with database.connection_context():
+        # database.drop_tables([Category, Question, CategoryChannel, QuestionConfig])
+        # database.drop_tables([Question, CategoryChannel, QuestionConfig])
+        database.create_tables([Category, Question, CategoryChannel, QuestionConfig])
+
         # database.drop_tables([Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
         database.create_tables([Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
 

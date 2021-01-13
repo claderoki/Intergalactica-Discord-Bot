@@ -52,6 +52,8 @@ class BaseModel(peewee.Model):
                 setattr(self, None, await waiter.wait())
             elif on_skip == "default":
                 setattr(self, getattr(self.__class__, attr).default, await waiter.wait())
+            elif on_skip == "raise":
+                raise
 
     @classmethod
     def get_random(cls):
