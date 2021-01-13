@@ -6,7 +6,7 @@ from .settings import Settings, NamedEmbed, NamedChannel, Translation, Locale
 from .ticket import Ticket, Reply
 from .poll import Change, Parameter, Poll, PollTemplate, Vote, Option
 from .scene import Scene, Scenario
-from .pigeon import Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date
+from .pigeon import Pigeon, PigeonRelationship, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date
 from .admin import SavedEmoji, Location, DailyReminder, PersonalQuestion, Word
 from .prank import NicknamePrank, Prankster
 from .reddit import Subreddit
@@ -20,8 +20,8 @@ def setup():
         # database.drop_tables([Question, CategoryChannel, QuestionConfig])
         database.create_tables([Category, Question, CategoryChannel, QuestionConfig])
 
-        # database.drop_tables([Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
-        database.create_tables([Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
+        # database.drop_tables([Pigeon, PigeonRelationship, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
+        database.create_tables([Pigeon, PigeonRelationship, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
 
         # database.drop_tables([SavedEmoji, Location, DailyReminder, PersonalQuestion, Word])
         database.create_tables([SavedEmoji, Location, DailyReminder, PersonalQuestion, Word])

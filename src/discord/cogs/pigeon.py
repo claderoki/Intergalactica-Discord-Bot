@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 from countryinfo import CountryInfo
 
 import src.config as config
-from src.models import Scene, Scenario, Human, Fight, Pigeon, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
+from src.models import Scene, Scenario, Human, Fight, Pigeon, PigeonRelationship, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
 from src.models.base import PercentageField
 from src.discord.helpers.waiters import *
 from src.utils.country import Country
@@ -522,6 +522,36 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     async def pigeon_help(self, ctx):
         await ctx.send_help(ctx.command.root_parent)
 
+    @pigeon.command()
+    @commands.cooldown(1, (3600 * 1), type = commands.BucketType.user)
+    async def poop(self, ctx, member : discord.Member):
+        self.pigeon_check(ctx, member, name = "pigeon2")
+        relationship = PigeonRelationship.get_or_create_for(ctx.pigeon, ctx.pigeon2)
+        price = 5
+        relationship.score -= price
+        relationship.save()
+
+        embed = self.get_base_embed(ctx.guild)
+        lines = []
+        lines.append(f"Your pigeon successfully poops on `{ctx.pigeon2.name}`")
+        lines.append(f"And to finish it off, `{ctx.pigeon.name}` wipes {ctx.pigeon.gender.get_posessive_pronoun()} butt clean on {ctx.pigeon2.gender.get_posessive_pronoun()} fur.")
+        lines.append("")
+
+
+        lines.append(ctx.pigeon.name)
+        data1 = {"cleanliness": 5}
+        lines.append(get_winnings_value(**data1))
+        ctx.pigeon.update_stats(data1)
+
+        lines.append(ctx.pigeon2.name)
+        data2 = {"cleanliness": -10}
+        lines.append(get_winnings_value(**data2))
+        ctx.pigeon2.update_stats(data2)
+
+        embed.description = "\n".join(lines)
+
+        embed.set_footer(text = f"-{price} relations")
+        await ctx.send(embed = embed)
 
     @tasks.loop(seconds=30)
     async def date_ticker(self):
