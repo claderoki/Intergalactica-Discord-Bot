@@ -110,7 +110,7 @@ class Profile(commands.Cog):
             i += 1
         await table.to_paginator(ctx, 10).wait()
 
-    @commands.group()
+    @commands.group(aliases = ["balance", "wallet", "gold"])
     async def profile(self, ctx, members : commands.Greedy[discord.Member]):
         if ctx.invoked_subcommand is not None:
             return
