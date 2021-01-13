@@ -57,7 +57,7 @@ class BaseModel(peewee.Model):
 
     @classmethod
     def get_random(cls):
-        return cls.select().order_by(peewee.fn.Rand()).first()
+        return cls.select().order_by(peewee.fn.Rand()).limit(1).first()
 
     @property
     def bot(self):
