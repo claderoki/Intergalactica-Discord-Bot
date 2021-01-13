@@ -2,6 +2,7 @@ import re
 import json
 import io
 import asyncio
+import datetime
 
 import requests
 import discord
@@ -18,6 +19,7 @@ def increment_emoji(guild, emoji):
     with database.connection_context():
         usage, _ = EmojiUsage.get_or_create(guild_id = guild.id, emoji_id = emoji.id)
         usage.total_uses += 1
+        usage.last_used = datetime.datetime.utcnow()
         usage.save()
 
 class Management(discord.ext.commands.Cog):
