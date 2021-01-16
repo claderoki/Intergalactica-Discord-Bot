@@ -210,6 +210,7 @@ class Locus(commands.Bot):
             "pigeon",
             "covid",
             "qotd",
+            "giveaway",
         ]
 
         if True:

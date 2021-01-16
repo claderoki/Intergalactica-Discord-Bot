@@ -1,4 +1,5 @@
 import datetime
+import asyncio
 
 import peewee
 import discord
@@ -9,6 +10,18 @@ class SavedEmoji(BaseModel):
     name        = peewee.CharField        (null = False, unique = True)
     guild_id    = peewee.BigIntegerField  (null = False)
     emoji_id    = peewee.BigIntegerField  (null = False)
+
+class Giveaway(BaseModel):
+    guild_id        = peewee.BigIntegerField  (null = False)
+    channel_id      = peewee.BigIntegerField  (null = False)
+    user_id         = peewee.BigIntegerField  (null = False)
+    message_id      = peewee.BigIntegerField  (null = False)
+    due_date        = peewee.DateTimeField    (null = False, default = lambda : datetime.datetime.utcnow() + datetime.timedelta(days = 1))
+    role_id_needed  = peewee.BigIntegerField  (null = True)
+    anonymous       = peewee.BooleanField     (null = False, default = False)
+    finished        = peewee.BooleanField     (null = False, default = False)
+    title           = peewee.TextField        (null = False)
+    key             = peewee.TextField        (null = True)
 
 class Location(BaseModel):
     latitude   = peewee.DecimalField  (null = False)
