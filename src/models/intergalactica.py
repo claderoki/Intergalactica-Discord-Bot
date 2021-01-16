@@ -1,5 +1,6 @@
 import datetime
 from enum import Enum
+import asyncio
 
 import peewee
 import discord
@@ -103,6 +104,15 @@ class Earthling(BaseModel):
             user_id = member.id,
             human = Human.get_or_create(user_id = member.id)[0]
         )
+
+
+class TemporaryVoiceChannel(BaseModel):
+    guild_id    = peewee.BigIntegerField  (null = False)
+    channel_id  = peewee.BigIntegerField  (null = False)
+
+    def delete_instance(self, *args, **kwargs):
+        asyncio.gather(self.channel.delete(reason = "Temporary VC channel removed."))
+        super().delete_instance(*args, **kwargs)
 
 class RedditAdvertisement(BaseModel):
     last_advertised = peewee.DateTimeField   (null = True)
