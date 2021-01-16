@@ -44,7 +44,8 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
 
         await giveaway.editor_for(ctx, "title")
         await giveaway.editor_for(ctx, "key")
-        giveaway.due_date = datetime.datetime.utcnow() + datetime.timedelta(minutes = 1)
+        await giveaway.editor_for(ctx, "due_date")
+        # giveaway.due_date = datetime.datetime.utcnow() + datetime.timedelta(minutes = 1)
 
         giveaway.save()
 
