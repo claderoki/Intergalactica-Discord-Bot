@@ -23,6 +23,7 @@ class Intergalactica(commands.Cog):
 
     _role_ids = {
         "selfies"   : 748566253534445568,
+        "admin"     : 742243945693708381,
         "vc_access" : 761599311967420418,
         "5k+"       : 778744417322139689,
         "bumper"    : 780001849335742476,
