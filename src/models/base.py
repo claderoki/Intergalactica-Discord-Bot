@@ -30,6 +30,15 @@ class BaseModel(peewee.Model):
         if attr == "timezone":
             return TimezoneWaiter(ctx, **kwargs)
 
+        if "channel_id" in attr:
+            return TextChannelWaiter(ctx, **kwargs)
+        if "user_id" in attr:
+            return MemberWaiter(ctx, **kwargs)
+        if "role_id" in attr:
+            return RoleWaiter(ctx, **kwargs)
+        if attr == "due_date":
+            return TimeDeltaWaiter(ctx, **kwargs)
+
         if isinstance(field, CountryField):
             return CountryWaiter(ctx, **kwargs)
         if isinstance(field, peewee.BooleanField):
@@ -46,7 +55,12 @@ class BaseModel(peewee.Model):
     async def editor_for(self, ctx, attr, on_skip = "pass", **kwargs):
         waiter = self.waiter_for(ctx, attr, **kwargs)
         try:
-            setattr(self, attr, await waiter.wait())
+            value = await waiter.wait()
+            if attr == "due_date":
+                value = datetime.datetime + value
+            elif "_id" in attr:
+                value = value.id
+            setattr(self, attr, value)
         except Skipped:
             if on_skip in ("null", "none"):
                 setattr(self, None, await waiter.wait())
