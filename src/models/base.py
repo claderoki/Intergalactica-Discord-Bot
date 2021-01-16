@@ -57,7 +57,7 @@ class BaseModel(peewee.Model):
         try:
             value = await waiter.wait()
             if attr == "due_date":
-                value = datetime.datetime + value
+                value = datetime.datetime.utcnow() + value
             elif "_id" in attr:
                 value = value.id
             setattr(self, attr, value)
