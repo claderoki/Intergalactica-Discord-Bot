@@ -34,7 +34,7 @@ class Giveaway(BaseModel):
 
         footer = []
         if self.role_id_needed is not None:
-            footer.append(f"Role needed: **{self.role_needed.name}**")
+            footer.append(f"Role needed: {self.role_needed.name}")
         footer.append("Due at")
 
         embed.set_footer(text = "\n".join(footer))
