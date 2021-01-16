@@ -324,7 +324,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         sender = ctx.pigeon
 
-        asyncio.gather(ctx.send(ctx.translate("check_dms")))
+        await ctx.send(ctx.translate("check_dms"))
         ctx.channel = ctx.author.dm_channel
         if ctx.channel is None:
             ctx.channel = await ctx.author.create_dm()
