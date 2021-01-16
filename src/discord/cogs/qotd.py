@@ -93,7 +93,7 @@ class QotdCog(commands.Cog, name = "Question of the day"):
 
     @tasks.loop(minutes = 5)
     async def poller(self):
-        with database:
+        with database.connection_context():
             query = CategoryChannel.select()
             query = query.where( (CategoryChannel.last_day == None) | (CategoryChannel.last_day < datetime.datetime.utcnow().date()) )
             for category_channel in query:
