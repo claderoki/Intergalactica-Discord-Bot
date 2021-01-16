@@ -18,7 +18,7 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if self.bot.production:
+        # if self.bot.production:
             self.poller.start()
 
     @commands.group(name = "giveaway")
@@ -31,6 +31,10 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
         channel = settings.get_channel("giveaway")
 
         giveaway = Giveaway(user_id = ctx.author.id, guild_id = ctx.guild.id, channel_id = channel.id)
+        #TODO: make this non server specific.
+        waiter = BoolWaiter(ctx, prompt = "Restrict to 5k+ role?")
+        if ctx.guild.id == 742146159711092757 and await waiter.wait():
+            giveaway.role_id_needed = 778744417322139689
 
         await ctx.send(ctx.translate("check_dms"))
 
@@ -40,30 +44,19 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
 
         await giveaway.editor_for(ctx, "title")
         await giveaway.editor_for(ctx, "key")
-        # await giveaway.editor_for(ctx, "role_id_needed")
-        # await giveaway.editor_for(ctx, "anonymous")
-        # await giveaway.editor_for(ctx, "due_date")
-        giveaway.due_date = datetime.datetime.utcnow() + datetime.timedelta(minutes = 5)
-
-        embed = discord.Embed(color = ctx.guild_color)
-        if not giveaway.anonymous:
-            embed.set_author(icon_url = ctx.author.avatar_url, name = f"Giveaway by {ctx.author}")
-
-        embed.title = giveaway.title
-
-        embed.set_footer(text = "Due at")
-        embed.timestamp = giveaway.due_date
-
-        message = await channel.send(embed = embed)
-        asyncio.gather(message.add_reaction(self.participate_emoji))
-
-        giveaway.message_id = message.id
+        giveaway.due_date = datetime.datetime.utcnow() + datetime.timedelta(minutes = 1)
 
         giveaway.save()
+
+        message = await channel.send(embed = giveaway.get_embed())
+        asyncio.gather(message.add_reaction(self.participate_emoji))
+        giveaway.message_id = message.id
+        giveaway.save()
+
         await ctx.success(ctx.translate("giveaway_created"))
 
 
-    @tasks.loop(minutes = 5)
+    @tasks.loop(seconds = 30)
     async def poller(self):
         with database.connection_context():
             query = Giveaway.select()
@@ -74,12 +67,31 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
                 message = await channel.fetch_message(giveaway.message_id)
 
                 reaction = [x for x in message.reactions if str(x.emoji) == self.participate_emoji][0]
-                role_needed = giveaway.guild.get_role(778744417322139689)
-                participants = [x for x in await reaction.users().flatten() if role_needed is None or role_needed in x.roles]
+                role_needed = giveaway.role_needed
+                participants = [x for x in await reaction.users().flatten() if (role_needed is None or role_needed in x.roles) and not x.bot]
                 winner = random.choice(participants)
+                embed = message.embeds[0]
+                if embed.description:
+                    embed.description += f"\nWinner: {winner}"
+                else:
+                    embed.description = f"\nWinner: {winner}"
 
-                print(f"winner: {winner}")
-                # giveaway.finished = True
-                # giveaway.save()
+                embed.timestamp = discord.Embed.Empty
+                embed.set_footer(text = discord.Embed.Empty)
+                await message.edit(embed = embed)
+
+                dm_owner = giveaway.key is None
+
+                if not dm_owner:
+                    try:
+                        await winner.send(f"Congratulations, you won giveaway **{giveaway.id}** ({giveaway.title})\nHere are your rewards:\n`{giveaway.key}`")
+                    except discord.errors.Forbidden:
+                        dm_owner = True
+
+                if dm_owner:
+                    await giveaway.user.send(f"Giveaway **{giveaway.id}** has been won by {winner}. They will have to be informed and their rewards sent by you.")
+
+                giveaway.finished = True
+                giveaway.save()
 def setup(bot):
     bot.add_cog(GiveawayCog(bot))

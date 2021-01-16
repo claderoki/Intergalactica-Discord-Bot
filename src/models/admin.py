@@ -23,6 +23,28 @@ class Giveaway(BaseModel):
     title           = peewee.TextField        (null = False)
     key             = peewee.TextField        (null = True)
 
+    @property
+    def role_needed(self):
+        return self.guild.get_role(self.role_id_needed)
+
+    def get_embed(self):
+        embed = discord.Embed(color = self.bot.get_dominant_color(None))
+
+        embed.title = self.title
+
+        footer = []
+        if self.role_id_needed is not None:
+            footer.append(f"Role needed: **{self.role_needed.name}**")
+        footer.append("Due at")
+
+        embed.set_footer(text = "\n".join(footer))
+        embed.timestamp = self.due_date
+
+        if not self.anonymous:
+            embed.set_author(icon_url = self.user.avatar_url, name = f"Giveaway {self.id} by {self.user}")
+
+        return embed
+
 class Location(BaseModel):
     latitude   = peewee.DecimalField  (null = False)
     longitude  = peewee.DecimalField  (null = False)
