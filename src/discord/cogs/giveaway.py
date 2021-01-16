@@ -18,7 +18,7 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        # if self.bot.production:
+        if self.bot.production:
             self.poller.start()
 
     @commands.group(name = "giveaway")
