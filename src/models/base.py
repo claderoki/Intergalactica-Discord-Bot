@@ -19,10 +19,11 @@ class BaseModel(peewee.Model):
 
         if "prompt" not in kwargs:
             kwargs["prompt"] = ctx.translate(f"{peewee.make_snake_case(cls.__name__)}_{attr}_prompt")
-            if field.default is not None:
-                kwargs["prompt"] += f"\nDefault: **{prettify_value(field.default)}**"
-            if value is not None:
-                kwargs["prompt"] += f"\nCurrent: **{prettify_value(value)}**"
+            if "due_date" not in attr:
+                if field.default is not None:
+                    kwargs["prompt"] += f"\nDefault: **{prettify_value(field.default)}**"
+                if value is not None:
+                    kwargs["prompt"] += f"\nCurrent: **{prettify_value(value)}**"
 
         if "skippable" not in kwargs:
             kwargs["skippable"] = field.null or field.default is not None
