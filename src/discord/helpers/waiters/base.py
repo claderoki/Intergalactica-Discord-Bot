@@ -428,6 +428,8 @@ class DateWaiter(StrWaiter):
         return True
 
 class TimeDeltaWaiter(MessageWaiter):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, max_words = 2, **kwargs)
 
     @property
     def instructions(self):
