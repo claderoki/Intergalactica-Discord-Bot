@@ -20,7 +20,7 @@ from src.discord.helpers.converters import EnumConverter
 class PigeonCog(commands.Cog, name = "Pigeon"):
     subcommands_no_require_pigeon = ["buy", "scoreboard", "help", "inbox", "pigeon"]
     subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name", "accept", "acceptdate"] + subcommands_no_require_pigeon
-    subcommands_no_require_stats = ["heal", "clean", "feed", "play", "date"] + subcommands_no_require_available
+    subcommands_no_require_stats = ["heal", "clean", "feed", "play", "date", "poop"] + subcommands_no_require_available
 
     def __init__(self, bot):
         super().__init__()
@@ -712,11 +712,13 @@ def get_active_pigeon(user, raise_on_none = False):
 
 def pigeon_raise_if_not_exist(ctx, pigeon, name = "pigeon"):
     if pigeon is None:
+        ctx.command.reset_cooldown(ctx)
         raise SendableException(ctx.translate(f"{name}_does_not_exist"))
 
 def pigeon_raise_if_unavailable(ctx, pigeon, name = "pigeon"):
     pigeon_raise_if_not_exist(ctx, pigeon, name)
     if pigeon.status != Pigeon.Status.idle:
+        ctx.command.reset_cooldown(ctx)
         raise SendableException(ctx.translate(f"{name}_not_idle").format(status = pigeon.status.name))
 
 def pigeon_raise_if_stats_too_low(ctx, pigeon, name = "pigeon"):
@@ -730,6 +732,7 @@ def pigeon_raise_if_stats_too_low(ctx, pigeon, name = "pigeon"):
         message = ctx.translate(f"{name}_too_wounded")
     else:
         return
+    ctx.command.reset_cooldown(ctx)
     raise SendableException(message.format(pigeon = pigeon))
 
 def setup(bot):
