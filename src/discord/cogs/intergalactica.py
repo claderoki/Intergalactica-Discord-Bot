@@ -9,7 +9,7 @@ from discord.ext import commands, tasks
 
 from src.discord.errors.base import SendableException
 from src.discord.helpers.embed import Embed
-from src.models import Poll, PollTemplate, Option, Settings, Item, NamedEmbed, Human, Earthling, TemporaryChannel, HumanItem, RedditAdvertisement, database
+from src.models import Poll, PollTemplate, Option, Settings, Item, NamedEmbed, Human, Earthling, TemporaryVoiceChannel, TemporaryChannel, HumanItem, RedditAdvertisement, database
 from src.discord.helpers.waiters import IntWaiter
 
 def is_intergalactica():
@@ -84,6 +84,7 @@ class Intergalactica(commands.Cog):
         self.role_needed_for_selfie_vote = self.guild.get_role(self._role_ids["ranks"]["nova"])
 
         if self.bot.production:
+            self.temp_vc_poller.start()
             self.temp_channel_checker.start()
             self.disboard_bump_available_notifier.start()
             self.introduction_purger.start()
@@ -226,6 +227,19 @@ class Intergalactica(commands.Cog):
         await poll.send()
         poll.save()
         return poll
+
+    @commands.command(name = "vcchannel")
+    @is_intergalactica()
+    @commands.has_role(_role_ids["5k+"])
+    async def vc_channel(self, ctx, *args):
+        name = " ".join(args) if len(args) > 0 else None
+
+        for category in ctx.guild.categories:
+            if category.id == 742146159711092759:
+                break
+        channel = await category.create_voice_channel(name or "Temporary voice channel", reason = f"Requested by {ctx.author}")
+        vc = TemporaryVoiceChannel.create(guild_id = ctx.guild.id, channel_id = channel.id)
+        await ctx.success()
 
     @commands.command()
     @is_intergalactica()
@@ -556,6 +570,14 @@ class Intergalactica(commands.Cog):
 
             if last_message is None or last_message.content != content:
                 await bot_spam.send(content)
+
+    @tasks.loop(minutes = 30)
+    async def temp_vc_poller(self):
+        with database.connection_context():
+            for temporary_voice_channel in TemporaryVoiceChannel:
+                channel = temporary_voice_channel.channel
+                if len(channel.members) == 0:
+                    temporary_voice_channel.delete_instance()
 
     @tasks.loop(hours = 3)
     async def introduction_purger(self):
