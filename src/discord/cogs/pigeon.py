@@ -18,7 +18,7 @@ from src.utils.enums import Gender
 from src.discord.helpers.converters import EnumConverter
 
 class PigeonCog(commands.Cog, name = "Pigeon"):
-    subcommands_no_require_pigeon = ["buy", "history". "scoreboard", "help", "inbox", "pigeon"]
+    subcommands_no_require_pigeon = ["buy", "history", "scoreboard", "help", "inbox", "pigeon"]
     subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name", "accept", "acceptdate"] + subcommands_no_require_pigeon
     subcommands_no_require_stats = ["heal", "clean", "feed", "play", "date", "poop"] + subcommands_no_require_available
 
