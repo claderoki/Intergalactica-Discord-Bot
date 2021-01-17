@@ -18,7 +18,7 @@ from src.utils.enums import Gender
 from src.discord.helpers.converters import EnumConverter
 
 class PigeonCog(commands.Cog, name = "Pigeon"):
-    subcommands_no_require_pigeon = ["buy", "scoreboard", "help", "inbox", "pigeon"]
+    subcommands_no_require_pigeon = ["buy", "history". "scoreboard", "help", "inbox", "pigeon"]
     subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name", "accept", "acceptdate"] + subcommands_no_require_pigeon
     subcommands_no_require_stats = ["heal", "clean", "feed", "play", "date", "poop"] + subcommands_no_require_available
 
@@ -421,6 +421,19 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed.add_field(name = f"Fights {Pigeon.Status.fighting.value}", value = "\n".join(lines), inline = False)
 
         asyncio.gather(ctx.send(embed = embed))
+
+    @pigeon.command(name = "history")
+    async def pigeon_history(self, ctx, member : discord.Member = None):
+        member = member or ctx.author
+        query = Pigeon.select()
+        query = query.where(Pigeon.human == Human.get(user_id = member.id))
+        query = query.where(Pigeon.condition != Pigeon.Condition.active)
+
+        lines = []
+
+        for pigeon in query:
+            lines.append(pigeon.name)
+        asyncio.gather(ctx.send("```\n{}```".format("\n".join(lines))))
 
     @pigeon.command(name = "status")
     async def pigeon_status(self, ctx, member : discord.Member = None):
