@@ -124,6 +124,58 @@ class Prank(discord.ext.commands.Cog):
 
         asyncio.gather(ctx.send(embed = embed))
 
+    # @prank.command(name = "role")
+    # async def prank_role(self, ctx, member : discord.Member):
+    #     if member.bot:
+    #         raise SendableException(ctx.translate("cannot_prank_bot"))
+    #     if not self.bot.can_change_nick(member):
+    #         raise SendableException(ctx.translate("cannot_change_nickname"))
+
+    #     prankster, _ = Prankster.get_or_create(user_id = ctx.author.id, guild_id = ctx.guild.id)
+    #     if not prankster.enabled:
+    #         raise SendableException(ctx.translate("prankster_pranking_disabled"))
+
+    #     victim, _ = Prankster.get_or_create(user_id = member.id, guild_id = ctx.guild.id)
+    #     if not victim.enabled:
+    #         raise SendableException(ctx.translate("victim_pranking_disabled"))
+    #     if victim.pranked:
+    #         raise SendableException(ctx.translate("already_pranked"))
+
+    #     cost = 500
+    #     ctx.raise_if_not_enough_gold(cost, human)
+    #     waiter = BoolWaiter(ctx, prompt = ctx.translate("gold_verification_check").format(gold = cost))
+    #     if not await waiter.wait():
+    #         return asyncio.gather(ctx.send(ctx.translate("canceled")))
+
+    #     waiter = StrWaiter(ctx, max_words = None, prompt = ctx.translate("role_prank_prompt"), max_length = 32)
+    #     role_name = await waiter.wait()
+
+    #     prankster.last_pranked = datetime.datetime.utcnow()
+    #     victim.pranked = True
+    #     victim.prank_type = Prankster.PrankType.role
+
+    #     prank = RolePrank(
+    #         role_name = role_name,
+    #         start_date = datetime.datetime.utcnow(),
+    #         end_date = datetime.datetime.utcnow() + datetime.timedelta(days = 1),
+    #         victim = victim,
+    #         pranked_by = prankster
+    #     )
+
+    #     human.gold -= cost
+    #     human.save()
+    #     prank.save()
+    #     victim.save()
+    #     prankster.save()
+
+    #     await prank.apply()
+
+    #     embed = self.bot.get_base_embed()
+    #     embed.description = f"OK"
+    #     embed.timestamp = prank.end_date
+    #     embed.set_footer(text = f"-{cost}\nWill stay into effect until")
+    #     asyncio.gather(ctx.send(embed = embed))
+
     @commands.guild_only()
     @commands.has_guild_permissions(administrator = True)
     @prank.command(name = "revert")
