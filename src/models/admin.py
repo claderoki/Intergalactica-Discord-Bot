@@ -22,6 +22,7 @@ class Giveaway(BaseModel):
     finished        = peewee.BooleanField     (null = False, default = False)
     title           = peewee.TextField        (null = False)
     key             = peewee.TextField        (null = True)
+    amount          = peewee.IntegerField     (null = False, default = 1)
 
     @property
     def role_needed(self):
@@ -30,11 +31,17 @@ class Giveaway(BaseModel):
     def get_embed(self):
         embed = discord.Embed(color = self.bot.get_dominant_color(None))
 
-        embed.title = self.title
+        notes = []
+        notes.append(f"**{self.title}**\n")
+        if self.role_id_needed is not None:
+            notes.append(f"`{self.role_needed.name}` role needed to participate")
+        if self.amount > 1:
+            notes.append(f"`{self.amount}` Possible winners")
+
+        embed.description = "\n".join(notes)
 
         footer = []
-        if self.role_id_needed is not None:
-            footer.append(f"Role needed: {self.role_needed.name}")
+        footer.append("React with ✅ to join.")
         footer.append("Due at")
 
         embed.set_footer(text = "\n".join(footer))

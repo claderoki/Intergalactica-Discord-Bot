@@ -43,7 +43,9 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
             ctx.channel = await ctx.author.create_dm()
 
         await giveaway.editor_for(ctx, "title")
-        await giveaway.editor_for(ctx, "key")
+        await giveaway.editor_for(ctx, "amount")
+        if giveaway.amount == 1:
+            await giveaway.editor_for(ctx, "key")
         await giveaway.editor_for(ctx, "due_date")
 
         giveaway.save()
@@ -55,13 +57,13 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
 
         await ctx.success(ctx.translate("giveaway_created"))
 
-
     @tasks.loop(seconds = 30)
     async def poller(self):
         with database.connection_context():
             query = Giveaway.select()
             query = query.where(Giveaway.finished == False)
             query = query.where(Giveaway.due_date <= datetime.datetime.utcnow())
+            # query = [Giveaway.get(id = 9)]
             for giveaway in query:
                 channel = giveaway.channel
                 message = await channel.fetch_message(giveaway.message_id)
@@ -69,27 +71,29 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
                 reaction = [x for x in message.reactions if str(x.emoji) == self.participate_emoji][0]
                 role_needed = giveaway.role_needed
                 participants = [x for x in await reaction.users().flatten() if (role_needed is None or role_needed in x.roles) and not x.bot]
-                winner = random.choice(participants)
+                winners = random.choices(participants, k = giveaway.amount)
                 embed = message.embeds[0]
-                if embed.description:
-                    embed.description += f"\nWinner: {winner}"
-                else:
-                    embed.description = f"\nWinner: {winner}"
+
+                notes = []
+                for winner in winners:
+                    notes.append(f"Winner: **{winner}**")
+
+                embed.description = "\n".join(notes)
 
                 embed.timestamp = discord.Embed.Empty
                 embed.set_footer(text = discord.Embed.Empty)
                 await message.edit(embed = embed)
+                for winner in winners:
+                    dm_owner = giveaway.key is None
 
-                dm_owner = giveaway.key is None
+                    if not dm_owner:
+                        try:
+                            await winner.send(f"Congratulations, you won giveaway **{giveaway.id}**\n`{giveaway.title}`\nHere are your rewards:\n`{giveaway.key}`")
+                        except discord.errors.Forbidden:
+                            dm_owner = True
 
-                if not dm_owner:
-                    try:
-                        await winner.send(f"Congratulations, you won giveaway **{giveaway.id}** ({giveaway.title})\nHere are your rewards:\n`{giveaway.key}`")
-                    except discord.errors.Forbidden:
-                        dm_owner = True
-
-                if dm_owner:
-                    await giveaway.user.send(f"Giveaway **{giveaway.id}** has been won by {winner}. They will have to be informed and their rewards sent by you.")
+                    if dm_owner:
+                        await giveaway.user.send(f"Giveaway **{giveaway.id}** has been won by **{winner}**. They will have to be informed and their rewards sent by you.")
 
                 giveaway.finished = True
                 giveaway.save()
