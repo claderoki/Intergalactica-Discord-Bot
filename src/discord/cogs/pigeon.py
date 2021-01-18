@@ -10,7 +10,6 @@ from src.models import Scene, Scenario, Human, Fight, Pigeon, PigeonRelationship
 from src.models.base import PercentageField
 from src.discord.helpers.waiters import *
 from src.utils.country import Country
-from src.games.game.base import DiscordIdentity
 from src.discord.errors.base import SendableException
 from src.discord.helpers.pretty import prettify_dict, limit_str, Table, Row
 from src.discord.helpers.exploration_retrieval import ExplorationRetrieval, MailRetrieval
