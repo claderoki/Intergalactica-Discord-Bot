@@ -18,6 +18,18 @@ class Admin(discord.ext.commands.Cog):
     async def on_ready(self):
         self.guilds = [x for x in self.bot.guilds if x.owner_id == self.bronk_id]
 
+    @commands.command(name = "unusedroles")
+    async def unused_roles(self, ctx):
+        roles = []
+        for role in ctx.guild.roles:
+            if len(role.members) == 0:
+                roles.append(role)
+        lines = ["```\n"]
+        for role in roles:
+            lines.append(role.name)
+        lines.append("```")
+        asyncio.gather(ctx.send("\n".join(lines)))
+
     @commands.is_owner()
     @commands.group()
     async def tester(self, ctx):
