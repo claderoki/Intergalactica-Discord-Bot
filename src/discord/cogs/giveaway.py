@@ -63,7 +63,7 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
             query = Giveaway.select()
             query = query.where(Giveaway.finished == False)
             query = query.where(Giveaway.due_date <= datetime.datetime.utcnow())
-            # query = [Giveaway.get(id = 9)]
+            # query = [Giveaway.get(id = 10)]
             for giveaway in query:
                 channel = giveaway.channel
                 message = await channel.fetch_message(giveaway.message_id)
@@ -71,10 +71,20 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
                 reaction = [x for x in message.reactions if str(x.emoji) == self.participate_emoji][0]
                 role_needed = giveaway.role_needed
                 participants = [x for x in await reaction.users().flatten() if (role_needed is None or role_needed in x.roles) and not x.bot]
-                winners = random.choices(participants, cum_weights = [5 for x in range(self.amount)], k = giveaway.amount)
+                if len(participants) == 0:
+                    continue
+
+                random.shuffle(participants)
+                if len(participants) >= giveaway.amount:
+                    winners = participants[:giveaway.amount]
+                else:
+                    winners = [x for x in participants]
+                    while len(winners) < giveaway.amount:
+                        winners.append(random.choice(participants))
+
                 embed = message.embeds[0]
 
-                notes = [f"**{self.title}**\n"]
+                notes = [f"**{giveaway.title}**\n"]
                 for winner in winners:
                     notes.append(f"Winner: **{winner}**")
 
