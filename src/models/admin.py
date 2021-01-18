@@ -29,14 +29,14 @@ class Giveaway(BaseModel):
         return self.guild.get_role(self.role_id_needed)
 
     def get_embed(self):
-        embed = discord.Embed(color = self.bot.get_dominant_color(None))
+        embed = discord.Embed(color = self.bot.get_dominant_color(self.guild))
 
         notes = []
         notes.append(f"**{self.title}**\n")
         if self.role_id_needed is not None:
             notes.append(f"`{self.role_needed.name}` role needed to participate")
         if self.amount > 1:
-            notes.append(f"`{self.amount}` Possible winners")
+            notes.append(f"`{self.amount}` possible winners")
 
         embed.description = "\n".join(notes)
 
