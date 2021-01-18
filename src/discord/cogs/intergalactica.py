@@ -6,6 +6,7 @@ import re
 from emoji import emojize, demojize
 import discord
 from discord.ext import commands, tasks
+from dateutil.relativedelta import relativedelta
 
 from src.discord.errors.base import SendableException
 from src.discord.helpers.embed import Embed
@@ -84,13 +85,13 @@ class Intergalactica(commands.Cog):
         self.role_needed_for_selfie_vote = self.guild.get_role(self._role_ids["ranks"]["nova"])
 
         if self.bot.production:
+            self.illegal_member_notifier.start()
             self.temp_vc_poller.start()
             self.temp_channel_checker.start()
             self.disboard_bump_available_notifier.start()
             self.introduction_purger.start()
             await asyncio.sleep( (60 * 60) * 3 )
             self.birthday_poller.start()
-            self.illegal_member_notifier.start()
 
     def on_milkyway_purchased(self, channel, member, amount):
         with database.connection_context():
@@ -604,7 +605,7 @@ class Intergalactica(commands.Cog):
 
         asyncio.gather(*tasks)
 
-    @tasks.loop(hours = 24)
+    @tasks.loop(hours = 1)
     async def illegal_member_notifier(self):
         for member in self.guild.members:
             if member.bot:
@@ -612,18 +613,8 @@ class Intergalactica(commands.Cog):
 
             if not member_is_legal(member):
                 with database.connection_context():
-                    earthling, _ = Earthling.get_or_create_for_member(member)
-                    warns_before_kick = 2
-                    if earthling.mandatory_role_warns < warns_before_kick:
-                        content = "(Warning #{warning_nr}: Hello. In the {guild.name}, the age and gender roles are mandatory. On warning {warning_limit} you will be removed from the server."
-                        try:
-                            await member.send(content = content)
-                        except discord.errors.Forbidden:
-                            await self.log("bot_commands", f"**{member}** {member.mention} is missing one or more of the mandatory roles: unable to warn through DMs.")
-                        else:
-                            earthling.mandatory_role_warns += 1
-                            earthling.save()
-                    else:
+                    time_here = relativedelta(datetime.datetime.utcnow(), member.joined_at)
+                    if time_here.hours >= 6:
                         asyncio.gather(member.kick(reason = "Missing mandatory roles."))
                         await self.log("bot_commands", f"**{member}** {member.mention} was kicked due to missing roles")
 
