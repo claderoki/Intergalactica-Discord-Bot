@@ -392,8 +392,8 @@ class Profile(commands.Cog):
         await table.to_paginator(ctx, 10).wait()
 
     @commands.command()
-    async def inventory(self, ctx):
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
+    async def inventory(self, ctx, member : discord.Member = None):
+        human, _ = Human.get_or_create(user_id = (member or ctx.author).id)
 
         data = [(x.item.name, x.amount) for x in human.human_items if x.amount > 0]
         data.insert(0, ("name", "amount"))
