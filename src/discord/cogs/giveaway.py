@@ -71,7 +71,7 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
                 reaction = [x for x in message.reactions if str(x.emoji) == self.participate_emoji][0]
                 role_needed = giveaway.role_needed
                 participants = [x for x in await reaction.users().flatten() if (role_needed is None or role_needed in x.roles) and not x.bot]
-                winners = random.choices(participants, k = giveaway.amount)
+                winners = random.choices(participants, cum_weights = [5 for x in range(self.amount)], k = giveaway.amount)
                 embed = message.embeds[0]
 
                 notes = [f"**{self.title}**\n"]
