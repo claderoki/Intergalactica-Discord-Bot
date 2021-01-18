@@ -74,7 +74,7 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
                 winners = random.choices(participants, k = giveaway.amount)
                 embed = message.embeds[0]
 
-                notes = []
+                notes = [f"**{self.title}**\n"]
                 for winner in winners:
                     notes.append(f"Winner: **{winner}**")
 
