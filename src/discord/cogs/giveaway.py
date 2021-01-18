@@ -105,6 +105,7 @@ class GiveawayCog(commands.Cog, name = "Giveaway"):
                     if dm_owner:
                         await giveaway.user.send(f"Giveaway **{giveaway.id}** has been won by **{winner}**. They will have to be informed and their rewards sent by you.")
 
+                asyncio.gather(message.clear_reactions())
                 giveaway.finished = True
                 giveaway.save()
 def setup(bot):
