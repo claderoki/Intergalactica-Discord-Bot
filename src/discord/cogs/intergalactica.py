@@ -85,6 +85,7 @@ class Intergalactica(commands.Cog):
         self.role_needed_for_selfie_vote = self.guild.get_role(self._role_ids["ranks"]["nova"])
 
         if self.bot.production:
+            self.reddit_advertiser.start()
             self.illegal_member_notifier.start()
             self.temp_vc_poller.start()
             self.temp_channel_checker.start()
@@ -560,6 +561,22 @@ class Intergalactica(commands.Cog):
                     await channel.delete(reason = "Expired")
                 temp_channel.channel_id = None
                 temp_channel.save()
+
+    @tasks.loop(hours = 1)
+    async def reddit_advertiser(self):
+        query = RedditAdvertisement.select()
+        query = query.where(RedditAdvertisement.guild_id == self.guild.id)
+
+        for reddit_advertisement in query:
+            if reddit_advertisement.available:
+                embed = Embed.success(None)
+                submissions = await reddit_advertisement.advertise()
+                embed.set_author(name = ctx.translate("bump_successful"), url = submissions[0].shortlink)
+                asyncio.gather(self.log("bot_commands", embed = embed))
+
+                await asyncio.sleep(10)
+                for submission in submissions:
+                    submission.mod.sfw()
 
     @tasks.loop(minutes = 1)
     async def disboard_bump_available_notifier(self):
