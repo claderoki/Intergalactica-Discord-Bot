@@ -31,13 +31,14 @@ def html_to_discord(text):
     tags = {
         "i"      : "*",
         "strong" : "**",
-        "em"     : ""
+        "em"     : "",
+        "sub"    : ""
     }
 
     for tag, replacement in tags.items():
         text = text.replace(f"<{tag}>", replacement)
         text = text.replace(f"</{tag}>", replacement)
 
-    return text
+    return text.strip()
 
 
