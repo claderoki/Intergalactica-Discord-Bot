@@ -139,8 +139,9 @@ class RedditAdvertisement(BaseModel):
         submissions = []
         for subreddit in subreddits:
             submission = subreddit.submit(self.description, url = await self.get_invite_url())
-            self.last_advertised = datetime.datetime.utcnow()
-            self.save()
             submissions.append(submission)
+
+        self.last_advertised = datetime.datetime.utcnow()
+        self.save()
 
         return submissions
