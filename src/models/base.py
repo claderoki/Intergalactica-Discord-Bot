@@ -30,7 +30,6 @@ class BaseModel(peewee.Model):
 
         if attr == "timezone":
             return TimezoneWaiter(ctx, **kwargs)
-
         if "channel_id" in attr:
             return TextChannelWaiter(ctx, **kwargs)
         if "user_id" in attr:
