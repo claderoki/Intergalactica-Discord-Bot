@@ -32,7 +32,8 @@ def html_to_discord(text):
         "i"      : "*",
         "strong" : "**",
         "em"     : "",
-        "sub"    : ""
+        "sub"    : "",
+        "xref"   : "",
     }
 
     for tag, replacement in tags.items():
