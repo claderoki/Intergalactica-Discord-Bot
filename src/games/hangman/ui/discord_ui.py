@@ -127,4 +127,7 @@ def get_word_definition(word):
         "includeRelated": False,
     }
     request = requests.get(url, params = params)
-    return html_to_discord(request.json()[0]["text"])
+    try:
+        return html_to_discord(request.json()[0]["text"])
+    except:
+        pass
