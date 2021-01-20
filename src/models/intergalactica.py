@@ -140,8 +140,7 @@ class RedditAdvertisement(BaseModel):
         for subreddit in subreddits:
             submission = subreddit.submit(self.description, url = await self.get_invite_url())
             submissions.append(submission)
-
-        self.last_advertised = datetime.datetime.utcnow()
+            self.last_advertised = datetime.datetime.utcnow()
         self.save()
 
         return submissions
