@@ -571,7 +571,7 @@ class Intergalactica(commands.Cog):
             if reddit_advertisement.available:
                 embed = Embed.success(None)
                 submissions = await reddit_advertisement.advertise()
-                embed.set_author(name = ctx.translate("bump_successful"), url = submissions[0].shortlink)
+                embed.set_author(name = "bump_successful", url = submissions[0].shortlink)
                 asyncio.gather(self.log("bot_commands", embed = embed))
 
                 await asyncio.sleep(10)
