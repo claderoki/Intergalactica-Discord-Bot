@@ -28,7 +28,7 @@ class DiscordUI(UI):
 
     async def get_move(self, board, player):
         try:
-            emoji, user = await self.ctx.bot.wait_for("reaction_add", check = self.__check(player, board))
+            emoji, user = await self.ctx.bot.wait_for("reaction_add", timeout = 60, check = self.__check(player, board))
         except asyncio.TimeoutError:
             return None
         else:
