@@ -259,6 +259,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         await channel.send(embed = embed)
 
     @pigeon.command(name = "explore")
+    @commands.max_concurrency(1, per = commands.BucketType.user)
     async def pigeon_explore(self, ctx):
         """Have your pigeon exploring a random location."""
         pigeon = ctx.pigeon
@@ -278,6 +279,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "retrieve", aliases = ["return"] )
+    @commands.max_concurrency(1, per = commands.BucketType.user)
     async def pigeon_retrieve(self, ctx):
         """Retrieve and check on your pigeon."""
         pigeon = ctx.pigeon
