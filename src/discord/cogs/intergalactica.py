@@ -388,10 +388,12 @@ class Intergalactica(commands.Cog):
         await self.on_member_leave_or_join(member, "leave")
 
     async def on_rank(self, member, role):
-        if role == self.role_needed_for_selfie_vote:
-            asyncio.gather(self.log("bot_commands", f"**{member}** {member.mention} has achieved {role.name}!"))
         role = self.guild.get_role(self._role_ids["5k+"])
         asyncio.gather(member.add_roles(role))
+
+        if role == self.role_needed_for_selfie_vote:
+            if member.guild.get_role(self._role_ids["selfies"]) not in member:
+                asyncio.gather(self.log("bot_commands", f"**{member}** {member.mention} has achieved the rank needed for selfies ({role.name})."))
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
