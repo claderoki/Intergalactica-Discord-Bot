@@ -9,8 +9,9 @@ from src.models import Word, Human
 import src.config as config
 import src.games.blackjack as blackjack
 import src.games.slotmachine as slotmachine
+import src.games.tictactoe as tictactoe
 import src.games.hangman as hangman
-from src.games.game.base import DiscordIdentity
+from src.games.game.base import AiIdentity, DiscordIdentity
 
 class Games(commands.Cog):
 
@@ -18,7 +19,7 @@ class Games(commands.Cog):
         super().__init__()
         self.bot = bot
 
-    async def get_members(self, ctx, timeout = 15, gold_needed = 0):
+    async def get_members(self, ctx, timeout = 15, gold_needed = 0, min_members = None, max_members = None):
         if isinstance(ctx.channel, discord.DMChannel):
             return [ctx.author]
 
@@ -58,6 +59,9 @@ class Games(commands.Cog):
                 embed = message.embeds[0]
                 embed.description += f"\n{user.mention}"
                 asyncio.gather(message.edit(embed = embed))
+                if max_members is not None and len(members) >= max_members:
+                    return True
+
             return False
 
         try:
@@ -87,7 +91,7 @@ class Games(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def hangman(self, ctx, timeout : int = 30):
         cost = 5
-        ctx.raise_if_not_enough_gold(5)
+        ctx.raise_if_not_enough_gold(cost)
         players = []
 
         members = await self.get_members(ctx, timeout = timeout, gold_needed = cost)
@@ -95,6 +99,22 @@ class Games(commands.Cog):
             players.append(hangman.game.Player(DiscordIdentity(member), cost))
 
         game = hangman.game.Game(players, get_random_word(), hangman.ui.DiscordUI(ctx))
+        await game.start()
+
+    @commands.command()
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def tictactoe(self, ctx, timeout : int = 30):
+        players = []
+
+        members = await self.get_members(ctx, timeout = timeout, max_members = 1)
+        i = 1
+        for member in members:
+            players.append(tictactoe.game.Player(DiscordIdentity(member), i))
+            i += 1
+        if len(members) == 1:
+            players.append(tictactoe.game.AIPlayer(AiIdentity(f"AI #{i}"), i))
+
+        game = tictactoe.game.Game(players, tictactoe.ui.DiscordUI(ctx))
         await game.start()
 
 def setup(bot):
