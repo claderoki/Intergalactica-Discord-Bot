@@ -20,7 +20,6 @@ class Game:
             if player.is_winner(self.board):
                 return True
 
-
     def has_free_space(self, move):
         return self.board[move] ==  " "
 
@@ -41,9 +40,7 @@ class Game:
         for player in self.players:
             if not player.ai:
                 return False
-            
         return True
-
 
     def player_generator(self, check = lambda player : True ):
         """check is a lambda that takes one parameter: player."""
@@ -51,7 +48,6 @@ class Game:
             for player in self.players:
                 if check(player):
                     yield player
-
 
     async def start(self):
         players = self.player_generator()

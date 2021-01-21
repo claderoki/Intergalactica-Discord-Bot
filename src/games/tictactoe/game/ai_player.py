@@ -2,16 +2,12 @@ from src.games.tictactoe.game.player import Player
 import random
 
 class AIPlayer(Player):
-    def __init__(self, number):
-        super().__init__(number)
-    
+    def __init__(self, identity, number):
+        super().__init__(identity, number)
+
     @property
     def ai(self):
         return True
-
-
-    def __str__(self):
-        return f"Player {self.number} (AI)"
 
     def random_move_from_list(self, board, moves):
         possible_moves = []
