@@ -12,6 +12,7 @@ from src.discord.errors.base import SendableException
 from src.discord.helpers.embed import Embed
 from src.models import Poll, PollTemplate, Option, Settings, Item, NamedEmbed, Human, Earthling, TemporaryVoiceChannel, TemporaryChannel, HumanItem, RedditAdvertisement, database
 from src.discord.helpers.waiters import IntWaiter
+import src.discord.helpers.pretty as pretty
 
 def is_intergalactica():
     def predicate(ctx):
@@ -492,6 +493,32 @@ class Intergalactica(commands.Cog):
     @role.command(name = "name")
     async def role_name(self, ctx, *, name : str):
         await self.edit_personal_role(ctx, name = name)
+
+    @commands.is_owner()
+    @role.command(name = "list")
+    async def role_list(self, ctx):
+        query = Earthling.select()
+        query = query.where(Earthling.guild_id == ctx.guild.id)
+        query = query.where(Earthling.personal_role_id != None)
+        roles = []
+        for earthling in query:
+            role = earthling.personal_role
+            if role is None:
+                earthling.personal_role_id = None
+                earthling.save()
+            else:
+                roles.append(role)
+        roles.sort(key = lambda x : x.position)
+
+        table = pretty.Table()
+        table.add_row(pretty.Row(["role", "pos", "in use"], header = True))
+
+        for role in roles:
+            values = [role.name, role.position, len(role.members) > 0]
+            table.add_row(pretty.Row(values))
+        await table.to_paginator(ctx, 20).wait()
+
+        table = pretty.Table()
 
     @commands.is_owner()
     @role.command(name = "link")
