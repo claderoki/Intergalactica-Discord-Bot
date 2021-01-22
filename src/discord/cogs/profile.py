@@ -12,12 +12,8 @@ from src.models import Human, Earthling, HumanItem, Pigeon, Mail, Item, database
 from src.discord.helpers.converters import convert_to_date, EnumConverter
 from src.discord.helpers.waiters import *
 import src.discord.helpers.pretty as pretty
-import src.config as config
-from src.utils.timezone import Timezone
 from src.discord.errors.base import SendableException
 from src.utils.zodiac import ZodiacSign
-from src.discord.helpers.paginating import Page, Paginator
-import src.utils.general as general
 
 def is_tester(member):
     with database.connection_context():
