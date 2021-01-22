@@ -210,7 +210,7 @@ class Item(BaseModel):
             elif self == self.rare:
                 return 10
             elif self == self.legendary:
-                return 4
+                return 6
 
     name        = peewee.CharField    (null = False)
     description = peewee.TextField    (null = False)
