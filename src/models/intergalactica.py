@@ -1,5 +1,6 @@
 import datetime
 from enum import Enum
+import asyncio
 
 import peewee
 import discord
@@ -64,11 +65,12 @@ class TemporaryChannel(BaseModel):
         return channel
 
 class Earthling(BaseModel):
-    user_id               = peewee.BigIntegerField  (null = False)
-    guild_id              = peewee.BigIntegerField  (null = False)
-    personal_role_id      = peewee.BigIntegerField  (null = True)
-    human                 = peewee.ForeignKeyField  (Human, column_name = "global_human_id" )
-    last_active           = peewee.DateTimeField    (null = True)
+    user_id              = peewee.BigIntegerField  (null = False)
+    guild_id             = peewee.BigIntegerField  (null = False)
+    personal_role_id     = peewee.BigIntegerField  (null = True)
+    human                = peewee.ForeignKeyField  (Human, column_name = "global_human_id" )
+    last_active          = peewee.DateTimeField    (null = True)
+    mandatory_role_warns = peewee.IntegerField     (null = False, default = 0)
 
     class Meta:
         indexes = (
@@ -79,20 +81,6 @@ class Earthling(BaseModel):
     def inactive(self):
         last_active = self.last_active or self.member.joined_at
         return (last_active + config.inactive_delta) < datetime.datetime.utcnow()
-
-    @property
-    def rank_role(self):
-        ranks = [
-            748494880229163021,
-            748494888844132442,
-            748494890127851521,
-            748494890169794621,
-            748494891419697152,
-            748494891751047183
-        ]
-        for role in self.member.roles:
-            if role.id in ranks:
-                return role
 
     @property
     def base_embed(self):
@@ -117,6 +105,15 @@ class Earthling(BaseModel):
             human = Human.get_or_create(user_id = member.id)[0]
         )
 
+
+class TemporaryVoiceChannel(BaseModel):
+    guild_id    = peewee.BigIntegerField  (null = False)
+    channel_id  = peewee.BigIntegerField  (null = False)
+
+    def delete_instance(self, *args, **kwargs):
+        asyncio.gather(self.channel.delete(reason = "Temporary VC channel removed."))
+        super().delete_instance(*args, **kwargs)
+
 class RedditAdvertisement(BaseModel):
     last_advertised = peewee.DateTimeField   (null = True)
     automatic       = peewee.BooleanField    (null = False, default = False)
@@ -137,9 +134,13 @@ class RedditAdvertisement(BaseModel):
 
     async def advertise(self):
         assert self.available
-
-        subreddit = self.bot.reddit.subreddit("discordservers")
-        submission = subreddit.submit(self.description, url = await self.get_invite_url())
-        self.last_advertised = datetime.datetime.utcnow()
+        subreddit_names = ["DiscordAdvertising", "discordservers", "DiscordAppServers"]
+        subreddits = [self.bot.reddit.subreddit(x) for x in subreddit_names]
+        submissions = []
+        for subreddit in subreddits:
+            submission = subreddit.submit(self.description, url = await self.get_invite_url())
+            submissions.append(submission)
+            self.last_advertised = datetime.datetime.utcnow()
         self.save()
-        return submission
+
+        return submissions

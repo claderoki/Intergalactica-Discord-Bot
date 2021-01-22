@@ -158,7 +158,8 @@ class Human(BaseModel):
 
         if self.city is not None:
             city = self.bot.owm_api.by_q(self.city, self.country.alpha_2 if self.country else None)
-            values.append(f"{city.weather_infos[0].emoji} {city.temperature_info.temperature}{city.unit.symbol}")
+            if city is not None:
+                values.append(f"{city.weather_infos[0].emoji} {city.temperature_info.temperature}{city.unit.symbol}")
         elif show_all:
             values.append("🌡️ N/A")
 
@@ -209,18 +210,19 @@ class Item(BaseModel):
             elif self == self.rare:
                 return 10
             elif self == self.legendary:
-                return 4
+                return 6
 
     name        = peewee.CharField    (null = False)
     description = peewee.TextField    (null = False)
     image_url   = peewee.TextField    (null = False)
     rarity      = EnumField           (Rarity, null = False, default = Rarity.common)
     explorable  = peewee.BooleanField (null = False, default = False)
+    code        = peewee.CharField    (max_length = 45)
+    usable      = peewee.BooleanField (null = False, default = False)
 
     @property
     def embed(self):
-        embed = discord.Embed()
-        # embed.color = self.bot.calculate_dominant_color(self.image_url)
+        embed = discord.Embed(color = self.rarity.color)
         embed.set_thumbnail(url = self.image_url)
         embed.title = self.name
         embed.description = self.description

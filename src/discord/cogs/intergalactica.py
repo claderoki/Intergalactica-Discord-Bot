@@ -6,11 +6,13 @@ import re
 from emoji import emojize, demojize
 import discord
 from discord.ext import commands, tasks
+from dateutil.relativedelta import relativedelta
 
 from src.discord.errors.base import SendableException
 from src.discord.helpers.embed import Embed
-from src.models import Poll, PollTemplate, Option, Settings, Item, NamedEmbed, Human, Earthling, TemporaryChannel, HumanItem, RedditAdvertisement, database
+from src.models import Poll, PollTemplate, Option, Settings, Item, NamedEmbed, Human, Earthling, TemporaryVoiceChannel, TemporaryChannel, HumanItem, RedditAdvertisement, database
 from src.discord.helpers.waiters import IntWaiter
+import src.discord.helpers.pretty as pretty
 
 def is_intergalactica():
     def predicate(ctx):
@@ -18,10 +20,12 @@ def is_intergalactica():
     return commands.check(predicate)
 
 class Intergalactica(commands.Cog):
+    vote_emojis = ("✅", "❎")
     guild_id = 742146159711092757
 
     _role_ids = {
         "selfies"   : 748566253534445568,
+        "admin"     : 742243945693708381,
         "vc_access" : 761599311967420418,
         "5k+"       : 778744417322139689,
         "bumper"    : 780001849335742476,
@@ -38,14 +42,17 @@ class Intergalactica(commands.Cog):
     }
 
     _channel_ids = {
-        "selfies"       : 744703465086779393,
-        "concerns"      : 758296826549108746,
-        "staff_chat"    : 750067502352171078,
-        "bot_spam"      : 742163352712642600,
-        "bot_commands"  : 754056523277271170,
-        "introductions" : 742567349613232249,
-        "tabs"          : 757961433911787592,
-        "logs"          : 745010147083944099
+        "general"        : 744650481682481233,
+        "roles"          : 742303560988885044,
+        "selfies"        : 744703465086779393,
+        "concerns"       : 758296826549108746,
+        "staff_votes"    : 795644055979294720,
+        "staff_chat"     : 796413284105453589,
+        "bot_spam"       : 742163352712642600,
+        "bot_commands"   : 796413360706682933,
+        "introductions"  : 742567349613232249,
+        "tabs"           : 757961433911787592,
+        "logs"           : 796438050091171870
     }
 
     async def get_invites(self, message):
@@ -62,6 +69,7 @@ class Intergalactica(commands.Cog):
                 continue
             else:
                 invites.append(invite)
+        return invites
 
     def get_channel(self, name):
         return self.bot.get_channel(self._channel_ids[name])
@@ -75,14 +83,17 @@ class Intergalactica(commands.Cog):
         self.guild = self.bot.get_guild(self.guild_id)
         self.bot.get_dominant_color(self.guild)
         self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = 120)
+        self.role_needed_for_selfie_vote = self.guild.get_role(self._role_ids["ranks"]["nova"])
 
         if self.bot.production:
+            self.reddit_advertiser.start()
+            self.illegal_member_notifier.start()
+            self.temp_vc_poller.start()
             self.temp_channel_checker.start()
             self.disboard_bump_available_notifier.start()
             self.introduction_purger.start()
             await asyncio.sleep( (60 * 60) * 3 )
             self.birthday_poller.start()
-            self.illegal_member_notifier.start()
 
     def on_milkyway_purchased(self, channel, member, amount):
         with database.connection_context():
@@ -103,6 +114,38 @@ class Intergalactica(commands.Cog):
         return True
 
     @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if not self.bot.production:
+            return
+        if payload.guild_id != self.guild_id:
+            return
+        if payload.member is None or payload.member.bot:
+            return
+        if payload.channel_id != self._channel_ids["staff_votes"]:
+            return
+
+        if str(payload.emoji) in self.vote_emojis:
+            def clean_value(value):
+                return int(value) if value % 1 == 0 else round(value, 2)
+            channel = self.bot.get_channel(payload.channel_id)
+            staff_members = [x for x in channel.members if not x.bot]
+            message = await channel.fetch_message(payload.message_id)
+
+            positive, negative = [x for x in message.reactions if str(x.emoji) in self.vote_emojis]
+            positive_users = [x for x in await positive.users().flatten() if not x.bot]
+            negative_users = [x for x in await negative.users().flatten() if not x.bot and x not in positive_users]
+            if len(positive_users)+len(negative_users) == len(staff_members):
+                embed = discord.Embed(color = self.bot.get_dominant_color(None))
+                lines = []
+                lines.append("*(all staff members finished voting)*")
+                lines.append(message.content)
+                lines.append("")
+                lines.append(f"{self.vote_emojis[0]}: {len(positive_users)} **{clean_value(len(positive_users)/len(staff_members)*100)}%**")
+                lines.append(f"{self.vote_emojis[1]}: {len(negative_users)} **{clean_value(len(negative_users)/len(staff_members)*100)}%**")
+                embed.description = "\n".join(lines)
+                asyncio.gather(self.get_channel("staff_chat").send(embed = embed))
+
+    @commands.Cog.listener()
     async def on_message(self, message):
         if not self.bot.production:
             return
@@ -111,10 +154,16 @@ class Intergalactica(commands.Cog):
 
         invites = await self.get_invites(message.content)
         if invites:
+            asyncio.gather(message.delete())
             for invite in invites:
                 if invite.guild.id != message.guild.id:
                     if self.member_is_new(message.author):
                         await message.author.ban(reason = "Advertising")
+            return
+
+        if message.channel.id == self._channel_ids["staff_votes"]:
+            coros = [message.add_reaction(x) for x in self.vote_emojis]
+            asyncio.gather(*coros)
 
         if message.author.id == 172002275412279296: # tatsu
             if len(message.embeds) > 0:
@@ -154,6 +203,7 @@ class Intergalactica(commands.Cog):
     async def on_member_leave_or_join(self, member, type):
         if not self.bot.production or member.guild.id != self.guild_id:
             return
+
         welcome_channel = member.guild.system_channel
         text = self.bot.translate("member_" + type)
 
@@ -165,7 +215,11 @@ class Intergalactica(commands.Cog):
         embed.set_author(name = name, icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/768460504649695282/c3p0.png")
         embed.description = text.format(member = member)
 
-        await welcome_channel.send(embed = embed)
+        asyncio.gather(welcome_channel.send(embed = embed))
+
+        if type == "join":
+            msg = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
+            asyncio.gather(self.get_channel("general").send(msg))
 
     async def create_selfie_poll(self, ctx, member):
         poll = Poll.from_template(PollTemplate.get(name = "selfies"))
@@ -176,6 +230,19 @@ class Intergalactica(commands.Cog):
         await poll.send()
         poll.save()
         return poll
+
+    @commands.command(name = "vcchannel")
+    @is_intergalactica()
+    @commands.has_role(_role_ids["5k+"])
+    async def vc_channel(self, ctx, *args):
+        name = " ".join(args) if len(args) > 0 else None
+
+        for category in ctx.guild.categories:
+            if category.id == 742146159711092759:
+                break
+        channel = await category.create_voice_channel(name or "Temporary voice channel", reason = f"Requested by {ctx.author}")
+        vc = TemporaryVoiceChannel.create(guild_id = ctx.guild.id, channel_id = channel.id)
+        await ctx.success()
 
     @commands.command()
     @is_intergalactica()
@@ -190,12 +257,16 @@ class Intergalactica(commands.Cog):
             embed = Embed.error(None)
             embed.set_footer(text = ctx.translate("available_again_at"))
             embed.timestamp = reddit_advertisement.last_advertised + datetime.timedelta(hours = 24)
+            asyncio.gather(ctx.send(embed = embed))
         else:
             embed = Embed.success(None)
-            submission = await reddit_advertisement.advertise()
-            embed.set_author(name = ctx.translate("bump_successful"), url = submission.shortlink)
+            submissions = await reddit_advertisement.advertise()
+            embed.set_author(name = ctx.translate("bump_successful"), url = submissions[0].shortlink)
+            asyncio.gather(ctx.send(embed = embed))
 
-        asyncio.gather(ctx.send(embed = embed))
+            await asyncio.sleep(10)
+            for submission in submissions:
+                submission.mod.sfw()
 
     @commands.command()
     @is_intergalactica()
@@ -219,7 +290,7 @@ class Intergalactica(commands.Cog):
     def get_milkyway_human_item(self, user):
         human_item = HumanItem.get_or_none(
             human = Human.get_or_create(user_id = user.id)[0],
-            item = 33
+            item = Item.get(code = "milky_way")
         )
         if human_item is None or human_item.amount == 0:
             raise SendableException("no_milky_way")
@@ -318,9 +389,12 @@ class Intergalactica(commands.Cog):
         await self.on_member_leave_or_join(member, "leave")
 
     async def on_rank(self, member, role):
-        asyncio.gather(self.log("bot_commands", f"**{member}** {member.mention} has achieved {role.name}!"))
         role = self.guild.get_role(self._role_ids["5k+"])
         asyncio.gather(member.add_roles(role))
+
+        if role == self.role_needed_for_selfie_vote:
+            if member.guild.get_role(self._role_ids["selfies"]) not in member:
+                asyncio.gather(self.log("bot_commands", f"**{member}** {member.mention} has achieved the rank needed for selfies ({role.name})."))
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -399,13 +473,12 @@ class Intergalactica(commands.Cog):
     @commands.group()
     @is_intergalactica()
     async def role(self, ctx):
-        earthling, _ = Earthling.get_or_create_for_member(ctx.author)
-        rank_role = earthling.rank_role
-
-        allowed = rank_role is not None or ctx.author.premium_since is not None
+        has_5k = ctx.guild.get_role(self._role_ids["5k+"]) in ctx.author.roles
+        is_nitro_booster = ctx.author.premium_since is not None
+        allowed = has_5k or is_nitro_booster
 
         if not allowed:
-            raise SendableException("You are not allowed to run this command yet.")
+            raise SendableException("You are not allowed to run this command yet, needed: 5k+ XP or Nitro Booster")
 
     @role.command(name = "color", aliases = ["colour"])
     async def role_color(self, ctx, color : discord.Color = None):
@@ -413,13 +486,39 @@ class Intergalactica(commands.Cog):
             return
 
         if color is None:
-            color = self.bot.get_random_color()
+            color = self.bot.calculate_dominant_color(self.bot._get_icon_url(ctx.author))
 
         await self.edit_personal_role(ctx, color = color)
 
     @role.command(name = "name")
     async def role_name(self, ctx, *, name : str):
         await self.edit_personal_role(ctx, name = name)
+
+    @commands.is_owner()
+    @role.command(name = "list")
+    async def role_list(self, ctx):
+        query = Earthling.select()
+        query = query.where(Earthling.guild_id == ctx.guild.id)
+        query = query.where(Earthling.personal_role_id != None)
+        roles = []
+        for earthling in query:
+            role = earthling.personal_role
+            if role is None:
+                earthling.personal_role_id = None
+                earthling.save()
+            else:
+                roles.append(role)
+        roles.sort(key = lambda x : x.position)
+
+        table = pretty.Table()
+        table.add_row(pretty.Row(["role", "pos", "in use"], header = True))
+
+        for role in roles:
+            values = [role.name, role.position, len(role.members) > 0]
+            table.add_row(pretty.Row(values))
+        await table.to_paginator(ctx, 20).wait()
+
+        table = pretty.Table()
 
     @commands.is_owner()
     @role.command(name = "link")
@@ -490,6 +589,22 @@ class Intergalactica(commands.Cog):
                 temp_channel.channel_id = None
                 temp_channel.save()
 
+    @tasks.loop(hours = 1)
+    async def reddit_advertiser(self):
+        query = RedditAdvertisement.select()
+        query = query.where(RedditAdvertisement.guild_id == self.guild.id)
+
+        for reddit_advertisement in query:
+            if reddit_advertisement.available:
+                embed = Embed.success(None)
+                submissions = await reddit_advertisement.advertise()
+                embed.set_author(name = "bump_successful", url = submissions[0].shortlink)
+                asyncio.gather(self.log("bot_commands", embed = embed))
+
+                await asyncio.sleep(10)
+                for submission in submissions:
+                    submission.mod.sfw()
+
     @tasks.loop(minutes = 1)
     async def disboard_bump_available_notifier(self):
         if self.bump_available <= datetime.datetime.utcnow():
@@ -500,6 +615,14 @@ class Intergalactica(commands.Cog):
 
             if last_message is None or last_message.content != content:
                 await bot_spam.send(content)
+
+    @tasks.loop(minutes = 30)
+    async def temp_vc_poller(self):
+        with database.connection_context():
+            for temporary_voice_channel in TemporaryVoiceChannel:
+                channel = temporary_voice_channel.channel
+                if len(channel.members) == 0:
+                    temporary_voice_channel.delete_instance()
 
     @tasks.loop(hours = 3)
     async def introduction_purger(self):
@@ -526,16 +649,18 @@ class Intergalactica(commands.Cog):
 
         asyncio.gather(*tasks)
 
-    @tasks.loop(hours = 24)
+    @tasks.loop(hours = 1)
     async def illegal_member_notifier(self):
         for member in self.guild.members:
             if member.bot:
                 continue
 
             if not member_is_legal(member):
-                days = (datetime.datetime.utcnow() - member.joined_at).days
-                if days > 1:
-                    await self.log("bot_commands", f"**{member}** {member.mention} is missing one or more of the mandatory roles.")
+                with database.connection_context():
+                    time_here = relativedelta(datetime.datetime.utcnow(), member.joined_at)
+                    if time_here.hours >= 6:
+                        asyncio.gather(member.kick(reason = "Missing mandatory roles."))
+                        await self.log("bot_commands", f"**{member}** {member.mention} was kicked due to missing roles")
 
     @tasks.loop(hours = 12)
     async def birthday_poller(self):

@@ -191,6 +191,13 @@ class StrWaiter(MessageWaiter):
         self.min_length     = min_length
         self.max_length     = max_length
 
+    @property
+    def instructions(self):
+        if self.allowed_words:
+            split = "'"
+            sep = ","
+            return f"options: {split}" + (f"{split}{sep} {split}".join(self.allowed_words)) + split
+
     def check(self, message):
         if not super().check(message):
             return False
@@ -288,12 +295,6 @@ class EnumWaiter(StrWaiter):
         self.enum = enum
         self.allowed_words = [x.name for x in enum]
         self.case_sensitive = False
-
-    @property
-    def instructions(self):
-        split = "'"
-        sep = ","
-        return f"allowed words: {split}" + (f"{split}{sep} {split}".join(self.allowed_words)) + split
 
     def convert(self, argument):
         try:
@@ -427,6 +428,8 @@ class DateWaiter(StrWaiter):
         return True
 
 class TimeDeltaWaiter(MessageWaiter):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, max_words = 2, **kwargs)
 
     @property
     def instructions(self):

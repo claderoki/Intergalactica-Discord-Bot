@@ -10,8 +10,6 @@ class BaseGame:
         assert hasattr(cls, "start")
         assert hasattr(cls, "stop")
 
-
-
 class BaseUi:
     pass
 
@@ -21,7 +19,6 @@ class DiscordUi(BaseUi):
 class BasePlayer:
     def __init__(self, identity):
         self.identity = identity
-
 
 class BaseIdentity:
     def __init_subclass__(cls):

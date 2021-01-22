@@ -19,16 +19,25 @@ class BaseModel(peewee.Model):
 
         if "prompt" not in kwargs:
             kwargs["prompt"] = ctx.translate(f"{peewee.make_snake_case(cls.__name__)}_{attr}_prompt")
-            if field.default is not None:
-                kwargs["prompt"] += f"\nDefault: **{prettify_value(field.default)}**"
-            if value is not None:
-                kwargs["prompt"] += f"\nCurrent: **{prettify_value(value)}**"
+            if "due_date" not in attr:
+                if field.default is not None:
+                    kwargs["prompt"] += f"\nDefault: **{prettify_value(field.default)}**"
+                if value is not None:
+                    kwargs["prompt"] += f"\nCurrent: **{prettify_value(value)}**"
 
         if "skippable" not in kwargs:
             kwargs["skippable"] = field.null or field.default is not None
 
         if attr == "timezone":
             return TimezoneWaiter(ctx, **kwargs)
+        if "channel_id" in attr:
+            return TextChannelWaiter(ctx, **kwargs)
+        if "user_id" in attr:
+            return MemberWaiter(ctx, **kwargs)
+        if "role_id" in attr:
+            return RoleWaiter(ctx, **kwargs)
+        if attr == "due_date":
+            return TimeDeltaWaiter(ctx, **kwargs)
 
         if isinstance(field, CountryField):
             return CountryWaiter(ctx, **kwargs)
@@ -46,16 +55,23 @@ class BaseModel(peewee.Model):
     async def editor_for(self, ctx, attr, on_skip = "pass", **kwargs):
         waiter = self.waiter_for(ctx, attr, **kwargs)
         try:
-            setattr(self, attr, await waiter.wait())
+            value = await waiter.wait()
+            if attr == "due_date":
+                value = datetime.datetime.utcnow() + value
+            elif "_id" in attr:
+                value = value.id
+            setattr(self, attr, value)
         except Skipped:
             if on_skip in ("null", "none"):
                 setattr(self, None, await waiter.wait())
             elif on_skip == "default":
                 setattr(self, getattr(self.__class__, attr).default, await waiter.wait())
+            elif on_skip == "raise":
+                raise
 
     @classmethod
     def get_random(cls):
-        return cls.select().order_by(peewee.fn.Rand()).first()
+        return cls.select().order_by(peewee.fn.Rand()).limit(1).first()
 
     @property
     def bot(self):
@@ -98,7 +114,8 @@ class BaseModel(peewee.Model):
 
     class Meta:
         legacy_table_names = False
-
+        only_save_dirty = True
+        table_settings = ["DEFAULT CHARSET=utf8"]
         database = peewee.MySQLDatabase(
             config.environ["mysql_db_name"],
             user     = config.environ["mysql_user"],
@@ -147,13 +164,23 @@ class EnumField(peewee.TextField):
         if value is not None:
             return self.enum[value]
 
-class EmojiField(peewee.TextField):
-
+class UnicodeField(peewee.CharField):
     def db_value(self, value):
-        return emoji.demojize(value)
+        if value is not None:
+            return value.encode("utf8")
 
     def python_value(self, value):
-        return emoji.emojize(value)
+        if value is not None:
+            return value.decode()
+
+class EmojiField(peewee.TextField):
+    def db_value(self, value):
+        if value is not None:
+            return emoji.demojize(value)
+
+    def python_value(self, value):
+        if value is not None:
+            return emoji.emojize(value)
 
 class PercentageField(peewee.IntegerField):
     def db_value(self, value):

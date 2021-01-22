@@ -130,6 +130,22 @@ class Pigeon(BaseModel):
         query = query.where((Fight.challenger == self) | (Fight.challengee == self))
         return query
 
+class PigeonRelationship(BaseModel):
+    pigeon1   = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
+    pigeon2   = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
+    score     = peewee.IntegerField    (null = False, default = 0)
+
+    @classmethod
+    def get_or_create_for(cls, pigeon1, pigeon2):
+        query = cls.select()
+        query = query.where( (cls.pigeon1 == pigeon1) | (cls.pigeon1 == pigeon2))
+        query = query.where( (cls.pigeon2 == pigeon1) | (cls.pigeon2 == pigeon2))
+        relationship = query.first()
+        if relationship is not None:
+            return relationship
+        else:
+            return cls.create(pigeon1 = pigeon1, pigeon2 = pigeon2)
+
 class LanguageMastery(BaseModel):
     language = LanguageField()
     mastery  = PercentageField(null = False, default = 0)

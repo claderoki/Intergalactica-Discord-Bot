@@ -1,15 +1,16 @@
 
-class Player:
-    def __init__(self, number):
-        self.number = number
 
+class Player:
+    def __init__(self, identity, number):
+        self.identity = identity
+        self.number = number
 
     @property
     def ai(self):
         return False
 
     def __str__(self):
-        return f"Player {self.number}"
+        return str(self.identity)
 
     @property
     def symbol(self):

@@ -17,7 +17,7 @@ from dateutil.relativedelta import relativedelta
 import src.config as config
 from src.wrappers.openweathermap import OpenWeatherMapApi
 from src.wrappers.color_thief import ColorThief
-from src.models import Settings, Translation, NamedChannel, database
+from src.models import Settings, Translation, Human, NamedChannel, database
 from src.discord.errors.base import SendableException
 from src.discord.helpers.embed import Embed
 
@@ -151,7 +151,7 @@ class Locus(commands.Bot):
 
     def _get_icon_url(self, obj):
         options = {"format": "png", "static_format": "png", "size": 16}
-        if isinstance(obj, (discord.User, discord.ClientUser)):
+        if isinstance(obj, (discord.User, discord.ClientUser, discord.Member)):
             return obj.avatar_url_as(**options)
         elif isinstance(obj, discord.Guild):
             return obj.icon_url_as(**options)
@@ -209,6 +209,8 @@ class Locus(commands.Bot):
             "prank",
             "pigeon",
             "covid",
+            "qotd",
+            "giveaway",
         ]
 
         if True:
@@ -241,19 +243,32 @@ class Locus(commands.Bot):
         ctx.db.__exit__(None, None, None)
 
     def success(self, ctx):
-        async def wrapper(content = None): 
+        async def wrapper(content = None, delete_after = None):
             if content is None:
                 await ctx.message.add_reaction("✅")
             else:
-                await ctx.send(embed = Embed.success(content))
+                await ctx.send(embed = Embed.success(content), delete_after = delete_after)
         return wrapper
 
     def error(self, ctx):
-        async def wrapper(content = None): 
+        async def wrapper(content = None, delete_after = None):
             if content is None:
                 await ctx.message.add_reaction("❌")
             else:
-                await ctx.send(embed = Embed.error(content))
+                await ctx.send(embed = Embed.error(content), delete_after = delete_after)
+        return wrapper
+
+    def can_change_nick(self, member, other = None):
+        guild = member.guild
+        other = other or guild.me
+        return not (other.top_role.position <= member.top_role.position or member.id == guild.owner_id)
+
+    def raise_if_not_enough_gold(self, ctx):
+        def wrapper(gold, human = None, name = "you"):
+            if human is None:
+                human, _ = Human.get_or_create(user_id = ctx.author.id)
+            if human.gold < gold:
+                raise SendableException(ctx.translate(f"{name}_not_enough_gold"))
         return wrapper
 
     async def before_any_command(self, ctx):
@@ -270,6 +285,8 @@ class Locus(commands.Bot):
 
         ctx.success = self.success(ctx)
         ctx.error = self.error(ctx)
+
+        ctx.raise_if_not_enough_gold = self.raise_if_not_enough_gold(ctx)
 
         ctx.guild_color = self.get_dominant_color(ctx.guild)
 

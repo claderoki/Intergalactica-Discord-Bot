@@ -1,25 +1,30 @@
 from .base import BaseModel
 from .human import Human, Item, HumanItem
-from .intergalactica import Earthling, TemporaryChannel, RedditAdvertisement
+from .intergalactica import Earthling, TemporaryVoiceChannel, TemporaryChannel, RedditAdvertisement
 from .analytics import EmojiUsage
 from .settings import Settings, NamedEmbed, NamedChannel, Translation, Locale
 from .ticket import Ticket, Reply
 from .poll import Change, Parameter, Poll, PollTemplate, Vote, Option
 from .scene import Scene, Scenario
-from .pigeon import Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date
-from .admin import SavedEmoji, Location, DailyReminder, PersonalQuestion
+from .pigeon import Pigeon, PigeonRelationship, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date
+from .admin import SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word
 from .prank import NicknamePrank, Prankster
 from .reddit import Subreddit
+from .qotd import Category, Question, CategoryChannel, QuestionConfig
 
 database = Human._meta.database
 
 def setup():
     with database.connection_context():
-        # database.drop_tables([Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
-        database.create_tables([Pigeon, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
+        # database.drop_tables([Category, Question, CategoryChannel, QuestionConfig])
+        database.create_tables([Category, Question, CategoryChannel, QuestionConfig])
 
-        # database.drop_tables([SavedEmoji, Location, DailyReminder, PersonalQuestion])
-        database.create_tables([SavedEmoji, Location, DailyReminder, PersonalQuestion])
+        # database.drop_tables([Pigeon, PigeonRelationship, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
+        database.create_tables([Pigeon, PigeonRelationship, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
+
+        # database.drop_tables([Giveaway])
+        # database.drop_tables([SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word])
+        database.create_tables([SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word])
 
         # database.drop_tables([Subreddit])
         database.create_tables([Subreddit])
@@ -33,8 +38,8 @@ def setup():
         # database.drop_tables([Human, Item, HumanItem])
         database.create_tables([Human, Item, HumanItem])
 
-        # database.drop_tables([Earthling, TemporaryChannel, RedditAdvertisement])
-        database.create_tables([Earthling, TemporaryChannel, RedditAdvertisement])
+        # database.drop_tables([Earthling, TemporaryChannel, TemporaryVoiceChannel, RedditAdvertisement])
+        database.create_tables([Earthling, TemporaryChannel, TemporaryVoiceChannel, RedditAdvertisement])
 
         # database.drop_tables([Settings, NamedEmbed, NamedChannel, Locale, Translation])
         database.create_tables([Settings, NamedEmbed, NamedChannel, Locale, Translation])

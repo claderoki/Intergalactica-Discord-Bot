@@ -1,6 +1,9 @@
-from .ui import UI
+import asyncio
+
 import emoji
 import discord
+
+from .ui import UI
 
 class DiscordUI(UI):
     numbers = [emoji.emojize(f":keycap_{i}:") for i in range(1,10)]
@@ -9,14 +12,26 @@ class DiscordUI(UI):
         self.ctx = ctx
         self.message = None
 
-    async def get_move(self, board, player):
-        emoji = await self.ctx.wait_for_emoji(self.message,
-            author        = player.member,
-            emojis        = (self.numbers),
-            check         = lambda r,u : board[self.numbers.index(str(r.emoji))+1] == " ",
-            remove_after  = True)
+    def __check(self, player, board):
+        def __check2(reaction, user):
+            if user.id != player.identity.member.id:
+                return False
+            emoji = str(reaction.emoji)
+            if emoji not in self.numbers:
+                return False
+            index = self.numbers.index(emoji)
+            if board[index+1] != " ":
+                return False
 
-        if emoji is not None:
+            return True
+        return __check2
+
+    async def get_move(self, board, player):
+        try:
+            emoji, user = await self.ctx.bot.wait_for("reaction_add", timeout = 60, check = self.__check(player, board))
+        except asyncio.TimeoutError:
+            return None
+        else:
             return self.numbers.index(str(emoji))+1
 
     async def show_board(self, game, player):

@@ -80,10 +80,15 @@ class ExplorationRetrieval(ActivityRetrieval):
     @property
     def winnings(self):
         if self._winnings is None:
-            multiplier = int(1+(len(self.bonuses)*0.5))
+            gold_earned = self.exploration.gold_worth
+            gold_earned += (len(self.bonuses) * 40)
+
+            xp_earned = self.exploration.xp_worth
+            xp_earned += (len(self.bonuses) * 20)
+
             self._winnings = {
-                "gold"        : int(self.exploration.gold_worth * multiplier),
-                "experience"  : int(self.exploration.xp_worth   * multiplier),
+                "gold"        : int(gold_earned),
+                "experience"  : int(xp_earned),
                 "food"        : -random.randint(5,35),
                 "happiness"   : (0+(len(self.bonuses)*10)),
                 "cleanliness" : -random.randint(5,35)

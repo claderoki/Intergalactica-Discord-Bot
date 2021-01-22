@@ -6,11 +6,10 @@ from discord.ext import commands, tasks
 from countryinfo import CountryInfo
 
 import src.config as config
-from src.models import Scene, Scenario, Human, Fight, Pigeon, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
+from src.models import Scene, Scenario, Human, Fight, Pigeon, PigeonRelationship, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
 from src.models.base import PercentageField
 from src.discord.helpers.waiters import *
 from src.utils.country import Country
-from src.games.game.base import DiscordIdentity
 from src.discord.errors.base import SendableException
 from src.discord.helpers.pretty import prettify_dict, limit_str, Table, Row
 from src.discord.helpers.exploration_retrieval import ExplorationRetrieval, MailRetrieval
@@ -18,9 +17,9 @@ from src.utils.enums import Gender
 from src.discord.helpers.converters import EnumConverter
 
 class PigeonCog(commands.Cog, name = "Pigeon"):
-    subcommands_no_require_pigeon = ["buy", "scoreboard", "help", "inbox", "pigeon"]
+    subcommands_no_require_pigeon = ["buy", "history", "scoreboard", "help", "inbox", "pigeon"]
     subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name", "accept", "acceptdate"] + subcommands_no_require_pigeon
-    subcommands_no_require_stats = ["heal", "clean", "feed", "play", "date"] + subcommands_no_require_available
+    subcommands_no_require_stats = ["heal", "clean", "feed", "play", "date", "poop"] + subcommands_no_require_available
 
     def __init__(self, bot):
         super().__init__()
@@ -112,8 +111,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         await fight.editor_for(ctx, "bet", min = 0, max = min([ctx.pigeon.human.gold, ctx.challengee.human.gold]), skippable = True)
 
-        raise_if_not_enough_gold(ctx, fight.bet, ctx.pigeon.human, name = "challenger")
-        raise_if_not_enough_gold(ctx, fight.bet, ctx.challengee.human, name = "challengee")
+        ctx.raise_if_not_enough_gold(fight.bet, ctx.pigeon.human, name = "challenger")
+        ctx.raise_if_not_enough_gold(fight.bet, ctx.challengee.human, name = "challengee")
 
         fight.save()
 
@@ -147,7 +146,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @pigeon.command(name = "name", aliases = ["rename"])
     async def pigeon_name(self, ctx):
         cost = 50
-        raise_if_not_enough_gold(ctx, cost, ctx.pigeon.human)
+        ctx.raise_if_not_enough_gold(cost, ctx.pigeon.human)
         await ctx.pigeon.editor_for(ctx, "name")
         ctx.pigeon.save()
         embed = self.get_base_embed(ctx.guild)
@@ -260,6 +259,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         await channel.send(embed = embed)
 
     @pigeon.command(name = "explore")
+    @commands.max_concurrency(1, per = commands.BucketType.user)
     async def pigeon_explore(self, ctx):
         """Have your pigeon exploring a random location."""
         pigeon = ctx.pigeon
@@ -279,6 +279,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "retrieve", aliases = ["return"] )
+    @commands.max_concurrency(1, per = commands.BucketType.user)
     async def pigeon_retrieve(self, ctx):
         """Retrieve and check on your pigeon."""
         pigeon = ctx.pigeon
@@ -324,6 +325,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         sender = ctx.pigeon
 
+        await ctx.send(ctx.translate("check_dms"))
         ctx.channel = ctx.author.dm_channel
         if ctx.channel is None:
             ctx.channel = await ctx.author.create_dm()
@@ -421,6 +423,19 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         asyncio.gather(ctx.send(embed = embed))
 
+    @pigeon.command(name = "history")
+    async def pigeon_history(self, ctx, member : discord.Member = None):
+        member = member or ctx.author
+        query = Pigeon.select()
+        query = query.where(Pigeon.human == Human.get(user_id = member.id))
+        query = query.where(Pigeon.condition != Pigeon.Condition.active)
+
+        lines = []
+
+        for pigeon in query:
+            lines.append(pigeon.name)
+        asyncio.gather(ctx.send("```\n{}```".format("\n".join(lines))))
+
     @pigeon.command(name = "status")
     async def pigeon_status(self, ctx, member : discord.Member = None):
         """Check the status of your pigeon."""
@@ -481,6 +496,12 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         value = getattr(pigeon, attr_name)
         if value == 100:
             raise SendableException(ctx.translate(f"{attr_name}_already_max"))
+            ctx.command.reset_cooldown(ctx)
+        try:
+            ctx.raise_if_not_enough_gold(cost, pigeon.human)
+        except SendableException:
+            ctx.command.reset_cooldown(ctx)
+            raise
 
         pigeon.human.gold  -= cost
         setattr(pigeon, attr_name, value+attr_increase )
@@ -516,6 +537,36 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     async def pigeon_help(self, ctx):
         await ctx.send_help(ctx.command.root_parent)
 
+    @pigeon.command()
+    @commands.cooldown(1, (3600 * 1), type = commands.BucketType.user)
+    async def poop(self, ctx, member : discord.Member):
+        self.pigeon_check(ctx, member, name = "pigeon2")
+        relationship = PigeonRelationship.get_or_create_for(ctx.pigeon, ctx.pigeon2)
+        price = 5
+        relationship.score -= price
+        relationship.save()
+
+        embed = self.get_base_embed(ctx.guild)
+        lines = []
+        lines.append(f"Your pigeon successfully poops on `{ctx.pigeon2.name}`")
+        lines.append(f"And to finish it off, `{ctx.pigeon.name}` wipes {ctx.pigeon.gender.get_posessive_pronoun()} butt clean on {ctx.pigeon2.gender.get_posessive_pronoun()} fur.")
+        lines.append("")
+
+
+        lines.append(ctx.pigeon.name)
+        data1 = {"cleanliness": 5}
+        lines.append(get_winnings_value(**data1))
+        ctx.pigeon.update_stats(data1)
+
+        lines.append(ctx.pigeon2.name)
+        data2 = {"cleanliness": -10}
+        lines.append(get_winnings_value(**data2))
+        ctx.pigeon2.update_stats(data2)
+
+        embed.description = "\n".join(lines)
+
+        embed.set_footer(text = f"-{price} relations")
+        await ctx.send(embed = embed)
 
     @tasks.loop(seconds=30)
     async def date_ticker(self):
@@ -617,7 +668,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                     value = get_winnings_value(**winner_data, gold = fight.bet)
                 )
 
-                asyncio.gather(channel.send(embed = embed))
+                asyncio.gather(channel.send(content = f"{winner.human.mention} | {loser.human.mention}", embed = embed))
 
                 winner.status = Pigeon.Status.idle
                 loser.status = Pigeon.Status.idle
@@ -675,11 +726,13 @@ def get_active_pigeon(user, raise_on_none = False):
 
 def pigeon_raise_if_not_exist(ctx, pigeon, name = "pigeon"):
     if pigeon is None:
+        ctx.command.reset_cooldown(ctx)
         raise SendableException(ctx.translate(f"{name}_does_not_exist"))
 
 def pigeon_raise_if_unavailable(ctx, pigeon, name = "pigeon"):
     pigeon_raise_if_not_exist(ctx, pigeon, name)
     if pigeon.status != Pigeon.Status.idle:
+        ctx.command.reset_cooldown(ctx)
         raise SendableException(ctx.translate(f"{name}_not_idle").format(status = pigeon.status.name))
 
 def pigeon_raise_if_stats_too_low(ctx, pigeon, name = "pigeon"):
@@ -693,11 +746,8 @@ def pigeon_raise_if_stats_too_low(ctx, pigeon, name = "pigeon"):
         message = ctx.translate(f"{name}_too_wounded")
     else:
         return
+    ctx.command.reset_cooldown(ctx)
     raise SendableException(message.format(pigeon = pigeon))
-
-def raise_if_not_enough_gold(ctx, gold, human, name = "you"):
-    if human.gold < gold:
-        raise SendableException(ctx.translate(f"{name}_not_enough_gold"))
 
 def setup(bot):
     bot.add_cog(PigeonCog(bot))

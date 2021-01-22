@@ -8,16 +8,12 @@ from discord.ext import commands, tasks
 import emoji
 import pycountry
 
-from src.models import Human, Earthling, Mail, Item, database
+from src.models import Human, Earthling, HumanItem, Pigeon, Mail, Item, database
 from src.discord.helpers.converters import convert_to_date, EnumConverter
 from src.discord.helpers.waiters import *
 import src.discord.helpers.pretty as pretty
-import src.config as config
-from src.utils.timezone import Timezone
 from src.discord.errors.base import SendableException
 from src.utils.zodiac import ZodiacSign
-from src.discord.helpers.paginating import Page, Paginator
-import src.utils.general as general
 
 def is_tester(member):
     with database.connection_context():
@@ -110,7 +106,7 @@ class Profile(commands.Cog):
             i += 1
         await table.to_paginator(ctx, 10).wait()
 
-    @commands.group()
+    @commands.group(aliases = ["balance", "wallet", "gold"])
     async def profile(self, ctx, members : commands.Greedy[discord.Member]):
         if ctx.invoked_subcommand is not None:
             return
@@ -234,6 +230,7 @@ class Profile(commands.Cog):
     async def events(self, ctx, month : int = None):
         if month is None:
             month = datetime.datetime.utcnow().month
+
         month = max(min(month, 12), 1)
 
         query = Human.select()
@@ -253,6 +250,10 @@ class Profile(commands.Cog):
             await ctx.send(embed = embed)
         else:
             await ctx.send("No events this month")
+
+    @commands.command()
+    async def daily(self, ctx):
+        asyncio.gather(ctx.send(ctx.translate("not_implemented_yet")))
 
     @commands.group()
     async def item(self, ctx):
@@ -281,6 +282,66 @@ class Profile(commands.Cog):
 
         item.save()
         await ctx.send("OK")
+
+    @item.command(name = "use")
+    async def item_use(self, ctx, *, name):
+        if name == "":
+            raise commands.errors.MissingRequiredArgument("name")
+
+        try:
+            item = Item.get(name = name)
+        except Item.DoesNotExist:
+            raise SendableException("Item not found.")
+
+        if not item.usable:
+            raise SendableException(ctx.translate("item_not_usable"))
+
+        waiter = BoolWaiter(ctx, prompt = f"`{item.description}`\nAre you sure you want to use this item?")
+        if not await waiter.wait():
+            return await ctx.send(ctx.translate("canceled"))
+
+        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human_item, created = HumanItem.get_or_create(item = item, human = human)
+        if created or human_item.amount == 0:
+            raise SendableException(ctx.translate("you_missing_item"))
+
+        used = False
+
+        if item.code == "ban_hammer":
+            await ctx.author.ban(reason = "Ban hammer item was used.", delete_message_days = 0)
+            used = True
+        elif item.code == "big_bath":
+            pigeon = Pigeon.get_or_none(human = human, condition = Pigeon.Condition.active)
+            if pigeon is None:
+                raise SendableException(ctx.translate("you_no_pigeon"))
+            used = True
+            pigeon.cleanliness = 100
+            pigeon.save()
+        elif item.code == "big_snack":
+            pigeon = Pigeon.get_or_none(human = human, condition = Pigeon.Condition.active)
+            if pigeon is None:
+                raise SendableException(ctx.translate("you_no_pigeon"))
+            used = True
+            pigeon.food = 100
+            pigeon.save()
+        elif item.code == "big_toy":
+            pigeon = Pigeon.get_or_none(human = human, condition = Pigeon.Condition.active)
+            if pigeon is None:
+                raise SendableException(ctx.translate("you_no_pigeon"))
+            used = True
+            pigeon.happiness = 100
+            pigeon.save()
+        elif item.code == "milky_way":
+            #TODO: redirect to /milkyway create command
+            pass
+        elif item.code == "jester_hat":
+            #TODO: redirect to /prank nick command
+            pass
+
+        if used:
+            human_item.amount -= 1
+            human_item.save()
+            await ctx.success("Item has been successfully used.")
 
     @item.command(name = "explorable", aliases = ["exp"])
     async def item_explorable(self, ctx,*, name):
@@ -327,8 +388,8 @@ class Profile(commands.Cog):
         await table.to_paginator(ctx, 10).wait()
 
     @commands.command()
-    async def inventory(self, ctx):
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
+    async def inventory(self, ctx, member : discord.Member = None):
+        human, _ = Human.get_or_create(user_id = (member or ctx.author).id)
 
         data = [(x.item.name, x.amount) for x in human.human_items if x.amount > 0]
         data.insert(0, ("name", "amount"))
