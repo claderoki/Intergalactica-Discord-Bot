@@ -118,7 +118,7 @@ class Prank(discord.ext.commands.Cog):
         embed.description = f"Nickname of {member.mention} has been changed to **{new_nickname}**."
         embed.timestamp = prank.end_date
         if has_hat:
-            embed.set_footer(text = f"-{human_item.item.name} `x1`\nWill stay into effect until")
+            embed.set_footer(text = f"-{human_item.item.name}\nWill stay into effect until")
         else:
             embed.set_footer(text = f"-{cost}\nWill stay into effect until")
 
