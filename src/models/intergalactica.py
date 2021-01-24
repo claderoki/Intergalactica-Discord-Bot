@@ -124,8 +124,8 @@ class RedditAdvertisement(BaseModel):
     def available(self):
         if self.last_advertised is None:
             return True
-
-        return (self.last_advertised + datetime.timedelta(hours = 24)) < datetime.datetime.utcnow()
+        hours = 26
+        return (self.last_advertised + datetime.timedelta(hours = hours)) < datetime.datetime.utcnow()
 
     async def get_invite_url(self):
         for invite in await self.guild.invites():
