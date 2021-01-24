@@ -55,9 +55,13 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             pigeon_raise_if_not_exist(ctx, pigeon, name = name)
 
             if pigeon.status == Pigeon.Status.idle:
-                to_check = (Exploration, Mail, Fight)
-                for cls in to_check:
-                    for activity in cls.select().where(cls.pigeon == pigeon).where(cls.finished == False):
+                activities = []
+                activities.append(pigeon.explorations.where(Exploration.finished == False))
+                activities.append(pigeon.outbox.where(Mail.finished == False))
+                activities.append(pigeon.fights.where(Fight.finished == False))
+
+                for activity_group in activities:
+                    for activity in activity_group:
                         activity.finished = True
                         activity.save()
 
