@@ -294,6 +294,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             raise SendableException(ctx.translate("nothing_to_retrieve"))
 
         if isinstance(activity, Exploration):
+            print(f"Activity by {ctx.author}", activity.id, activity.end_date_passed)
             if activity.end_date_passed:
                 retrieval = ExplorationRetrieval(activity)
                 embed = retrieval.embed
