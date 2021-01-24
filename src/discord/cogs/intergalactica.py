@@ -145,12 +145,51 @@ class Intergalactica(commands.Cog):
                 embed.description = "\n".join(lines)
                 asyncio.gather(self.get_channel("staff_chat").send(embed = embed))
 
+    def blacklisted_words_used(self, text):
+        blacklisted_words = ["retard"]
+
+        words_used = []
+        for word in blacklisted_words:
+            if word in text:
+                words_used.append(word)
+
+        return words_used
+
+    async def blacklisted_action(self, message, words):
+        embed = discord.Embed(color = discord.Color.red())
+        embed.set_author(name = f"Blacklisted word(s) used by {message.author} ({message.author.id})", url = message.jump_url)
+
+        lines = []
+        lines.append(f"The following blacklisted word(s) were used")
+        lines.append(", ".join([f"**{x}**" for x in words]))
+        lines.append("\n**Context:**")
+
+        async for message in message.channel.history(limit = 5, before = message):
+            content = message.content
+
+            if not content:
+                if len(message.embeds) > 0:
+                    content = "[embed]"
+                if len(message.attachments) > 0:
+                    content = "[attachment(s)]"
+            embed.add_field(name = message.author, value = content, inline = False)
+
+        embed.description = "\n".join(lines)
+
+        # sendable = self.bot.owner
+        sendable = self.get_channel("staff_chat")
+        await sendable.send(embed = embed)
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if not self.bot.production:
             return
-        if message.guild and message.guild.id != self.guild_id:
+        if message.guild is not None and message.guild.id != self.guild_id:
             return
+
+        words = self.blacklisted_words_used(message.content)
+        if len(words) > 0:
+            await self.blacklisted_action(message, words)
 
         invites = await self.get_invites(message.content)
         if invites:
@@ -267,6 +306,7 @@ class Intergalactica(commands.Cog):
             await asyncio.sleep(10)
             for submission in submissions:
                 submission.mod.sfw()
+
 
     @commands.command()
     @is_intergalactica()
