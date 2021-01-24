@@ -53,6 +53,14 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             pigeon = get_active_pigeon(member or ctx.author)
             setattr(ctx, name, pigeon)
             pigeon_raise_if_not_exist(ctx, pigeon, name = name)
+
+            if pigeon.status == Pigeon.Status.idle:
+                to_check = (Exploration, Mail, Fight)
+                for cls in to_check:
+                    for activity in cls.select().where(cls.pigeon == pigeon).where(cls.finished == False):
+                        activity.finished = True
+                        activity.save()
+
         if command_name not in self.subcommands_no_require_available:
             pigeon_raise_if_unavailable(ctx, pigeon, name = name)
         if command_name not in self.subcommands_no_require_stats:
@@ -294,7 +302,6 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             raise SendableException(ctx.translate("nothing_to_retrieve"))
 
         if isinstance(activity, Exploration):
-            print(f"Activity by {ctx.author}", activity.id, activity.end_date_passed)
             if activity.end_date_passed:
                 retrieval = ExplorationRetrieval(activity)
                 embed = retrieval.embed
