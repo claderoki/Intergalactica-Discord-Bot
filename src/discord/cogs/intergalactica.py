@@ -674,7 +674,7 @@ class Intergalactica(commands.Cog):
             if last_message is None or last_message.content != content:
                 await bot_spam.send(content)
 
-    @tasks.loop(minutes = 30)
+    @tasks.loop(minutes = 5)
     async def temp_vc_poller(self):
         with database.connection_context():
             for temporary_voice_channel in TemporaryVoiceChannel:
