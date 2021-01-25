@@ -10,7 +10,7 @@ from dateutil.relativedelta import relativedelta
 
 from src.discord.errors.base import SendableException
 from src.discord.helpers.embed import Embed
-from src.models import Poll, PollTemplate, Option, Settings, Item, NamedEmbed, Human, Earthling, TemporaryVoiceChannel, TemporaryChannel, HumanItem, RedditAdvertisement, database
+from src.models import Poll, PollTemplate, Option, Reminder, Settings, Item, NamedEmbed, Human, Earthling, TemporaryVoiceChannel, TemporaryChannel, HumanItem, RedditAdvertisement, database
 from src.discord.helpers.waiters import IntWaiter
 import src.discord.helpers.pretty as pretty
 
@@ -84,6 +84,8 @@ class Intergalactica(commands.Cog):
         self.bot.get_dominant_color(self.guild)
         self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = 120)
         self.role_needed_for_selfie_vote = self.guild.get_role(self._role_ids["ranks"]["nova"])
+
+        self.reminder_notifier.start()
 
         if self.bot.production:
             self.reddit_advertiser.start()
@@ -688,6 +690,21 @@ class Intergalactica(commands.Cog):
             tasks.append(introduction.delete())
 
         asyncio.gather(*tasks)
+
+
+    @tasks.loop(seconds = 30)
+    async def reminder_notifier(self):
+        query = Reminder.select()
+        query = query.where(Reminder.finished == False)
+        query = query.where(Reminder.due_date <= datetime.datetime.utcnow())
+
+        for reminder in Reminder:
+            print(reminder.due_date)
+            # channel = self.bot.get_channel(reminder.channel_id)
+
+            # asyncio.gather(channel.send(f"{reminder.user.mention}, Reminder: \n`{reminder.text}`"))
+            # reminder.finished = True
+            # reminder.save()
 
     @tasks.loop(hours = 1)
     async def illegal_member_notifier(self):
