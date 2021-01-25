@@ -288,7 +288,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed = self.get_base_embed(ctx.guild)
         embed.description = "Okay. Your pigeon is now off to explore a random location!"
         embed.set_footer(text = f"'{ctx.prefix}pigeon retrieve' to check on your pigeon")
-        asyncio.gather(ctx.send(embed = embed))
+        await ctx.send(embed = embed)
 
         waiter = BoolWaiter(ctx, prompt = ctx.translate("remind_pigeon_back_prompt"))
         if await waiter.wait():
