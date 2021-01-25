@@ -714,13 +714,11 @@ class Intergalactica(commands.Cog):
         query = query.where(Reminder.finished == False)
         query = query.where(Reminder.due_date <= datetime.datetime.utcnow())
 
-        for reminder in Reminder:
-            print(reminder.due_date)
-            # channel = self.bot.get_channel(reminder.channel_id)
-
-            # asyncio.gather(channel.send(f"{reminder.user.mention}, Reminder: \n`{reminder.text}`"))
-            # reminder.finished = True
-            # reminder.save()
+        for reminder in query:
+            channel = self.bot.get_channel(reminder.channel_id)
+            asyncio.gather(channel.send(f"{reminder.user.mention}, Reminder: \n`{reminder.text}`"))
+            reminder.finished = True
+            reminder.save()
 
     @tasks.loop(hours = 1)
     async def illegal_member_notifier(self):
