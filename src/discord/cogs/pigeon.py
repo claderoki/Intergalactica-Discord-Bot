@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 from countryinfo import CountryInfo
 
 import src.config as config
-from src.models import Scene, Scenario, Human, Fight, Pigeon, PigeonRelationship, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
+from src.models import Scene, Scenario, Human, Fight, Reminder, Pigeon, PigeonRelationship, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
 from src.models.base import PercentageField
 from src.discord.helpers.waiters import *
 from src.utils.country import Country
@@ -290,6 +290,16 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed.set_footer(text = f"'{ctx.prefix}pigeon retrieve' to check on your pigeon")
         asyncio.gather(ctx.send(embed = embed))
 
+        waiter = BoolWaiter(ctx, prompt = ctx.translate("remind_pigeon_back_prompt"))
+        if await waiter.wait():
+            Reminder.create(
+                user_id    = ctx.author.id,
+                channel_id = ctx.channel.id,
+                text       = ctx.translate("pigeon_ready_to_be_retrieved"),
+                due_date   = exploration.end_date
+            )
+            asyncio.gather(ctx.success(ctx.translate("reminder_created")))
+
     @pigeon.command(name = "retrieve", aliases = ["return"] )
     @commands.max_concurrency(1, per = commands.BucketType.user)
     async def pigeon_retrieve(self, ctx):
@@ -507,8 +517,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         value = getattr(pigeon, attr_name)
         if value == 100:
-            raise SendableException(ctx.translate(f"{attr_name}_already_max"))
             ctx.command.reset_cooldown(ctx)
+            raise SendableException(ctx.translate(f"{attr_name}_already_max"))
         try:
             ctx.raise_if_not_enough_gold(cost, pigeon.human)
         except SendableException:
