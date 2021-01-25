@@ -64,6 +64,13 @@ class TemporaryChannel(BaseModel):
         self.channel_id = channel.id
         return channel
 
+class Reminder(BaseModel):
+    channel_id          = peewee.BigIntegerField (null = False)
+    user_id             = peewee.BigIntegerField (null = False)
+    due_date            = peewee.DateTimeField   (null = False)
+    text                = peewee.TextField       (null = False)
+    finished            = peewee.BooleanField    (null = False, default = False)
+
 class Earthling(BaseModel):
     user_id              = peewee.BigIntegerField  (null = False)
     guild_id             = peewee.BigIntegerField  (null = False)

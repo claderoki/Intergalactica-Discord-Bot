@@ -1,6 +1,6 @@
 from .base import BaseModel
 from .human import Human, Item, HumanItem
-from .intergalactica import Earthling, TemporaryVoiceChannel, TemporaryChannel, RedditAdvertisement
+from .intergalactica import Earthling, Reminder, TemporaryVoiceChannel, TemporaryChannel, RedditAdvertisement
 from .analytics import EmojiUsage
 from .settings import Settings, NamedEmbed, NamedChannel, Translation, Locale
 from .ticket import Ticket, Reply
@@ -12,7 +12,7 @@ from .prank import NicknamePrank, Prankster
 from .reddit import Subreddit
 from .qotd import Category, Question, CategoryChannel, QuestionConfig
 
-database = Human._meta.database
+database = BaseModel._meta.database
 
 def setup():
     with database.connection_context():
@@ -22,7 +22,6 @@ def setup():
         # database.drop_tables([Pigeon, PigeonRelationship, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
         database.create_tables([Pigeon, PigeonRelationship, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
 
-        # database.drop_tables([Giveaway])
         # database.drop_tables([SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word])
         database.create_tables([SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word])
 
@@ -38,8 +37,8 @@ def setup():
         # database.drop_tables([Human, Item, HumanItem])
         database.create_tables([Human, Item, HumanItem])
 
-        # database.drop_tables([Earthling, TemporaryChannel, TemporaryVoiceChannel, RedditAdvertisement])
-        database.create_tables([Earthling, TemporaryChannel, TemporaryVoiceChannel, RedditAdvertisement])
+        # database.drop_tables([Earthling, TemporaryChannel, Reminder, TemporaryVoiceChannel, RedditAdvertisement])
+        database.create_tables([Earthling, TemporaryChannel, Reminder, TemporaryVoiceChannel, RedditAdvertisement])
 
         # database.drop_tables([Settings, NamedEmbed, NamedChannel, Locale, Translation])
         database.create_tables([Settings, NamedEmbed, NamedChannel, Locale, Translation])
