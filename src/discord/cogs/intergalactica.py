@@ -166,15 +166,31 @@ class Intergalactica(commands.Cog):
         lines.append(", ".join([f"**{x}**" for x in words]))
         lines.append("\n**Context:**")
 
-        async for message in message.channel.history(limit = 5, before = message):
-            content = message.content
+        messages = []
+        async for msg in message.channel.history(limit = 5, before = message):
+            messages.append(msg)
+        messages.append(message)
+
+        last_author = None
+        fields = []
+        for msg in messages:
+            content = msg.content
 
             if not content:
-                if len(message.embeds) > 0:
+                if len(msg.embeds) > 0:
                     content = "[embed]"
-                if len(message.attachments) > 0:
+                if len(msg.attachments) > 0:
                     content = "[attachment(s)]"
-            embed.add_field(name = message.author, value = content, inline = False)
+
+            if last_author is not None and last_author.id == msg.author.id:
+                fields[-1]["value"] += f"\n{content}"
+            else:
+                fields.append({"name": str(msg.author), "value": content})
+
+            last_author = msg.author
+
+        for field in fields:
+            embed.add_field(**field, inline = False)
 
         embed.description = "\n".join(lines)
 
