@@ -168,7 +168,7 @@ class Intergalactica(commands.Cog):
 
         messages = []
         async for msg in message.channel.history(limit = 5, before = message):
-            messages.append(msg)
+            messages.insert(0, msg)
         messages.append(message)
 
         last_author = None
