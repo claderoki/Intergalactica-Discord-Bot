@@ -716,6 +716,9 @@ class Intergalactica(commands.Cog):
 
         for reminder in query:
             channel = self.bot.get_channel(reminder.channel_id)
+            if channel is None:
+                channel = reminder.user
+
             asyncio.gather(channel.send(f"{reminder.user.mention}, Reminder: \n`{reminder.text}`"))
             reminder.finished = True
             reminder.save()
