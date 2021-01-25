@@ -225,7 +225,6 @@ class Profile(commands.Cog):
         human.save()
         await ctx.success()
 
-
     @commands.command()
     async def events(self, ctx, month : int = None):
         if month is None:
