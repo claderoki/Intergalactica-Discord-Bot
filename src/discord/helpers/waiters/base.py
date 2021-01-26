@@ -496,7 +496,7 @@ class ReactionWaiter(Waiter):
             await self.message.clear_reactions()
         except: pass
 
-    async def wait(self, raw = False, timeout = 45, remove = False):
+    async def wait(self, raw = False, timeout = 120, remove = False):
         try:
             reaction, user = await self.bot.wait_for(
                 'reaction_add',
