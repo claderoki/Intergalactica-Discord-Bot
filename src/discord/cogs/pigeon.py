@@ -293,7 +293,9 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         waiter = ReactionWaiter(ctx, message, emojis = (remind_emoji,), members = (ctx.author, ))
         await waiter.add_reactions()
-        if await waiter.wait(remove = True) is not None:
+        emoji = await waiter.wait(remove = True)
+        await waiter.clear_reactions()
+        if emoji is not None:
             Reminder.create(
                 user_id    = ctx.author.id,
                 channel_id = ctx.channel.id,
