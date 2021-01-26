@@ -285,13 +285,15 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         pigeon.save()
         exploration.save()
 
+        remind_emoji = "❗"
         embed = self.get_base_embed(ctx.guild)
         embed.description = "Okay. Your pigeon is now off to explore a random location!"
-        embed.set_footer(text = f"'{ctx.prefix}pigeon retrieve' to check on your pigeon")
-        await ctx.send(embed = embed)
+        embed.set_footer(text = f"React with {remind_emoji} to get reminded when available.\n'{ctx.prefix}pigeon retrieve' to check on your pigeon")
+        message = await ctx.send(embed = embed)
 
-        waiter = BoolWaiter(ctx, prompt = ctx.translate("remind_pigeon_back_prompt"))
-        if await waiter.wait():
+        waiter = ReactionWaiter(ctx, message, emojis = (remind_emoji,), members = (ctx.author, ))
+        await waiter.add_reactions()
+        if await waiter.wait(remove = True) is not None:
             Reminder.create(
                 user_id    = ctx.author.id,
                 channel_id = ctx.channel.id,
