@@ -497,10 +497,13 @@ class ReactionWaiter(Waiter):
         except: pass
 
     async def wait(self, raw = False, timeout = 45, remove = False):
-        reaction, user = await self.bot.wait_for(
-            'reaction_add',
-            timeout = timeout,
-            check   = self.check)
+        try:
+            reaction, user = await self.bot.wait_for(
+                'reaction_add',
+                timeout = timeout,
+                check   = self.check)
+        except asyncio.TimeoutError:
+            return None
 
         if remove:
             try:
