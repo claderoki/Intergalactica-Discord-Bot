@@ -47,7 +47,7 @@ class TravelActivity(Activity):
         return R * c
 
     def calculate_duration(self):
-        min_time_in_minutes = 30
+        min_time_in_minutes = 45
         max_time_in_minutes = 180
         km = self.distance_in_km
         if km is None:
