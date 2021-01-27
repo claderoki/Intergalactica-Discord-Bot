@@ -679,7 +679,7 @@ class Intergalactica(commands.Cog):
         with database.connection_context():
             for temporary_voice_channel in TemporaryVoiceChannel:
                 channel = temporary_voice_channel.channel
-                if len(channel.members) == 0:
+                if channel is None or len(channel.members) == 0:
                     temporary_voice_channel.delete_instance()
 
     @tasks.loop(hours = 3)

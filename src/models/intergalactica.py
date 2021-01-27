@@ -112,13 +112,13 @@ class Earthling(BaseModel):
             human = Human.get_or_create(user_id = member.id)[0]
         )
 
-
 class TemporaryVoiceChannel(BaseModel):
     guild_id    = peewee.BigIntegerField  (null = False)
     channel_id  = peewee.BigIntegerField  (null = False)
 
     def delete_instance(self, *args, **kwargs):
-        asyncio.gather(self.channel.delete(reason = "Temporary VC channel removed."))
+        if self.channel is not None:
+            asyncio.gather(self.channel.delete(reason = "Temporary VC channel removed."))
         super().delete_instance(*args, **kwargs)
 
 class RedditAdvertisement(BaseModel):
