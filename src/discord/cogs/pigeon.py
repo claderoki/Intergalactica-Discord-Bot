@@ -73,6 +73,9 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
     @commands.group()
     async def pigeon(self, ctx):
+        if ctx.invoked_subcommand is None:
+            return await ctx.send_help(ctx.command)
+
         human, _ = Human.get_or_create(user_id = ctx.author.id)
         for message in list(human.system_messages.where(SystemMessage.read == False)):
             await ctx.send(embed = message.embed)
