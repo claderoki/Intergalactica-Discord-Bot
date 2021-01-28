@@ -85,7 +85,6 @@ class Intergalactica(commands.Cog):
         self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = 120)
         self.role_needed_for_selfie_vote = self.guild.get_role(self._role_ids["ranks"]["nova"])
 
-
         if self.bot.production:
             self.reminder_notifier.start()
             self.reddit_advertiser.start()
