@@ -184,7 +184,7 @@ class Prank(discord.ext.commands.Cog):
         3 types:
             1. Admin revert (when admin wants to revert a prank and give the pranker their gold back)
             2. Member reverts their own prank by spending gold (1k?)
-            3. Someone who pranked someone reverts their prank on them 
+            3. Someone who pranked someone reverts their prank on them
         """
 
         prankster, _ = Prankster.get_or_create(user_id = member.id, guild_id = ctx.guild.id)
