@@ -18,7 +18,7 @@ from src.discord.helpers.converters import EnumConverter
 
 class PigeonCog(commands.Cog, name = "Pigeon"):
     subcommands_no_require_pigeon = ["buy", "history", "scoreboard", "help", "inbox", "pigeon"]
-    subcommands_no_require_available = ["status", "stats", "languages", "retrieve", "gender", "name", "accept", "acceptdate"] + subcommands_no_require_pigeon
+    subcommands_no_require_available = ["status", "relationships", "stats", "languages", "retrieve", "gender", "name", "accept", "acceptdate"] + subcommands_no_require_pigeon
     subcommands_no_require_stats = ["heal", "clean", "feed", "play", "date", "poop"] + subcommands_no_require_available
 
     def __init__(self, bot):
@@ -39,8 +39,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @commands.Cog.listener()
     async def on_ready(self):
         Pigeon.emojis["gold"] = self.bot.gold_emoji
-        self.date_ticker.start()
         if self.bot.production:
+            self.date_ticker.start()
             self.fight_ticker.start()
             await asyncio.sleep(60 * 60)
             self.stats_ticker.start()
@@ -227,6 +227,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         pigeon1 = ctx.pigeon
         pigeon2 = ctx.pigeon2
 
+        # await ctx.bot.get_command("inventory")(ctx)
+
         date = Date(guild_id = ctx.guild.id, start_date = None, pigeon1 = pigeon1, pigeon2 = pigeon2)
 
         date.save()
@@ -272,6 +274,21 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         channel = self.get_pigeon_channel(ctx.guild)
 
         await channel.send(embed = embed)
+
+    @pigeon.command(name = "relationships")
+    async def pigeon_relationships(self, ctx):
+        query = PigeonRelationship.select()
+        query = query.where((PigeonRelationship.pigeon1 == ctx.pigeon) | (PigeonRelationship.pigeon2 == ctx.pigeon))
+
+        table = Table(padding = 0)
+        table.add_row(Row(["name2", "score", "title"], header = True))
+
+        for relationship in query:
+            other = relationship.pigeon1 if relationship.pigeon1 != ctx.pigeon else relationship.pigeon2
+            values = [other.name, relationship.score, relationship.title]
+            table.add_row(Row(values))
+
+        await table.to_paginator(ctx, 10).wait()
 
     @pigeon.command(name = "explore")
     @commands.max_concurrency(1, per = commands.BucketType.user)
@@ -581,7 +598,6 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         lines.append(f"And to finish it off, `{ctx.pigeon.name}` wipes {ctx.pigeon.gender.get_posessive_pronoun()} butt clean on {ctx.pigeon2.gender.get_posessive_pronoun()} fur.")
         lines.append("")
 
-
         lines.append(ctx.pigeon.name)
         data1 = {"cleanliness": 5}
         lines.append(get_winnings_value(**data1))
@@ -653,6 +669,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
                 lines = "\n- " + ("\n\n- ".join(lines))
                 embed.description = f"{lines}\n\nScore: **{score}**"
+                embed.set_footer(text = f"{score // 10} relations")
                 asyncio.gather(channel.send(embed = embed))
 
                 for pigeon in (date.pigeon1, date.pigeon2):
@@ -660,6 +677,11 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                     pigeon.save()
 
                 date.score = score
+
+                relationship = PigeonRelationship.get_or_create_for(date.pigeon1, date.pigeon2)
+                relationship.score += date.score // 10
+                relationship.save()
+
                 date.finished = True
                 date.save()
 

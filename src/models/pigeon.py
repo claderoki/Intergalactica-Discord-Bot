@@ -135,6 +135,23 @@ class PigeonRelationship(BaseModel):
     pigeon2   = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
     score     = peewee.IntegerField    (null = False, default = 0)
 
+    @property
+    def title(self):
+        if self.score < -20:
+            return "Archnemesis"
+        if self.score in range(-20, -5):
+            return "Enemy"
+        if self.score in range(-5, 0):
+            return "Frenemy"
+        if self.score in range(0, 15):
+            return "Acquaintance"
+        if self.score in range(15, 30):
+            return "Friend"
+        if self.score > 30:
+            return "Best Friend"
+
+        return "Hmm"
+
     @classmethod
     def get_or_create_for(cls, pigeon1, pigeon2):
         query = cls.select()
