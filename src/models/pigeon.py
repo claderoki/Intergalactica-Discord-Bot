@@ -122,7 +122,15 @@ class Pigeon(BaseModel):
         if self.status == self.Status.mailing:
             return self.outbox.where(Mail.finished == False).first()
         if self.status == self.Status.fighting:
-            return self.fights.where(Fight.finished == False).first()
+            query = Fight.select()
+            query = query.where(Fight.finished == False)
+            query = query.where((Fight.pigeon1 == self) | (Fight.pigeon2 == self))
+            return query.first()
+        if self.status == self.Status.dating:
+            query = Date.select()
+            query = query.where(Date.finished == False)
+            query = query.where((Date.pigeon1 == self) | (Date.pigeon2 == self))
+            return query.first()
 
     @property
     def fights(self):
@@ -209,20 +217,69 @@ class Exploration(TravelActivity):
     def gold_worth(self):
         return math.ceil(self.duration_in_minutes * 0.8)
 
-class Fight(Activity):
-    challenger = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
-    challengee = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
-    created_at = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow())
-    guild_id   = peewee.BigIntegerField (null = False)
-    bet        = peewee.BigIntegerField (null = False, default = 50)
-    accepted   = peewee.BooleanField    (null = True) # null is pending, true is accepted, false is declined.
-    won        = peewee.BooleanField    (null = True) # null is not ended yet, true means challenger won, false means challengee won
-
-class Date(Activity):
+class Challenge(Activity):
     pigeon1    = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
     pigeon2    = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
     created_at = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow())
     guild_id   = peewee.BigIntegerField (null = False)
-    gift       = peewee.ForeignKeyField (Item, null = True)
     accepted   = peewee.BooleanField    (null = True) # null is pending, true is accepted, false is declined.
+
+    @property
+    def pigeons(self):
+        yield self.pigeon1
+        yield self.pigeon2
+
+    @property
+    def type(self):
+         return self.__class__.__name__
+
+    def validate(self, ctx):
+        return None
+
+    def delete_instance(self, *args, **kwargs):
+        self.pigeon1.status = Pigeon.status.idle
+        self.pigeon2.status = Pigeon.status.idle
+        self.pigeon1.save()
+        self.pigeon2.save()
+        return super().delete_instance(*args, **kwargs)
+
+class Fight(Challenge):
+    bet        = peewee.BigIntegerField (null = False, default = 50)
+    won        = peewee.BooleanField    (null = True) # null is not ended yet, true means challenger won, false means challengee won
+
+    @property
+    def icon_url(self):
+        return "https://cdn.discordapp.com/attachments/744172199770062899/779844965705842718/JJAIhfX.gif"
+
+    def validate(self, ctx):
+        error_messages = []
+        i = 1
+        for pigeon in self.pigeons:
+            if pigeon.human.gold < self.bet:
+                error_messages.append(ctx.translate("pigeon{i}_not_enough_gold").format(bet = self.bet))
+            i += 1
+        return error_messages
+
+    @property
+    def challengee(self):
+        return self.pigeon2
+
+    @challengee.setter
+    def challenge2(self, value):
+        self.pigeon2 = value
+
+    @property
+    def challenger(self):
+        return self.pigeon1
+
+    @challenger.setter
+    def challenger(self, value):
+        self.pigeon1 = value
+
+class Date(Challenge):
+    gift       = peewee.ForeignKeyField (Item, null = True)
     score      = peewee.IntegerField    (null = False, default = 0) # max 100, min -100
+
+    @property
+    def icon_url(self):
+        return "https://tubelife.org/wp-content/uploads/2019/08/Valentines-Heart-GIF.gif"

@@ -18,7 +18,7 @@ from src.discord.helpers.converters import EnumConverter
 
 class PigeonCog(commands.Cog, name = "Pigeon"):
     subcommands_no_require_pigeon = ["buy", "history", "scoreboard", "help", "inbox", "pigeon"]
-    subcommands_no_require_available = ["status", "relationships", "stats", "languages", "retrieve", "gender", "name", "accept", "acceptdate"] + subcommands_no_require_pigeon
+    subcommands_no_require_available = ["status", "relationships", "reject", "stats", "languages", "retrieve", "gender", "name", "accept", "acceptdate"] + subcommands_no_require_pigeon
     subcommands_no_require_stats = ["heal", "clean", "feed", "play", "date", "poop"] + subcommands_no_require_available
 
     def __init__(self, bot):
@@ -106,41 +106,6 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed.description = ctx.translate("pigeon_purchased") + "\n" + get_winnings_value(gold = -cost)
         asyncio.gather(ctx.send(embed = embed))
 
-    @pigeon.command(name = "challenge", aliases = ["fight"])
-    @commands.max_concurrency(1, per = commands.BucketType.user)
-    async def pigeon_challenge(self, ctx, member : discord.Member):
-        """Challenge another user to a fight."""
-
-        channel = self.get_pigeon_channel(ctx.guild)
-        if member.id == ctx.author.id:
-            raise SendableException(ctx.translate("cannot_challenge_self"))
-
-        self.pigeon_check(ctx, member, name = "challengee")
-
-        fight = Fight(
-            guild_id = ctx.guild.id,
-            start_date = None,
-            challenger = ctx.pigeon,
-            challengee = ctx.challengee
-        )
-
-        await fight.editor_for(ctx, "bet", min = 0, max = min([ctx.pigeon.human.gold, ctx.challengee.human.gold]), skippable = True)
-
-        ctx.raise_if_not_enough_gold(fight.bet, ctx.pigeon.human, name = "challenger")
-        ctx.raise_if_not_enough_gold(fight.bet, ctx.challengee.human, name = "challengee")
-
-        fight.save()
-
-        for pigeon in (fight.challenger, fight.challengee):
-            pigeon.status = Pigeon.Status.fighting
-            pigeon.save()
-
-        embed = self.get_base_embed(ctx.guild)
-        embed.title = "Pigeon Challenge"
-        embed.description = f"{ctx.pigeon.name} has challenged {ctx.challengee.name} to a pigeon fight.\nThe stake for this fight is `{fight.bet}`"
-        embed.set_footer(text = f"use '{ctx.prefix}pigeon accept' to accept") 
-        asyncio.gather(channel.send(embed = embed)) 
-
     @pigeon.command(name = "languages", aliases = ["lang"])
     async def pigeon_languages(self, ctx):
         table = Table(padding = 0)
@@ -168,49 +133,40 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed.description = f"Okay. Name has been set to {ctx.pigeon.name}" + "\n" + get_winnings_value(gold = -cost)
         asyncio.gather(ctx.send(embed = embed))
 
-    @pigeon.command(name = "accept")
-    async def pigeon_accept(self, ctx):
-        """Accept a pending fight."""
+    @pigeon.command(name = "challenge", aliases = ["fight"])
+    @commands.max_concurrency(1, per = commands.BucketType.user)
+    async def pigeon_challenge(self, ctx, member : discord.Member):
+        """Challenge another user to a fight."""
+        channel = self.get_pigeon_channel(ctx.guild)
+        if member.id == ctx.author.id:
+            raise SendableException(ctx.translate("cannot_challenge_self"))
 
-        challengee = ctx.pigeon
+        ctx.pigeon1 = ctx.pigeon
+        self.pigeon_check(ctx, member, name = "pigeon2")
 
-        query = Fight.select()
-        query = query.where(Fight.finished == False)
-        query = query.where(Fight.challengee == challengee)
-        fight = query.first()
+        fight = Fight(
+            guild_id = ctx.guild.id,
+            start_date = None,
+            pigeon1 = ctx.pigeon,
+            pigeon2 = ctx.pigeon2
+        )
 
-        if fight is None:
-            raise SendableException(ctx.translate("no_challenger"))
+        await fight.editor_for(ctx, "bet", min = 0, max = min([ctx.pigeon1.human.gold, ctx.pigeon2.human.gold]), skippable = True)
 
-        error = None
-        if fight.challenger.human.gold < fight.bet:
-            error = ctx.translate("challenger_not_enough_gold").format(bet = fight.bet)
-        if fight.challengee.human.gold < fight.bet:
-            error = ctx.translate("challengee_not_enough_gold").format(bet = fight.bet)
-        if error is not None:
-            for pigeon in (fight.challenger, fight.challengee):
-                pigeon.status = Pigeon.Status.idle
-                pigeon.save()
-            fight.delete_instance()
-            raise SendableException(error)
-
-        fight.accepted = True
-        fight.start_date = datetime.datetime.utcnow() + datetime.timedelta(minutes = 5)
-
-        for human in (fight.challenger.human, fight.challengee.human):
-            human.gold -= fight.bet
-            human.save()
+        ctx.raise_if_not_enough_gold(fight.bet, ctx.pigeon1.human, name = "pigeon1")
+        ctx.raise_if_not_enough_gold(fight.bet, ctx.pigeon2.human, name = "pigeon2")
 
         fight.save()
 
+        for pigeon in fight.pigeons:
+            pigeon.status = Pigeon.Status.fighting
+            pigeon.save()
+
         embed = self.get_base_embed(ctx.guild)
-        embed.description = f"{ctx.author.mention} has accepted the challenge!\nThe pigeons have now started fighting."
-        embed.set_footer(text = "Fight will end at", icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/779844965705842718/JJAIhfX.gif")
-        embed.timestamp = fight.start_date
-
-        channel = self.get_pigeon_channel(ctx.guild)
-
-        await channel.send(embed = embed)
+        embed.title = "Pigeon Challenge"
+        embed.description = f"{ctx.pigeon1.name} has challenged {ctx.pigeon2.name} to a pigeon fight.\nThe stake for this fight is `{fight.bet}`"
+        embed.set_footer(text = f"use '{ctx.prefix}pigeon accept' to accept") 
+        asyncio.gather(channel.send(embed = embed)) 
 
     @pigeon.command(name = "date")
     @commands.max_concurrency(1, per = commands.BucketType.user)
@@ -240,40 +196,72 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed = self.get_base_embed(ctx.guild)
         embed.title = "Pigeon Dating"
         embed.description = f"{pigeon1.name} has invited {pigeon2.name} to a date."
-        embed.set_footer(text = f"use '{ctx.prefix}pigeon acceptdate' to accept") 
+
+        footer = []
+        footer.append(f"use '{ctx.prefix}pigeon accept' to accept")
+        footer.append(f"or '{ctx.prefix}pigeon reject' to reject")
+        embed.set_footer(text = "\n".join(footer))
         asyncio.gather(channel.send(embed = embed))
 
-    @pigeon.command(name = "acceptdate")
-    async def pigeon_accept_date(self, ctx):
-        """Accept a pending date."""
-
+    @pigeon.command(name = "accept")
+    async def pigeon_accept(self, ctx):
         pigeon2 = ctx.pigeon
 
-        query = Date.select()
-        query = query.where(Date.finished == False)
-        query = query.where(Date.pigeon2 == pigeon2)
-        date = query.first()
+        challenge = pigeon2.current_activity
+        if not isinstance(challenge, (Date, Fight)) or challenge.pigeon1 == pigeon2:
+            raise SendableException(ctx.translate("nothing_to_accept"))
 
-        if date is None:
-            raise SendableException(ctx.translate("no_date"))
-        for pigeon in (date.pigeon1, date.pigeon2):
+        error_messages = challenge.validate(ctx)
+        if error_messages is not None and len(error_messages) > 0:
+            challenge.delete_instance()
+            raise SendableException(error_messages[0])
+
+        if isinstance(challenge, Fight):
+            for pigeon in challenge.pigeons:
+                human = pigeon.human
+                human.gold -= challenge.bet
+                human.save()
+
+        challenge.accepted   = True
+        challenge.start_date = datetime.datetime.utcnow()
+        challenge.end_date   = challenge.start_date + datetime.timedelta(minutes = 5)
+        challenge.save()
+
+        embed = self.get_base_embed(ctx.guild)
+
+        lines = []
+        lines.append(f"{ctx.author.mention} has accepted the {challenge.type.lower()}!")
+        lines.append(f"The pigeons have now started {challenge.pigeon1.status.name.lower()}.")
+        embed.description = "\n".join(lines)
+        embed.set_footer(text = f"{challenge.type} will end at", icon_url = challenge.icon_url)
+        embed.timestamp = challenge.end_date
+
+        channel = self.get_pigeon_channel(ctx.guild)
+        await channel.send(embed = embed)
+
+    @pigeon.command(name = "reject", aliases = ["deny", "cancel"])
+    async def pigeon_reject(self, ctx):
+        pigeon = ctx.pigeon
+
+        challenge = pigeon.current_activity
+
+        if not isinstance(challenge, (Date, Fight)):
+            raise SendableException(ctx.translate("nothing_to_reject"))
+
+        if challenge.accepted:
+            raise SendableException(ctx.translate("already_accepted"))
+
+        challenge.accepted = False
+        challenge.save()
+
+        for pigeon in challenge.pigeons:
             pigeon.status = Pigeon.Status.idle
             pigeon.save()
 
-        date.accepted   = True
-        date.start_date = datetime.datetime.utcnow()
-        date.end_date   = date.start_date + datetime.timedelta(minutes = 5)
-
-        date.save()
-
         embed = self.get_base_embed(ctx.guild)
-        embed.description = f"{ctx.author.mention} has accepted the date!\nThe pigeons have now started dating."
-        embed.set_footer(text = "Date will end at", icon_url = "https://tubelife.org/wp-content/uploads/2019/08/Valentines-Heart-GIF.gif")
-        embed.timestamp = date.end_date
-
+        embed.description = f"{ctx.author.mention} has rejected the {challenge.type.lower()}!"
         channel = self.get_pigeon_channel(ctx.guild)
-
-        await channel.send(embed = embed)
+        await channel.send(content = f"{challenge.pigeon1.human.user.mention} | {challenge.pigeon2.human.user.mention}", embed = embed)
 
     @pigeon.command(name = "relationships")
     async def pigeon_relationships(self, ctx):
@@ -672,7 +660,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                 embed.set_footer(text = f"{score // 10} relations")
                 asyncio.gather(channel.send(embed = embed))
 
-                for pigeon in (date.pigeon1, date.pigeon2):
+                for pigeon in date.pigeons:
                     pigeon.status = Pigeon.Status.idle
                     pigeon.save()
 
@@ -691,7 +679,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             query = Fight.select()
             query = query.where(Fight.finished == False)
             query = query.where(Fight.accepted == True)
-            query = query.where(Fight.start_date <= datetime.datetime.utcnow())
+            query = query.where(Fight.end_date <= datetime.datetime.utcnow())
             for fight in query:
                 won = random.randint(0, 1) == 0
                 guild = fight.guild
