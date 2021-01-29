@@ -54,7 +54,7 @@ class Prank(discord.ext.commands.Cog):
             member = prankster.member
             if member is not None:
                 table.add_row(pretty.Row((str(member), pretty.prettify_value(prankster.pranked))))
-        await table.to_paginator(ctx, 10).wait()
+        await table.to_paginator(ctx, 15).wait()
 
     @prank.command(name = "nickname", aliases = ["nick"] )
     async def prank_nickname(self, ctx, member : discord.Member):

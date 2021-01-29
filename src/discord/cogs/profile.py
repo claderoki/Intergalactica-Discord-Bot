@@ -84,7 +84,7 @@ class Profile(commands.Cog):
             values = [str(human.user), str(sign.name)]
             table.add_row(pretty.Row(values))
             i += 1
-        await table.to_paginator(ctx, 10).wait()
+        await table.to_paginator(ctx, 15).wait()
 
     @commands.command()
     async def scoreboard(self, ctx):
@@ -104,7 +104,7 @@ class Profile(commands.Cog):
             values = [f"{i+1}", str(human.gold), str(user)]
             table.add_row(pretty.Row(values))
             i += 1
-        await table.to_paginator(ctx, 10).wait()
+        await table.to_paginator(ctx, 15).wait()
 
     @commands.group(aliases = ["balance", "wallet", "gold"])
     async def profile(self, ctx, members : commands.Greedy[discord.Member]):
@@ -384,7 +384,7 @@ class Profile(commands.Cog):
         table.add_row(pretty.Row(("name", "rarity"), header = True))
         for item in items:
             table.add_row(pretty.Row((item.name, item.rarity.name)))
-        await table.to_paginator(ctx, 10).wait()
+        await table.to_paginator(ctx, 15).wait()
 
     @commands.command()
     async def inventory(self, ctx, member : discord.Member = None):
@@ -393,7 +393,7 @@ class Profile(commands.Cog):
         data = [(x.item.name, x.amount) for x in human.human_items if x.amount > 0]
         data.insert(0, ("name", "amount"))
         table = pretty.Table.from_list(data, first_header = True)
-        await table.to_paginator(ctx, 10).wait()
+        await table.to_paginator(ctx, 15).wait()
 
     @item.command(name = "view")
     async def item_view(self, ctx,*, name):

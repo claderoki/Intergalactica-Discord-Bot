@@ -115,7 +115,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             values = [str(language_mastery.language.name), str(language_mastery.mastery)+"%", str(language_mastery.rank)]
             table.add_row(Row(values))
 
-        await table.to_paginator(ctx, 10).wait()
+        await table.to_paginator(ctx, 15).wait()
 
     @pigeon.command(name = "gender")
     async def pigeon_gender(self, ctx, gender : EnumConverter(Gender)):
@@ -165,7 +165,11 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed = self.get_base_embed(ctx.guild)
         embed.title = "Pigeon Challenge"
         embed.description = f"{ctx.pigeon1.name} has challenged {ctx.pigeon2.name} to a pigeon fight.\nThe stake for this fight is `{fight.bet}`"
-        embed.set_footer(text = f"use '{ctx.prefix}pigeon accept' to accept") 
+
+        footer = []
+        footer.append(f"use '{ctx.prefix}pigeon accept' to accept")
+        footer.append(f"or '{ctx.prefix}pigeon reject' to reject")
+        embed.set_footer(text = "\n".join(footer))
         asyncio.gather(channel.send(embed = embed)) 
 
     @pigeon.command(name = "date")
@@ -196,7 +200,6 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed = self.get_base_embed(ctx.guild)
         embed.title = "Pigeon Dating"
         embed.description = f"{pigeon1.name} has invited {pigeon2.name} to a date."
-
         footer = []
         footer.append(f"use '{ctx.prefix}pigeon accept' to accept")
         footer.append(f"or '{ctx.prefix}pigeon reject' to reject")
@@ -276,7 +279,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             values = [other.name, relationship.score, relationship.title]
             table.add_row(Row(values))
 
-        await table.to_paginator(ctx, 10).wait()
+        await table.to_paginator(ctx, 15).wait()
 
     @pigeon.command(name = "explore")
     @commands.max_concurrency(1, per = commands.BucketType.user)
@@ -522,7 +525,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             table.add_row(Row(values))
             i += 1
 
-        await table.to_paginator(ctx, 10).wait()
+        await table.to_paginator(ctx, 15).wait()
 
     def increase_stats(self, ctx, attr_name, attr_increase, cost, message):
         pigeon = ctx.pigeon
