@@ -25,7 +25,7 @@ class Waiter:
         return config.bot
 
 class MessageWaiter(Waiter):
-    __slots__ = ("ctx","prompt", "end_prompt", "timeout", "members", "channels", "converted", "max_words", "skippable", "skip_command")
+    __slots__ = ("ctx","prompt", "end_prompt", "timeout", "show_instructions", "members", "channels", "converted", "max_words", "skippable", "skip_command")
 
     def __init__(self,
     ctx,
@@ -35,6 +35,7 @@ class MessageWaiter(Waiter):
     timeout = 360,
     members = None,
     channels = None,
+    show_instructions = True,
     max_words = 1,
     skippable = False,
     skip_command = ">>skip",
@@ -42,6 +43,7 @@ class MessageWaiter(Waiter):
         super().__init__(**kwargs)
         self.ctx = ctx
         self.prompt = prompt
+        self.show_instructions = show_instructions
         self.end_prompt = end_prompt
         self.timeout = timeout
         self.members = members or []
@@ -82,12 +84,13 @@ class MessageWaiter(Waiter):
             raise Skipped()
 
         if self.max_words is None:
-            words = message.content.split()
+            words = message.content
         else:
-            words = message.content.split()[:self.max_words]
+            words = " ".join(message.content.split()[:self.max_words])
 
         try:
-            self.converted = self.convert(" ".join(words))
+            self.converted = self.convert(words)
+            return True
         except ConversionFailed as e:
             self._send(message.channel, embed = Embed.error(f"{e} Try again."))
             return False
@@ -100,8 +103,8 @@ class MessageWaiter(Waiter):
 
         footer = []
         instructions = self.instructions
-        if instructions is not None:
-            footer.append(instructions) 
+        if instructions is not None and self.show_instructions:
+            footer.append(instructions)
         if self.skippable:
             footer.append(f"This can be skipped with '{self.skip_command}'")
 
