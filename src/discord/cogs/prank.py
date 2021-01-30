@@ -62,7 +62,7 @@ class Prank(discord.ext.commands.Cog):
         query = query.where(Prankster.guild_id == ctx.guild.id)
 
         table = pretty.Table()
-        table.add_row(pretty.Row(("Prankster", "Total pranks (nick)"), header = True))
+        table.add_row(pretty.Row(("Prankster", "People pranked (nick)"), header = True))
 
         for prankster in query:
             member = prankster.member
@@ -95,8 +95,10 @@ class Prank(discord.ext.commands.Cog):
             distinct_query = distinct_query.where(where)
 
         lines = []
-        lines.append(f"Total pranks: {query.count()}")
+        lines.append(f"Total people pranked: {query.count()}")
         lines.append(f"Unique people pranked: {distinct_query.distinct(True).count()}")
+        victim_query = NicknamePrank.select().where(NicknamePrank.victim == prankster).where(NicknamePrank.finished == True)
+        lines.append(f"Total times been pranked: {victim_query.count()}")
 
         embed.add_field(name = f"Nickname Pranks", value = "\n".join(lines), inline = False)
 
