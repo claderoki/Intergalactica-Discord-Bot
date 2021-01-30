@@ -46,6 +46,18 @@ class Paginator:
 
         asyncio.gather(self.reload())
 
+    async def clear_reactions(self):
+        try:
+            await self._message.clear_reactions()
+        except:
+            pass
+
+    async def remove_reaction(self, reaction, user):
+        try:
+            await self._message.remove_reaction(reaction, user)
+        except:
+            pass
+
     def __check(self, reaction, user):
         if user.id != self._ctx.author.id:
             return False
@@ -60,10 +72,10 @@ class Paginator:
             return True
         elif action == self.Action.next:
             self.next()
-            asyncio.gather(self._message.remove_reaction(reaction, user))
+            asyncio.gather(self.remove_reaction(reaction, user))
         elif action == self.Action.previous:
             self.previous()
-            asyncio.gather(self._message.remove_reaction(reaction, user))
+            asyncio.gather(self.remove_reaction(reaction, user))
 
         return False
 
@@ -79,7 +91,7 @@ class Paginator:
         except asyncio.TimeoutError:
             pass
 
-        asyncio.gather(self._message.clear_reactions())
+        asyncio.gather(self.clear_reactions())
 
     def __show_pages(self):
         for i, page in enumerate(self._pages):
