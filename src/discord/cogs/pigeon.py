@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 from countryinfo import CountryInfo
 
 import src.config as config
-from src.models import Scene, Scenario, Human, Fight, Reminder, Pigeon, PigeonRelationship, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
+from src.models import HumanItem, Human, Fight, Reminder, Pigeon, PigeonRelationship, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
 from src.models.base import PercentageField
 from src.discord.helpers.waiters import *
 from src.utils.country import Country
@@ -16,9 +16,40 @@ from src.discord.helpers.exploration_retrieval import ExplorationRetrieval, Mail
 from src.utils.enums import Gender
 from src.discord.helpers.converters import EnumConverter
 
+class ItemWaiter(StrWaiter):
+    def __init__(self, ctx, in_inventory = True, **kwargs):
+        super().__init__(ctx, max_words = None, **kwargs)
+        self.show_instructions = False
+        self.case_sensitive = False
+
+        if in_inventory:
+            query = HumanItem.select()
+            query = query.where(HumanItem.human == Human.get_or_create(user_id = ctx.author.id)[0])
+            query = query.where(HumanItem.amount > 0)
+            self.inventory = list(query)
+            self.items = [x.item for x in self.inventory]
+        else:
+            self.items = list(Item.select())
+
+        self.allowed_words = [x.name.lower() for x in self.items]
+
+    async def wait(self, *args, **kwargs):
+        data = [(x.item.name, x.amount) for x in self.inventory]
+        data.insert(0, ("name", "amount"))
+        table = Table.from_list(data, first_header = True)
+        asyncio.gather(table.to_paginator(self.ctx, 15).wait())
+        await asyncio.sleep(0.5)
+        return await super().wait(*args, **kwargs)
+
+    def convert(self, argument):
+        for item in self.items:
+            if item.name.lower() == argument.lower():
+                return item
+        raise ConversionFailed("Item not found.")
+
 class PigeonCog(commands.Cog, name = "Pigeon"):
     subcommands_no_require_pigeon = ["buy", "history", "scoreboard", "help", "inbox", "pigeon"]
-    subcommands_no_require_available = ["status", "relationships", "reject", "stats", "languages", "retrieve", "gender", "name", "accept", "acceptdate"] + subcommands_no_require_pigeon
+    subcommands_no_require_available = ["status", "relationships", "reject", "stats", "languages", "retrieve", "gender", "name", "accept"] + subcommands_no_require_pigeon
     subcommands_no_require_stats = ["heal", "clean", "feed", "play", "date", "poop"] + subcommands_no_require_available
 
     def __init__(self, bot):
@@ -186,8 +217,6 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         self.pigeon_check(ctx, member, name = "pigeon2")
         pigeon1 = ctx.pigeon
         pigeon2 = ctx.pigeon2
-
-        # await ctx.bot.get_command("inventory")(ctx)
 
         date = Date(guild_id = ctx.guild.id, start_date = None, pigeon1 = pigeon1, pigeon2 = pigeon2)
 
@@ -374,6 +403,16 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         await mail.editor_for(ctx, "message")
         await mail.editor_for(ctx, "gold", min = 0, max = sender.human.gold, skippable = True)
 
+        waiter = ItemWaiter(ctx, prompt = ctx.translate("mail_item_prompt"), skippable = True)
+        mail.item = await waiter.wait()
+
+        human_item, _ = HumanItem.get_or_create(item = mail.item, human = sender.human)
+        if human_item.amount < 1:
+            raise SendableException(ctx.translate("item_not_found"))
+
+        human_item.amount -= 1
+        human_item.save()
+
         mail.residence   = sender.human.country
         mail.destination = recipient.country
         mail.end_date = mail.start_date + datetime.timedelta(minutes = mail.calculate_duration())
@@ -384,10 +423,23 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         sender.human.save()
         sender.save()
 
+        remind_emoji = "❗"
         embed = self.get_base_embed(ctx.guild)
         embed.description = f"Okay. Your pigeon is off to send a package to {recipient.mention}!"
-        embed.set_footer(text = f"'{ctx.prefix}pigeon retrieve' to check on your pigeon")
-        asyncio.gather(ctx.send(embed = embed))
+        embed.set_footer(text = f"React with {remind_emoji} to get reminded when available.\n'{ctx.prefix}pigeon retrieve' to check on your pigeon")
+        message = await ctx.send(embed = embed)
+
+        waiter = ReactionWaiter(ctx, message, emojis = (remind_emoji,), members = (ctx.author, ))
+        await waiter.add_reactions()
+        emoji = await waiter.wait(remove = True)
+        if emoji is not None:
+            Reminder.create(
+                user_id    = ctx.author.id,
+                channel_id = ctx.channel.id,
+                text       = ctx.translate("pigeon_ready_to_be_retrieved"),
+                due_date   = mail.end_date
+            )
+            asyncio.gather(ctx.success(ctx.translate("reminder_created")))
 
     @commands.command()
     async def inbox(self, ctx):
@@ -399,17 +451,34 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
 
         for mail in list(unread_mail):
             embed = self.get_base_embed(ctx.guild)
+            embed.set_author(
+                name = f"You've got mail from {mail.sender.human.user}!",
+                icon_url = mail.sender.human.user.avatar_url
+            )
+
+            if mail.message is not None:
+                embed.add_field(name = "📜 message", value = mail.message, inline = False)
             if mail.gold > 0:
-                embed.description = f"{mail.sender.human.mention} has sent you some gold ({mail.gold}) with a message attached:\n`{mail.message}`"
-            else:
-                embed.description = f"{mail.sender.human.mention} has sent you a message:\n`{mail.message}`"
+                embed.add_field(name = f"{Pigeon.emojis['gold']} gold", value = f"{mail.gold}", inline = False)
+            if mail.item is not None:
+                lines = []
+                lines.append(mail.item.name)
+                if mail.item.usable:
+                    lines.append(f"*{mail.item.description}*")
+                embed.add_field(name = "🎁 gift", value = "\n".join(lines), inline = False)
+                embed.set_thumbnail(url = mail.item.image_url)
 
             await ctx.send(embed = embed)
 
             mail.read = True
-            mail.recipient.gold += mail.gold
             mail.save()
-            mail.recipient.save()
+            if mail.gold > 0:
+                mail.recipient.gold += mail.gold
+                mail.recipient.save()
+            if mail.item is not None:
+                human_item, _ = HumanItem.get_or_create(item = mail.item, human = mail.recipient)
+                human_item.amount += 1
+                human_item.save()
 
     @pigeon.command(name = "stats")
     async def pigeon_stats(self, ctx, member : discord.Member = None):
@@ -422,11 +491,18 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         embed = self.get_base_embed(ctx.guild)
 
         explorations = pigeon.explorations.where(Exploration.finished == True)
-        # unique_countries_visited = {x.destination.alpha_2 for x in explorations}
+
+        unique_countries_visited = Exploration\
+            .select(Exploration.destination)\
+            .where(Exploration.finished == True)\
+            .where(Exploration.pigeon == pigeon)\
+            .distinct(True)\
+            .count()
 
         lines = []
         lines.append(f"Total explorations: {explorations.count()}")
-        # lines.append(f"Unique countries visited: {explorations.distinct(True).count()}")
+        lines.append(f"Unique countries visited: {unique_countries_visited}")
+
         embed.add_field(name = f"Explorations {Pigeon.Status.exploring.value}", value = "\n".join(lines), inline = False)
 
         mails = pigeon.outbox.where(Mail.finished == True)
@@ -457,6 +533,12 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         lines.append(f"Total fights lost: {fights_lost}")
         lines.append(f"Profit: {profit}")
         embed.add_field(name = f"Fights {Pigeon.Status.fighting.value}", value = "\n".join(lines), inline = False)
+
+        in_possession = HumanItem.select().where(HumanItem.human == pigeon.human).where(HumanItem.amount > 0).count()
+        total_items = Item.select().count()
+        lines = []
+        lines.append(f"Items {in_possession} / {total_items}")
+        embed.add_field(name = f"Human", value = "\n".join(lines), inline = False)
 
         asyncio.gather(ctx.send(embed = embed))
 
