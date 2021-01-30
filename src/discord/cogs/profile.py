@@ -309,26 +309,14 @@ class Profile(commands.Cog):
         if item.code == "ban_hammer":
             await ctx.author.ban(reason = "Ban hammer item was used.", delete_message_days = 0)
             used = True
-        elif item.code == "big_bath":
+
+        elif item.code in ("big_bath", "big_snack", "big_toy"):
             pigeon = Pigeon.get_or_none(human = human, condition = Pigeon.Condition.active)
             if pigeon is None:
                 raise SendableException(ctx.translate("you_no_pigeon"))
             used = True
-            pigeon.cleanliness = 100
-            pigeon.save()
-        elif item.code == "big_snack":
-            pigeon = Pigeon.get_or_none(human = human, condition = Pigeon.Condition.active)
-            if pigeon is None:
-                raise SendableException(ctx.translate("you_no_pigeon"))
-            used = True
-            pigeon.food = 100
-            pigeon.save()
-        elif item.code == "big_toy":
-            pigeon = Pigeon.get_or_none(human = human, condition = Pigeon.Condition.active)
-            if pigeon is None:
-                raise SendableException(ctx.translate("you_no_pigeon"))
-            used = True
-            pigeon.happiness = 100
+            stat = {"big_bath": "cleanliness", "big_snack": "food", "big_toy": "happiness"}[item.code]
+            setattr(pigeon, stat, 100)
             pigeon.save()
         elif item.code == "milky_way":
             return await self.bot.get_command("milkyway create")(ctx)
