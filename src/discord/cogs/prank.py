@@ -56,6 +56,52 @@ class Prank(discord.ext.commands.Cog):
                 table.add_row(pretty.Row((str(member), pretty.prettify_value(prankster.pranked))))
         await table.to_paginator(ctx, 15).wait()
 
+    @prank.command(name = "scoreboard")
+    async def prank_scoreboard(self, ctx):
+        query = Prankster.select()
+        query = query.where(Prankster.guild_id == ctx.guild.id)
+
+        table = pretty.Table()
+        table.add_row(pretty.Row(("Prankster", "Total pranks (nick)"), header = True))
+
+        for prankster in query:
+            member = prankster.member
+            if member is not None:
+                query = NicknamePrank.select()
+                query = query.where(NicknamePrank.finished == True)
+                query = query.where(NicknamePrank.pranked_by == prankster)
+                table.add_row(pretty.Row((str(member), query.count())))
+
+        table.sort(1, int)
+
+        await table.to_paginator(ctx, 15).wait()
+
+    @prank.command(name = "stats")
+    async def prank_stats(self, ctx, member : discord.Member = None):
+        member = member or ctx.author
+
+        prankster, _ = Prankster.get_or_create(user_id = member.id, guild_id = ctx.guild.id)
+
+        embed = discord.Embed(color = ctx.guild_color)
+        query = NicknamePrank.select()
+        distinct_query = NicknamePrank.select(NicknamePrank.victim)
+
+        wheres = []
+        wheres.append(NicknamePrank.finished == True)
+        wheres.append(NicknamePrank.pranked_by == prankster)
+
+        for where in wheres:
+            query = query.where(where)
+            distinct_query = distinct_query.where(where)
+
+        lines = []
+        lines.append(f"Total pranks: {query.count()}")
+        lines.append(f"Unique people pranked: {distinct_query.distinct(True).count()}")
+
+        embed.add_field(name = f"Nickname Pranks", value = "\n".join(lines), inline = False)
+
+        asyncio.gather(ctx.send(embed = embed))
+
     @prank.command(name = "nickname", aliases = ["nick"] )
     async def prank_nickname(self, ctx, member : discord.Member):
         if member.bot:
