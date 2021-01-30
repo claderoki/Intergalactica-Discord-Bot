@@ -63,7 +63,11 @@ class ExplorationRetrieval(ActivityRetrieval):
             if len(items) > 0:
                 self.item = random.choices(items, weights = [x.rarity.weight for x in items], k = 1)[0]
                 embed.set_thumbnail(url = self.item.image_url)
-                bonus_messages.append(f"On the way {pigeon.gender.get_pronoun()} also found **{self.item.name}**")
+                lines = []
+                lines.append(f"On the way {pigeon.gender.get_pronoun()} also found **{self.item.name}**")
+                if self.item.usable:
+                    lines.append(f"*{self.item.description}*")
+                bonus_messages.append("\n".join(lines))
         if self.Bonus.tenth in self.bonuses:
             bonus_messages.append(f"Since this is your **{self.exploration.pigeon.explorations.count()}th** exploration, you get a bonus!")
 
