@@ -56,6 +56,12 @@ class Table:
 
         return table
 
+    def sort(self, by, type : str):
+        header = self.header
+        self._rows.remove(header)
+        self._rows.sort(key = lambda x : type(x[by]), reverse = True)
+        self._rows.insert(0, header)
+
     def to_paginator(self, ctx, rows_per_page):
         paginator = Paginator(ctx)
         row_groups = split_list([x for x in self._rows if not x.header], rows_per_page)
