@@ -164,9 +164,13 @@ class Management(discord.ext.commands.Cog):
         if locale.name == "en_US":
             return await ctx.send("wtf?")
 
-        translations = list( Translation.select().where(Translation.locale.in_([locale, "en_US"])).order_by(Translation.locale.desc()) )
+        query = Translation.select()
+        query = query.where(Translation.locale.in_([locale, "en_US"]))
+        query = query.order_by(Translation.locale.desc())
 
-        locale_translations = [x.message_key for x in translations if x.locale.name == locale]
+        translations = list(query)
+        locale_translations = [x.message_key for x in translations if x.locale.name == locale.name]
+
         for translation in [x for x in translations if x.locale.name == "en_US"]:
             if translation.message_key not in locale_translations:
 
