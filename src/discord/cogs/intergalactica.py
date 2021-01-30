@@ -717,7 +717,10 @@ class Intergalactica(commands.Cog):
             user = reminder.user
             channel = channel or user
             if user is not None:
-                asyncio.gather(channel.send(f"{user.mention}, {reminder.text}"))
+                embed = discord.Embed(color = self.bot.get_dominant_color(None))
+                embed.set_author(name = "Reminder", icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/804862458070040616/1.webp")
+                embed.description = reminder.text
+                asyncio.gather(channel.send(content = user.mention, embed = embed))
 
             reminder.finished = True
             reminder.save()
