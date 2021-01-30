@@ -331,11 +331,10 @@ class Profile(commands.Cog):
             pigeon.happiness = 100
             pigeon.save()
         elif item.code == "milky_way":
-            #TODO: redirect to /milkyway create command
-            pass
+            return await self.bot.get_command("milkyway create")(ctx)
         elif item.code == "jester_hat":
-            #TODO: redirect to /prank nick command
-            pass
+            member = await MemberWaiter(ctx, prompt = ctx.translate("prank_member_prompt")).wait()
+            return await self.bot.get_command("prank nickname")(ctx, member)
 
         if used:
             human_item.amount -= 1
