@@ -99,7 +99,7 @@ class Intergalactica(commands.Cog):
 
     def on_milkyway_purchased(self, channel, member, amount):
         with database.connection_context():
-            item = Item.get(name = "Milky way")
+            item = Item.get(code = "milky_way")
             human, _ = Human.get_or_create(user_id = member.id)
             human.add_item(item, amount)
 
