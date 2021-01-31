@@ -3,7 +3,7 @@ import random
 
 import discord
 
-from src.models import Item, Pigeon
+from src.models import Item, Pigeon, Buff, PigeonBuff, PigeonRelationship
 from src.utils.country import Country
 import src.config as config
 
@@ -21,9 +21,40 @@ class ActivityRetrieval:
 
 class ExplorationRetrieval(ActivityRetrieval):
     class Bonus(Enum):
-        language = 1
-        item     = 2
-        tenth    = 3
+        language    = 1
+        item        = 2
+        tenth       = 3
+        hundredth   = 4
+        wing_damage = 5
+
+        @property
+        def buff_code(self):
+            if self == self.language:
+                return "enlightened"
+            if self == self.wing_damage:
+                return "bleeding"
+
+        @property
+        def amount(self):
+            if self == self.language:
+                return 40
+            if self == self.language:
+                return 40
+            if self == self.tenth:
+                return 40
+            if self == self.hundredth:
+                return 80
+            if self == self.wing_damage:
+                return -40
+
+        @property
+        def chance(self):
+            if self == self.language:
+                return 50
+            if self == self.language:
+                return 33
+            if self == self.wing_damage:
+                return 5
 
     def __init__(self, exploration):
         super().__init__()
@@ -31,7 +62,6 @@ class ExplorationRetrieval(ActivityRetrieval):
         self.bonuses     = []
         self.fill_bonuses()
         self.item = None
-        # self.language = None
 
     @property
     def language(self):
@@ -50,13 +80,13 @@ class ExplorationRetrieval(ActivityRetrieval):
 
         embed.description = text
 
-        bonus_messages = []
+        bonus_messages = {}
         if self.Bonus.language in self.bonuses:
             language = self.language
             if language is not None:
-                bonus_messages.append(f"A helpful {self.exploration.destination.demonym()} person also taught {pigeon.gender.get_pronoun(object = True)} some {language.name}!")
+                bonus_messages[self.Bonus.language] = f"A helpful {self.exploration.destination.demonym()} person also taught {pigeon.gender.get_pronoun(object = True)} some {language.name}!"
             else:
-                bonus_messages.append(f"{pigeon.gender.get_pronoun().title()} even picked up some of the local language!")
+                bonus_messages[self.Bonus.language] = f"{pigeon.gender.get_pronoun().title()} even picked up some of the local language!"
 
         if self.Bonus.item in self.bonuses:
             items = list(Item.select().where(Item.explorable == True))
@@ -67,15 +97,39 @@ class ExplorationRetrieval(ActivityRetrieval):
                 lines.append(f"On the way {pigeon.gender.get_pronoun()} also found **{self.item.name}**")
                 if self.item.usable:
                     lines.append(f"*{self.item.description}*")
-                bonus_messages.append("\n".join(lines))
+                bonus_messages[self.Bonus.item] = "\n".join(lines)
         if self.Bonus.tenth in self.bonuses:
-            bonus_messages.append(f"Since this is your **{self.exploration.pigeon.explorations.count()}th** exploration, you get a bonus!")
+            bonus_messages[self.Bonus.tenth] = f"Since this is your **{self.exploration.pigeon.explorations.count()}th** exploration, you get a bonus!"
+        if self.Bonus.hundredth in self.bonuses:
+            bonus_messages[self.Bonus.hundredth] = f"Since this is your **{self.exploration.pigeon.explorations.count()}th** exploration, you get a bonus!"
+        if self.Bonus.wing_damage in self.bonuses:
+            query = PigeonRelationship.select()
+            query = query.where((PigeonRelationship.pigeon1 == pigeon) | (PigeonRelationship.pigeon2 == pigeon))
+            query = query.where(PigeonRelationship.score < -15)
+            query = query.order_by(PigeonRelationship.score.asc())
+            relationship = query.first()
+            attacker_name = "a random pigeon"
+            if relationship is not None:
+                other = relationship.pigeon1 if relationship.pigeon1 != pigeon else relationship.pigeon2
+                attacker_name = f"`{other.name}`"
+            bonus_messages[self.Bonus.wing_damage] = f"During the flight, {pigeon.name} got attacked by {attacker_name}."
 
-        for bonus_message in bonus_messages:
-            embed.add_field(name = "Bonus", value = bonus_message, inline = False)
+        buffs = []
+        for bonus, bonus_message in bonus_messages.items():
+            if bonus.buff_code is not None:
+                buffs.append(Buff.get(code = bonus.buff_code))
+            symbol = "+" if bonus.amount > 0 else ""
+
+            embed.add_field(name = f"Bonus {Pigeon.emojis['gold']} {symbol}{bonus.amount}", value = bonus_message, inline = False)
+
+        if len(buffs) > 0:
+            lines = []
+            for buff in buffs:
+                lines.append(f"**{buff.name}**: *{buff.description}*")
+            embed.add_field(name = "Buffs gained", value = "\n".join(lines), inline = False)
 
         embed.add_field(
-            name = "Winnings",
+            name = "Total Winnings",
             value = get_winnings_value(**self.winnings),
             inline = False
         )
@@ -85,26 +139,36 @@ class ExplorationRetrieval(ActivityRetrieval):
     def winnings(self):
         if self._winnings is None:
             gold_earned = self.exploration.gold_worth
-            gold_earned += (len(self.bonuses) * 40)
+            for bonus in self.bonuses:
+                gold_earned += bonus.amount
 
             xp_earned = self.exploration.xp_worth
-            xp_earned += (len(self.bonuses) * 20)
+            xp_earned += (len([x for x in self.bonuses if x.amount >= 0]) * 20)
+
+            health = 0
+            if self.Bonus.wing_damage in self.bonuses:
+                health = -20
 
             self._winnings = {
                 "gold"        : int(gold_earned),
                 "experience"  : int(xp_earned),
                 "food"        : -random.randint(5,35),
                 "happiness"   : (0+(len(self.bonuses)*10)),
-                "cleanliness" : -random.randint(5,35)
+                "cleanliness" : -random.randint(5,35),
+                "health"      : health,
             }
         return self._winnings
 
     def fill_bonuses(self):
-        if percentage_chance(33):
-            self.bonuses.append(self.Bonus.language)
-        if percentage_chance(50):
-            self.bonuses.append(self.Bonus.item)
-        if self.exploration.pigeon.explorations.count() % 10 == 0:
+        for bonus in self.Bonus:
+            chance = bonus.chance
+            if chance is not None:
+                if percentage_chance(chance):
+                    self.bonuses.append(bonus)
+
+        if self.exploration.pigeon.explorations.count() % 100 == 0:
+            self.bonuses.append(self.Bonus.hundredth)
+        elif self.exploration.pigeon.explorations.count() % 10 == 0:
             self.bonuses.append(self.Bonus.tenth)
 
     def commit(self):
@@ -115,6 +179,9 @@ class ExplorationRetrieval(ActivityRetrieval):
             pigeon.human.add_item(self.item, 1)
         pigeon.status = pigeon.Status.idle
         pigeon.update_stats(self.winnings)
+        for bonus in self.bonuses:
+            if bonus.buff_code is not None:
+                pigeon.create_buff(bonus.buff_code, create_system_message = False)
         self.exploration.finished = True
         self.exploration.save()
 
