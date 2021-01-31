@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 from countryinfo import CountryInfo
 
 import src.config as config
-from src.models import HumanItem, Human, Fight, Reminder, Pigeon, PigeonRelationship, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
+from src.models import HumanItem, Human, Fight, Reminder, Pigeon, Buff, PigeonBuff, PigeonRelationship, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
 from src.models.base import PercentageField
 from src.discord.helpers.waiters import *
 from src.utils.country import Country
@@ -112,6 +112,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             await ctx.send(embed = message.embed)
             message.read = True
             message.save()
+            return
 
         self.pigeon_check(ctx)
 
@@ -593,8 +594,6 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         query = query.where(Earthling.guild_id == ctx.guild.id)
         query = query.order_by(Pigeon.experience.desc())
 
-        embed = discord.Embed(title = "Scoreboard")
-
         table = Table(padding = 0)
         table.add_row(Row(["rank", "exp", "pigeon", "owner"], header = True))
 
@@ -813,11 +812,21 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
             query = query.where(Pigeon.status == Pigeon.Status.idle)
 
             for pigeon in query:
-                data = {"food": -1, "cleanliness" : -1, "happiness": -1}
+                data = {
+                    "food"        : -1,
+                    "health"      : -0,
+                    "happiness"   : -1,
+                    "cleanliness" : -1,
+                }
+
+                for pigeon_buff in pigeon.buffs.where(PigeonBuff.due_date <= datetime.datetime.utcnow()):
+                    if pigeon_buff.buff.code == "fully_fed":
+                        data["food"] = 0
+
                 if pigeon.food <= 20 or pigeon.cleanliness <= 20:
-                    data["health"] = -1
+                    data["health"] += -1
                 if pigeon.food == 0:
-                    data["health"] = -2
+                    data["health"] += -2
 
                 pigeon.update_stats(data)
                 pigeon.save()
