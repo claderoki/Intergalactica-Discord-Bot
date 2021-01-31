@@ -99,10 +99,11 @@ class Pigeon(BaseModel):
         language.mastery += 1
         language.save()
 
-    def create_buff(self, code):
+    def create_buff(self, code, create_system_message = True):
         buff = Buff.get(code = code)
         PigeonBuff.create(pigeon = self, buff = buff)
-        SystemMessage.create(text = self.bot.translate("buff_assigned").format(buff = buff))
+        if create_system_message:
+            SystemMessage.create(text = self.bot.translate("buff_assigned").format(buff = buff))
 
     def update_stats(self, data, increment = True):
         for key, value in data.items():
