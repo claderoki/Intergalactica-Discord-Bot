@@ -822,6 +822,8 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                 for pigeon_buff in pigeon.buffs.where(PigeonBuff.due_date <= datetime.datetime.utcnow()):
                     if pigeon_buff.buff.code == "fully_fed":
                         data["food"] = 0
+                    if pigeon_buff.buff.code == "bleeding":
+                        data["health"] += -2
 
                 if pigeon.food <= 20 or pigeon.cleanliness <= 20:
                     data["health"] += -1
