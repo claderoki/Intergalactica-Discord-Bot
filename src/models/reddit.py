@@ -27,7 +27,6 @@ class Subreddit(BaseModel):
         full  = 0
         basic = 1
 
-
     guild_id    = peewee.BigIntegerField (null = True)
     channel_id  = peewee.BigIntegerField (null = True)
     user_id     = peewee.BigIntegerField (null = False)
