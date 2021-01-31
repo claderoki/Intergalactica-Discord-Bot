@@ -586,6 +586,14 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         lines = prettify_dict(data, emojis = emojis)
         embed = self.get_base_embed(ctx.guild)
         embed.description = f"```\n{lines}```"
+
+        lines = []
+        for pigeon_buff in pigeon.buffs:
+            buff = pigeon_buff.buff
+            lines.append(f"**{buff.name}**: *{buff.description}*")
+        if len(lines) > 0:
+            embed.add_field(name = "Buffs", value = "\n".join(lines))
+
         asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "scoreboard")
@@ -822,7 +830,7 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
                     "cleanliness" : -1,
                 }
 
-                for pigeon_buff in pigeon.buffs.where(PigeonBuff.due_date <= datetime.datetime.utcnow()):
+                for pigeon_buff in pigeon.buffs:
                     if pigeon_buff.buff.code == "fully_fed":
                         data["food"] = 0
                     if pigeon_buff.buff.code == "bleeding":
