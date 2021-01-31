@@ -7,7 +7,7 @@ import discord
 from countryinfo import CountryInfo
 import peewee
 
-from .base import BaseModel, EnumField, PercentageField, CountryField, LanguageField
+from .base import BaseModel, EnumField, PercentageField, TimeDeltaField, CountryField, LanguageField
 from .human import Human, Item, HumanItem
 from src.utils.enums import Gender
 
@@ -99,19 +99,32 @@ class Pigeon(BaseModel):
         language.mastery += 1
         language.save()
 
-    def update_stats(self, data):
+    def create_buff(self, code):
+        buff = Buff.get(code = code)
+        PigeonBuff.create(pigeon = self, buff = buff)
+        SystemMessage.create(text = self.bot.translate("buff_assigned").format(buff = buff))
+
+    def update_stats(self, data, increment = True):
         for key, value in data.items():
             if key == "gold":
                 self.human.gold += value
             else:
-                setattr(self, key, (getattr(self, key) + value) )
+                if increment:
+                    setattr(self, key, (getattr(self, key) + value))
+                else:
+                    setattr(self, key, value)
+
+                new_value = getattr(self, key)
+                if key == "food" and new_value >= 100:
+                    self.create_buff("fully_fed")
+
                 if key == "health":
                     if self.health <= 0:
                         self.condition = self.Condition.dead
                         SystemMessage.create(text = self.bot.translate("pigeon_dead"), human = self.human)
         try:
-            self.save(only = self.dirty_fields)
-            self.human.save(only = self.human.dirty_fields)
+            self.save()
+            self.human.save()
         except ValueError:
             pass
 
@@ -137,6 +150,25 @@ class Pigeon(BaseModel):
         query = Fight.select()
         query = query.where((Fight.challenger == self) | (Fight.challengee == self))
         return query
+
+class Buff(BaseModel):
+    name        = peewee.TextField       (null = False)
+    description = peewee.TextField       (null = False)
+    code        = peewee.TextField       (null = False)
+    duration    = TimeDeltaField         (null = False)
+
+    # stat        = peewee.TextField       (null = True)
+    # type        = EnumField              (Type, default = Type.add)
+    # amount      = peewee.IntegerField    (null = False, default = 0)
+    # class Type(Enum):
+    #     add      = 1
+    #     remove   = 2
+    #     modifier = 3
+
+class PigeonBuff(BaseModel):
+    pigeon      = peewee.ForeignKeyField (Pigeon, null = False, backref = "buffs", on_delete = "CASCADE")
+    buff        = peewee.ForeignKeyField (Buff, null = False, on_delete = "CASCADE")
+    due_date    = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow() + datetime.timedelta(hours = 24))
 
 class PigeonRelationship(BaseModel):
     pigeon1   = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
