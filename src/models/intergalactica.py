@@ -1,6 +1,7 @@
 import datetime
 from enum import Enum
 import asyncio
+import random
 
 import peewee
 import discord
@@ -131,7 +132,9 @@ class RedditAdvertisement(BaseModel):
     def available(self):
         if self.last_advertised is None:
             return True
-        hours = 26
+        hours = 24
+        if random.randint(0, 3) == 1:
+            hours += 2
         return (self.last_advertised + datetime.timedelta(hours = hours)) < datetime.datetime.utcnow()
 
     async def get_invite_url(self):
