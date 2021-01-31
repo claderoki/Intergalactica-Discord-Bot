@@ -514,11 +514,14 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
         lines.append(f"Total gold sent: {total_gold_sent}")
         embed.add_field(name = f"Mails {Pigeon.Status.mailing.value}", value = "\n".join(lines), inline = False)
 
-        fights = pigeon.fights.where(Fight.finished == True)
+        query = Fight.select()
+        query = query.where(Fight.finished == True)
+        query = query.where((Fight.pigeon1 == pigeon) | (Fight.pigeon2 == pigeon))
+
         fights_won = 0
         fights_lost = 0
         profit = 0
-        for fight in fights:
+        for fight in query:
             if fight.challenger == pigeon and fight.won:
                 fights_won += 1
                 profit += fight.bet
