@@ -147,6 +147,10 @@ class Pigeon(BaseModel):
             return query.first()
 
     @property
+    def buffs(self):
+        return self._buffs.where(PigeonBuff.due_date > datetime.datetime.utcnow())
+
+    @property
     def fights(self):
         query = Fight.select()
         query = query.where((Fight.challenger == self) | (Fight.challengee == self))
@@ -167,7 +171,7 @@ class Buff(BaseModel):
     #     modifier = 3
 
 class PigeonBuff(BaseModel):
-    pigeon      = peewee.ForeignKeyField (Pigeon, null = False, backref = "buffs", on_delete = "CASCADE")
+    pigeon      = peewee.ForeignKeyField (Pigeon, null = False, backref = "_buffs", on_delete = "CASCADE")
     buff        = peewee.ForeignKeyField (Buff, null = False, on_delete = "CASCADE")
     due_date    = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow() + datetime.timedelta(hours = 24))
 
