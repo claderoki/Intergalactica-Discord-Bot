@@ -151,6 +151,18 @@ class CountryField(peewee.TextField):
         if value is not None:
             return Country.from_alpha_2(value)
 
+class TimeDeltaField(peewee.TextField):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def db_value(self, value):
+        if value is not None:
+            return f"{value.seconds} seconds"
+
+    def python_value(self, value):
+        if value is not None:
+            return TimeDeltaWaiter._convert(value)
+
 class EnumField(peewee.TextField):
     def __init__(self, enum, **kwargs):
         self.enum = enum
