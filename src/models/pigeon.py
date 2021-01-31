@@ -101,7 +101,7 @@ class Pigeon(BaseModel):
 
     def create_buff(self, code):
         buff = Buff.get(code = code)
-        PigeonBuff.create(pigeon = self, buff = buff)
+        PigeonBuff.create(pigeon = self, buff = buff, due_date = datetime.datetime.utcnow() + buff.duration)
         SystemMessage.create(text = self.bot.translate("buff_assigned").format(buff = buff))
 
     def update_stats(self, data, increment = True):
