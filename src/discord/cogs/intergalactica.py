@@ -148,7 +148,7 @@ class Intergalactica(commands.Cog):
                 asyncio.gather(self.get_channel("staff_chat").send(embed = embed))
 
     def blacklisted_words_used(self, text):
-        blacklisted_words = ["retard"]
+        blacklisted_words = ["retard", "nigger"]
 
         words_used = []
         for word in blacklisted_words:
