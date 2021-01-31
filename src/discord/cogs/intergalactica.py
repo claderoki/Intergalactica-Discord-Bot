@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import typing
+import random
 import re
 
 from emoji import emojize, demojize
@@ -216,6 +217,9 @@ class Intergalactica(commands.Cog):
                     if self.member_is_new(message.author):
                         await message.author.ban(reason = "Advertising")
             return
+
+        if message.channel.id == self._channel_ids["general"] and random.randint(0, 1000) == 1:
+            asyncio.gather(message.add_reaction("🤏"))
 
         if message.channel.id == self._channel_ids["staff_votes"]:
             coros = [message.add_reaction(x) for x in self.vote_emojis]
