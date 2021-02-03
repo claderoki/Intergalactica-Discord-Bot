@@ -7,11 +7,11 @@ from discord.ext import commands, tasks
 from src.models import Earthling, database
 import src.config as config
 from src.discord.helpers.waiters import BoolWaiter
+from src.discord.cogs.core import BaseCog
 
-class Inactive(discord.ext.commands.Cog):
+class Inactive(BaseCog):
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):

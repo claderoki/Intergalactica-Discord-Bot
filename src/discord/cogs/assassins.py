@@ -7,6 +7,7 @@ from discord.ext import commands, tasks
 
 from src.models import Game, Player, Settings, KillMessage, database
 from src.discord.errors.assassins import NotSetup, GameRunning
+from src.discord.cogs.core import BaseCog
 
 def is_setup():
     def predicate(ctx):
@@ -14,15 +15,14 @@ def is_setup():
 
     return commands.check(predicate)
 
-class AssassinsCog(commands.Cog, name = "Assassins"):
+class AssassinsCog(BaseCog, name = "Assassins"):
 
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.poll.start()
+        self.start_task(self.poll, check = self.bot.production)
 
     async def choose_game(self, member):
         mutual_guilds = [x.id for x in self.bot.guilds if x.get_member(member.id) is not None]

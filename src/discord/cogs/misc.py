@@ -6,12 +6,12 @@ import discord
 from discord.ext import commands
 
 import src.config as config
+from src.discord.cogs.core import BaseCog
 
-class MiscCog(commands.Cog, name = "Misc"):
+class MiscCog(BaseCog, name = "Misc"):
 
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     @commands.command()
     async def urban(self, ctx, *, query):

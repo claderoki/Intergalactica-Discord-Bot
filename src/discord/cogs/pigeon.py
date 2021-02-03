@@ -15,6 +15,7 @@ from src.discord.helpers.pretty import prettify_dict, limit_str, Table, Row
 from src.discord.helpers.exploration_retrieval import ExplorationRetrieval, MailRetrieval
 from src.utils.enums import Gender
 from src.discord.helpers.converters import EnumConverter
+from src.discord.cogs.core import BaseCog
 
 class ItemWaiter(StrWaiter):
     def __init__(self, ctx, in_inventory = True, **kwargs):
@@ -47,14 +48,13 @@ class ItemWaiter(StrWaiter):
                 return item
         raise ConversionFailed("Item not found.")
 
-class PigeonCog(commands.Cog, name = "Pigeon"):
+class PigeonCog(BaseCog, name = "Pigeon"):
     subcommands_no_require_pigeon = ["buy", "history", "scoreboard", "help", "inbox", "pigeon"]
     subcommands_no_require_available = ["status", "relationships", "reject", "stats", "languages", "retrieve", "gender", "name", "accept"] + subcommands_no_require_pigeon
     subcommands_no_require_stats = ["heal", "clean", "feed", "play", "date", "poop"] + subcommands_no_require_available
 
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
         self.message_counts = {}
 
     def get_base_embed(self, guild):
@@ -70,11 +70,10 @@ class PigeonCog(commands.Cog, name = "Pigeon"):
     @commands.Cog.listener()
     async def on_ready(self):
         Pigeon.emojis["gold"] = self.bot.gold_emoji
-        if self.bot.production:
-            self.date_ticker.start()
-            self.fight_ticker.start()
-            await asyncio.sleep(60 * 60)
-            self.stats_ticker.start()
+        self.start_task(self.date_ticker, check = self.bot.production)
+        self.start_task(self.fight_ticker, check = self.bot.production)
+        await asyncio.sleep(60 * 60)
+        self.start_task(self.stats_ticker, check = self.bot.production)
 
     def pigeon_check(self, ctx, member = None, name = "pigeon"):
         cmd = ctx.invoked_subcommand or ctx.command

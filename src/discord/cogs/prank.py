@@ -9,16 +9,15 @@ from src.models import Human, Prankster, NicknamePrank, HumanItem, Item, databas
 from src.discord.errors.base import SendableException
 import src.discord.helpers.pretty as pretty
 from src.discord.helpers.waiters import StrWaiter, BoolWaiter
+from src.discord.cogs.core import BaseCog
 
-class Prank(discord.ext.commands.Cog):
+class Prank(BaseCog):
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if self.bot.production:
-            self.prank_poller.start()
+        self.start_task(self.prank_poller, check = self.bot.production)
 
     @commands.group()
     @commands.guild_only()

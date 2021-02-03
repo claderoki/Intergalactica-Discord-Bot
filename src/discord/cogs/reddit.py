@@ -9,22 +9,21 @@ from src.models import Subreddit, database
 from src.discord.errors.base import SendableException
 from src.discord.helpers.converters import EnumConverter
 from src.discord.helpers.checks import is_tester
+from src.discord.cogs.core import BaseCog
 
 class SubredditConverter(commands.Converter):
     @classmethod
     async def convert(cls, ctx, argument):
         return config.bot.reddit.subreddit(argument)
 
-class RedditCog(commands.Cog, name = "Reddit"):
+class RedditCog(BaseCog, name = "Reddit"):
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if self.bot.production:
-            await asyncio.sleep(60 * 60)
-            self.feed_sender.start()
+        await asyncio.sleep(60 * 60)
+        self.start_task(self.feed_sender, check = self.bot.production)
 
     @commands.check_any(is_tester(), commands.has_guild_permissions(administrator = True))
     @commands.group()

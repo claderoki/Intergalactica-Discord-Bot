@@ -12,6 +12,7 @@ import src.config as config
 from src.models import Settings, EmojiUsage, NamedEmbed, NamedChannel, Translation, Locale, database
 from src.discord.helpers.waiters import *
 from src.discord.errors.base import SendableException
+from src.discord.cogs.core import BaseCog
 
 emoji_match = lambda x : [int(x) for x in re.findall(r'<a?:[a-zA-Z0-9\_]+:([0-9]+)>', x)]
 
@@ -22,11 +23,10 @@ def increment_emoji(guild, emoji):
         usage.last_used = datetime.datetime.utcnow()
         usage.save()
 
-class Management(discord.ext.commands.Cog):
+class Management(BaseCog):
 
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_message(self, message):

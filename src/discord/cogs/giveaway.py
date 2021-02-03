@@ -8,18 +8,17 @@ from discord.ext import commands, tasks
 from src.discord.helpers.waiters import *
 from src.models import Giveaway, Settings, database
 import src.config as config
+from src.discord.cogs.core import BaseCog
 
-class GiveawayCog(commands.Cog, name = "Giveaway"):
+class GiveawayCog(BaseCog, name = "Giveaway"):
     participate_emoji = "✅"
 
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if self.bot.production:
-            self.poller.start()
+        self.start_task(self.poller, check = self.bot.production)
 
     @commands.group(name = "giveaway")
     async def giveaway_group(self, ctx):

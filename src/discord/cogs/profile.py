@@ -14,6 +14,7 @@ from src.discord.helpers.waiters import *
 import src.discord.helpers.pretty as pretty
 from src.discord.errors.base import SendableException
 from src.utils.zodiac import ZodiacSign
+from src.discord.cogs.core import BaseCog
 
 def is_tester(member):
     with database.connection_context():
@@ -35,15 +36,14 @@ class CityWaiter(StrWaiter):
 
         return city
 
-class Profile(commands.Cog):
+class Profile(BaseCog):
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):
         await asyncio.sleep(datetime.timedelta(hours = 1).seconds)
-        self.earthling_purger.start()
+        self.start_task(self.earthling_purger, check = self.bot.production)
 
     @commands.command()
     async def parrot(self, ctx, *, text):

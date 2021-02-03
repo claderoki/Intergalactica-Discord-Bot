@@ -13,6 +13,7 @@ import src.config as config
 from src.discord.helpers.currency_converter_mappings import mapping
 from src.discord.helpers.converters import convert_to_time
 from src.models import Human, Earthling, database
+from src.discord.cogs.core import BaseCog
 
 currency_converter = CurrencyConverter()
 
@@ -80,12 +81,12 @@ all_units.append("°c")
 all_units.append('"')
 all_units.append('cup')
 
-class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
+class ConversionCog(BaseCog, name = "Conversion"):
     measures = (Weight, Temperature, Distance, Volume)
     time_format = "%H:%M (%I%p)"
 
     def __init__(self, bot):
-        super().__init__()
+        super().__init__(bot)
 
         _units = all_units
         currency_regex_symbols = []
@@ -103,7 +104,6 @@ class ConversionCog(discord.ext.commands.Cog, name = "Conversion"):
         self.currency_pattern = "({})(\d+(\.\d+)*)(?!\w)".format("|".join(currency_regex_symbols))
         self.timezone_pattern = "({})([+-])?(\d+)?(?!\w)".format("|".join(("gmt", "utc")))
 
-        self.bot = bot
         self.currency_converter = currency_converter
 
     async def convert(self, message, currencies, measurements, timezones):

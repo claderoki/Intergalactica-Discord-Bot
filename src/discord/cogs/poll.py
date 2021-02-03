@@ -12,17 +12,16 @@ from src.discord.helpers.embed import Embed
 from src.discord.errors.base import SendableException
 import src.config as config
 from src.models import Change, Parameter, Poll, PollTemplate, Vote, database
+from src.discord.cogs.core import BaseCog
 
-class PollCog(commands.Cog, name = "Poll"):
+class PollCog(BaseCog, name = "Poll"):
 
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if self.bot.production:
-            self.poller.start()
+        self.start_task(self.poller, check = self.bot.production)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):

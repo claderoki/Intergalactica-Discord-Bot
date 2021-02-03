@@ -6,13 +6,13 @@ from discord.ext import commands
 import src.config as config
 from src.models import SavedEmoji, Human, database
 from src.discord.errors.base import SendableException
+from src.discord.cogs.core import BaseCog
 
-class Admin(discord.ext.commands.Cog):
+class Admin(BaseCog):
     bronk_id = 771781840012705792
 
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):

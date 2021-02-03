@@ -7,15 +7,14 @@ from discord.ext import commands
 import src.config as config
 from src.discord.helpers.converters import CountryConverter
 import src.discord.helpers.pretty as pretty
-
 from src.models import Human, database
 from src.discord.errors.base import SendableException
+from src.discord.cogs.core import BaseCog
 
-class CovidCog(discord.ext.commands.Cog, name = "Covid"):
+class CovidCog(BaseCog, name = "Covid"):
 
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):

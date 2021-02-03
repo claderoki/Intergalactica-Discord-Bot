@@ -8,13 +8,12 @@ import src.config as config
 from src.models import Scene, Scenario, database
 from src.discord.helpers.waiters import *
 from src.games.game.base import DiscordIdentity
+from src.discord.cogs.core import BaseCog
 
-
-class SceneCog(commands.Cog):
+class SceneCog(BaseCog):
 
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
         self.message_count = 0
 
     @commands.Cog.listener()

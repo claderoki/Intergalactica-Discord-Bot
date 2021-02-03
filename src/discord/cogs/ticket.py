@@ -6,12 +6,12 @@ from discord.ext import commands, tasks
 from src.discord.helpers.converters import EnumConverter
 from src.models import Ticket, Reply, database
 import src.config as config
+from src.discord.cogs.core import BaseCog
 
-class TicketCog(commands.Cog, name = "Ticket"):
+class TicketCog(BaseCog, name = "Ticket"):
 
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):

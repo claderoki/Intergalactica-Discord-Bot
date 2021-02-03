@@ -14,13 +14,14 @@ from src.discord.helpers.embed import Embed
 from src.models import Poll, PollTemplate, Option, Reminder, Settings, Item, NamedEmbed, Human, Earthling, TemporaryVoiceChannel, TemporaryChannel, HumanItem, RedditAdvertisement, database
 from src.discord.helpers.waiters import IntWaiter
 import src.discord.helpers.pretty as pretty
+from src.discord.cogs.core import BaseCog
 
 def is_intergalactica():
     def predicate(ctx):
         return ctx.guild and ctx.guild.id == Intergalactica.guild_id
     return commands.check(predicate)
 
-class Intergalactica(commands.Cog):
+class Intergalactica(BaseCog):
     vote_emojis = ("✅", "❎")
     guild_id = 742146159711092757
 
@@ -76,8 +77,7 @@ class Intergalactica(commands.Cog):
         return self.bot.get_channel(self._channel_ids[name])
 
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -86,16 +86,15 @@ class Intergalactica(commands.Cog):
         self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = 120)
         self.role_needed_for_selfie_vote = self.guild.get_role(self._role_ids["ranks"]["nova"])
 
-        if self.bot.production:
-            self.reminder_notifier.start()
-            self.reddit_advertiser.start()
-            self.illegal_member_notifier.start()
-            self.temp_vc_poller.start()
-            self.temp_channel_checker.start()
-            self.disboard_bump_available_notifier.start()
-            self.introduction_purger.start()
-            await asyncio.sleep( (60 * 60) * 3 )
-            self.birthday_poller.start()
+        self.start_task(self.reminder_notifier, check = self.bot.production)
+        self.start_task(self.reddit_advertiser, check = self.bot.production)
+        self.start_task(self.illegal_member_notifier, check = self.bot.production)
+        self.start_task(self.temp_vc_poller, check = self.bot.production)
+        self.start_task(self.temp_channel_checker, check = self.bot.production)
+        self.start_task(self.disboard_bump_available_notifier, check = self.bot.production)
+        self.start_task(self.introduction_purger, check = self.bot.production)
+        await asyncio.sleep( (60 * 60) * 3 )
+        self.start_task(self.birthday_poller, check = self.bot.production)
 
     def on_milkyway_purchased(self, channel, member, amount):
         with database.connection_context():

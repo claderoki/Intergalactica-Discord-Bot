@@ -12,12 +12,12 @@ import src.games.slotmachine as slotmachine
 import src.games.tictactoe as tictactoe
 import src.games.hangman as hangman
 from src.games.game.base import AiIdentity, DiscordIdentity
+from src.discord.cogs.core import BaseCog
 
-class Games(commands.Cog):
+class Games(BaseCog):
 
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     async def get_members(self, ctx, timeout = 15, gold_needed = 0, min_members = None, max_members = None):
         if isinstance(ctx.channel, discord.DMChannel):

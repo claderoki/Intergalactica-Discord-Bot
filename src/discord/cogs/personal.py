@@ -9,17 +9,17 @@ from discord.ext import commands, tasks
 import src.config as config
 from src.discord.errors.base import SendableException
 from src.models import database, Subreddit, DailyReminder, Location, PersonalQuestion
+from src.discord.cogs.core import BaseCog
 
 def is_permitted():
     def predicate(ctx):
         return ctx.author.id in (ctx.bot.owner.id, ctx.cog.user_id)
     return commands.check(predicate)
 
-class Personal(discord.ext.commands.Cog):
+class Personal(BaseCog):
     user_id = 396362827822268416
     def __init__(self, bot):
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
         self._user = None
 
     @property
@@ -30,9 +30,8 @@ class Personal(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if self.bot.production:
-            self.water_reminder.start()
-            self.free_games_notifier.start()
+        self.start_task(self.water_reminder, check = self.bot.production)
+        self.start_task(self.free_games_notifier, check = self.bot.production)
 
     def notify(self, block = True, **kwargs):
 
@@ -63,6 +62,8 @@ class Personal(discord.ext.commands.Cog):
 
         import cv2
         user = self.user if ctx.invoked_with == "crna" else ctx.author
+
+        await ctx.send("A snapshot will be sent soon. Unfortunately it'll most likely be a black screen")
 
         async with ctx.typing():
             cam = cv2.VideoCapture(0)
