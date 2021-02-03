@@ -13,4 +13,4 @@ class BaseCog(commands.Cog):
         if check:
             self.start.add_exception_type(peewee.OperationalError)
             self.start.add_exception_type(peewee.InterfaceError)
-            task.task()
+            task.start()
