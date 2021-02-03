@@ -1,4 +1,5 @@
 from discord.ext import commands
+import peewee
 
 class BaseCog(commands.Cog):
     def __init__(self, bot):
@@ -10,4 +11,6 @@ class BaseCog(commands.Cog):
             check = check()
 
         if check:
+            self.start.add_exception_type(peewee.OperationalError)
+            self.start.add_exception_type(peewee.InterfaceError)
             task.task()
