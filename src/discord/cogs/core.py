@@ -11,6 +11,6 @@ class BaseCog(commands.Cog):
             check = check()
 
         if check:
-            self.start.add_exception_type(peewee.OperationalError)
-            self.start.add_exception_type(peewee.InterfaceError)
+            task.add_exception_type(peewee.OperationalError)
+            task.add_exception_type(peewee.InterfaceError)
             task.start()
