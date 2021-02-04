@@ -22,7 +22,7 @@ def is_intergalactica():
     return commands.check(predicate)
 
 class Intergalactica(BaseCog):
-    vote_emojis = ("✅", "❎")
+    vote_emojis = ("✅", "❎", "❓")
     guild_id = 742146159711092757
 
     _role_ids = {
@@ -125,6 +125,8 @@ class Intergalactica(BaseCog):
         if payload.channel_id != self._channel_ids["staff_votes"]:
             return
 
+        is_skip_vote = lambda x : x == self.vote_emojis[-1]
+
         if str(payload.emoji) in self.vote_emojis:
             def clean_value(value):
                 return int(value) if value % 1 == 0 else round(value, 2)
@@ -132,17 +134,35 @@ class Intergalactica(BaseCog):
             staff_members = [x for x in channel.members if not x.bot]
             message = await channel.fetch_message(payload.message_id)
 
-            positive, negative = [x for x in message.reactions if str(x.emoji) in self.vote_emojis]
-            positive_users = [x for x in await positive.users().flatten() if not x.bot]
-            negative_users = [x for x in await negative.users().flatten() if not x.bot and x not in positive_users]
-            if len(positive_users)+len(negative_users) == len(staff_members):
+            reactions = [x for x in message.reactions if str(x.emoji) in self.vote_emojis]
+            all_user_ids = set()
+            votes = {}
+            skipped_member_count = 0
+
+            for reaction in reactions:
+                users = await reaction.users().flatten()
+                valid_users = [x for x in users if not x.bot and not x.id in all_user_ids]
+                if is_skip_vote(str(reaction.emoji)):
+                    skipped_member_count = len(valid_users)
+
+                votes[str(reaction.emoji)] = len(valid_users)
+
+                for user in users:
+                    if not user.bot:
+                        all_user_ids.add(user.id)
+
+            if len(all_user_ids) == len(staff_members):
                 embed = discord.Embed(color = self.bot.get_dominant_color(None))
                 lines = []
                 lines.append("*(all staff members finished voting)*")
                 lines.append(message.content)
                 lines.append("")
-                lines.append(f"{self.vote_emojis[0]}: {len(positive_users)} **{clean_value(len(positive_users)/len(staff_members)*100)}%**")
-                lines.append(f"{self.vote_emojis[1]}: {len(negative_users)} **{clean_value(len(negative_users)/len(staff_members)*100)}%**")
+
+                for vote, vote_count in votes.items():
+                    if not is_skip_vote(vote):
+                        percentage = vote_count/(len(staff_members)-skipped_member_count)*100
+                        cleaned_value = clean_value(percentage)
+                        lines.append(f"{vote}: {vote_count} **{cleaned_value}%**")
                 embed.description = "\n".join(lines)
                 asyncio.gather(self.get_channel("staff_chat").send(embed = embed))
 
@@ -454,6 +474,8 @@ class Intergalactica(BaseCog):
 
         if role == self.role_needed_for_selfie_vote:
             if member.guild.get_role(self._role_ids["selfies"]) not in member.roles:
+                channel = self.get_channel("staff_votes")
+                # asyncio.gather(channel.send(f"Should {member} get selfie access?"))
                 asyncio.gather(self.log("bot_commands", f"**{member}** {member.mention} has achieved the rank needed for selfies ({role.name})."))
 
     @commands.Cog.listener()
