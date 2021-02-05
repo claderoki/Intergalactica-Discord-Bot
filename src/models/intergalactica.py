@@ -143,7 +143,6 @@ class RedditAdvertisement(BaseModel):
                 return invite.url
 
     async def advertise(self):
-        assert self.available
         subreddit_names = ["DiscordAdvertising", "discordservers", "DiscordAppServers"]
         subreddits = [self.bot.reddit.subreddit(x) for x in subreddit_names]
         submissions = []
