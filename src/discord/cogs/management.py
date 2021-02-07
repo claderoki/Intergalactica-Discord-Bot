@@ -39,7 +39,7 @@ class Management(BaseCog):
         ids = emoji_match(message.content)
         for id in ids:
             emoji = self.bot.get_emoji(id)
-            if emoji in message.guild.emojis:
+            if message.guild and emoji in message.guild.emojis:
                 increment_emoji(message.guild, emoji)
 
     @commands.Cog.listener()
@@ -57,6 +57,7 @@ class Management(BaseCog):
             increment_emoji(member.guild, emoji)
 
     @commands.command()
+    @commands.guild_only()
     async def emojis(self, ctx, order = "least", animated : bool = False):
         query = EmojiUsage.select()
         query = query.where(EmojiUsage.guild_id == ctx.guild.id)
