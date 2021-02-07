@@ -300,16 +300,6 @@ class Intergalactica(BaseCog):
             msg = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
             asyncio.gather(self.get_channel("general").send(msg))
 
-    async def create_selfie_poll(self, ctx, member):
-        poll = Poll.from_template(PollTemplate.get(name = "selfies"))
-        poll.question = f"Should {member} be given selfie access?"
-        poll.author_id = ctx.author.id
-        poll.save()
-        poll.create_options(("Yes", "No", "Idk them well enough yet"))
-        await poll.send()
-        poll.save()
-        return poll
-
     @commands.command(name = "vcchannel")
     @is_intergalactica()
     @commands.has_role(_role_ids["5k+"])
@@ -321,50 +311,6 @@ class Intergalactica(BaseCog):
                 break
         channel = await category.create_voice_channel(name or "Temporary voice channel", reason = f"Requested by {ctx.author}")
         vc = TemporaryVoiceChannel.create(guild_id = ctx.guild.id, channel_id = channel.id)
-        await ctx.success()
-
-    @commands.command()
-    @is_intergalactica()
-    @commands.has_guild_permissions(administrator = True)
-    async def bump(self, ctx):
-        try:
-            reddit_advertisement = RedditAdvertisement.get(guild_id = ctx.guild.id)
-        except RedditAdvertisement.DoesNotExist:
-            return
-
-        if not reddit_advertisement.available:
-            embed = Embed.error(None)
-            embed.set_footer(text = ctx.translate("available_again_at"))
-            embed.timestamp = reddit_advertisement.last_advertised + datetime.timedelta(hours = 24)
-            asyncio.gather(ctx.send(embed = embed))
-        else:
-            embed = Embed.success(None)
-            submissions = await reddit_advertisement.advertise()
-            embed.set_author(name = ctx.translate("bump_successful"), url = submissions[0].shortlink)
-            asyncio.gather(ctx.send(embed = embed))
-
-            await asyncio.sleep(10)
-            for submission in submissions:
-                submission.mod.sfw()
-
-
-    @commands.command()
-    @is_intergalactica()
-    async def bumper(self, ctx):
-        role = ctx.guild.get_role(780001849335742476)
-
-        for _role in ctx.author.roles:
-            if _role == role:
-                asyncio.gather(ctx.send("The bumper role has been removed."))
-                return asyncio.gather(ctx.author.remove_roles(role))
-
-        asyncio.gather(ctx.send("The bumper role has been added."))
-        asyncio.gather(ctx.author.add_roles(role))
-
-    @commands.has_guild_permissions(administrator = True)
-    @commands.command()
-    async def selfiepoll(self, ctx, member : discord.Member):
-        await self.create_selfie_poll(ctx, member)
         await ctx.success()
 
     def get_milkyway_human_item(self, user):
@@ -498,32 +444,6 @@ class Intergalactica(BaseCog):
             if added_role.id == rank_id:
                 await self.on_rank(after, added_role)
 
-    def embed_from_name(self, name, indexes):
-        with database.connection_context():
-            named_embed = NamedEmbed.get(name = name)
-        if indexes is not None:
-            embed = named_embed.get_embed_only_selected_fields([x-1 for x in indexes])
-        else:
-            embed = named_embed.embed
-        return embed
-
-    @commands.command()
-    @commands.has_guild_permissions(administrator = True)
-    @is_intergalactica()
-    async def ensure5k(self, ctx):
-        encompassing_role = self.guild.get_role(self._role_ids["5k+"])
-        rank_ids = list(self._role_ids["ranks"].values())
-        for member in ctx.guild.members:
-            has_rank_role = False
-            has_encompassing_role = False
-            for role in member.roles:
-                if role.id in rank_ids:
-                    has_rank_role = True
-                if role.id == encompassing_role.id:
-                    has_encompassing_role = True
-            if has_rank_role and not has_encompassing_role:
-                asyncio.gather(member.add_roles(encompassing_role))
-
     async def edit_personal_role(self, ctx, **kwargs):
         attr_name = ctx.command.name
         attr_value = kwargs[attr_name]
@@ -564,9 +484,6 @@ class Intergalactica(BaseCog):
 
     @role.command(name = "color", aliases = ["colour"])
     async def role_color(self, ctx, color : discord.Color = None):
-        if ctx.author.id == 355186573119324161:
-            return
-
         if color is None:
             color = self.bot.calculate_dominant_color(self.bot._get_icon_url(ctx.author))
 
@@ -650,11 +567,6 @@ class Intergalactica(BaseCog):
             embed.description = "No roles needed purging."
 
         asyncio.gather(ctx.send(embed = embed))
-
-    @commands.command(aliases = [ x.name for x in NamedEmbed.select(NamedEmbed.name).where(NamedEmbed.settings == 2) ])
-    async def getembed(self, ctx, numbers : commands.Greedy[int] = None):
-        embed = self.embed_from_name(ctx.invoked_with, numbers)
-        await ctx.send(embed = embed)
 
     @tasks.loop(hours = 1)
     async def temp_channel_checker(self):
