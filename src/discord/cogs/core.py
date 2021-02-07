@@ -1,3 +1,5 @@
+from aiohttp import client_exceptions
+
 from discord.ext import commands
 import peewee
 
@@ -13,4 +15,5 @@ class BaseCog(commands.Cog):
         if check:
             task.add_exception_type(peewee.OperationalError)
             task.add_exception_type(peewee.InterfaceError)
+            task.add_exception_type(client_exceptions.ServerDisconnectedError)
             task.start()
