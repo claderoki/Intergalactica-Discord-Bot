@@ -90,21 +90,8 @@ class Locus(commands.Bot):
         print(f"Mode={self.mode.name}")
         print(f"Path={config.path}")
         print(f"Prefix={self.command_prefix}")
+        print(f"Total members={sum([x.member_count for x in self.guilds])}")
         print("--------------------")
-
-    def render_template(self, name, **data):
-        from weasyprint import HTML, CSS
-        import jinja2
-
-        path = f"{config.path}/src/templates/{name}"
-        with open(f"{path}/{name}.html") as f:
-            template = jinja2.Template(f.read())
-
-        html = template.render(**data)
-
-        with open(f"{path}/{name}.css") as f:
-            _bytes = HTML(string = html, base_url = path).write_png(None,  stylesheets  = [CSS(string = f.read())] )
-        return discord.File(fp = io.BytesIO(_bytes), filename = f"{name}.png")
 
     def get_base_embed(self, **kwargs) -> discord.Embed:
         user = self.user
@@ -169,27 +156,6 @@ class Locus(commands.Bot):
                 return self.get_dominant_color(None)
             self._dominant_colors[obj.id] = self.calculate_dominant_color(url, normalize = True)
         return self._dominant_colors[obj.id]
-
-    def mutual_guilds_with(self, user):
-        return (x for x in self.guilds if x.get_member(user.id) is not None)
-
-    async def guild_choice_for(self, user):
-        guilds = list(self.mutual_guilds_with(user))
-
-        if len(guilds) == 1:
-            return guilds[0]
-
-        for guild in guilds:
-            #TODO: remove hard coding
-            if guild.id == 742146159711092757: #intergalactica
-                return guild
-        #TODO: translate
-        lines = ["Select the server."]
-
-        i = 1
-        for guild in guilds:
-            lines.append(f"{guild.name}")
-            i += 1
 
     def load_cog(self, name):
         self.load_extension("src.discord.cogs." + name)
