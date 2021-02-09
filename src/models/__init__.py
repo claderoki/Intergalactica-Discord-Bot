@@ -8,7 +8,7 @@ from .poll import Change, Parameter, Poll, PollTemplate, Vote, Option
 from .scene import Scene, Scenario
 from .pigeon import Pigeon, PigeonRelationship, Buff, PigeonBuff, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date
 from .admin import SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word
-from .prank import NicknamePrank, Prankster
+from .prank import NicknamePrank, Prankster, EmojiPrank, RolePrank
 from .reddit import Subreddit
 from .qotd import Category, Question, CategoryChannel, QuestionConfig
 
@@ -27,8 +27,8 @@ def setup():
         # database.drop_tables([Subreddit])
         database.create_tables([Subreddit])
 
-        # database.drop_tables([NicknamePrank, Prankster])
-        database.create_tables([NicknamePrank, Prankster])
+        # database.drop_tables([NicknamePrank, Prankster, EmojiPrank, RolePrank])
+        database.create_tables([NicknamePrank, Prankster, EmojiPrank, RolePrank])
 
         # database.drop_tables([Scene, Scenario])
         database.create_tables([Scene, Scenario])
