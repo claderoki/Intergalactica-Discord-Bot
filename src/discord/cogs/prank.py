@@ -220,7 +220,11 @@ class Prank(BaseCog):
         await self.prank_check(ctx, member)
 
         waiter = StrWaiter(ctx, max_words = 1, prompt = ctx.translate("emoji_prank_prompt"))
-        emoji_ = emoji.demojize(await waiter.wait())
+        emoji_ = await waiter.wait()
+        try:
+            await ctx.message.add_reaction(emoji_)
+        except:
+            raise SendableException("Could not use emoji")
 
         await self.create_prank(
             ctx,
