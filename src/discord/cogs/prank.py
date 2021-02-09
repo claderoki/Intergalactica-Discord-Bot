@@ -18,7 +18,7 @@ class Prank(BaseCog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.start_task(self.prank_poller, check = not self.bot.production)
+        self.start_task(self.prank_poller, check = self.bot.production)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -26,8 +26,8 @@ class Prank(BaseCog):
             return
         if message.guild is None:
             return
-        # if not self.bot.production:
-        #     return
+        if not self.bot.production:
+            return
 
         prankstee, _ = Prankster.get_or_create(user_id = message.author.id, guild_id = message.guild.id)
         if not prankstee.pranked:
