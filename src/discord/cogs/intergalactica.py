@@ -3,6 +3,7 @@ import datetime
 import typing
 import random
 import re
+from enum import Enum
 
 from emoji import emojize, demojize
 import discord
@@ -10,8 +11,9 @@ from discord.ext import commands, tasks
 from dateutil.relativedelta import relativedelta
 
 from src.discord.errors.base import SendableException
+from src.discord.helpers.utility import get_context_embed
 from src.discord.helpers.embed import Embed
-from src.models import Poll, PollTemplate, Option, Reminder, Settings, Item, NamedEmbed, Human, Earthling, TemporaryVoiceChannel, TemporaryChannel, HumanItem, RedditAdvertisement, database
+from src.models import Poll, PollTemplate, Option, Reminder, Settings, Item, Human, Earthling, TemporaryVoiceChannel, TemporaryChannel, HumanItem, RedditAdvertisement, database
 from src.discord.helpers.waiters import IntWaiter
 import src.discord.helpers.pretty as pretty
 from src.discord.cogs.core import BaseCog
@@ -20,6 +22,50 @@ def is_intergalactica():
     def predicate(ctx):
         return ctx.guild and ctx.guild.id == Intergalactica.guild_id
     return commands.check(predicate)
+
+class MaliciousAction(Enum):
+    blacklisted_word = 1
+    invite_url       = 2
+    spam             = 3
+
+    @property
+    def ban_reason(self):
+        if self == self.blacklisted_word:
+            return "Using blacklisted words"
+        elif self == self.invite_url:
+            return "Advertising"
+        elif self == self.spam:
+            return "Spam"
+
+async def on_malicious_action(action : MaliciousAction, member : discord.Member, **kwargs):
+    ban_if_new = False
+
+    if action == MaliciousAction.blacklisted_word:
+        message = kwargs["message"]
+        words = kwargs["words"]
+
+        embed = await get_context_embed(message, amount = 5)
+        embed.color = discord.Color.red()
+        embed.set_author(name = f"Blacklisted word(s) used by {member} ({member.id})", url = message.jump_url)
+
+        lines = []
+        lines.append(f"The following blacklisted word(s) were used")
+        lines.append(", ".join([f"**{x}**" for x in words]))
+        embed.description = "{}\n{}".format("\n".join(lines), embed.description)
+
+        sendable = member.guild.get_channel(Intergalactica._channel_ids["staff_chat"])
+        asyncio.gather(sendable.send(embed = embed))
+
+        ban_if_new = True
+    elif action == MaliciousAction.invite_url:
+        asyncio.gather(kwargs["message"].delete())
+        ban_if_new = True
+    elif action == MaliciousAction.spam:
+        pass
+
+    if ban_if_new:
+        if Intergalactica.member_is_new(member):
+            await member.ban(reason = action.ban_reason)
 
 class Intergalactica(BaseCog):
     vote_emojis = ("✅", "❎", "❓")
@@ -106,11 +152,16 @@ class Intergalactica(BaseCog):
         embed.description = f"Good job in purchasing {amount} milky way(s).\nInstructions:\n`/milkyway create` or `/milkyway extend #channel`"
         asyncio.gather(channel.send(embed = embed))
 
-    def member_is_new(self, member):
+    @commands.Cog.listener()
+    async def on_member_ban(self, guild, user):
+        print(guild, user)
+
+    @classmethod
+    def member_is_new(cls, member):
         for role in member.roles:
-            if role.id == self._role_ids["vc_access"]:
+            if role.id == cls._role_ids["vc_access"]:
                 return False
-            if role.id == self._role_ids["5k+"]:
+            if role.id == cls._role_ids["5k+"]:
                 return False
         return True
 
@@ -176,47 +227,6 @@ class Intergalactica(BaseCog):
 
         return words_used
 
-    async def blacklisted_action(self, message, words):
-        embed = discord.Embed(color = discord.Color.red())
-        embed.set_author(name = f"Blacklisted word(s) used by {message.author} ({message.author.id})", url = message.jump_url)
-
-        lines = []
-        lines.append(f"The following blacklisted word(s) were used")
-        lines.append(", ".join([f"**{x}**" for x in words]))
-        lines.append("\n**Context:**")
-
-        messages = []
-        async for msg in message.channel.history(limit = 5, before = message):
-            messages.insert(0, msg)
-        messages.append(message)
-
-        last_author = None
-        fields = []
-        for msg in messages:
-            content = msg.content
-
-            if not content:
-                if len(msg.embeds) > 0:
-                    content = "[embed]"
-                if len(msg.attachments) > 0:
-                    content = "[attachment(s)]"
-
-            if last_author is not None and last_author.id == msg.author.id:
-                fields[-1]["value"] += f"\n{content}"
-            else:
-                fields.append({"name": str(msg.author), "value": content})
-
-            last_author = msg.author
-
-        for field in fields:
-            embed.add_field(**field, inline = False)
-
-        embed.description = "\n".join(lines)
-
-        # sendable = self.bot.owner
-        sendable = self.get_channel("staff_chat")
-        await sendable.send(embed = embed)
-
     @commands.Cog.listener()
     async def on_message(self, message):
         if not self.bot.production:
@@ -226,15 +236,13 @@ class Intergalactica(BaseCog):
 
         words = self.blacklisted_words_used(message.content)
         if len(words) > 0:
-            await self.blacklisted_action(message, words)
+            await on_malicious_action(MaliciousAction.blacklisted_word, message.author, message = message, words = words)
 
         invites = await self.get_invites(message.content)
         if invites:
-            asyncio.gather(message.delete())
             for invite in invites:
                 if invite.guild.id != message.guild.id:
-                    if self.member_is_new(message.author):
-                        await message.author.ban(reason = "Advertising")
+                    await on_malicious_action(MaliciousAction.invite_url, message.author, message = message)
             return
 
         if message.channel.id == self._channel_ids["general"] and random.randint(0, 1000) == 1:
@@ -260,7 +268,7 @@ class Intergalactica(BaseCog):
 
                         amount = int(field.value.split("`")[1])
                         self.on_milkyway_purchased(message.channel, member, amount)
-                        return asyncio.gather(message.delete())
+                        return await message.delete()
 
         if message.content and message.content.lower() == "!d bump":
             disboard_response = await self.bot.wait_for("message", check = lambda x : x.author.id == 302050872383242240 and x.channel.id == message.channel.id)
