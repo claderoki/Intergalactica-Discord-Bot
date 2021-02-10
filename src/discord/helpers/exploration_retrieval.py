@@ -152,9 +152,9 @@ class ExplorationRetrieval(ActivityRetrieval):
             self._winnings = {
                 "gold"        : int(gold_earned),
                 "experience"  : int(xp_earned),
-                "food"        : -random.randint(5,35),
+                "food"        : -random.randint(10,20),
                 "happiness"   : (0+(len(self.bonuses)*10)),
-                "cleanliness" : -random.randint(5,35),
+                "cleanliness" : -random.randint(10,20),
                 "health"      : health,
             }
         return self._winnings

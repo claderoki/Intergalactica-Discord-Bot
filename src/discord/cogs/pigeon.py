@@ -644,12 +644,12 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
     @pigeon.command(name = "clean")
     async def pigeon_clean(self, ctx):
-        self.increase_stats(ctx, "cleanliness", 20, 15, "You happily clean up the fecal matter of `{pigeon.name}`.\n")
+        self.increase_stats(ctx, "cleanliness", 30, 15, "You happily clean up the fecal matter of `{pigeon.name}`.\n")
 
     @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
     @pigeon.command(name = "feed")
     async def pigeon_feed(self, ctx):
-        self.increase_stats(ctx, "food", 20, 15, "You feed `{pigeon.name}` some seeds and whatever else they eat.\n")
+        self.increase_stats(ctx, "food", 30, 15, "You feed `{pigeon.name}` some seeds and whatever else they eat.\n")
 
     @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
     @pigeon.command(name = "heal")
