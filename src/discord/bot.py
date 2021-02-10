@@ -2,6 +2,7 @@ import asyncio
 import random
 import io
 import datetime
+from discord.ext.commands.errors import NotOwner
 
 import requests
 import praw
@@ -49,6 +50,7 @@ class Locus(commands.Bot):
         commands.errors.ChannelNotFound,
         commands.errors.RoleNotFound,
         commands.errors.MaxConcurrencyReached,
+        commands.errors.NotOwner,
         SendableException,
     )
 
