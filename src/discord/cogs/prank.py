@@ -248,12 +248,15 @@ class Prank(BaseCog):
         prankster, _ = Prankster.get_or_create(user_id = member.id, guild_id = ctx.guild.id)
         prank = prankster.current_prank
         if prank is not None:
-            prank.end_date = datetime.datetime.utcnow()
+            prank.end_date = prank.start_date
             prank.save()
 
             human, _ = Human.get_or_create(user_id = prank.pranked_by.user_id)
-            human.gold += prank.cost
-            human.save()
+            if prank.purchase_type == NicknamePrank.PurchaseType.gold:
+                human.gold += prank.cost
+                human.save()
+            elif prank.purchase_type == NicknamePrank.PurchaseType.item:
+                human.add_item(Item.get(code = prank.item_code), 1)
             await ctx.success(ctx.translate("prank_reverted"))
 
     @tasks.loop(minutes = 1)
