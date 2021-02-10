@@ -4,6 +4,7 @@ import asyncio
 import discord
 from discord.ext import commands, tasks
 from countryinfo import CountryInfo
+import peewee
 
 import src.config as config
 from src.models import HumanItem, Human, Fight, Reminder, Pigeon, Buff, PigeonBuff, PigeonRelationship, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
@@ -482,6 +483,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @pigeon.command(name = "stats")
     async def pigeon_stats(self, ctx, member : discord.Member = None):
+
         if member is not None:
             self.pigeon_check(ctx, member)
 
@@ -490,46 +492,51 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         pigeon = ctx.pigeon
         embed = self.get_base_embed(ctx.guild)
 
-        explorations = pigeon.explorations.where(Exploration.finished == True)
+        query = f"""
+            SELECT COUNT(DISTINCT destination) as unique_countries_visited, COUNT(*) as total_countries_visited
+            FROM exploration
+            WHERE pigeon_id = {pigeon.id}
+            AND finished = 1;
+        """
 
-        unique_countries_visited = Exploration\
-            .select(Exploration.destination)\
-            .where(Exploration.finished == True)\
-            .where(Exploration.pigeon == pigeon)\
-            .distinct(True)\
-            .count()
+        cursor = database.execute_sql(query)
+        unique_countries_visited, total_countries_visited = cursor.fetchone()
 
         lines = []
-        lines.append(f"Total explorations: {explorations.count()}")
+        lines.append(f"Total explorations: {total_countries_visited}")
         lines.append(f"Unique countries visited: {unique_countries_visited}")
 
         embed.add_field(name = f"Explorations {Pigeon.Status.exploring.value}", value = "\n".join(lines), inline = False)
 
-        mails = pigeon.outbox.where(Mail.finished == True)
-        total_gold_sent = sum([x.gold for x in mails if x.gold is not None])
+        query = f"""
+        SELECT SUM(gold) as total_gold_sent, count(id) as mails_sent
+        FROM mail WHERE sender_id = {pigeon.id}"""
+
+        cursor = database.execute_sql(query)
+        total_gold_sent, mails_sent = cursor.fetchone()
 
         lines = []
-        lines.append(f"Total mails sent: {mails.count()}")
+        lines.append(f"Total mails sent: {mails_sent}")
         lines.append(f"Total gold sent: {total_gold_sent}")
         embed.add_field(name = f"Mails {Pigeon.Status.mailing.value}", value = "\n".join(lines), inline = False)
 
-        query = Fight.select()
-        query = query.where(Fight.finished == True)
-        query = query.where((Fight.pigeon1 == pigeon) | (Fight.pigeon2 == pigeon))
+        query = f"""
+            SELECT (gold_won-gold_lost) as profit, fights_won, fights_lost FROM
+            (SELECT SUM(bet) as gold_won, count(*) as fights_won
+            FROM locus_db.fight
+            WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
+            AND ( (pigeon1_id = {pigeon.id} AND won = 1) OR (pigeon2_id = {pigeon.id} AND won = 0))
+            ) as gold_won,
 
-        fights_won = 0
-        fights_lost = 0
-        profit = 0
-        for fight in query:
-            if fight.challenger == pigeon and fight.won:
-                fights_won += 1
-                profit += fight.bet
-            elif fight.challengee == pigeon and not fight.won:
-                fights_won += 1
-                profit += fight.bet
-            else:
-                fights_lost += 1
-                profit -= fight.bet
+            (SELECT SUM(bet) as gold_lost, count(*) as fights_lost
+            FROM locus_db.fight
+            WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
+            AND ( (pigeon1_id = {pigeon.id} AND won = 0) OR (pigeon2_id = {pigeon.id} AND won = 1))
+            ) as gold_lost;
+        """
+
+        cursor = database.execute_sql(query)
+        profit, fights_won, fights_lost = cursor.fetchone()
 
         lines = []
         lines.append(f"Total fights won : {fights_won}")
@@ -544,6 +551,8 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         embed.add_field(name = f"Human", value = "\n".join(lines), inline = False)
 
         asyncio.gather(ctx.send(embed = embed))
+
+
 
     @pigeon.command(name = "history")
     async def pigeon_history(self, ctx, member : discord.Member = None):
