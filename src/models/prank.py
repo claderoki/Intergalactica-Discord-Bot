@@ -60,6 +60,10 @@ class Prank(BaseModel):
     purchase_type = EnumField               (PurchaseType, null = False, default = PurchaseType.free)
 
     @property
+    def guild(self):
+        return self.victim.guild
+
+    @property
     def should_apply_again(self):
         return False
 
@@ -77,7 +81,7 @@ class NicknamePrank(Prank):
     old_nickname     = EmojiField (null = False)
 
     @property
-    def should_apply_again(self):
+    def should_reapply(self):
         return self.victim.member and self.victim.member.display_name != self.new_nickname
 
     async def apply(self):
@@ -95,12 +99,36 @@ class RolePrank(Prank):
     prank_type = Prankster.PrankType.role
     cost       = 10
 
-    role_id = peewee.BigIntegerField(null = False)
+    role_id   = peewee.BigIntegerField (null = True)
+    role_name = peewee.TextField       (null = False)
+
+    @property
+    def role(self):
+        return self.guild.get_role(self.role_id)
 
     async def apply(self):
-        pass
+        if self.role_id is None:
+            role = await self.guild.create_role(
+                name  = self.role_name,
+                hoist = True
+            )
+            for _role in list(self.guild.roles)[::-1]:
+                try:
+                    await role.edit(position = _role.position)
+                    break
+                except: pass
+            self.role_id = role.id
+            self.save()
+        else:
+            role = self.role
+
+        await self.victim.member.add_roles(role)
+
     async def revert(self):
-        pass
+        try:
+            await self.role.delete(reason = "Prank expired")
+        except:
+            pass
 
 class EmojiPrank(Prank):
     duration  = datetime.timedelta(minutes = 10)
@@ -111,5 +139,6 @@ class EmojiPrank(Prank):
 
     async def apply(self):
         pass
+
     async def revert(self):
         pass

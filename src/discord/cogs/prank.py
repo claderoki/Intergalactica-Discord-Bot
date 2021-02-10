@@ -217,6 +217,21 @@ class Prank(BaseCog):
             old_nickname = member.nick
         )
 
+    @prank.command(name = "role")
+    @commands.is_owner()
+    async def prank_role(self, ctx, member : discord.Member):
+        RolePrank.__class__.gold = 1
+        await self.prank_check(ctx, member)
+
+        waiter = StrWaiter(ctx, prompt = ctx.translate("role_prank_prompt"))
+        role_name = await waiter.wait()
+
+        await self.create_prank(
+            ctx,
+            embed_description = None,
+            role_name = role_name
+        )
+
     @prank.command(name = "emoji")
     async def prank_emoji(self, ctx, member : discord.Member):
         await self.prank_check(ctx, member)
@@ -279,7 +294,7 @@ class Prank(BaseCog):
                         if prank.victim.member:
                             asyncio.gather(prank.revert())
                     else:
-                        if prank.should_apply_again:
+                        if prank.should_reapply:
                             asyncio.gather(prank.apply())
 
 def setup(bot):
