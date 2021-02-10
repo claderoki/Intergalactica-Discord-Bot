@@ -31,7 +31,7 @@ class MaliciousAction(Enum):
     @property
     def ban_reason(self):
         if self == self.blacklisted_word:
-            return "Using blacklisted words"
+            return "Using blacklisted word(s)"
         elif self == self.invite_url:
             return "Advertising"
         elif self == self.spam:
