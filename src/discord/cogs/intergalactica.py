@@ -314,6 +314,7 @@ class Intergalactica(BaseCog):
     async def vc_channel(self, ctx, *args):
         name = " ".join(args) if len(args) > 0 else None
 
+        category = None
         for category in ctx.guild.categories:
             if category.id == 742146159711092759:
                 break

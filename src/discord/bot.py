@@ -1,9 +1,5 @@
-import pathlib
-import json
 import asyncio
 import random
-import os
-from enum import Enum
 import io
 import datetime
 
@@ -17,7 +13,7 @@ from dateutil.relativedelta import relativedelta
 import src.config as config
 from src.wrappers.openweathermap import OpenWeatherMapApi
 from src.wrappers.color_thief import ColorThief
-from src.models import Settings, Translation, Human, NamedChannel, database
+from src.models import Settings, Translation, Human, database
 from src.discord.errors.base import SendableException
 from src.discord.helpers.embed import Embed
 

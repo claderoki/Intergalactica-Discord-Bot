@@ -1,10 +1,8 @@
 import re
 import json
-import io
 import asyncio
 import datetime
 
-import requests
 import discord
 from discord.ext import commands
 

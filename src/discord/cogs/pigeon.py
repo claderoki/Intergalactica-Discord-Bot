@@ -552,8 +552,6 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
         asyncio.gather(ctx.send(embed = embed))
 
-
-
     @pigeon.command(name = "history")
     async def pigeon_history(self, ctx, member : discord.Member = None):
         member = member or ctx.author
