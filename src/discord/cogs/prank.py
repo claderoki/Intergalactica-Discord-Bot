@@ -121,6 +121,8 @@ class Prank(BaseCog):
     async def prank_check(self, ctx, member, name = "human"):
         if member.bot:
             raise SendableException(ctx.translate("cannot_prank_bot"))
+        if member.id == ctx.author.id:
+            raise SendableException(ctx.translate("cannot_prank_self"))
 
         ctx.prankster, _ = Prankster.get_or_create(user_id = ctx.author.id, guild_id = ctx.guild.id)
         if not ctx.prankster.enabled:
