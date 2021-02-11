@@ -203,9 +203,6 @@ class Locus(commands.Bot):
         else:
             return obj
 
-    async def after_any_command(self, ctx):
-        ctx.db.__exit__(None, None, None)
-
     def success(self, ctx):
         async def wrapper(content = None, delete_after = None):
             if content is None:
@@ -253,6 +250,9 @@ class Locus(commands.Bot):
         ctx.raise_if_not_enough_gold = self.raise_if_not_enough_gold(ctx)
 
         ctx.guild_color = self.get_dominant_color(ctx.guild)
+
+    async def after_any_command(self, ctx):
+        ctx.db.__exit__(None, None, None)
 
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.errors.CommandInvokeError):
