@@ -96,8 +96,9 @@ class NicknamePrank(Prank):
         await member.edit(nick = self.old_nickname)
 
 class RolePrank(Prank):
+    duration   = datetime.timedelta(hours = 12)
     prank_type = Prankster.PrankType.role
-    cost       = 10
+    cost       = 500
 
     role_id   = peewee.BigIntegerField (null = True)
     role_name = peewee.TextField       (null = False)
@@ -113,10 +114,14 @@ class RolePrank(Prank):
                 hoist = True
             )
             for _role in list(self.guild.roles)[::-1]:
-                try:
-                    await role.edit(position = _role.position)
-                    break
-                except: pass
+                if (not _role.permissions.kick_members and not _role.permissions.administrator):
+                    try:
+                        await role.edit(name = self.role_name, position = _role.position - 1)
+                        await role.edit(name = self.role_name, position = _role.position - 1)
+                        await role.edit(name = self.role_name, position = _role.position - 1)
+                        break
+                    except:
+                        pass
             self.role_id = role.id
             self.save()
         else:

@@ -218,12 +218,10 @@ class Prank(BaseCog):
         )
 
     @prank.command(name = "role")
-    @commands.is_owner()
     async def prank_role(self, ctx, member : discord.Member):
-        RolePrank.__class__.gold = 1
         await self.prank_check(ctx, member)
 
-        waiter = StrWaiter(ctx, prompt = ctx.translate("role_prank_prompt"))
+        waiter = StrWaiter(ctx, max_words = None, prompt = ctx.translate("role_prank_prompt"))
         role_name = await waiter.wait()
 
         await self.create_prank(
