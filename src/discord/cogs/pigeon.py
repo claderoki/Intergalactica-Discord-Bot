@@ -76,16 +76,17 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         await asyncio.sleep(60 * 60)
         self.start_task(self.stats_ticker, check = self.bot.production)
 
-    def pigeon_check(self, ctx, member = None, name = "pigeon"):
+    def pigeon_check(self, ctx, member = None, name = "pigeon", human = None):
         cmd = ctx.invoked_subcommand or ctx.command
         command_name = cmd.name
         pigeon = None
         if command_name not in self.subcommands_no_require_pigeon:
-            pigeon = get_active_pigeon(member or ctx.author)
+            pigeon = get_active_pigeon(member or ctx.author, human = human)
             setattr(ctx, name, pigeon)
             pigeon_raise_if_not_exist(ctx, pigeon, name = name)
 
             if pigeon.status == Pigeon.Status.idle:
+                #TODO: optimize.
                 activities = []
                 activities.append(pigeon.explorations.where(Exploration.finished == False))
                 activities.append(pigeon.outbox.where(Mail.finished == False))
@@ -107,14 +108,14 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         if ctx.invoked_subcommand is None:
             return await ctx.send_help(ctx.command)
 
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
-        for message in list(human.system_messages.where(SystemMessage.read == False)):
+        ctx.human, _ = Human.get_or_create(user_id = ctx.author.id)
+        for message in list(ctx.human.system_messages.where(SystemMessage.read == False)):
             await ctx.send(embed = message.embed)
             message.read = True
             message.save()
             return
 
-        self.pigeon_check(ctx)
+        self.pigeon_check(ctx, human = ctx.human)
 
     @pigeon.command(name = "buy")
     @commands.max_concurrency(1, per = commands.BucketType.user)
@@ -126,7 +127,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         if pigeon is not None:
             return asyncio.gather(ctx.send(ctx.translate("pigeon_already_purchased").format(name = pigeon.name)))
 
-        pigeon = Pigeon(human = Human.get(user_id = ctx.author.id))
+        pigeon = Pigeon(human = ctx.human)
         await pigeon.editor_for(ctx, "name")
         pigeon.save()
 
@@ -870,9 +871,9 @@ def get_winnings_value_included(pigeon, **kwargs):
             lines.append(f"{Pigeon.emojis[key]} {current_value}/{new_value} {'+' if value > 0 else ''}{value}")
     return ", ".join(lines)
 
-def get_active_pigeon(user, raise_on_none = False):
+def get_active_pigeon(user, raise_on_none = False, human = None):
     try:
-        return Pigeon.get(human = Human.get(user_id = user.id), condition = Pigeon.Condition.active)
+        return Pigeon.get(human = human or Human.get(user_id = user.id), condition = Pigeon.Condition.active)
     except Pigeon.DoesNotExist:
         return None
 
