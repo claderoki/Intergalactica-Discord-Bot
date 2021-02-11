@@ -315,7 +315,7 @@ class Intergalactica(BaseCog):
         if type == "join":
             self.last_member_join = datetime.datetime.utcnow()
             text = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
-            message = self.get_channel("general").send(text)
+            message = await self.get_channel("general").send(text)
             self.welcome_messages[member.id] = message
         elif type == "leave" and member.id in self.welcome_messages:
             try:
