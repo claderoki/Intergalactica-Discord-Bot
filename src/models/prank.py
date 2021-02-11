@@ -98,7 +98,7 @@ class NicknamePrank(Prank):
 class RolePrank(Prank):
     duration   = datetime.timedelta(hours = 12)
     prank_type = Prankster.PrankType.role
-    cost       = 500
+    cost       = 1500
 
     role_id   = peewee.BigIntegerField (null = True)
     role_name = peewee.TextField       (null = False)
