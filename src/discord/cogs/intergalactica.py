@@ -68,6 +68,8 @@ async def on_malicious_action(action : MaliciousAction, member : discord.Member,
             await member.ban(reason = action.ban_reason)
 
 class Intergalactica(BaseCog):
+    last_member_join = None
+
     vote_emojis = ("✅", "❎", "❓")
     guild_id = 742146159711092757
 
@@ -124,6 +126,7 @@ class Intergalactica(BaseCog):
 
     def __init__(self, bot):
         super().__init__(bot)
+        self.welcome_messages = {}
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -245,8 +248,13 @@ class Intergalactica(BaseCog):
                     await on_malicious_action(MaliciousAction.invite_url, message.author, message = message)
             return
 
-        if message.channel.id == self._channel_ids["general"] and random.randint(0, 1000) == 1:
-            asyncio.gather(message.add_reaction("🤏"))
+        if message.channel.id == self._channel_ids["general"]:
+            if self.last_member_join is not None and "welcome" in message.content.lower():
+                time_here = relativedelta(datetime.datetime.utcnow(), self.last_member_join)
+                if time_here.minutes <= 5:
+                    asyncio.gather(message.add_reaction("❤️"))
+            elif random.randint(0, 1000) == 1:
+                asyncio.gather(message.add_reaction("🤏"))
 
         if message.channel.id == self._channel_ids["staff_votes"]:
             coros = [message.add_reaction(x) for x in self.vote_emojis]
@@ -305,8 +313,15 @@ class Intergalactica(BaseCog):
         asyncio.gather(welcome_channel.send(embed = embed))
 
         if type == "join":
-            msg = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
-            asyncio.gather(self.get_channel("general").send(msg))
+            self.last_member_join = datetime.datetime.utcnow()
+            text = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
+            message = self.get_channel("general").send(text)
+            self.welcome_messages[member.id] = message
+        elif type == "leave" and member.id in self.welcome_messages:
+            try:
+                await self.welcome_messages[member.id].delete()
+            except:
+                pass
 
     @commands.command(name = "vcchannel")
     @is_intergalactica()
