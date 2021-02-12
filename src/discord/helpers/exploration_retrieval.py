@@ -176,7 +176,7 @@ class ExplorationRetrieval(ActivityRetrieval):
         if self.Bonus.language in self.bonuses and self.language is not None:
             pigeon.study_language(self.language)
         if self.item is not None:
-            pigeon.human.add_item(self.item, 1)
+            pigeon.human.add_item(self.item, amount = 1, found = True)
         pigeon.status = pigeon.Status.idle
         pigeon.update_stats(self.winnings)
         for bonus in self.bonuses:
