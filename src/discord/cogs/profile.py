@@ -18,7 +18,7 @@ from src.discord.cogs.core import BaseCog
 
 def is_tester(member):
     with database.connection_context():
-        human = config.bot.get_human(member)
+        human = config.bot.get_human(user = member)
         return human.tester
 
 class CityWaiter(StrWaiter):
@@ -258,7 +258,7 @@ class Profile(BaseCog):
         pass
 
     @item.command(name = "create", aliases = ["edit"])
-    async def item_create(self, ctx,*, name):
+    async def item_create(self, ctx, *, name):
         if name == "":
             raise commands.errors.MissingRequiredArgument("name")
         if not is_tester(ctx.author):
