@@ -393,7 +393,7 @@ class Intergalactica(BaseCog):
         if mini is None:
             mini = ctx.invoked_with != "milkyway"
 
-        type = TemporaryChannel.mini if mini else TemporaryChannel.normal
+        type = TemporaryChannel.Type.mini if mini else TemporaryChannel.Type.normal
 
         temp_channel = TemporaryChannel(
             guild_id = ctx.guild.id,

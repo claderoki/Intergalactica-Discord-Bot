@@ -29,7 +29,7 @@ class TemporaryChannel(BaseModel):
     active              = peewee.BooleanField    (null = False, default = True)
     status              = EnumField              (Status, null = False, default = Status.pending)
     deny_reason         = peewee.TextField       (null = True)
-    pending_items       = peewee.IntegerField    (column_name = "pending_milky_ways", null = True)
+    pending_items       = peewee.IntegerField    (null = True)
     type                = EnumField              (Type, null = False, default = Type.normal)
 
     @property
