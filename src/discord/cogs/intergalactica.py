@@ -58,7 +58,9 @@ async def on_malicious_action(action : MaliciousAction, member : discord.Member,
 
         ban_if_new = True
     elif action == MaliciousAction.invite_url:
-        asyncio.gather(kwargs["message"].delete())
+        try:
+            await kwargs["message"].delete()
+        except: pass
         ban_if_new = True
     elif action == MaliciousAction.spam:
         pass

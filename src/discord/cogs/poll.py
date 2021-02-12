@@ -308,7 +308,10 @@ class PollCog(BaseCog, name = "Poll"):
                 if poll.delete_after_results:
                     try:
                         message = await poll.channel.fetch_message(poll.message_id)
-                        asyncio.gather(message.delete())
+                        try:
+                            await message.delete()
+                        except: pass
+
                     except:
                         pass
 

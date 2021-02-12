@@ -81,7 +81,7 @@ class DiscordUI(UI):
         embed.add_field(name = "\uFEFF", value = "\n".join(guess_info), inline = False)
         if self.message is None or self.invalid_messages > 3:
             if self.message is not None:
-                asyncio.gather(self.message.delete())
+                asyncio.gather(self.message.delete(), return_exceptions = False)
             self.message = await self.ctx.send(content = content, embed = embed)
             self.invalid_messages = 0
         else:
