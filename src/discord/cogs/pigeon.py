@@ -511,7 +511,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
         query = f"""
         SELECT SUM(gold) as total_gold_sent, count(id) as mails_sent
-        FROM mail WHERE sender_id = {pigeon.id}"""
+        FROM mail WHERE sender_id = {pigeon.id} AND finished = 1"""
 
         cursor = database.execute_sql(query)
         total_gold_sent, mails_sent = cursor.fetchone()
@@ -524,16 +524,16 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         query = f"""
             SELECT (gold_won-gold_lost) as profit, fights_won, fights_lost FROM
             (SELECT SUM(bet) as gold_won, count(*) as fights_won
-            FROM locus_db.fight
+            FROM fight
             WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
             AND ( (pigeon1_id = {pigeon.id} AND won = 1) OR (pigeon2_id = {pigeon.id} AND won = 0))
-            ) as gold_won,
+            ),
 
             (SELECT SUM(bet) as gold_lost, count(*) as fights_lost
-            FROM locus_db.fight
+            FROM fight
             WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
             AND ( (pigeon1_id = {pigeon.id} AND won = 0) OR (pigeon2_id = {pigeon.id} AND won = 1))
-            ) as gold_lost;
+            );
         """
 
         cursor = database.execute_sql(query)
