@@ -93,12 +93,15 @@ class Human(BaseModel):
                 latlng = self.country.capital_latlng()
                 return Timezone.from_location(*latlng[::-1]).name
 
-    def add_item(self, item, amount):
+    def add_item(self, item, amount = 1, found = False):
         human_item, created = HumanItem.get_or_create(item = item, human = self)
         if created:
             human_item.amount = amount
         else:
             human_item.amount += amount
+
+        if found:
+            human_item.found = True
         human_item.save()
         return human_item
 
@@ -232,6 +235,7 @@ class HumanItem(BaseModel):
     human  = peewee.ForeignKeyField (Human, null = False, backref = "human_items")
     item   = peewee.ForeignKeyField (Item, null = False)
     amount = peewee.IntegerField    (null = False, default = 1)
+    found  = peewee.BooleanField    (null = False, default = False)
 
     class Meta:
         indexes = (
