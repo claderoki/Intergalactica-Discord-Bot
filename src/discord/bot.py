@@ -58,13 +58,16 @@ class Locus(commands.Bot):
         commands.errors.CommandNotFound
     )
 
-    def __init__(self, mode, prefix = "/"):
+    def __init__(self, mode, prefix = None):
+        self._human_cache = {}
         self.mode = mode
         self.production = mode == config.Mode.production
         self.heroku = False
 
         if not self.production:
             prefix = "."
+        else:
+            prefix = [";", "/"]
 
         intents = discord.Intents.default()
         intents.members = True
@@ -227,10 +230,22 @@ class Locus(commands.Bot):
     def raise_if_not_enough_gold(self, ctx):
         def wrapper(gold, human = None, name = "you"):
             if human is None:
-                human, _ = Human.get_or_create(user_id = ctx.author.id)
+                human = ctx.get_human()
             if human.gold < gold:
                 raise SendableException(ctx.translate(f"{name}_not_enough_gold"))
         return wrapper
+
+    def get_human(self, ctx = None, user = None):
+        user = user or ctx.author
+        if isinstance(user, int):
+            user_id = user
+        else:
+            user_id = user.id
+ 
+        if user_id not in self._human_cache:
+            human, _ = Human.get_or_create(user_id = user_id)
+            self._human_cache[user_id] = human
+        return self._human_cache[user_id]
 
     async def before_any_command(self, ctx):
         ctx.db = database.connection_context()
@@ -240,6 +255,8 @@ class Locus(commands.Bot):
         if ctx.guild is not None and ctx.guild.id not in self._locales:
             settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
             self._locales[ctx.guild.id] = settings.locale.name
+
+        ctx.get_human = lambda user = None: self.get_human(ctx, user = user)
 
         ctx.locale = self._locales.get(ctx.get_id(ctx.guild), "en_US")
         ctx.translate = lambda x: self.translate(x, ctx.locale)
