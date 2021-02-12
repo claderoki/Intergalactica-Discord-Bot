@@ -16,6 +16,10 @@ class TemporaryChannel(BaseModel):
         accepted = 1
         denied   = 2
 
+    class Type(Enum):
+        normal = 0
+        mini   = 1
+
     guild_id            = peewee.BigIntegerField (null = False)
     name                = peewee.TextField       (null = False)
     topic               = peewee.TextField       (null = False)
@@ -25,18 +29,40 @@ class TemporaryChannel(BaseModel):
     active              = peewee.BooleanField    (null = False, default = True)
     status              = EnumField              (Status, null = False, default = Status.pending)
     deny_reason         = peewee.TextField       (null = True)
-    pending_milky_ways  = peewee.IntegerField    (null = True)
+    pending_items       = peewee.IntegerField    (column_name = "pending_milky_ways", null = True)
+    type                = EnumField              (Type, null = False, default = Type.normal)
+
+    @property
+    def item_code(self):
+        if self.type == self.Type.normal:
+            return "milky_way"
+        elif self.type == self.Type.mini:
+            return "orions_belt"
+
+    @property
+    def alias_name(self):
+        if self.type == self.Type.normal:
+            return "milkyway"
+        elif self.type == self.Type.mini:
+            return "orion"
+
+    @property
+    def days(self):
+        if self.type == self.Type.normal:
+            return 7
+        elif self.type == self.Type.mini:
+            return 1
 
     @property
     def ticket_embed(self):
         embed = discord.Embed(color = self.bot.get_dominant_color(None))
         embed.set_author(icon_url = self.user.avatar_url, name = str(self.user))
 
-        embed.description = f"A milkyway channel was requested.\nName: `{self.name}`\nTopic: `{self.topic}`"
+        embed.description = f"A temporary channel was requested.\nName: `{self.name}`\nTopic: `{self.topic}`"
 
         footer = []
-        footer.append(f"Use '/milkyway deny {self.id} <reason>' to deny this milkyway request")
-        footer.append(f"Use '/milkyway accept {self.id}' to accept this milkyway request")
+        footer.append(f"Use '/{self.alias_name} deny {self.id} <reason>' to deny this request")
+        footer.append(f"Use '/{self.alias_name} accept {self.id}' to accept this request")
         embed.set_footer(text = "\n".join(footer))
 
         return embed

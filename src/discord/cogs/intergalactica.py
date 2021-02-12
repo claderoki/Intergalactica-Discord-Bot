@@ -336,41 +336,43 @@ class Intergalactica(BaseCog):
             if category.id == 742146159711092759:
                 break
         channel = await category.create_voice_channel(name or "Temporary voice channel", reason = f"Requested by {ctx.author}")
-        vc = TemporaryVoiceChannel.create(guild_id = ctx.guild.id, channel_id = channel.id)
+        TemporaryVoiceChannel.create(guild_id = ctx.guild.id, channel_id = channel.id)
         await ctx.success()
 
-    def get_milkyway_human_item(self, user):
+    def get_human_item(self, user, code = None):
         #TODO: optimize
         human_item = HumanItem.get_or_none(
             human = self.bot.get_human(user = user),
-            item = Item.get(code = "milky_way")
+            item = Item.get(code = code)
         )
         if human_item is None or human_item.amount == 0:
-            raise SendableException("no_milky_way")
+            raise SendableException("no_" + code)
         return human_item
 
-    @commands.group()
-    async def milkyway(self, ctx):
+    @commands.group(aliases = ["milkyway", "orion"])
+    async def temporary_channel(self, ctx):
         pass
 
     @commands.has_guild_permissions(administrator = True)
-    @milkyway.command(name = "accept")
-    async def milkyway_accept(self, ctx, temp_channel : TemporaryChannel):
+    @temporary_channel.command(name = "accept")
+    async def temporary_channel_accept(self, ctx, temp_channel : TemporaryChannel):
         if temp_channel.status != TemporaryChannel.Status.pending:
             raise SendableException(ctx.translate("temp_channel_not_pending"))
         if not temp_channel.active:
             raise SendableException(ctx.translate("temp_channel_not_active"))
-        temp_channel.set_expiry_date(datetime.timedelta(days = 7 * temp_channel.pending_milky_ways))
-        temp_channel.pending_milky_ways = 0
+        temp_channel.set_expiry_date(
+            datetime.timedelta(days = temp_channel.days * temp_channel.pending_items)
+        )
+        temp_channel.pending_items = 0
         await temp_channel.create_channel()
         temp_channel.status = TemporaryChannel.Status.accepted
         temp_channel.save()
-        await temp_channel.user.send(f"Your request for a milkyway channel was accepted.")
+        await temp_channel.user.send(f"Your request for a temporary channel was accepted.")
         asyncio.gather(ctx.success())
 
     @commands.has_guild_permissions(administrator = True)
-    @milkyway.command(name = "deny")
-    async def milkyway_deny(self, ctx, temp_channel : TemporaryChannel, *, reason):
+    @temporary_channel.command(name = "deny")
+    async def temporary_channel_deny(self, ctx, temp_channel : TemporaryChannel, *, reason):
         if temp_channel.status != TemporaryChannel.Status.pending:
             raise SendableException(ctx.translate("temp_channel_not_pending"))
         if not temp_channel.active:
@@ -379,27 +381,37 @@ class Intergalactica(BaseCog):
         temp_channel.status = TemporaryChannel.Status.denied
         temp_channel.active = False
         temp_channel.deny_reason = reason
-        human_item = self.get_milkyway_human_item(temp_channel.user)
-        human_item.amount += temp_channel.pending_milky_ways
+        human_item = self.get_human_item(temp_channel.user, code = temp_channel.item_code)
+        human_item.amount += temp_channel.pending_items
         human_item.save()
         temp_channel.save()
-        await temp_channel.user.send(f"Your request for a milkyway channel was denied. Reason: `{temp_channel.deny_reason}`")
+        await temp_channel.user.send(f"Your request for a temporary channel was denied. Reason: `{temp_channel.deny_reason}`")
         asyncio.gather(ctx.success())
 
-    @milkyway.command(name = "create")
-    async def milkyway_create(self, ctx):
-        human_item = self.get_milkyway_human_item(ctx.author)
-        temp_channel = TemporaryChannel(guild_id = ctx.guild.id, user_id = ctx.author.id)
+    @temporary_channel.command(name = "create")
+    async def temporary_channel_create(self, ctx, mini : bool = None):
+        if mini is None:
+            mini = ctx.invoked_with != "milkyway"
+
+        type = TemporaryChannel.mini if mini else TemporaryChannel.normal
+
+        temp_channel = TemporaryChannel(
+            guild_id = ctx.guild.id,
+            user_id  = ctx.author.id,
+            type     = type
+        )
+
+        human_item   = self.get_human_item(ctx.author, code = temp_channel.item_code)
 
         if human_item.amount > 1:
-            waiter = IntWaiter(ctx, prompt = ctx.translate("milky_way_count_prompt"), min = 1, max = human_item.amount)
-            milky_ways_to_use = await waiter.wait()
+            waiter = IntWaiter(ctx, prompt = ctx.translate(f"{temp_channel.item_code}_count_prompt"), min = 1, max = human_item.amount)
+            items_to_use = await waiter.wait()
         else:
-            milky_ways_to_use = 1
+            items_to_use = 1
 
-        temp_channel.pending_milky_ways = milky_ways_to_use
+        temp_channel.pending_items = items_to_use
 
-        human_item.amount -= milky_ways_to_use
+        human_item.amount -= items_to_use
         human_item.save()
 
         await temp_channel.editor_for(ctx, "name")
@@ -410,24 +422,25 @@ class Intergalactica(BaseCog):
         temp_channel.save()
         await self.get_channel("bot_commands").send(embed = temp_channel.ticket_embed)
 
-    @milkyway.command(name = "extend")
-    async def milkyway_extend(self, ctx, channel : discord.TextChannel):
-        human_item = self.get_milkyway_human_item(ctx.author)
-
+    @temporary_channel.command(name = "extend")
+    async def temporary_channel_extend(self, ctx, channel : discord.TextChannel):
         try:
             temp_channel = TemporaryChannel.get(channel_id = channel.id, guild_id = ctx.guild.id)
         except TemporaryChannel.DoesNotExist:
             raise SendableException(ctx.translate("temp_channel_not_found"))
 
-        if human_item.amount > 1:
-            waiter = IntWaiter(ctx, prompt = ctx.translate("milky_way_count_prompt"), min = 1, max = human_item.amount)
-            milky_ways_to_use = await waiter.wait()
-        else:
-            milky_ways_to_use = 1
+        human_item = self.get_human_item(ctx.author, code = temp_channel.item_code)
 
-        temp_channel.set_expiry_date(datetime.timedelta(days = 7 * milky_ways_to_use ))
+        if human_item.amount > 1:
+            waiter = IntWaiter(ctx, prompt = ctx.translate("temporary_channel_count_prompt"), min = 1, max = human_item.amount)
+            items_to_use = await waiter.wait()
+        else:
+            items_to_use = 1
+
+        temp_channel.set_expiry_date(
+            datetime.timedelta(days = temp_channel.days * items_to_use ))
         asyncio.gather(temp_channel.update_channel_topic())
-        human_item.amount -= milky_ways_to_use
+        human_item.amount -= items_to_use
         human_item.save()
         temp_channel.save()
 
