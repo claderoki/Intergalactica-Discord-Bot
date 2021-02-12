@@ -143,8 +143,7 @@ class Prank(BaseCog):
         else:
             cls = None
         ctx.prank_class = cls
-
-        ctx.human, _ = Human.get_or_create(user_id = ctx.author.id)
+        ctx.human = ctx.get_human()
         ctx.has_item = False
         if cls.item_code is not None:
             ctx.human_item = HumanItem.get_or_none(
@@ -264,7 +263,7 @@ class Prank(BaseCog):
             prank.end_date = prank.start_date
             prank.save()
 
-            human, _ = Human.get_or_create(user_id = prank.pranked_by.user_id)
+            human = ctx.get_human(user = prank.pranked_by.user_id)
             if prank.purchase_type == NicknamePrank.PurchaseType.gold:
                 human.gold += prank.cost
                 human.save()

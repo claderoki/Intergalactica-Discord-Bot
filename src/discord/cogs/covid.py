@@ -26,7 +26,7 @@ class CovidCog(BaseCog, name = "Covid"):
 
     @commands.command()
     async def covid(self, ctx, country : CountryConverter = None):
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human = ctx.get_human()
         country = country or human.country
         if country is None:
             raise SendableException(ctx.translate("no_country_selected"))

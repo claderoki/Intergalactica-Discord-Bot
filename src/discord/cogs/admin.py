@@ -37,14 +37,14 @@ class Admin(BaseCog):
 
     @tester.command(name = "add", aliases = ["=", "+"])
     async def add_tester(self, ctx, member : discord.Member):
-        human, _ = Human.get_or_create(user_id = member.id)
+        human = ctx.get_human(user = member)
         human.tester = True
         human.save()
         asyncio.gather(ctx.success())
 
     @tester.command(name = "remove", aliases = ["-", "del"])
     async def remove_tester(self, ctx, member : discord.Member):
-        human, _ = Human.get_or_create(user_id = member.id)
+        human = ctx.get_human(user = member)
         human.tester = False
         human.save()
         asyncio.gather(ctx.success())

@@ -150,7 +150,7 @@ class Intergalactica(BaseCog):
     def on_milkyway_purchased(self, channel, member, amount):
         with database.connection_context():
             item = Item.get(code = "milky_way")
-            human, _ = Human.get_or_create(user_id = member.id)
+            human = self.bot.get_human(user = member)
             human.add_item(item, amount)
 
         embed = discord.Embed(color = self.bot.get_dominant_color(None))
@@ -340,8 +340,9 @@ class Intergalactica(BaseCog):
         await ctx.success()
 
     def get_milkyway_human_item(self, user):
+        #TODO: optimize
         human_item = HumanItem.get_or_none(
-            human = Human.get_or_create(user_id = user.id)[0],
+            human = self.bot.get_human(user = user),
             item = Item.get(code = "milky_way")
         )
         if human_item is None or human_item.amount == 0:

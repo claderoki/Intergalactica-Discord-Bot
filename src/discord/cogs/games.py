@@ -51,7 +51,7 @@ class Games(BaseCog):
 
             elif emoji == emojis["join"] and user.id not in [x.id for x in members]:
                 if gold_needed is not None and gold_needed > 0:
-                    human, _ = Human.get_or_create(user_id = user.id)
+                    human = self.bot.get_human(user = user)
                     if human.gold < gold_needed:
                         asyncio.gather(message.channel.send(f"{user.mention}, you do not have enough gold to join this game. Gold needed: {gold_needed}"))
                         return False

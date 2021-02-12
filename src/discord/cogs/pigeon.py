@@ -26,7 +26,7 @@ class ItemWaiter(StrWaiter):
 
         if in_inventory:
             query = HumanItem.select()
-            query = query.where(HumanItem.human == Human.get_or_create(user_id = ctx.author.id)[0])
+            query = query.where(HumanItem.human == ctx.get_human())
             query = query.where(HumanItem.amount > 0)
             self.inventory = list(query)
             self.items = [x.item for x in self.inventory]
@@ -108,7 +108,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         if ctx.invoked_subcommand is None:
             return await ctx.send_help(ctx.command)
 
-        ctx.human, _ = Human.get_or_create(user_id = ctx.author.id)
+        ctx.human = ctx.get_human()
         for message in list(ctx.human.system_messages.where(SystemMessage.read == False)):
             await ctx.send(embed = message.embed)
             message.read = True
@@ -398,7 +398,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         if ctx.channel is None:
             ctx.channel = await ctx.author.create_dm()
 
-        recipient, _ = Human.get_or_create(user_id = user.id)
+        recipient = ctx.get_human(user = user)
 
         mail = Mail(recipient = recipient, sender = sender, read = False)
 
@@ -446,7 +446,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     @commands.command()
     async def inbox(self, ctx):
         """Check your inbox."""
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human = ctx.get_human()
         unread_mail = human.inbox.where(Mail.read == False).where(Mail.finished == True)
         if len(unread_mail) == 0:
             return await ctx.send(ctx.translate("no_unread_mail"))
@@ -557,7 +557,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     async def pigeon_history(self, ctx, member : discord.Member = None):
         member = member or ctx.author
         query = Pigeon.select()
-        query = query.where(Pigeon.human == Human.get(user_id = member.id))
+        query = query.where(Pigeon.human == ctx.get_human(user = member))
         query = query.where(Pigeon.condition != Pigeon.Condition.active)
 
         lines = []
@@ -873,7 +873,7 @@ def get_winnings_value_included(pigeon, **kwargs):
 
 def get_active_pigeon(user, raise_on_none = False, human = None):
     try:
-        return Pigeon.get(human = human or Human.get(user_id = user.id), condition = Pigeon.Condition.active)
+        return Pigeon.get(human = human or config.bot.get_human(user = user), condition = Pigeon.Condition.active)
     except Pigeon.DoesNotExist:
         return None
 

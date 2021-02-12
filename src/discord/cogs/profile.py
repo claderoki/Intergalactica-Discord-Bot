@@ -18,7 +18,7 @@ from src.discord.cogs.core import BaseCog
 
 def is_tester(member):
     with database.connection_context():
-        human, _ = Human.get_or_create(user_id = member.id)
+        human = config.bot.get_human(member)
         return human.tester
 
 class CityWaiter(StrWaiter):
@@ -50,7 +50,8 @@ class Profile(BaseCog):
         asyncio.gather(ctx.message.delete())
         with ctx.typing():
             cost = 10
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
+
+            human = ctx.get_human()
             if human.gold < cost:
                 raise SendableException(ctx.translate("not_enough_gold").format(cost = cost))
 
@@ -61,7 +62,7 @@ class Profile(BaseCog):
     @commands.command()
     async def zodiac(self, ctx, sign : EnumConverter(ZodiacSign) = None):
         if sign is None:
-            human, _ = Human.get_or_create(user_id = ctx.author.id)
+            human = ctx.get_human()
             if human.date_of_birth is None:
                 raise SendableException(ctx.translate("date_of_birth_not_set"))
             sign = human.zodiac_sign
@@ -114,8 +115,7 @@ class Profile(BaseCog):
         member = members[0] if len(members) else ctx.author
 
         embed = discord.Embed(color = ctx.author.color)
-        human, _ = Human.get_or_create(user_id = member.id)
-
+        human = ctx.bot.get_human(user = member)
         field = human.get_embed_field()
         embed.title = field["name"]
         values = field["value"]
@@ -143,8 +143,7 @@ class Profile(BaseCog):
     async def profile_compare(self, ctx, member : discord.Member):
         embed = discord.Embed(color = ctx.guild_color)
 
-        humans = [Human.get_or_create(user_id = x.id)[0] for x in (ctx.author, member)]
-
+        humans = [ctx.get_human(user = x) for x in (ctx.author, member)]
         for human in humans:
             embed.add_field(**human.get_embed_field(show_all = True))
 
@@ -161,7 +160,7 @@ class Profile(BaseCog):
         if len(fields) == 0:
             fields = ["city", "country", "dateofbirth", "timezone"]
 
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human = ctx.get_human()
         human.timezone      = None if "timezone" in fields else human.timezone
         human.city          = None if "city" in fields else human.city
         human.country       = None if "country" in fields else human.country
@@ -175,7 +174,7 @@ class Profile(BaseCog):
         if len(fields) == 0:
             fields = ["city", "country", "dateofbirth"]
 
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human = ctx.get_human()
 
         if "city" in fields:
             waiter = CityWaiter(ctx, prompt =  ctx.translate("human_city_prompt"), skippable = True)
@@ -211,7 +210,7 @@ class Profile(BaseCog):
 
     @currency.command(name = "add")
     async def currency_add(self, ctx, currency : lambda x : pycountry.currencies.get(alpha_3 = x.upper()) ):
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human = ctx.get_human()
         if human.currencies is None:
             human.currencies = set()
         human.currencies.add(currency)
@@ -220,7 +219,7 @@ class Profile(BaseCog):
 
     @currency.command(name = "remove")
     async def currency_remove(self, ctx, currency : lambda x : pycountry.currencies.get(alpha_3 = x.upper()) ):
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human = ctx.get_human()
         human.currencies.remove(currency)
         human.save()
         await ctx.success()
@@ -299,7 +298,7 @@ class Profile(BaseCog):
         if not await waiter.wait():
             return await ctx.send(ctx.translate("canceled"))
 
-        human, _ = Human.get_or_create(user_id = ctx.author.id)
+        human = ctx.get_human()
         human_item, created = HumanItem.get_or_create(item = item, human = human)
         if created or human_item.amount == 0:
             raise SendableException(ctx.translate("you_missing_item"))
@@ -360,7 +359,7 @@ class Profile(BaseCog):
             raise SendableException("Item not found.")
 
         member = member or ctx.author
-        human, _ = Human.get_or_create(user_id = member.id)
+        human = ctx.get_human(user = member)
         human.add_item(item, 1)
         await ctx.send("added")
 
@@ -377,7 +376,7 @@ class Profile(BaseCog):
 
     @commands.command()
     async def inventory(self, ctx, member : discord.Member = None):
-        human, _ = Human.get_or_create(user_id = (member or ctx.author).id)
+        human = ctx.get_human(user = (member or ctx.author))
 
         data = [(x.item.name, x.amount) for x in human.human_items if x.amount > 0]
         data.insert(0, ("name", "amount"))

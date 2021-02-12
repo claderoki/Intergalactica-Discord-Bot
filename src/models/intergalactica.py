@@ -110,7 +110,7 @@ class Earthling(BaseModel):
         return cls.get_or_create(
             guild_id = member.guild.id,
             user_id = member.id,
-            human = Human.get_or_create(user_id = member.id)[0]
+            human = config.bot.get_human(user = member)
         )
 
 class TemporaryVoiceChannel(BaseModel):
