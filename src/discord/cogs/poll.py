@@ -18,6 +18,7 @@ class PollCog(BaseCog, name = "Poll"):
 
     def __init__(self, bot):
         super().__init__(bot)
+        self.any_active_polls = (Poll.select().where(Poll.ended == False).count() > 0)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -25,6 +26,8 @@ class PollCog(BaseCog, name = "Poll"):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
+        if not self.any_active_polls:
+            return
         if not self.bot.production:
             return
 
@@ -78,7 +81,6 @@ class PollCog(BaseCog, name = "Poll"):
             for i in range(0, len(votes)-poll.max_votes_per_user):
                 vote = votes[i]
                 vote.delete_instance()
-
 
     async def setup_poll(self, ctx, poll):
         prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
@@ -242,6 +244,7 @@ class PollCog(BaseCog, name = "Poll"):
 
         message = await poll.send()
         poll.message_id = message.id
+        self.any_active_polls = True
 
         poll.save()
 
@@ -268,6 +271,7 @@ class PollCog(BaseCog, name = "Poll"):
 
         message = await poll.send()
         poll.message_id = message.id
+        self.any_active_polls = True
         poll.save()
 
     @change.command("create")
@@ -288,6 +292,7 @@ class PollCog(BaseCog, name = "Poll"):
 
         message = await poll.send()
         poll.message_id = message.id
+        self.any_active_polls = True
         poll.save()
 
     @tasks.loop(minutes=2)
@@ -297,6 +302,7 @@ class PollCog(BaseCog, name = "Poll"):
             query = query.where(Poll.ended == False)
             query = query.where(Poll.due_date <= datetime.datetime.utcnow())
             for poll in query:
+                self.any_active_polls = True
                 if poll.type == Poll.Type.bool and poll.passed:
                     for change in poll.changes:
                         await change.implement()
@@ -314,9 +320,8 @@ class PollCog(BaseCog, name = "Poll"):
 
                     except:
                         pass
-
+                self.any_active_polls = False
                 poll.save()
-
 
 def setup(bot):
     bot.add_cog(PollCog(bot))
