@@ -215,13 +215,35 @@ class Item(BaseModel):
             elif self == self.legendary:
                 return 6
 
-    name        = peewee.CharField    (null = False)
-    description = peewee.TextField    (null = False)
-    image_url   = peewee.TextField    (null = False)
-    rarity      = EnumField           (Rarity, null = False, default = Rarity.common)
-    explorable  = peewee.BooleanField (null = False, default = False)
-    code        = peewee.CharField    (max_length = 45)
-    usable      = peewee.BooleanField (null = False, default = False)
+    name         = peewee.CharField    (null = False)
+    description  = peewee.TextField    (null = False)
+    image_url    = peewee.TextField    (null = False)
+    rarity       = EnumField           (Rarity, null = False, default = Rarity.common)
+    explorable   = peewee.BooleanField (null = False, default = False)
+    code         = peewee.CharField    (max_length = 45)
+    usable       = peewee.BooleanField (null = False, default = False)
+    holiday_name = peewee.TextField    (null = True)
+    chance       = peewee.IntegerField (null = False)
+
+    @classmethod
+    def get_random(cls):
+        query = cls.raw("""
+            SELECT results.* FROM (
+            SELECT {table_name}.*, @running_total AS previous_total, @running_total := @running_total + chance AS running_total, until.rand
+            FROM (
+                SELECT round(rand() * init.max) AS rand FROM (
+                SELECT sum(chance) - 1 AS max FROM {table_name} WHERE holiday_name IS NULL AND explorable = 1
+                ) AS init
+            ) AS until,
+            (SELECT * FROM {table_name} WHERE holiday_name IS NULL AND explorable = 1) AS {table_name},
+            ( SELECT @running_total := 0.00 ) AS vars
+            ) AS results
+            WHERE results.rand >= results.previous_total AND results.rand < results.running_total;
+        """.format(table_name = cls._meta.table_name)
+
+        )
+        for item in query:
+            return item
 
     @property
     def embed(self):
