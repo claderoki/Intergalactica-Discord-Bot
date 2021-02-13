@@ -38,7 +38,7 @@ class ExplorationRetrieval(ActivityRetrieval):
         def amount(self):
             if self == self.language:
                 return 40
-            if self == self.language:
+            if self == self.item:
                 return 40
             if self == self.tenth:
                 return 40
@@ -51,7 +51,7 @@ class ExplorationRetrieval(ActivityRetrieval):
         def chance(self):
             if self == self.language:
                 return 50
-            if self == self.language:
+            if self == self.item:
                 return 33
             if self == self.wing_damage:
                 return 5
@@ -89,15 +89,14 @@ class ExplorationRetrieval(ActivityRetrieval):
                 bonus_messages[self.Bonus.language] = f"{pigeon.gender.get_pronoun().title()} even picked up some of the local language!"
 
         if self.Bonus.item in self.bonuses:
-            items = list(Item.select().where(Item.explorable == True))
-            if len(items) > 0:
-                self.item = random.choices(items, weights = [x.rarity.weight for x in items], k = 1)[0]
-                embed.set_thumbnail(url = self.item.image_url)
-                lines = []
-                lines.append(f"On the way {pigeon.gender.get_pronoun()} also found **{self.item.name}**")
-                if self.item.usable:
-                    lines.append(f"*{self.item.description}*")
-                bonus_messages[self.Bonus.item] = "\n".join(lines)
+            self.item = Item.get_random()
+
+            embed.set_thumbnail(url = self.item.image_url)
+            lines = []
+            lines.append(f"On the way {pigeon.gender.get_pronoun()} also found **{self.item.name}**")
+            if self.item.usable:
+                lines.append(f"*{self.item.description}*")
+            bonus_messages[self.Bonus.item] = "\n".join(lines)
         if self.Bonus.tenth in self.bonuses:
             bonus_messages[self.Bonus.tenth] = f"Since this is your **{self.exploration.pigeon.explorations.count()}th** exploration, you get a bonus!"
         if self.Bonus.hundredth in self.bonuses:
