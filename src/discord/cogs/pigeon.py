@@ -119,24 +119,29 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @pigeon.command(name = "buy")
     @commands.max_concurrency(1, per = commands.BucketType.user)
-    async def pigeon_buy(self, ctx):
+    async def pigeon_buy(self, ctx, member : discord.Member = None):
         """Buy a pigeon."""
-
-        pigeon = get_active_pigeon(ctx.author)
+        member = member or ctx.author
+        human = ctx.get_human(user = member)
+        pigeon = get_active_pigeon(member, human = human)
 
         if pigeon is not None:
             return asyncio.gather(ctx.send(ctx.translate("pigeon_already_purchased").format(name = pigeon.name)))
 
-        pigeon = Pigeon(human = ctx.human)
+        pigeon = Pigeon(human = human)
         await pigeon.editor_for(ctx, "name")
         pigeon.save()
 
         cost = 50
-        pigeon.human.gold -= cost
-        pigeon.human.save()
+        ctx.human.gold -= cost
+        ctx.human.save()
 
         embed = self.get_base_embed(ctx.guild)
-        embed.description = ctx.translate("pigeon_purchased") + "\n" + get_winnings_value(gold = -cost)
+        winnings_value = "\n"+(get_winnings_value(gold = -cost))
+        if member.id != ctx.author.id:
+            embed.description = ctx.translate("pigeon_purchased_for").format(member = member) + winnings_value
+        else:
+            embed.description = ctx.translate("pigeon_purchased") + winnings_value
         asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "languages", aliases = ["lang"])
@@ -363,10 +368,13 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
         if isinstance(activity, Exploration):
             if activity.end_date_passed:
-                retrieval = ExplorationRetrieval(activity)
-                embed = retrieval.embed
-                retrieval.commit()
-                return asyncio.gather(ctx.send(embed = embed))
+                def run():
+                    retrieval = ExplorationRetrieval(activity)
+                    embed = retrieval.embed
+                    retrieval.commit()
+                    return asyncio.gather(ctx.send(embed = embed))
+                ctx.bot.profile(run)
+                return
             else:
                 embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to explore!"
                 embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
@@ -522,7 +530,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         embed.add_field(name = f"Mails {Pigeon.Status.mailing.value}", value = "\n".join(lines), inline = False)
 
         query = f"""
-            SELECT (gold_won-gold_lost) as profit, fights_won, fights_lost FROM
+            SELECT gold_won, -gold_lost, fights_won, fights_lost FROM
             (SELECT SUM(bet) as gold_won, count(*) as fights_won
             FROM fight
             WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
@@ -537,7 +545,8 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         """
 
         cursor = database.execute_sql(query)
-        profit, fights_won, fights_lost = cursor.fetchone()
+        gold_won, gold_lost, fights_won, fights_lost = cursor.fetchone()
+        profit = gold_won + gold_lost
 
         lines = []
         lines.append(f"Total fights won : {fights_won}")
