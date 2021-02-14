@@ -122,7 +122,12 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     async def pigeon_buy(self, ctx, member : discord.Member = None):
         """Buy a pigeon."""
         member = member or ctx.author
-        human = ctx.get_human(user = member)
+        gift = member.id != ctx.author.id
+        if gift:
+            human = ctx.get_human(user = member)
+        else:
+            human = ctx.human
+
         pigeon = get_active_pigeon(member, human = human)
 
         if pigeon is not None:
@@ -138,7 +143,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
         embed = self.get_base_embed(ctx.guild)
         winnings_value = "\n"+(get_winnings_value(gold = -cost))
-        if member.id != ctx.author.id:
+        if gift:
             embed.description = ctx.translate("pigeon_purchased_for").format(member = member) + winnings_value
         else:
             embed.description = ctx.translate("pigeon_purchased") + winnings_value
