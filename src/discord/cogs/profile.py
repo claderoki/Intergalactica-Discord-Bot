@@ -317,7 +317,6 @@ class Profile(BaseCog):
             stat = {"big_bath": "cleanliness", "big_snack": "food", "big_toy": "happiness"}[item.code]
             data = {stat: 100}
             pigeon.update_stats(data, increment = False)
-            # setattr(pigeon, stat, 100)
             pigeon.save()
         elif item.code == "milky_way":
             return await self.bot.get_command("milkyway create")(ctx)
