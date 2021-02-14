@@ -3,6 +3,8 @@ import random
 import io
 import datetime
 from discord.ext.commands.errors import NotOwner
+import cProfile
+import pstats
 
 import requests
 import praw
@@ -234,6 +236,12 @@ class Locus(commands.Bot):
             if human.gold < gold:
                 raise SendableException(ctx.translate(f"{name}_not_enough_gold"))
         return wrapper
+
+    def profile(self, callback):
+        profile = cProfile.Profile()
+        profile.runcall(callback)
+        stats = pstats.Stats(profile).sort_stats(pstats.SortKey.CUMULATIVE)
+        stats.print_stats(50)
 
     def get_human(self, ctx = None, user = None):
         user = user or ctx.author
