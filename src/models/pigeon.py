@@ -200,6 +200,23 @@ class PigeonRelationship(BaseModel):
         return "Hmm"
 
     @classmethod
+    def select_for(cls, pigeon, active = True):
+        query = cls.select()
+        if active:
+            p1 = Pigeon.alias("p1")
+            p2 = Pigeon.alias("p2")
+            query = query.join(p1, on = cls.pigeon1)
+            query = query.switch(cls)
+            query = query.join(p2, on = cls.pigeon2)
+        query = query.where((cls.pigeon1 == pigeon) | (cls.pigeon2 == pigeon))
+        query = query.where(cls.score < -15)
+        if active:
+            query = query.where(p1.condition == Pigeon.Condition.active)
+            query = query.where(p2.condition == Pigeon.Condition.active)
+        query = query.order_by(cls.score.asc())
+        return query
+
+    @classmethod
     def get_or_create_for(cls, pigeon1, pigeon2):
         query = cls.select()
         query = query.where( (cls.pigeon1 == pigeon1) | (cls.pigeon1 == pigeon2))
