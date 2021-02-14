@@ -639,10 +639,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
             ctx.command.reset_cooldown(ctx)
             raise
 
-        pigeon.human.gold  -= cost
-        setattr(pigeon, attr_name, value+attr_increase )
-        pigeon.human.save()
-        pigeon.save()
+        pigeon.update_stats({attr_name : attr_increase, "gold": -cost})
 
         embed = self.get_base_embed(ctx.guild )
         embed.description = message.format(pigeon = pigeon)
