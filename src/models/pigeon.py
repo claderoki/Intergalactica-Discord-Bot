@@ -107,7 +107,7 @@ class Pigeon(BaseModel):
         if create_system_message:
             SystemMessage.create(text = self.bot.translate("buff_assigned").format(buff = buff))
 
-    def update_stats(self, data, increment = True):
+    def update_stats(self, data, increment = True, save = True):
         for key, value in data.items():
             if key == "gold":
                 self.human.gold += value
