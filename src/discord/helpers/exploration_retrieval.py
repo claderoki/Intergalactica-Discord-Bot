@@ -20,6 +20,7 @@ class ActivityRetrieval:
         return embed
 
 class ExplorationRetrieval(ActivityRetrieval):
+
     class Bonus(Enum):
         language    = 1
         item        = 2
@@ -102,10 +103,7 @@ class ExplorationRetrieval(ActivityRetrieval):
         if self.Bonus.hundredth in self.bonuses:
             bonus_messages[self.Bonus.hundredth] = f"Since this is your **{self.exploration.pigeon.explorations.count()}th** exploration, you get a bonus!"
         if self.Bonus.wing_damage in self.bonuses:
-            query = PigeonRelationship.select()
-            query = query.where((PigeonRelationship.pigeon1 == pigeon) | (PigeonRelationship.pigeon2 == pigeon))
-            query = query.where(PigeonRelationship.score < -15)
-            query = query.order_by(PigeonRelationship.score.asc())
+            query = PigeonRelationship.select_for(pigeon)
             relationship = query.first()
             attacker_name = "a random pigeon"
             if relationship is not None:
