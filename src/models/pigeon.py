@@ -105,7 +105,10 @@ class Pigeon(BaseModel):
         pigeon_buff.due_date = datetime.datetime.utcnow() + buff.duration
         pigeon_buff.save()
         if create_system_message:
-            SystemMessage.create(text = self.bot.translate("buff_assigned").format(buff = buff))
+            SystemMessage.create(
+                text = self.bot.translate("buff_assigned").format(buff = buff),
+                human = self.human
+            )
 
     def update_stats(self, data, increment = True, save = True):
         for key, value in data.items():
