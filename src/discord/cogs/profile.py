@@ -365,14 +365,21 @@ class Profile(BaseCog):
 
     @item.command(name = "list")
     async def item_list(self, ctx):
-        items = list(Item)
-        items.sort(key = lambda x : x.rarity.value, reverse = True)
+        items = Item.select().order_by(Item.chance.desc())
 
         table = pretty.Table()
         table.add_row(pretty.Row(("name", "rarity"), header = True))
         for item in items:
             table.add_row(pretty.Row((item.name, item.rarity.name)))
         await table.to_paginator(ctx, 15).wait()
+
+    @item.command(name = "usable")
+    async def item_usable(self, ctx):
+        items = Item.select().where(Item.usable == True)
+        embed = discord.Embed(title = "Usable items", color = ctx.guild_color)
+        for item in items:
+            embed.add_field(name = item.name, value = item.description, inline = False)
+        await ctx.send(embed = embed)
 
     @commands.command()
     async def inventory(self, ctx, member : discord.Member = None):
