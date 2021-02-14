@@ -96,7 +96,7 @@ class Pigeon(BaseModel):
 
     def study_language(self, language, mastery = 1):
         language, _ = LanguageMastery.get_or_create(pigeon = self, language = language)
-        language.mastery += 1
+        language.mastery += mastery
         language.save()
 
     def create_buff(self, code, create_system_message = True):
@@ -129,8 +129,9 @@ class Pigeon(BaseModel):
                         self.condition = self.Condition.dead
                         SystemMessage.create(text = self.bot.translate("pigeon_dead"), human = self.human)
         try:
-            self.save()
-            self.human.save()
+            if save:
+                self.save()
+                self.human.save()
         except ValueError:
             pass
 
