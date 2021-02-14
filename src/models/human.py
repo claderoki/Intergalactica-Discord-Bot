@@ -180,7 +180,6 @@ class Human(BaseModel):
 
         return {"name" : name, "value" : sep.join(values), "inline" : True}
 
-
 class Item(BaseModel):
     class Rarity(Enum):
         junk      = 1
