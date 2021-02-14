@@ -113,7 +113,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
             await ctx.send(embed = message.embed)
             message.read = True
             message.save()
-            return
+            # return
 
         self.pigeon_check(ctx, human = ctx.human)
 
