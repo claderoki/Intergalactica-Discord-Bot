@@ -527,13 +527,13 @@ class PigeonCog(BaseCog, name = "Pigeon"):
             FROM fight
             WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
             AND ( (pigeon1_id = {pigeon.id} AND won = 1) OR (pigeon2_id = {pigeon.id} AND won = 0))
-            ),
+            ) as f1,
 
             (SELECT SUM(bet) as gold_lost, count(*) as fights_lost
             FROM fight
             WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
             AND ( (pigeon1_id = {pigeon.id} AND won = 0) OR (pigeon2_id = {pigeon.id} AND won = 1))
-            );
+            ) as f2;
         """
 
         cursor = database.execute_sql(query)
