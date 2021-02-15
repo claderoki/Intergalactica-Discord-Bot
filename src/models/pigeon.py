@@ -120,9 +120,9 @@ class Pigeon(BaseModel):
                 else:
                     setattr(self, key, value)
 
-                new_value = getattr(self, key)
-                if key == "food" and new_value >= 100:
-                    self.create_buff("fully_fed")
+                # new_value = getattr(self, key)
+                # if key == "food" and new_value >= 100:
+                    # self.create_buff("fully_fed")
 
                 if key == "health":
                     if self.health <= 0:
