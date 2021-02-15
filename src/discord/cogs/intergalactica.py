@@ -159,7 +159,28 @@ class Intergalactica(BaseCog):
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild, user):
-        print(guild, user)
+        if guild.id != self.guild_id:
+            return
+
+        found = False
+        async for entry in guild.audit_logs(action=discord.AuditLogAction.ban):
+            if entry.target.id == user.id:
+                found = True
+                break
+        if not found:
+            entry = None
+
+        channel = guild.get_channel(744668640309280840)
+        embed = discord.Embed(color = discord.Color.red())
+        embed.title = "ban"
+        lines = []
+        lines.append(f"**Offender:** {user} {user.mention}")
+        if found:
+            lines.append(f"**Reason:** {entry.reason}")
+            lines.append(f"**Responsible moderator:** {entry.user}")
+
+        embed.description = "\n".join(lines)
+        await channel.send(embed = embed)
 
     @classmethod
     def member_is_new(cls, member):
