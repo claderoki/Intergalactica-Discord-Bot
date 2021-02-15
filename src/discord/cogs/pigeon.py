@@ -373,13 +373,10 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
         if isinstance(activity, Exploration):
             if activity.end_date_passed:
-                def run():
-                    retrieval = ExplorationRetrieval(activity)
-                    embed = retrieval.embed
-                    retrieval.commit()
-                    return asyncio.gather(ctx.send(embed = embed))
-                ctx.bot.profile(run)
-                return
+                retrieval = ExplorationRetrieval(activity)
+                embed = retrieval.embed
+                retrieval.commit()
+                return asyncio.gather(ctx.send(embed = embed))
             else:
                 embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to explore!"
                 embed.set_footer(text = "Check back at", icon_url = "https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
