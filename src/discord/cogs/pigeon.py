@@ -532,7 +532,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         embed.add_field(name = f"Mails {Pigeon.Status.mailing.value}", value = "\n".join(lines), inline = False)
 
         query = f"""
-            SELECT gold_won, -gold_lost, fights_won, fights_lost FROM
+            SELECT COALESCE(gold_won, 0), COALESCE(-gold_lost, 0), COALESCE(fights_won, 0), COALESCE(fights_lost, 0) FROM
             (SELECT SUM(bet) as gold_won, count(*) as fights_won
             FROM fight
             WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
@@ -550,16 +550,48 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         gold_won, gold_lost, fights_won, fights_lost = cursor.fetchone()
         profit = gold_won + gold_lost
 
+
         lines = []
         lines.append(f"Total fights won : {fights_won}")
         lines.append(f"Total fights lost: {fights_lost}")
         lines.append(f"Profit: {profit}")
         embed.add_field(name = f"Fights {Pigeon.Status.fighting.value}", value = "\n".join(lines), inline = False)
 
-        in_possession = HumanItem.select().where(HumanItem.human == pigeon.human).where(HumanItem.amount > 0).count()
-        total_items = Item.select().count()
+        query = f"""
+            SELECT total_dates, rejections FROM
+
+            (SELECT count(*) as total_dates
+            FROM date
+            WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
+            AND accepted = 1
+            ) as d1,
+
+            (SELECT count(*) as rejections
+            FROM date
+            WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
+            AND (pigeon2_id = {pigeon.id} AND accepted = 0)
+            ) as d2;
+        """
+
+        cursor = database.execute_sql(query)
+        total_dates, rejections = cursor.fetchone()
+
         lines = []
-        lines.append(f"Items {in_possession} / {total_items}")
+        lines.append(f"Total dates: {total_dates}")
+        lines.append(f"Rejections: {rejections}")
+        embed.add_field(name = f"Dates {Pigeon.Status.dating.value}", value = "\n".join(lines), inline = False)
+
+        query = f"""SELECT in_possession, items_discovered, total_items FROM
+            (SELECT COUNT(id) as items_discovered FROM human_item WHERE found = 1 AND human_id = {pigeon.human.id}) as hi1,
+            (SELECT SUM(amount) AS in_possession FROM human_item WHERE human_id = {pigeon.human.id}) as hi2,
+            (SELECT COUNT(id) AS total_items FROM item) as i1"""
+
+        cursor = database.execute_sql(query)
+        in_possession, items_discovered, total_items = cursor.fetchone()
+        lines = []
+        lines.append(f"Items discovered {items_discovered} / {total_items}")
+        lines.append(f"Total items {in_possession}")
+
         embed.add_field(name = f"Human", value = "\n".join(lines), inline = False)
 
         asyncio.gather(ctx.send(embed = embed))
