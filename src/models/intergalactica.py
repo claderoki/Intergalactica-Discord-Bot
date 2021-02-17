@@ -6,7 +6,7 @@ import random
 import peewee
 import discord
 
-from .base import BaseModel, EnumField
+from .base import BaseModel, EnumField, EmojiField
 from .human import Human
 import src.config as config
 
@@ -21,8 +21,8 @@ class TemporaryChannel(BaseModel):
         mini   = 1
 
     guild_id            = peewee.BigIntegerField (null = False)
-    name                = peewee.TextField       (null = False)
-    topic               = peewee.TextField       (null = False)
+    name                = EmojiField             (null = False)
+    topic               = EmojiField             (null = False)
     channel_id          = peewee.BigIntegerField (null = True)
     user_id             = peewee.BigIntegerField (null = False)
     expiry_date         = peewee.DateTimeField   (null = True)
