@@ -10,6 +10,49 @@ from .base import BaseModel, EnumField, EmojiField
 from .human import Human
 import src.config as config
 
+class MentionGroup(BaseModel):
+    name     = peewee.CharField       (null = False)
+    guild_id = peewee.BigIntegerField (null = False)
+
+    def join(self, user, is_owner = True):
+        return MentionMember.get_or_create(
+            user_id  = user.id,
+            group    = self,
+            is_owner = is_owner
+        )[1]
+
+    def leave(self, user):
+        query = MentionMember.delete()
+        query = query.where(MentionMember.user_id == user.id)
+        query = query.where(MentionMember.group == self)
+        return query.execute()
+
+    @property
+    def mention_string(self):
+        mentions = []
+        for mention_member in self.mention_members:
+            mentions.append(mention_member.mention)
+        return ", ".join(mentions)
+
+    @classmethod
+    async def convert(cls, ctx, argument):
+        return cls.get(name = argument, guild_id = ctx.guild.id)
+
+    class Meta:
+        indexes = (
+            (("guild_id", "name"), True),
+        )
+
+
+class MentionMember(BaseModel):
+    user_id  = peewee.BigIntegerField (null = False)
+    group    = peewee.ForeignKeyField (MentionGroup, null = False, backref = "mention_members")
+    is_owner = peewee.BooleanField    (null = False, default = False)
+
+    @property
+    def guild(self):
+        return self.group.guild
+
 class TemporaryChannel(BaseModel):
     class Status(Enum):
         pending  = 0

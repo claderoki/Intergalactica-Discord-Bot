@@ -11,13 +11,18 @@ from .admin import SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuesti
 from .prank import NicknamePrank, Prankster, EmojiPrank, RolePrank
 from .reddit import Subreddit
 from .qotd import Category, Question, CategoryChannel, QuestionConfig
+from .intergalactica import MentionGroup, MentionMember
 
 database = BaseModel._meta.database
 
 def setup():
     with database.connection_context():
+        # database.drop_tables([MentionGroup, MentionMember])
+        database.create_tables([MentionGroup, MentionMember])
+
         # database.drop_tables([Category, Question, CategoryChannel, QuestionConfig])
         database.create_tables([Category, Question, CategoryChannel, QuestionConfig])
+
         # database.drop_tables([Pigeon, PigeonRelationship, Buff, PigeonBuff, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
         database.create_tables([Pigeon, PigeonRelationship, Buff, PigeonBuff, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date])
 
