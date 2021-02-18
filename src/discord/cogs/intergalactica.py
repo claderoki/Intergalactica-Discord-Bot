@@ -379,7 +379,10 @@ class Intergalactica(BaseCog):
 
     @group.command(name = "mention")
     async def group_mention(self, ctx, group : MentionGroup):
-        await ctx.send(group.mention_string)
+        if group.is_member(ctx.author):
+            await ctx.send(group.mention_string)
+        else:
+            raise SendableException(ctx.translate("group_member_only_command"))
 
     @commands.command(name = "vcchannel")
     @is_intergalactica()

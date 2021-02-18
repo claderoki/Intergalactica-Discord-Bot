@@ -27,6 +27,14 @@ class MentionGroup(BaseModel):
         query = query.where(MentionMember.group == self)
         return query.execute()
 
+    def is_member(self, user):
+        try:
+            MentionMember.get(user_id = user.id, group = self)
+        except MentionMember.DoesNotExist:
+            return False
+        else:
+            return True
+
     @property
     def mention_string(self):
         mentions = []
