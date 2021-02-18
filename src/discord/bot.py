@@ -243,6 +243,26 @@ class Locus(commands.Bot):
         stats = pstats.Stats(profile).sort_stats(pstats.SortKey.CUMULATIVE)
         stats.print_stats(50)
 
+    def get_random_reddit_words(self, nsfw = False, max_words = 10,  min_length = 4, max_length = 10):
+        reddit = self.reddit
+
+        word_count = 0
+        while word_count < max_words:
+            sub = reddit.random_subreddit(nsfw = nsfw)
+
+            title_words = []
+            for post in sub.random_rising(limit = 3):
+                for word in post.title.split():
+                    title_words.append(word.lower())
+
+            random.shuffle(title_words)
+
+            for word in filter(lambda x : x.isalpha() and len(x) in range(min_length, max_length), title_words):
+                yield word.lower()
+                word_count += 1
+                if word_count >= max_words:
+                    break
+
     def get_human(self, ctx = None, user = None):
         user = user or ctx.author
         if isinstance(user, int):
