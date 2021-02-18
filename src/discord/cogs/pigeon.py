@@ -428,7 +428,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         mail.residence   = sender.human.country
         mail.destination = recipient.country
         mail.end_date = mail.start_date + datetime.timedelta(minutes = mail.calculate_duration())
-        sender.human.gold -= mail.gold
+        sender.human.gold -= mail.gold or 0
         sender.status = Pigeon.Status.mailing
 
         mail.save()
