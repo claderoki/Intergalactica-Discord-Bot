@@ -114,7 +114,8 @@ class Personal(BaseCog):
 
         for reminder in query:
             if reminder.last_reminded != now.date():
-                asyncio.gather(reminder.user.send(reminder.text))
+                if reminder.user:
+                    asyncio.gather(reminder.user.send(reminder.text))
                 reminder.last_reminded = now.date()
                 reminder.save()
                 break
