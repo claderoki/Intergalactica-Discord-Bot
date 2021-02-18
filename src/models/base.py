@@ -69,6 +69,11 @@ class BaseModel(peewee.Model):
             elif on_skip == "raise":
                 raise
 
+    @property
+    def mention(self):
+        if hasattr(self, "user_id"):
+            return f"<@{self.user_id}>"
+
     @classmethod
     def get_random(cls):
         return cls.select().order_by(peewee.fn.Rand()).limit(1).first()
