@@ -407,7 +407,8 @@ class Intergalactica(BaseCog):
 
     @commands.group(aliases = ["milkyway", "orion"])
     async def temporary_channel(self, ctx):
-        pass
+        mini = ctx.invoked_with != "milkyway"
+        ctx.type = TemporaryChannel.Type.mini if mini else TemporaryChannel.Type.normal
 
     @commands.has_guild_permissions(administrator = True)
     @temporary_channel.command(name = "accept")
@@ -445,16 +446,11 @@ class Intergalactica(BaseCog):
         asyncio.gather(ctx.success())
 
     @temporary_channel.command(name = "create")
-    async def temporary_channel_create(self, ctx, mini : bool = None):
-        if mini is None:
-            mini = ctx.invoked_with != "milkyway"
-
-        type = TemporaryChannel.Type.mini if mini else TemporaryChannel.Type.normal
-
+    async def temporary_channel_create(self, ctx):
         temp_channel = TemporaryChannel(
             guild_id = ctx.guild.id,
             user_id  = ctx.author.id,
-            type     = type
+            type     = ctx.type
         )
 
         human_item   = self.get_human_item(ctx.author, code = temp_channel.item_code)
@@ -493,13 +489,11 @@ class Intergalactica(BaseCog):
         else:
             items_to_use = 1
 
-        temp_channel.set_expiry_date(
-            datetime.timedelta(days = temp_channel.days * items_to_use ))
+        temp_channel.set_expiry_date(datetime.timedelta(days = temp_channel.days * items_to_use))
         asyncio.gather(temp_channel.update_channel_topic())
         human_item.amount -= items_to_use
         human_item.save()
         temp_channel.save()
-
         await ctx.send(f"Okay. This channel has been extended until `{temp_channel.expiry_date}`")
 
     @commands.Cog.listener()
