@@ -13,7 +13,7 @@ from dateutil.relativedelta import relativedelta
 from src.discord.errors.base import SendableException
 from src.discord.helpers.utility import get_context_embed
 from src.discord.helpers.embed import Embed
-from src.models import Poll, PollTemplate, Option, Reminder, Settings, Item, Human, Earthling, TemporaryVoiceChannel, TemporaryChannel, HumanItem, RedditAdvertisement, database
+from src.models import Reminder, MentionGroup, MentionMember, Item, Human, Earthling, TemporaryVoiceChannel, TemporaryChannel, HumanItem, RedditAdvertisement, database
 from src.discord.helpers.waiters import IntWaiter
 import src.discord.helpers.pretty as pretty
 from src.discord.cogs.core import BaseCog
@@ -345,6 +345,41 @@ class Intergalactica(BaseCog):
                 await self.welcome_messages[member.id].delete()
             except:
                 pass
+
+    @commands.group(name = "group")
+    async def group(self, ctx):
+        pass
+
+    @group.command(name = "create")
+    async def group_create(self, ctx):
+        group = MentionGroup(guild_id = ctx.guild.id)
+        await group.editor_for(ctx, "name")
+        group.name = group.name.lower()
+
+        try:
+            group.save()
+        except:
+            raise SendableException(ctx.translate("group_already_exists"))
+        else:
+            group.join(ctx.author, is_owner = True)
+            await ctx.send(ctx.translate("group_created"))
+
+    @group.command(name = "join")
+    async def group_join(self, ctx, group : MentionGroup):
+        created = group.join(ctx.author)
+        if created:
+            await ctx.send(ctx.translate("group_joined"))
+        else:
+            await ctx.send(ctx.translate("group_already_joined"))
+
+    @group.command(name = "leave")
+    async def group_leave(self, ctx, group : MentionGroup):
+        group.leave(ctx.author)
+        await ctx.send("group_left")
+
+    @group.command(name = "mention")
+    async def group_mention(self, ctx, group : MentionGroup):
+        await ctx.send(group.mention_string)
 
     @commands.command(name = "vcchannel")
     @is_intergalactica()
