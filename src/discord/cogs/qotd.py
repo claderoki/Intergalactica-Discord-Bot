@@ -78,7 +78,7 @@ class QotdCog(BaseCog, name = "Question of the day"):
         category = await self.category_selection(ctx, skippable = True)
         waiter = TextChannelWaiter(ctx, prompt = ctx.translate("category_channel_channel_prompt"))
         channel = await waiter.wait()
-        category_channel, created = CategoryChannel.get_or_create(guild_id = ctx.guild.id, category = category, channel_id = channel.id)
+        CategoryChannel.get_or_create(guild_id = ctx.guild.id, category = category, channel_id = channel.id)
         await ctx.success(ctx.translate("success"))
 
     @category_group.command(name = "create")
@@ -105,7 +105,7 @@ class QotdCog(BaseCog, name = "Question of the day"):
                 if question is None:
                     continue
 
-                question_config, created = QuestionConfig.get_or_create(question = question, category_channel = category_channel)
+                question_config, _ = QuestionConfig.get_or_create(question = question, category_channel = category_channel)
                 question_config.asked = True
                 question_config.save()
                 category_channel.last_day = datetime.datetime.utcnow().date()
