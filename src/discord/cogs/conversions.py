@@ -4,6 +4,7 @@ import datetime
 import pytz
 
 import discord
+from discord.ext import commands
 from currency_converter import CurrencyConverter
 import pycountry
 from measurement.utils import guess
@@ -180,7 +181,7 @@ class ConversionCog(BaseCog, name = "Conversion"):
 
         return cleaned_matches
 
-    @discord.ext.commands.Cog.listener()
+    @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot or "http" in message.content:
             return
