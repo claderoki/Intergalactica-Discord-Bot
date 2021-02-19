@@ -13,9 +13,9 @@ class Zalgo:
     }
 
     def __init__(self, accents_up = (1, 3), accents_down = (1, 3) , accents_middle = (1, 2), max_accents_per_letter = 3):
-        self.accents_up = accents_up
-        self.accents_down = accents_down
-        self.accents_middle = accents_middle
+        self.accents_up             = accents_up
+        self.accents_down           = accents_down
+        self.accents_middle         = accents_middle
         self.max_accents_per_letter = max_accents_per_letter
 
     def zalgofy(self, text):
