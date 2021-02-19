@@ -90,6 +90,21 @@ class Prank(BaseCog):
 
         await table.to_paginator(ctx, 15).wait()
 
+    @prank.command(name = "random")
+    async def prank_random(self, ctx):
+        from src.wrappers.zalgo import Zalgo
+        generator = self.bot.get_random_reddit_words(nsfw = False, max_words = 10)
+        words = [Zalgo.zalgofy(x) for x in generator]
+        possible_combinations = []
+
+        total_length = 0
+        max_length = 32
+        for word in words:
+            pass
+
+
+        await ctx.send(" ".join(words))
+
     @prank.command(name = "stats")
     async def prank_stats(self, ctx, member : discord.Member = None):
         member = member or ctx.author
