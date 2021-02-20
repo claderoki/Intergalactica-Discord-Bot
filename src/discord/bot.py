@@ -182,7 +182,7 @@ class Locus(commands.Bot):
             "giveaway",
         ]
 
-        if True:
+        if False:
             cogs.append("personal")
         if True:
             cogs.append("intergalactica")
