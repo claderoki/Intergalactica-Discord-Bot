@@ -26,5 +26,6 @@ class WeatherInfo:
             "Fog"          : "🌫️",
             "Smoke"        : "💨",
             "Drizzle"      : "🌧",
-            "Mist"         : "🌫️"
+            "Mist"         : "🌫️",
+            "Haze"         : "🌫️"
         }.get(self.main, self.main)
