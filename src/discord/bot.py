@@ -315,6 +315,9 @@ class Locus(commands.Bot):
         elif isinstance(exception, self.ignorables):
             pass
         else:
+            if exception != error:
+                await self.owner.send(f"```\n{exception}```")
+            await self.owner.send(f"```\n{error}```")
             raise error
 
     @property
