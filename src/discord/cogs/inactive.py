@@ -47,6 +47,7 @@ class Inactive(BaseCog):
 
     @commands.has_guild_permissions(administrator = True)
     @commands.command()
+    @commands.guild_only()
     async def inactives(self, ctx):
         embed = discord.Embed(title = "Inactives", color = ctx.guild_color )
         lines = []

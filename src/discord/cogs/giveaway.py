@@ -20,6 +20,7 @@ class GiveawayCog(BaseCog, name = "Giveaway"):
     async def on_ready(self):
         self.start_task(self.poller, check = self.bot.production)
 
+    @commands.guild_only()
     @commands.group(name = "giveaway")
     async def giveaway_group(self, ctx):
         pass

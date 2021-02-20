@@ -346,6 +346,7 @@ class Intergalactica(BaseCog):
             except:
                 pass
 
+    @commands.guild_only()
     @commands.group(name = "group")
     async def group(self, ctx):
         pass
