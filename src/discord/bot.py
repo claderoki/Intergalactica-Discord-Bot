@@ -88,6 +88,9 @@ class Locus(commands.Bot):
         self.before_invoke(self.before_any_command)
         self.after_invoke(self.after_any_command)
 
+    async def create_invite_for(self, guild):
+        for channel in guild.text_channels:
+            return await channel.create_invite()
     def print_info(self):
         print("--------------------")
         print(f"Mode={self.mode.name}")
