@@ -1,10 +1,11 @@
 import asyncio
 import datetime
+import random
 
-import emoji
 import discord
 from discord.ext import commands, tasks
 
+from src.wrappers.zalgo import Zalgo
 import src.config as config
 from src.models import Human, Prankster, NicknamePrank, HumanItem, Item, EmojiPrank, RolePrank, database
 from src.discord.errors.base import SendableException
@@ -19,6 +20,36 @@ class Prank(BaseCog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.start_task(self.prank_poller, check = self.bot.production)
+
+    def get_random_words(self, zalgo = True):
+        generator = self.bot.get_random_reddit_words(
+            nsfw       = False,
+            max_words  = 10,
+            max_length = 5
+        )
+        if zalgo:
+            words = [Zalgo().zalgofy(x) for x in generator]
+        else:
+            words = list(generator)
+
+        possible_combinations = []
+
+        max_length = 32
+        current_combination = None
+        for word1 in words:
+            if current_combination is not None:
+                if current_combination not in possible_combinations:
+                    possible_combinations.append(current_combination)
+
+            current_combination = []
+            if len(word1) <= max_length:
+                current_combination.append(word1)
+            for word2 in words:
+                if word1 != word2:
+                    if sum([len(x) for x in current_combination])+len(word2) <= max_length:
+                        current_combination.append(word2)
+
+        return random.choice(possible_combinations)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -89,21 +120,6 @@ class Prank(BaseCog):
         table.sort(1, int)
 
         await table.to_paginator(ctx, 15).wait()
-
-    @prank.command(name = "random")
-    async def prank_random(self, ctx):
-        from src.wrappers.zalgo import Zalgo
-        generator = self.bot.get_random_reddit_words(nsfw = False, max_words = 10)
-        words = [Zalgo.zalgofy(x) for x in generator]
-        possible_combinations = []
-
-        total_length = 0
-        max_length = 32
-        for word in words:
-            pass
-
-
-        await ctx.send(" ".join(words))
 
     @prank.command(name = "stats")
     async def prank_stats(self, ctx, member : discord.Member = None):
