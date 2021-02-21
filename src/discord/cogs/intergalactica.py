@@ -514,8 +514,10 @@ class Intergalactica(BaseCog):
 
         if role == self.role_needed_for_selfie_vote:
             if member.guild.get_role(self._role_ids["selfies"]) not in member.roles:
-                channel = self.get_channel("staff_votes")
-                # asyncio.gather(channel.send(f"Should {member} get selfie access?"))
+                time_here = relativedelta(datetime.datetime.utcnow(), member.joined_at)
+                if time_here.hours >= 12:
+                    channel = self.get_channel("staff_votes")
+                    asyncio.gather(channel.send(f"Should {member} get selfie access?"))
                 asyncio.gather(self.log("bot_commands", f"**{member}** {member.mention} has achieved the rank needed for selfies ({role.name})."))
 
     @commands.Cog.listener()
