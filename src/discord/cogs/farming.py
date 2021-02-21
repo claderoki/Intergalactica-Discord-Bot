@@ -1,6 +1,7 @@
 import random
 import asyncio
 import datetime
+import os
 
 import requests
 import discord
@@ -41,17 +42,18 @@ class FarmingCog(BaseCog, name = "Farming"):
 
         stage = farm_crop.current_stage
         crop_path = farm_crop.crop.get_stage_sprite_path(stage)
-
+        crop = farm_crop.crop
         embed = discord.Embed(color = discord.Color.green())
+        path = f"{config.path}/tmp/{crop.name.lower()}_stage_{stage}.png"
 
-        background = Image.open(f"{farm_crop.crop.root_path}/background.png")
-        crop = Image.open(crop_path)
+        if not os.path.exists(path):
+            background = Image.open(f"{crop.root_path}/background.png")
+            crop = Image.open(crop_path)
 
-        image = Image.new('RGBA',(background.size[0], background.size[1]))
-        image.paste(background,(0,0))
-        image.paste(crop,(0,0), crop.convert('RGBA'))
-        path = f"{config.path}/tmp/merged_crop_{ctx.author.id}.png"
-        image.save(path,"PNG")
+            image = Image.new('RGBA',(background.size[0], background.size[1]))
+            image.paste(background,(0,0))
+            image.paste(crop,(0,0), crop.convert('RGBA'))
+            image.save(path,"PNG")
 
         file = await self.bot.store_file(path, filename = "file.png")
         embed.set_image(url = file)
