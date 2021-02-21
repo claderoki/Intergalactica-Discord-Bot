@@ -2,6 +2,7 @@ import asyncio
 import random
 import io
 import datetime
+import os
 from discord.ext.commands.errors import NotOwner
 import cProfile
 import pstats
@@ -65,6 +66,9 @@ class Locus(commands.Bot):
         self.mode = mode
         self.production = mode == config.Mode.production
         self.heroku = False
+
+        if not os.path.exists(f"{config.path}/tmp"):
+            os.makedirs(f"{config.path}/tmp")
 
         if not self.production:
             prefix = "."
