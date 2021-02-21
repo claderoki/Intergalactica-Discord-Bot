@@ -12,6 +12,10 @@ import src.config as config
 
 class BaseModel(peewee.Model):
 
+    @classmethod
+    def pluck(cls, attr):
+        return tuple([getattr(x, attr) for x in cls.select(getattr(cls, attr))])
+
     def waiter_for(self, ctx, attr, **kwargs):
         cls = self.__class__
         field = getattr(cls, attr)

@@ -45,17 +45,31 @@ def convert_to_date(argument):
     return date
 
 class ArgumentNotInEnum(commands.errors.BadArgument): pass
+class ArgumentNotAvailable(commands.errors.BadArgument): pass
 
-class EnumConverter(commands.Converter):
-    def __init__(self, enum):
-        self.enum = enum
+class StringConverter(commands.Converter):
+    def __init__(self, available_words = None, lowercase = True):
+        self.available_words = []
+        self.lowercase = lowercase
+
+        if available_words is not None:
+            for word in available_words:
+                word = word.lower() if lowercase else word
+                self.available_words.append(word)
 
     async def convert(self, ctx, argument):
-        if hasattr(self.enum, argument):
-            return self.enum[argument]
-        else:
-            lines = "`, `".join(x.name for x in self.enum)
-            raise ArgumentNotInEnum(f"**{argument}** is not a valid argument. Valid arguments are:\n`{lines}`") from None
+        argument = argument.lower() if self.lowercase else argument
+        if argument in self.available_words:
+            return argument
+        raise ArgumentNotAvailable(f"**{argument}** is not a valid argument. Valid arguments are:\n`{self.available_words}`") from None
+
+class EnumConverter(StringConverter):
+    def __init__(self, enum):
+        super().__init__(available_words = [x.name for x in enum])
+
+    async def convert(self, ctx, argument):
+        converted = super().convert(ctx, argument)
+        return self.enum[converted]
 
 class CountryConverter(commands.Converter):
     @classmethod
