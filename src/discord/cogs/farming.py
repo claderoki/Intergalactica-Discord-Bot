@@ -65,6 +65,8 @@ class FarmingCog(BaseCog, name = "Farming"):
         farm_crop = self.get_farm_crop_query(ctx.farm, due = True)
         if farm_crop is not None:
             raise SendableException(ctx.translate("nothing_to_harvest"))
+        farm_crop.finished = True
+        farm_crop.save()
 
         await ctx.success(ctx.translate("crop_harvested").format(crop = farm_crop.crop))
 
