@@ -12,11 +12,15 @@ from .prank import NicknamePrank, Prankster, EmojiPrank, RolePrank
 from .reddit import Subreddit
 from .qotd import Category, Question, CategoryChannel, QuestionConfig
 from .intergalactica import MentionGroup, MentionMember
+from .farming import Farm, Crop, FarmCrop
 
 database = BaseModel._meta.database
 
 def setup():
     with database.connection_context():
+        # database.drop_tables([Farm, Crop, FarmCrop])
+        database.create_tables([Farm, Crop, FarmCrop])
+
         # database.drop_tables([MentionGroup, MentionMember])
         database.create_tables([MentionGroup, MentionMember])
 

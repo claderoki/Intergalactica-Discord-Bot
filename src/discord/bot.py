@@ -177,6 +177,7 @@ class Locus(commands.Bot):
             "poll",
             "games",
             "inactive",
+            "farming",
             "ticket",
             "reddit",
             "admin",
