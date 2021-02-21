@@ -104,7 +104,7 @@ class Locus(commands.Bot):
         embed = discord.Embed(color = self.get_dominant_color(None), **kwargs)
         return embed.set_author(name = user.name, icon_url = user.avatar_url)
 
-    async def store_file(self, file, filename = None) -> str:
+    async def store_file(self, file, filename = None, owner = False) -> str:
         """ This function stores a file in the designated storage channel, it returns the url of the newly stored image.
             <item> can be:
                 - a file (io.BytesIO)
@@ -115,7 +115,10 @@ class Locus(commands.Bot):
 
         filename = filename or "file"
 
-        storage_channel = (await self.application_info()).owner
+        if owner:
+            storage_channel = self.owner
+        else:
+            storage_channel = self.get_user(771781840012705792)
 
         data = {}
         if isinstance(file, io.BytesIO):
