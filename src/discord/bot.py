@@ -67,8 +67,7 @@ class Locus(commands.Bot):
         self.production = mode == config.Mode.production
         self.heroku = False
 
-        if not os.path.exists(f"{config.path}/tmp"):
-            os.makedirs(f"{config.path}/tmp")
+        os.makedirs(f"{config.path}/tmp", exist_ok = True)
 
         if not self.production:
             prefix = "."
