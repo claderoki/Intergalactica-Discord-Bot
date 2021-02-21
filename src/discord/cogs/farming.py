@@ -5,6 +5,7 @@ import datetime
 import requests
 import discord
 from discord.ext import commands
+from PIL import Image
 
 import src.config as config
 from src.discord.cogs.core import BaseCog
@@ -39,12 +40,21 @@ class FarmingCog(BaseCog, name = "Farming"):
             raise SendableException(ctx.translate("nothing_planted"))
 
         stage = farm_crop.current_stage
-        image_path = farm_crop.crop.get_stage_sprite_path(stage)
+        crop_path = farm_crop.crop.get_stage_sprite_path(stage)
 
         embed = discord.Embed(color = discord.Color.green())
 
-        image = await self.bot.store_file(image_path, filename = "file.png")
-        embed.set_image(url = image)
+        background = Image.open(f"{farm_crop.crop.root_path}/background.png")
+        crop = Image.open(crop_path)
+
+        image = Image.new('RGBA',(background.size[0], background.size[1]))
+        image.paste(background,(0,0))
+        image.paste(crop,(0,0), crop.convert('RGBA'))
+        path = f"{config.path}/tmp/merged_crop_{ctx.author.id}.png"
+        image.save(path,"PNG")
+
+        file = await self.bot.store_file(path, filename = "file.png")
+        embed.set_image(url = file)
         embed.set_footer(text = f"Stage {stage} / {Crop.max_stages}")
 
         await ctx.send(embed = embed)
