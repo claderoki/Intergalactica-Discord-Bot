@@ -317,7 +317,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
         for relationship in query:
             other = relationship.pigeon1 if relationship.pigeon1 != ctx.pigeon else relationship.pigeon2
-            values = [other.name, relationship.score, relationship.title]
+            values = [limit_str(other.name, 10), relationship.score, relationship.title]
             table.add_row(Row(values))
 
         await table.to_paginator(ctx, 15).wait()
