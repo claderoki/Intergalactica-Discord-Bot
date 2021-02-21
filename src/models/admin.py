@@ -11,6 +11,13 @@ class SavedEmoji(BaseModel):
     guild_id    = peewee.BigIntegerField  (null = False)
     emoji_id    = peewee.BigIntegerField  (null = False)
 
+    def delete_instance(self, *args, **kwargs):
+        emoji = self.bot.get_emoji(self.emoji_id)
+        if emoji is not None:
+            asyncio.gather(emoji.delete())
+        super().delete_instance(*args, **kwargs)
+
+
 class BotIdea(BaseModel):
     user_id    = peewee.BigIntegerField (null = False)
     idea       = EmojiField             (null = False)
