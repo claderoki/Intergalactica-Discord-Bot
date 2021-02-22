@@ -114,7 +114,8 @@ class Management(BaseCog):
 
     @commands.is_owner()
     @commands.command()
-    async def blacklist(self, ctx):
+    async def cooldown(self, ctx, user : discord.User):
+        ctx.bot.cooldowned_users.append(user.id)
         await ctx.send("OK")
 
     @commands.is_owner()

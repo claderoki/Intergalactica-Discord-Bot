@@ -21,11 +21,10 @@ from src.discord.errors.base import SendableException
 from src.discord.helpers.embed import Embed
 
 def seconds_readable(seconds):
-    fmt = "{delta.days} days {delta.hours} hours {delta.minutes} minutes {delta.seconds} seconds"
     delta = relativedelta(seconds = seconds)
     normalize = lambda x : int(x) if x % 1 == 0 else round(x, 2)
     text = []
-    for attr in ('days','hours','minutes'):
+    for attr in ('days','hours','minutes', 'seconds'):
         value = getattr(delta, attr)
         if value:
             text.append(f"{normalize(value)}{attr[0]}")
@@ -36,6 +35,8 @@ class Locus(commands.Bot):
     _guild = None
     _locales = {}
     missing_translations = {}
+    cooldowns = {}
+    cooldowned_users = []
     owner = None
 
     sendables = (
@@ -302,6 +303,17 @@ class Locus(commands.Bot):
         ctx.raise_if_not_enough_gold = self.raise_if_not_enough_gold(ctx)
 
         ctx.guild_color = self.get_dominant_color(ctx.guild)
+
+        timeout = 60
+        if ctx.author.id in self.cooldowned_users:
+            if ctx.author.id not in self.cooldowns:
+                self.cooldowns[ctx.author.id] = datetime.datetime.utcnow()
+            else:
+                difference_in_seconds = (datetime.datetime.utcnow() - self.cooldowns[ctx.author.id]).seconds
+                if difference_in_seconds != 0 and difference_in_seconds < timeout:
+                    raise commands.errors.CommandOnCooldown(None, retry_after = (timeout - difference_in_seconds))
+                else:
+                    self.cooldowns[ctx.author.id] = datetime.datetime.utcnow()
 
     async def after_any_command(self, ctx):
         ctx.db.__exit__(None, None, None)
