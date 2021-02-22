@@ -113,7 +113,7 @@ class Management(BaseCog):
         quit()
 
     @commands.is_owner()
-    @commands.command()
+    @commands.command(aliases = ["daizy"])
     async def cooldown(self, ctx, user : discord.User):
         if user.id in ctx.bot.cooldowned_users:
             ctx.bot.cooldowned_users.remove(user.id)
