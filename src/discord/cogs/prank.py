@@ -132,7 +132,6 @@ class Prank(BaseCog):
         distinct_query = NicknamePrank.select(NicknamePrank.victim)
 
         wheres = []
-        wheres.append(NicknamePrank.finished == True)
         wheres.append(NicknamePrank.pranked_by == prankster)
 
         for where in wheres:
