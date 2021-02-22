@@ -311,13 +311,14 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     async def pigeon_relationships(self, ctx):
         query = PigeonRelationship.select()
         query = query.where((PigeonRelationship.pigeon1 == ctx.pigeon) | (PigeonRelationship.pigeon2 == ctx.pigeon))
+        query = query.order_by(PigeonRelationship.score.asc())
 
         table = Table(padding = 0)
-        table.add_row(Row(["name2", "score", "title"], header = True))
+        table.add_row(Row(["name", "score", "title"], header = True))
 
         for relationship in query:
             other = relationship.pigeon1 if relationship.pigeon1 != ctx.pigeon else relationship.pigeon2
-            values = [other.name, relationship.score, relationship.title]
+            values = [limit_str(other.name, 10), relationship.score, relationship.title]
             table.add_row(Row(values))
 
         await table.to_paginator(ctx, 15).wait()

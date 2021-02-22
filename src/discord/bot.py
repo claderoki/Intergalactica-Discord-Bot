@@ -2,6 +2,7 @@ import asyncio
 import random
 import io
 import datetime
+import os
 from discord.ext.commands.errors import NotOwner
 import cProfile
 import pstats
@@ -67,6 +68,8 @@ class Locus(commands.Bot):
         self.production = mode == config.Mode.production
         self.heroku = False
 
+        os.makedirs(f"{config.path}/tmp", exist_ok = True)
+
         if not self.production:
             prefix = "."
         else:
@@ -92,6 +95,7 @@ class Locus(commands.Bot):
     async def create_invite_for(self, guild):
         for channel in guild.text_channels:
             return await channel.create_invite()
+
     def print_info(self):
         print("--------------------")
         print(f"Mode={self.mode.name}")
@@ -277,6 +281,7 @@ class Locus(commands.Bot):
             user_id = user
         else:
             user_id = user.id
+        return Human.get_or_create(user_id = user_id)[0]
  
         if user_id not in self._human_cache:
             human, _ = Human.get_or_create(user_id = user_id)

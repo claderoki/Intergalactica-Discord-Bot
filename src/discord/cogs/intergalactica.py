@@ -161,6 +161,8 @@ class Intergalactica(BaseCog):
     async def on_member_ban(self, guild, user):
         if guild.id != self.guild_id:
             return
+        if not self.bot.production:
+            return
 
         found = False
         async for entry in guild.audit_logs(action=discord.AuditLogAction.ban):
