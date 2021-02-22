@@ -115,7 +115,10 @@ class Management(BaseCog):
     @commands.is_owner()
     @commands.command()
     async def cooldown(self, ctx, user : discord.User):
-        ctx.bot.cooldowned_users.append(user.id)
+        if user.id in ctx.bot.cooldowned_users:
+            ctx.bot.cooldowned_users.remove(user.id)
+        else:
+            ctx.bot.cooldowned_users.append(user.id)
         await ctx.send("OK")
 
     @commands.is_owner()
