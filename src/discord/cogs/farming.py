@@ -44,6 +44,7 @@ class FarmingCog(BaseCog, name = "Farming"):
         crop_path = farm_crop.crop.get_stage_sprite_path(stage)
         crop = farm_crop.crop
         embed = discord.Embed(color = discord.Color.green())
+        embed.title = f"{crop.name}"
         path = f"{config.path}/tmp/{crop.name.lower()}_stage_{stage}.png"
 
         if not os.path.exists(path):
@@ -53,7 +54,7 @@ class FarmingCog(BaseCog, name = "Farming"):
             image = Image.new('RGBA',(background.size[0], background.size[1]))
             image.paste(background,(0,0))
             image.paste(crop,(0,0), crop.convert('RGBA'))
-            image.save(path,"PNG")
+            image.save(path, "PNG")
 
         file = await self.bot.store_file(path, filename = "file.png")
         embed.set_image(url = file)
@@ -74,8 +75,8 @@ class FarmingCog(BaseCog, name = "Farming"):
 
     @farm.command(name = "harvest")
     async def farm_harvest(self, ctx):
-        farm_crop = self.get_farm_crop_query(ctx.farm, due = True)
-        if farm_crop is not None:
+        farm_crop = self.get_farm_crop_query(ctx.farm, due = True).first()
+        if farm_crop is None:
             raise SendableException(ctx.translate("nothing_to_harvest"))
         farm_crop.finished = True
         farm_crop.save()
