@@ -65,10 +65,11 @@ class StringConverter(commands.Converter):
 
 class EnumConverter(StringConverter):
     def __init__(self, enum):
+        self.enum = enum
         super().__init__(available_words = [x.name for x in enum])
 
     async def convert(self, ctx, argument):
-        converted = super().convert(ctx, argument)
+        converted = await super().convert(ctx, argument)
         return self.enum[converted]
 
 class CountryConverter(commands.Converter):
