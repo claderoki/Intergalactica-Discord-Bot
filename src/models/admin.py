@@ -17,11 +17,6 @@ class SavedEmoji(BaseModel):
             asyncio.gather(emoji.delete())
         super().delete_instance(*args, **kwargs)
 
-
-class BotIdea(BaseModel):
-    user_id    = peewee.BigIntegerField (null = False)
-    idea       = EmojiField             (null = False)
-
 class Giveaway(BaseModel):
     guild_id        = peewee.BigIntegerField  (null = False)
     channel_id      = peewee.BigIntegerField  (null = False)
