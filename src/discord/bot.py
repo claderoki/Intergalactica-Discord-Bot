@@ -32,13 +32,14 @@ def seconds_readable(seconds):
     return "".join(text)
 
 class Locus(commands.Bot):
-    _dominant_colors = {}
-    _guild = None
-    _locales = {}
+    _dominant_colors     = {}
+    _guild               = None
+    _locales             = {}
     missing_translations = {}
-    cooldowns = {}
-    cooldowned_users = []
-    owner = None
+    _cached_translations = {}
+    cooldowns            = {}
+    cooldowned_users     = []
+    owner                = None
 
     sendables = (
         commands.errors.BotMissingPermissions,
@@ -365,12 +366,25 @@ class Locus(commands.Bot):
             self.missing_translations[locale] = set()
         return self.missing_translations[locale]
 
+    def get_cached_translations(self, locale):
+        if locale not in self._cached_translations:
+            self._cached_translations[locale] = {}
+        print(self._cached_translations[locale])
+        return self._cached_translations[locale]
+
     def translate(self, key, locale = "en_US"):
         missing_translations = self.get_missing_translations(locale)
+        cached_translations = self.get_cached_translations(locale)
+
         try:
+            if key in cached_translations:
+                return cached_translations[key]
+
             translation = Translation.get(locale = locale, message_key = key)
             if key in missing_translations:
                 missing_translations.remove(key)
+
+            cached_translations[key] = translation.value
             return translation.value
         except Translation.DoesNotExist:
             missing_translations.add(key)
