@@ -7,91 +7,15 @@ import discord
 from discord.ext import commands
 
 import src.config as config
-from src.models import Settings, EmojiUsage, NamedEmbed, NamedChannel, Translation, Locale, database
+from src.models import Settings, NamedEmbed, NamedChannel, Translation, Locale, database
 from src.discord.helpers.waiters import *
 from src.discord.errors.base import SendableException
 from src.discord.cogs.core import BaseCog
-
-emoji_match = lambda x : [int(x) for x in re.findall(r'<a?:[a-zA-Z0-9\_]+:([0-9]+)>', x)]
-
-def increment_emoji(guild, emoji):
-    with database.connection_context():
-        usage, _ = EmojiUsage.get_or_create(guild_id = guild.id, emoji_id = emoji.id)
-        usage.total_uses += 1
-        usage.last_used = datetime.datetime.utcnow()
-        usage.save()
 
 class Management(BaseCog):
 
     def __init__(self, bot):
         super().__init__(bot)
-
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if not self.bot.production:
-            return
-
-        if message.author.bot:
-            return
-
-        ids = emoji_match(message.content)
-        for id in ids:
-            emoji = self.bot.get_emoji(id)
-            if message.guild and emoji in message.guild.emojis:
-                increment_emoji(message.guild, emoji)
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
-        if not self.bot.production:
-            return
-
-        emoji = payload.emoji
-        member = payload.member
-
-        if member is None or member.bot or emoji.id is None:
-            return
-
-        if emoji in member.guild.emojis:
-            increment_emoji(member.guild, emoji)
-
-    @commands.command()
-    @commands.guild_only()
-    async def emojis(self, ctx, order = "least", animated : bool = False):
-        query = EmojiUsage.select()
-        query = query.where(EmojiUsage.guild_id == ctx.guild.id)
-        if order == "least":
-            query = query.order_by(EmojiUsage.total_uses.asc())
-        else:
-            query = query.order_by(EmojiUsage.total_uses.desc())
-
-        emoji_usages = [x for x in query if x.emoji is not None and x.emoji.animated == animated]
-
-        emoji_ids = [x.emoji_id for x in emoji_usages]
-
-        for emoji in ctx.guild.emojis:
-            if emoji.id is not None:
-                if emoji.id not in emoji_ids:
-                    try:
-                        emoji_usages.append( EmojiUsage.create(guild_id = ctx.guild.id, emoji_id = emoji.id) )
-                    except: pass
-            else:
-                if emoji.id in emoji_ids:
-                    usage = EmojiUsage.get(emoji_id = emoji.id, guild_id = ctx.guild.id)
-                    usage.delete_instance()
-
-        embed = discord.Embed(color = ctx.guild_color )
-
-        lines = []
-
-        for usage in emoji_usages[:10]:
-            line = f"{usage.emoji} = {usage.total_uses}"
-            if order == "least":
-                lines.insert(0, line)
-            else:
-                lines.append(line)
-
-        embed.description = "\n".join(lines)
-        await ctx.send(embed = embed)
 
     @commands.has_guild_permissions(administrator = True)
     @commands.group()
