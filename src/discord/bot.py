@@ -369,7 +369,6 @@ class Locus(commands.Bot):
     def get_cached_translations(self, locale):
         if locale not in self._cached_translations:
             self._cached_translations[locale] = {}
-        print(self._cached_translations[locale])
         return self._cached_translations[locale]
 
     def translate(self, key, locale = "en_US"):
