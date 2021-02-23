@@ -50,9 +50,6 @@ def setup():
         # database.drop_tables([Settings, NamedEmbed, NamedChannel, Locale, Translation])
         database.create_tables([Settings, NamedEmbed, NamedChannel, Locale, Translation])
 
-        # database.drop_tables([EmojiUsage])
-        database.create_tables([EmojiUsage])
-
         # database.drop_tables([Ticket, Reply])
         database.create_tables([Ticket, Reply])
 
