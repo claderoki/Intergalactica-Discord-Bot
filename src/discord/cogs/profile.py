@@ -47,7 +47,7 @@ class Profile(BaseCog):
 
     @commands.command()
     async def parrot(self, ctx, *, text):
-        asyncio.gather(ctx.message.delete())
+        asyncio.gather(ctx.message.delete(), return_exceptions = False)
         with ctx.typing():
             cost = 10
 

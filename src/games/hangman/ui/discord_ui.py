@@ -51,7 +51,7 @@ class DiscordUI(UI):
             guess = None
 
         if self.mention_message is not None:
-            asyncio.gather(self.mention_message.delete())
+            asyncio.gather(self.mention_message.delete(), return_exceptions = False)
 
         return guess.content.lower() if guess is not None else None
 
