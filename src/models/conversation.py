@@ -30,8 +30,16 @@ class Conversation(BaseModel):
     end_time        = peewee.DateTimeField   (null = True)
     finished        = peewee.BooleanField    (null = False, default = False)
 
-    def get_other_conversant(self, current):
-         return self.conversant2 if self.conversant1 == current else self.conversant1
+    def get_other(self, current):
+        if isinstance(current, int):
+            return self.conversant2.user_id if self.conversant1.user_id == current else self.conversant1.user_id
+        elif isinstance(current, discord.User):
+            return self.conversant2.user if self.conversant1.user_id == current.id else self.conversant1.user
+        elif isinstance(current, Conversant):
+            return self.conversant2 if self.conversant1 == current else self.conversant1
+
+    def get_user_ids(self):
+        return (self.conversant1.user_id, self.conversant2.user_id)
 
     @classmethod
     def select_for(cls, conversant, finished = None):

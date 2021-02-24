@@ -47,32 +47,34 @@ def is_command(message):
     return False
 
 class ConversationsCog(BaseCog, name = "Conversations"):
+    cached_conversations = {}
+
     def __init__(self, bot):
         super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):
-        pass
+        query = Conversation.select().where(Conversation.finished == False)
+        for conversation in query:
+            self.cached_conversations[conversation.conversant1.user_id] = conversation
+            self.cached_conversations[conversation.conversant2.user_id] = conversation
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if len(self.cached_conversations) == 0:
+            return
         if self.bot.production:
             return
         if not isinstance(message.channel, discord.DMChannel):
             return
         if is_command(message):
             return
-
-        try:
-            conversant = Conversant.get(user_id = message.author.id)
-        except Conversant.DoesNotExist:
+        if message.author.id not in self.cached_conversations:
             return
 
-        conversation = Conversation.select_for(conversant, finished = False).first()
-
-        if conversation is not None:
-            other = conversation.get_other_conversant(conversant)
-            await other.user.send(message.content)
+        conversation = self.cached_conversations[message.author.id]
+        other = conversation.get_other(message.author)
+        await other.send(message.content)
 
     @commands.group()
     @commands.dm_only()
@@ -89,27 +91,25 @@ class ConversationsCog(BaseCog, name = "Conversations"):
 
     @conversation.command(name = "end")
     async def conversation_end(self, ctx):
-        conversant, _ = Conversant.get_or_create(user_id = ctx.author.id)
-        conversation = Conversation.select_for(conversant, finished = False).first()
-        if conversation is None:
+        if ctx.author.id not in self.cached_conversations:
             raise SendableException(ctx.translate("no_running_conversation"))
 
+        conversation = self.cached_conversations[ctx.author.id]
         conversation.end_time = datetime.datetime.utcnow()
         conversation.finished = True
         conversation.save()
 
-        other = conversation.get_other_conversant(conversant)
-        for user in (ctx.author, other.user):
+        for user_id in conversation.get_user_ids():
+            user = self.bot.get_user(user_id)
+            del self.cached_conversations[user.id]
             await user.send(ctx.translate("conversation_ended"))
 
     @conversation.command(name = "start")
     async def conversation_start(self, ctx):
-        conversant, _ = Conversant.get_or_create(user_id = ctx.author.id)
-
-        conversation = Conversation.select_for(conversant, finished = False).first()
-        if conversation is not None:
+        if ctx.author.id in self.cached_conversations:
             raise SendableException(ctx.translate("already_running_conversation"))
 
+        conversant, _ = Conversant.get_or_create(user_id = ctx.author.id)
         conversant.enabled = True
         conversant.save()
 
@@ -149,6 +149,8 @@ class ConversationsCog(BaseCog, name = "Conversations"):
             id = getattr(conversation, f"conversant{i}_key")
             embed.set_footer(text = f"Speaking to conversant with id '{id}'")
             await user.send(embed = embed)
+
+            self.cached_conversations[user.id] = conversation
             i += 1
 
 def setup(bot):
