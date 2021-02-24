@@ -14,7 +14,8 @@ class BaseModel(peewee.Model):
 
     @classmethod
     def pluck(cls, attr):
-        return tuple([getattr(x, attr) for x in cls.select(getattr(cls, attr))])
+        query = cls.select(getattr(cls, attr))
+        return tuple([getattr(x, attr) for x in query])
 
     def waiter_for(self, ctx, attr, **kwargs):
         cls = self.__class__
@@ -134,15 +135,27 @@ class BaseModel(peewee.Model):
         )
 
 class JsonField(peewee.TextField):
-
     def db_value(self, value):
         return json.dumps(value)
 
     def python_value(self, value):
         return json.loads(value)
 
-class LanguageField(peewee.TextField):
+class ArrayField(peewee.TextField):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
+    def db_value(self, value):
+        if value:
+            return ";".join(x for x in value if x is not None)
+
+    def python_value(self, value):
+        if value:
+            return [x for x in value.split(";")]
+        else:
+            return []
+
+class LanguageField(peewee.TextField):
     def db_value(self, value):
         if value is not None:
             return value.alpha_2
