@@ -86,6 +86,9 @@ class ConversationsCog(BaseCog, name = "Conversations"):
 
     @conversation.command(name = "reveal")
     async def conversation_reveal(self, ctx):
+        """Invite the other person to reveal eachother.
+           You'll need to have been in a conversation for at least 30 minutes to be able to do this.
+        """
         if ctx.author.id not in self.cached_conversations:
             raise SendableException(ctx.translate("no_running_conversation"))
 
@@ -118,6 +121,7 @@ class ConversationsCog(BaseCog, name = "Conversations"):
 
     @conversation.command(name = "end")
     async def conversation_end(self, ctx):
+        """Ends the currently active conversation."""
         if ctx.author.id not in self.cached_conversations:
             raise SendableException(ctx.translate("no_running_conversation"))
 
@@ -168,19 +172,36 @@ class ConversationsCog(BaseCog, name = "Conversations"):
         conversation.participant2 = Participant.create(conversant = Conversant.get(user_id = user_to_speak_to.id))
         conversation.save()
 
-        embed = discord.Embed()
-        lines = []
-        lines.append("Conversation has been started with an anonymous person.")
-        lines.append("Chat by chatting in DMs (commands will not work)")
-        lines.append(f"To end use '{ctx.prefix}conversation end'")
-
-        embed.description = "\n".join(lines)
-
+        embed = get_conversation_tutorial_embed(ctx)
         for participant in conversation.get_participants():
             other = conversation.get_other(participant)
             embed.set_footer(text = f"Speaking to conversant with id '{other.key}'")
             await participant.send(embed = embed)
             self.cached_conversations[participant.conversant.user_id] = conversation
+
+
+def command_to_field(ctx, command, description):
+    kwargs = {}
+    kwargs["name"] = description
+    kwargs["value"] = f"`{ctx.prefix}{command.qualified_name}`\n{command.callback.__doc__}{config.br}"
+    kwargs["inline"] = False
+    return kwargs
+
+def get_conversation_tutorial_embed(ctx):
+    embed = discord.Embed(color = ctx.guild_color)
+    lines = []
+    lines.append("Conversation has been started with an anonymous person.")
+    lines.append("Chat by chatting in DMs (commands will not work)")
+    lines.append(config.br)
+
+    end_command = ctx.bot.get_command("conversation end")
+    embed.add_field(**command_to_field(ctx, end_command, "⛔ Ending a conversation"))
+
+    reveal_command = ctx.bot.get_command("conversation reveal")
+    embed.add_field(**command_to_field(ctx, reveal_command, "🥷 Revealing eachother"))
+
+    embed.description = "\n".join(lines)
+    return embed
 
 def setup(bot):
     bot.add_cog(ConversationsCog(bot))
