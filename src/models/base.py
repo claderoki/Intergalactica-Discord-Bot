@@ -141,6 +141,22 @@ class JsonField(peewee.TextField):
     def python_value(self, value):
         return json.loads(value)
 
+class RangeField(peewee.TextField):
+    def __init__(self, start, stop, step, **kwargs):
+        range_     = range(start, stop, step)
+        self.start = range_.start
+        self.stop  = range_.stop
+        self.step  = range_.step
+        super().__init__(**kwargs)
+
+    def db_value(self, value):
+        if value:
+            return f"{self.start},{self.stop},{self.step}"
+
+    def python_value(self, value):
+        if value:
+            return range(*value.split(","))
+
 class ArrayField(peewee.TextField):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
