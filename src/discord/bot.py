@@ -191,6 +191,7 @@ class Locus(commands.Bot):
             "prank",
             "pigeon",
             "covid",
+            "conversations",
             "qotd",
             "giveaway",
         ]
