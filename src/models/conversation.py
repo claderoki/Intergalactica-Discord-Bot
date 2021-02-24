@@ -2,54 +2,85 @@ import datetime
 import asyncio
 import secrets
 
+from dateutil.relativedelta import relativedelta
 import peewee
 import discord
 
 from . import BaseModel
 
 class Conversant(BaseModel):
-    user_id              = peewee.BigIntegerField    (null = False)
-    enabled              = peewee.BooleanField       (null = False, default = True)
-    # active_conversation  = peewee.DeferredForeignKey ("Conversation", null = True)
+    user_id = peewee.BigIntegerField (null = False)
+    enabled = peewee.BooleanField    (null = False, default = True)
 
     @classmethod
-    def get_available(cls):
+    def get_available(cls, exclusion_list = None):
         query = cls.select()
         query = query.where(cls.enabled == True)
-        #TODO: turn this into one query
-        for conversant in query:
-            if Conversation.select_for(conversant, finished = True):
-                yield conversant
+        if exclusion_list is not None:
+            query = query.where(cls.user_id.not_in(exclusion_list))
+        return query
+
+class Participant(BaseModel):
+    key          = peewee.TextField       (null = False, default = lambda : secrets.token_urlsafe(10))
+    reveal       = peewee.BooleanField    (null = False, default = False)
+    conversant   = peewee.ForeignKeyField (Conversant, null = False)
+
+    @property
+    def user_id(self):
+        return self.conversant.user_id
+
+    async def send(self, *args, **kwargs):
+        return await self.conversant.user.send(*args, **kwargs)
 
 class Conversation(BaseModel):
-    conversant1     = peewee.ForeignKeyField (Conversant, null = False)
-    conversant1_key = peewee.TextField       (null = False, default = lambda : secrets.token_urlsafe(10))
-    conversant2     = peewee.ForeignKeyField (Conversant, null = False)
-    conversant2_key = peewee.TextField       (null = False, default = lambda : secrets.token_urlsafe(10))
+    participant1    = peewee.ForeignKeyField (Participant, null = False)
+    participant2    = peewee.ForeignKeyField (Participant, null = False)
     start_time      = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow())
     end_time        = peewee.DateTimeField   (null = True)
     finished        = peewee.BooleanField    (null = False, default = False)
 
+    @property
+    def duration(self):
+        return relativedelta(datetime.datetime.utcnow(), self.start_time)
+
+    @property
+    def revealable(self):
+        for participant in self.get_participants():
+            if not participant.reveal:
+                return False
+        return True
+
     def get_other(self, current):
         if isinstance(current, int):
-            return self.conversant2.user_id if self.conversant1.user_id == current else self.conversant1.user_id
+            return self.participant2.conversant.user_id if self.participant1.conversant.user_id == current else self.participant1.conversant.user_id
         elif isinstance(current, discord.User):
-            return self.conversant2.user if self.conversant1.user_id == current.id else self.conversant1.user
-        elif isinstance(current, Conversant):
-            return self.conversant2 if self.conversant1 == current else self.conversant1
+            return self.participant2.conversant.user if self.participant1.conversant.user_id == current.id else self.participant1.conversant.user
+        elif isinstance(current, Participant):
+            return self.participant2 if self.participant1 == current else self.participant1
 
     def get_user_ids(self):
-        return (self.conversant1.user_id, self.conversant2.user_id)
+        return (self.participant1.conversant.user_id, self.participant2.conversant.user_id)
+
+    def get_participants(self):
+        return (self.participant1, self.participant2)
+
+    async def reveal(self):
+        embed = discord.Embed()
+        for participant in self.get_participants():
+            other_user = self.get_other(participant).conversant.user
+            embed.description = f"The person you have been speaking to is {other_user}, id: {other_user.id}"
+            embed.set_author(name = str(other_user), icon_url = other_user.avatar_url)
+            await participant.send(embed = embed)
 
     @classmethod
     def select_for(cls, conversant, finished = None):
         query = cls.select()
         c1 = Conversant.alias("c1")
         c2 = Conversant.alias("c2")
-        query = query.join(c1, on = cls.conversant1)
+        query = query.join(c1, on = cls.participant1)
         query = query.switch(cls)
-        query = query.join(c2, on = cls.conversant2)
-        query = query.where((cls.conversant1 == conversant) | (cls.conversant2 == conversant))
+        query = query.join(c2, on = cls.participant2)
+        query = query.where((cls.participant1 == conversant) | (cls.participant2 == conversant))
         if finished is not None:
             query = query.where(cls.finished == finished)
         return query

@@ -7,9 +7,11 @@ from discord.ext import commands
 
 import src.config as config
 import src.discord.helpers.pretty as pretty
-from src.models import Conversant, Conversation, database
+from src.models import Conversant, Participant, Conversation, database
 from src.discord.errors.base import SendableException
 from src.discord.cogs.core import BaseCog
+
+class NotAvailable(Exception): pass
 
 async def check_if_available(user):
     def check(message):
@@ -18,7 +20,7 @@ async def check_if_available(user):
         if not isinstance(message.channel, discord.DMChannel):
             return False
         if message.content.lower() in ("no", "n"):
-            return False
+            raise NotAvailable()
         if message.content.lower() in ("yes", "y"):
             return True
         return True
@@ -30,7 +32,8 @@ async def check_if_available(user):
     except asyncio.TimeoutError:
         await user.send("You are clearly not available to talk.")
         return False
-
+    except NotAvailable:
+        return False
 
 def is_command(message):
     bot = config.bot
@@ -56,14 +59,14 @@ class ConversationsCog(BaseCog, name = "Conversations"):
     async def on_ready(self):
         query = Conversation.select().where(Conversation.finished == False)
         for conversation in query:
-            self.cached_conversations[conversation.conversant1.user_id] = conversation
-            self.cached_conversations[conversation.conversant2.user_id] = conversation
+            self.cached_conversations[conversation.participant1.user_id] = conversation
+            self.cached_conversations[conversation.participant2.user_id] = conversation
 
     @commands.Cog.listener()
     async def on_message(self, message):
         if len(self.cached_conversations) == 0:
             return
-        if self.bot.production:
+        if not self.bot.production:
             return
         if not isinstance(message.channel, discord.DMChannel):
             return
@@ -80,6 +83,30 @@ class ConversationsCog(BaseCog, name = "Conversations"):
     @commands.dm_only()
     async def conversation(self, ctx):
         pass
+
+    @conversation.command(name = "reveal")
+    async def conversation_reveal(self, ctx):
+        if ctx.author.id not in self.cached_conversations:
+            raise SendableException(ctx.translate("no_running_conversation"))
+
+        conversation = self.cached_conversations[ctx.author.id]
+
+        if conversation.duration.minutes < 30:
+            raise SendableException(ctx.translate("conversation_too_short"))
+
+        for participant in conversation.get_participants():
+            if participant.conversant.user_id == ctx.author.id:
+                other = conversation.get_other(participant)
+                participant.reveal = True
+                participant.save()
+                if other.reveal:
+                    await conversation.reveal()
+                else:
+                    lines = []
+                    lines.append("The other person invited you to reveal eachother.")
+                    lines.append(f"To accept type '{ctx.prefix}conversation reveal'")
+                    await other.send("\n".join(lines))
+                break
 
     @conversation.command(name = "toggle", aliases = ["enable", "disable"])
     async def conversation_toggle(self, ctx):
@@ -113,7 +140,12 @@ class ConversationsCog(BaseCog, name = "Conversations"):
         conversant.enabled = True
         conversant.save()
 
-        user_ids = [x.user_id for x in Conversant.get_available()]
+        user_ids = []
+        user_ids_in_conversation = list(self.cached_conversations.items())
+        for conversant in Conversant.get_available(user_ids_in_conversation):
+            if conversant.user_id != ctx.author.id:
+                user_ids.append(conversant.user_id)
+
         if len(user_ids) == 0:
             raise SendableException(ctx.translate("no_conversants_available"))
 
@@ -132,26 +164,23 @@ class ConversationsCog(BaseCog, name = "Conversations"):
             raise SendableException(ctx.translate("no_conversants_available"))
 
         conversation = Conversation()
-        conversation.conversant1 = conversant
-        conversation.conversant2 = Conversant.get(user_id = user_to_speak_to.id)
+        conversation.participant1 = Participant.create(conversant = conversant)
+        conversation.participant2 = Participant.create(conversant = Conversant.get(user_id = user_to_speak_to.id))
         conversation.save()
 
         embed = discord.Embed()
         lines = []
         lines.append("Conversation has been started with an anonymous person.")
         lines.append("Chat by chatting in DMs (commands will not work)")
-        lines.append("To end call use ......")
+        lines.append(f"To end use '{ctx.prefix}conversation end'")
 
         embed.description = "\n".join(lines)
 
-        i = 1
-        for user in (user_to_speak_to, ctx.author):
-            id = getattr(conversation, f"conversant{i}_key")
-            embed.set_footer(text = f"Speaking to conversant with id '{id}'")
-            await user.send(embed = embed)
-
-            self.cached_conversations[user.id] = conversation
-            i += 1
+        for participant in conversation.get_participants():
+            other = conversation.get_other(participant)
+            embed.set_footer(text = f"Speaking to conversant with id '{other.key}'")
+            await participant.send(embed = embed)
+            self.cached_conversations[participant.conversant.user_id] = conversation
 
 def setup(bot):
     bot.add_cog(ConversationsCog(bot))

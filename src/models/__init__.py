@@ -12,14 +12,14 @@ from .reddit import Subreddit
 from .qotd import Category, Question, CategoryChannel, QuestionConfig
 from .intergalactica import MentionGroup, MentionMember
 from .farming import Farm, Crop, FarmCrop
-from .conversation import Conversant, Conversation
+from .conversation import Conversant, Conversation, Participant
 
 database = BaseModel._meta.database
 
 def setup():
     with database.connection_context():
-        # database.drop_tables([Conversant, Conversation])
-        database.create_tables([Conversant, Conversation])
+        # database.drop_tables([Conversant, Participant, Conversation])
+        database.create_tables([Conversant, Participant, Conversation])
 
         # database.drop_tables([Farm, Crop, FarmCrop])
         database.create_tables([Farm, Crop, FarmCrop])
