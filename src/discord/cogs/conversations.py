@@ -182,7 +182,6 @@ class ConversationsCog(BaseCog, name = "Conversations"):
             await participant.send(embed = embed)
             self.cached_conversations[participant.conversant.user_id] = conversation
 
-
 def command_to_field(ctx, command, description):
     kwargs = {}
     kwargs["name"] = description
