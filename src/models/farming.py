@@ -33,12 +33,12 @@ class Crop(BaseModel):
         return f"{config.path}/resources/sprites/farming"
 
     @property
-    def seed_item_code(self):
-        return f"{self.name.lower()}_seed"
+    def seed_item(self):
+        return Item.get(code = f"{self.name.lower()}_seed")
 
     @property
-    def product_item_code(self):
-        return f"{self.name.lower()}_product"
+    def product_item(self):
+        return Item.get(code = f"{self.name.lower()}_product")
 
     def get_seed_sprite_path(self):
         return f"{self.root_path}/{self.name.title()}/{self.name.lower()}_seed.png"
