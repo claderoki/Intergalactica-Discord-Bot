@@ -20,7 +20,7 @@ class TicketCog(BaseCog, name = "Ticket"):
     @commands.command()
     @commands.dm_only()
     async def concern(self, ctx, *, concern):
-        guild = await self.bot.guild_choice_for(ctx.author)
+        guild = self.bot.get_guild(742146159711092757)
         member = guild.get_member(ctx.author.id)
 
         if member is None:
