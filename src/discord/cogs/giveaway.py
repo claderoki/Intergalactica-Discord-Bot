@@ -63,7 +63,6 @@ class GiveawayCog(BaseCog, name = "Giveaway"):
             query = Giveaway.select()
             query = query.where(Giveaway.finished == False)
             query = query.where(Giveaway.due_date <= datetime.datetime.utcnow())
-            # query = [Giveaway.get(id = 10)]
             for giveaway in query:
                 channel = giveaway.channel
                 message = await channel.fetch_message(giveaway.message_id)
