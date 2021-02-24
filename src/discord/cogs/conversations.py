@@ -141,8 +141,9 @@ class ConversationsCog(BaseCog, name = "Conversations"):
             raise SendableException(ctx.translate("already_running_conversation"))
 
         conversant, _ = Conversant.get_or_create(user_id = ctx.author.id)
-        conversant.enabled = True
-        conversant.save()
+        if not conversant.enabled: 
+            conversant.enabled = True
+            conversant.save()
 
         user_ids = []
         user_ids_in_conversation = list(self.cached_conversations.items())
