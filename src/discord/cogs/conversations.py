@@ -164,6 +164,8 @@ class ConversationsCog(BaseCog, name = "Conversations"):
             if await check_if_available(user):
                 user_to_speak_to = user
                 break
+            else:
+                await ctx.send(ctx.translate("still_looking_please_be_patient"))
 
         if user_to_speak_to is None:
             raise SendableException(ctx.translate("no_conversants_available"))
