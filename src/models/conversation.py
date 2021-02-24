@@ -16,7 +16,7 @@ class Conversant(BaseModel):
     def get_available(cls, exclusion_list = None):
         query = cls.select()
         query = query.where(cls.enabled == True)
-        if exclusion_list is not None:
+        if exclusion_list:
             query = query.where(cls.user_id.not_in(exclusion_list))
         return query
 
