@@ -4,7 +4,6 @@ import datetime
 import discord
 from discord.ext import commands, tasks
 from emoji import emojize
-import peewee
 
 from src.discord.helpers.waiters import *
 from src.discord.helpers.pretty import prettify_dict
@@ -314,10 +313,7 @@ class PollCog(BaseCog, name = "Poll"):
                 if poll.delete_after_results:
                     try:
                         message = await poll.channel.fetch_message(poll.message_id)
-                        try:
-                            await message.delete()
-                        except: pass
-
+                        await message.delete()
                     except:
                         pass
                 self.any_active_polls = False
