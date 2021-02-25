@@ -11,6 +11,7 @@ from src.models import HumanItem, Human, Scenario, Fight, Reminder, Pigeon, Buff
 from src.models.base import PercentageField
 from src.discord.helpers.waiters import *
 from src.utils.country import Country
+from src.discord.helpers.paginating import Paginator
 from src.discord.errors.base import SendableException
 from src.discord.helpers.pretty import prettify_dict, limit_str, Table, Row
 from src.discord.helpers.exploration_retrieval import ExplorationRetrieval, MailRetrieval
@@ -105,8 +106,8 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @commands.group()
     async def pigeon(self, ctx):
-        if ctx.invoked_subcommand is None:
-            return await ctx.send_help(ctx.command)
+        # if ctx.invoked_subcommand is None:
+        #     return await ctx.send_help(ctx.command)
 
         ctx.human = ctx.get_human()
         for message in list(ctx.human.system_messages.where(SystemMessage.read == False)):
@@ -120,7 +121,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     @pigeon.command(name = "buy")
     @commands.max_concurrency(1, per = commands.BucketType.user)
     async def pigeon_buy(self, ctx, member : discord.Member = None):
-        """Buy a pigeon."""
+        """Buying a pigeon."""
         member = member or ctx.author
         gift = member.id != ctx.author.id
         if gift:
@@ -151,6 +152,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @pigeon.command(name = "languages", aliases = ["lang"])
     async def pigeon_languages(self, ctx):
+        """View what languages your pigeon knows."""
         table = Table(padding = 0)
         table.add_row(Row(["name", "%", "rank"], header = True))
 
@@ -162,12 +164,14 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @pigeon.command(name = "gender")
     async def pigeon_gender(self, ctx, gender : EnumConverter(Gender)):
+        """Change your pigeons gender."""
         ctx.pigeon.gender = gender
         ctx.pigeon.save()
         asyncio.gather(ctx.send(ctx.translate("gender_set").format(gender = gender.name)))
 
     @pigeon.command(name = "name", aliases = ["rename"])
     async def pigeon_name(self, ctx):
+        """Change your pigeons name."""
         cost = 50
         ctx.raise_if_not_enough_gold(cost, ctx.pigeon.human)
         await ctx.pigeon.editor_for(ctx, "name")
@@ -176,10 +180,10 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         embed.description = f"Okay. Name has been set to {ctx.pigeon.name}" + "\n" + get_winnings_value(gold = -cost)
         asyncio.gather(ctx.send(embed = embed))
 
-    @pigeon.command(name = "challenge", aliases = ["fight"])
+    @pigeon.command(name = "fight")
     @commands.max_concurrency(1, per = commands.BucketType.user)
-    async def pigeon_challenge(self, ctx, member : discord.Member):
-        """Challenge another user to a fight."""
+    async def pigeon_fight(self, ctx, member : discord.Member):
+        """Fight other pigeons."""
         channel = self.get_pigeon_channel(ctx.guild)
         if member.id == ctx.author.id:
             raise SendableException(ctx.translate("cannot_challenge_self"))
@@ -218,7 +222,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     @pigeon.command(name = "date")
     @commands.max_concurrency(1, per = commands.BucketType.user)
     async def pigeon_date(self, ctx, member : discord.Member ):
-        """Have your pigeon date another pigeon"""
+        """Date other pigeons."""
         if member.id == self.bot.owner_id or ctx.author.id == self.bot.owner_id:
             raise SendableException(ctx.translate("pigeon_undateable"))
 
@@ -249,6 +253,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @pigeon.command(name = "accept")
     async def pigeon_accept(self, ctx):
+        """Accept an invitation."""
         pigeon2 = ctx.pigeon
 
         challenge = pigeon2.current_activity
@@ -285,6 +290,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @pigeon.command(name = "reject", aliases = ["deny", "cancel"])
     async def pigeon_reject(self, ctx):
+        """Reject an invitation."""
         pigeon = ctx.pigeon
 
         challenge = pigeon.current_activity
@@ -309,6 +315,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @pigeon.command(name = "relationships")
     async def pigeon_relationships(self, ctx):
+        """View your pigeons relationships."""
         query = PigeonRelationship.select()
         query = query.where((PigeonRelationship.pigeon1 == ctx.pigeon) | (PigeonRelationship.pigeon2 == ctx.pigeon))
         query = query.order_by(PigeonRelationship.score.asc())
@@ -326,7 +333,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     @pigeon.command(name = "explore")
     @commands.max_concurrency(1, per = commands.BucketType.user)
     async def pigeon_explore(self, ctx):
-        """Have your pigeon exploring a random location."""
+        """Have your pigeon exploring countries."""
         pigeon = ctx.pigeon
 
         residence = pigeon.human.country or Country.random()
@@ -398,7 +405,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     @pigeon.command(name = "mail", aliases = ["message", "send", "letter"])
     @commands.max_concurrency(1, per = commands.BucketType.user)
     async def pigeon_mail(self, ctx, user : discord.User):
-        """Send someone a pigeon letter."""
+        """Sending someone a letter."""
         if user.id == ctx.author.id:
             raise SendableException(ctx.translate("cannot_send_to_self"))
 
@@ -495,7 +502,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @pigeon.command(name = "stats")
     async def pigeon_stats(self, ctx, member : discord.Member = None):
-
+        """Check the stats of your pigeon."""
         if member is not None:
             self.pigeon_check(ctx, member)
 
@@ -599,6 +606,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @pigeon.command(name = "history")
     async def pigeon_history(self, ctx, member : discord.Member = None):
+        """Get the history of your or someone elses pigeon."""
         member = member or ctx.author
         query = Pigeon.select()
         query = query.where(Pigeon.human == ctx.get_human(user = member))
@@ -649,6 +657,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @pigeon.command(name = "scoreboard")
     async def pigeon_scoreboard(self, ctx):
+        """View the scoreboard."""
         query = Pigeon.select()
         query = query.join(Human, on = (Pigeon.human == Human.id) )
         query = query.join(Earthling, on = (Human.id == Earthling.human) )
@@ -693,30 +702,37 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
     @pigeon.command(name = "clean")
     async def pigeon_clean(self, ctx):
+        """Clean your pigeon."""
         self.increase_stats(ctx, "cleanliness", 25, 15, "You happily clean up the fecal matter of `{pigeon.name}`.\n")
 
     @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
     @pigeon.command(name = "feed")
     async def pigeon_feed(self, ctx):
+        """Feed your pigeon."""
         self.increase_stats(ctx, "food", 25, 15, "You feed `{pigeon.name}` some seeds and whatever else they eat.\n")
 
     @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
     @pigeon.command(name = "heal")
     async def pigeon_heal(self, ctx):
+        """Heal your pigeon."""
         self.increase_stats(ctx, "health", 20, 15, "You give `{pigeon.name}` some seed you found inside your couch and convince it of its healing effects.\n")
 
     @commands.cooldown(1, (3600 * 2), type=commands.BucketType.user)
     @pigeon.command(name = "play")
     async def pigeon_play(self, ctx):
+        """Play with your pigeon."""
         self.increase_stats(ctx, "happiness", 20, 15, "You play a game of tennis with your pigeon. `{pigeon.name}` happily falls asleep.\n")
 
     @pigeon.command(name = "help")
     async def pigeon_help(self, ctx):
-        await ctx.send_help(ctx.command.root_parent)
+        embed = get_pigeon_tutorial_embed(ctx)
+        paginator = Paginator.from_embed(ctx, embed, max_fields = 10)
+        await paginator.wait()
 
     @pigeon.command(name = "storytime")
     @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
     async def pigeon_storytime(self, ctx):
+        """Old."""
         human = ctx.get_human()
 
         scenario = Scenario.get_random()
@@ -737,6 +753,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     @pigeon.command()
     @commands.cooldown(1, (3600 * 1), type = commands.BucketType.user)
     async def poop(self, ctx, member : discord.Member):
+        """Poop on someone elses pigeon."""
         self.pigeon_check(ctx, member, name = "pigeon2")
         relationship = PigeonRelationship.get_or_create_for(ctx.pigeon, ctx.pigeon2)
         price = 5
@@ -962,6 +979,26 @@ def pigeon_raise_if_stats_too_low(ctx, pigeon, name = "pigeon"):
         return
     ctx.command.reset_cooldown(ctx)
     raise SendableException(message.format(pigeon = pigeon))
+
+def command_to_field(ctx, command, description = None):
+    kwargs = {}
+    kwargs["value"] = f"`{ctx.prefix}{command.qualified_name}`"
+    if description is None:
+        kwargs["name"] = command.callback.__doc__
+    else:
+        kwargs["value"] += f"\n{command.callback.__doc__}{config.br}"
+    kwargs["inline"] = False
+    return kwargs
+
+def get_pigeon_tutorial_embed(ctx):
+    embed = discord.Embed(color = ctx.guild_color)
+    lines = []
+
+    for command in ctx.bot.get_command("pigeon").walk_commands():
+        embed.add_field(**command_to_field(ctx, command))
+
+    embed.description = "\n".join(lines)
+    return embed
 
 def setup(bot):
     bot.add_cog(PigeonCog(bot))
