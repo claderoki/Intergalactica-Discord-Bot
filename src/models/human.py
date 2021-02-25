@@ -247,7 +247,7 @@ class Item(BaseModel):
 
         query = query.format(
             table_name = cls._meta.table_name,
-            where = "WHERE category != 1 AND explorable = 1",
+            where = "WHERE category_id != 1 AND explorable = 1",
             chance_column_name = "chance"
         )
 
