@@ -8,7 +8,7 @@ import peewee
 import discord
 
 import src.config as config
-from .base import BaseModel, EmojiField, TimeDeltaField
+from .base import BaseModel, EmojiField, RangeField, TimeDeltaField
 from . import Human, Item
 
 class Farm(BaseModel):
@@ -27,6 +27,7 @@ class Crop(BaseModel):
     name      = peewee.CharField       (null = False)
     code      = peewee.CharField       (null = False)
     grow_time = TimeDeltaField         (null = False, default = datetime.timedelta(hours = 12))
+    # range     = RangeField             (null = False, default = lambda : range(2, 6))
 
     @property
     def root_path(self):
