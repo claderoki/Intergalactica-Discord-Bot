@@ -23,7 +23,7 @@ async def check_if_available(user):
             raise NotAvailable()
         if message.content.lower() in ("yes", "y"):
             return True
-        return True
+        return False
 
     await user.send("Are you available to talk? (yes | no)")
     try:
@@ -146,7 +146,7 @@ class ConversationsCog(BaseCog, name = "Conversations"):
             conversant.save()
 
         user_ids = []
-        user_ids_in_conversation = list(self.cached_conversations.items())
+        user_ids_in_conversation = list(self.cached_conversations.keys())
         for conversant in Conversant.get_available(user_ids_in_conversation):
             if conversant.user_id != ctx.author.id:
                 user_ids.append(conversant.user_id)
