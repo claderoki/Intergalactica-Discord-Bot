@@ -1,6 +1,10 @@
 import asyncio
 from enum import Enum
 
+import discord
+
+from src.utils.general import split_list
+
 class Paginator:
     class Action(Enum):
         previous = 1
@@ -96,6 +100,26 @@ class Paginator:
     def __show_pages(self):
         for i, page in enumerate(self._pages):
             page.set_page_number(i+1, len(self._pages))
+
+    @classmethod
+    def from_embed(cls, ctx, embed : discord.Embed, max_fields = 10):
+        paginator = cls(ctx)
+        if len(embed.fields) <= max_fields:
+            paginator.add_page(embed)
+            return paginator
+
+        field_groups = split_list(embed.fields, max_fields)
+
+        for fields in field_groups:
+            base_embed             = discord.Embed()
+            base_embed.color       = embed.color
+            base_embed.description = embed.description
+
+            for field in fields:
+                base_embed.add_field(name = field.name, value = field.value, inline = field.inline)
+            paginator.add_page(Page(base_embed))
+
+        return paginator
 
 class Page:
     __slots__ = ("embed", )
