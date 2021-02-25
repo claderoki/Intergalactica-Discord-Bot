@@ -15,7 +15,6 @@ from src.discord.helpers.converters import StringConverter
 from src.discord.errors.base import SendableException
 
 class FarmingCog(BaseCog, name = "Farming"):
-
     def __init__(self, bot):
         super().__init__(bot)
 
