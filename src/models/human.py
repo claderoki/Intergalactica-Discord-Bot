@@ -131,7 +131,7 @@ class Human(BaseModel):
             return ZodiacSign.from_date(self.date_of_birth)
 
     def get_embed_field(self, show_all = False):
-
+        #TODO: clean up.
         name = self.user.name
         if show_all and self.country:
             name += f" {self.country.flag_emoji}"
@@ -180,6 +180,11 @@ class Human(BaseModel):
 
         return {"name" : name, "value" : sep.join(values), "inline" : True}
 
+class ItemCategory(BaseModel):
+    name   = peewee.CharField       (null = False)
+    code   = peewee.CharField       (max_length = 45)
+    parent = peewee.ForeignKeyField ("self", null = True)
+
 class Item(BaseModel):
     class Rarity(Enum):
         junk      = 1
@@ -214,15 +219,15 @@ class Item(BaseModel):
             elif self == self.legendary:
                 return 6
 
-    name         = peewee.CharField    (null = False)
-    description  = peewee.TextField    (null = False)
-    image_url    = peewee.TextField    (null = False)
-    rarity       = EnumField           (Rarity, null = False, default = Rarity.common)
-    explorable   = peewee.BooleanField (null = False, default = False)
-    code         = peewee.CharField    (max_length = 45)
-    usable       = peewee.BooleanField (null = False, default = False)
-    holiday_name = peewee.TextField    (null = True)
-    chance       = peewee.IntegerField (null = False)
+    name         = peewee.CharField       (null = False)
+    code         = peewee.CharField       (max_length = 45)
+    description  = peewee.TextField       (null = False)
+    image_url    = peewee.TextField       (null = False)
+    rarity       = EnumField              (Rarity, null = False, default = Rarity.common)
+    explorable   = peewee.BooleanField    (null = False, default = False)
+    usable       = peewee.BooleanField    (null = False, default = False)
+    category     = peewee.ForeignKeyField (ItemCategory, null = True)
+    chance       = peewee.IntegerField    (null = False)
 
     @classmethod
     def get_random(cls):
@@ -242,7 +247,7 @@ class Item(BaseModel):
 
         query = query.format(
             table_name = cls._meta.table_name,
-            where = "WHERE holiday_name IS NULL AND explorable = 1",
+            where = "WHERE category != 1 AND explorable = 1",
             chance_column_name = "chance"
         )
 

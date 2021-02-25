@@ -1,5 +1,5 @@
 from .base import BaseModel
-from .human import Human, Item, HumanItem
+from .human import Human, Item, HumanItem, ItemCategory
 from .intergalactica import Earthling, Reminder, TemporaryVoiceChannel, TemporaryChannel, RedditAdvertisement
 from .settings import Settings, NamedEmbed, NamedChannel, Translation, Locale
 from .ticket import Ticket, Reply
@@ -45,8 +45,8 @@ def setup():
         # database.drop_tables([Scene, Scenario])
         database.create_tables([Scene, Scenario])
 
-        # database.drop_tables([Human, Item, HumanItem])
-        database.create_tables([Human, Item, HumanItem])
+        # database.drop_tables([Human, Item, HumanItem, ItemCategory])
+        database.create_tables([Human, Item, HumanItem, ItemCategory])
 
         # database.drop_tables([Earthling, TemporaryChannel, Reminder, TemporaryVoiceChannel, RedditAdvertisement])
         database.create_tables([Earthling, TemporaryChannel, Reminder, TemporaryVoiceChannel, RedditAdvertisement])
