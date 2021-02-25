@@ -86,7 +86,8 @@ class ConversationsCog(BaseCog, name = "Conversations"):
     @commands.group()
     @commands.dm_only()
     async def conversation(self, ctx):
-        pass
+        if not self.bot.production:
+            raise SendableException(ctx.translate("wrong_prefix"))
 
     @conversation.command(name = "reveal")
     async def conversation_reveal(self, ctx):
