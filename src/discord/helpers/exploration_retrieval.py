@@ -30,6 +30,7 @@ class ExplorationRetrieval(ActivityRetrieval):
 
         @property
         def buff_code(self):
+            return None
             if self == self.language:
                 return "enlightened"
             if self == self.wing_damage:

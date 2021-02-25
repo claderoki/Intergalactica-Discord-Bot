@@ -7,7 +7,7 @@ from countryinfo import CountryInfo
 import peewee
 
 import src.config as config
-from src.models import HumanItem, Human, Fight, Reminder, Pigeon, Buff, PigeonBuff, PigeonRelationship, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
+from src.models import HumanItem, Human, Scenario, Fight, Reminder, Pigeon, Buff, PigeonBuff, PigeonRelationship, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
 from src.models.base import PercentageField
 from src.discord.helpers.waiters import *
 from src.utils.country import Country
@@ -51,7 +51,7 @@ class ItemWaiter(StrWaiter):
 
 class PigeonCog(BaseCog, name = "Pigeon"):
     subcommands_no_require_pigeon = ["buy", "history", "scoreboard", "help", "inbox", "pigeon"]
-    subcommands_no_require_available = ["status", "relationships", "reject", "stats", "languages", "retrieve", "gender", "name", "accept"] + subcommands_no_require_pigeon
+    subcommands_no_require_available = ["status", "relationships", "reject", "stats", "languages", "storytime", "retrieve", "gender", "name", "accept"] + subcommands_no_require_pigeon
     subcommands_no_require_stats = ["heal", "clean", "feed", "play", "date", "poop"] + subcommands_no_require_available
 
     def __init__(self, bot):
@@ -713,6 +713,26 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     @pigeon.command(name = "help")
     async def pigeon_help(self, ctx):
         await ctx.send_help(ctx.command.root_parent)
+
+    @pigeon.command(name = "storytime")
+    @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
+    async def pigeon_storytime(self, ctx):
+        human = ctx.get_human()
+
+        scenario = Scenario.get_random()
+        money = scenario.random_value
+        embed = discord.Embed(color = ctx.guild_color)
+        embed.description = scenario.text
+        embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/705242963550404658/766680730457604126/pigeon_tiny.png")
+
+        if money > 0:
+            embed.description += f" You earn {self.bot.gold_emoji} {abs(money)}"
+        elif money < 0:
+            embed.description += f" You lose {self.bot.gold_emoji} {abs(money)}"
+
+        human.gold += money
+        human.save()
+        await ctx.send(embed = embed)
 
     @pigeon.command()
     @commands.cooldown(1, (3600 * 1), type = commands.BucketType.user)

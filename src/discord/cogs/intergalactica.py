@@ -164,6 +164,8 @@ class Intergalactica(BaseCog):
         if not self.bot.production:
             return
 
+        await asyncio.sleep(5)
+
         found = False
         async for entry in guild.audit_logs(action=discord.AuditLogAction.ban):
             if entry.target.id == user.id:

@@ -25,15 +25,19 @@ async def check_if_available(user):
             return True
         return False
 
-    await user.send("Are you available to talk? (yes | no)")
+    timeout = 60
+    await user.send("Are you available to talk? (yes | no)", delete_after = timeout)
+    available = False
+    print(f"Checking to see if {user} is available...")
     try:
-        await config.bot.wait_for("message", check = check, timeout = 60)
-        return True
+        await config.bot.wait_for("message", check = check, timeout = timeout)
+        print(f"{user} is available...")
+        available = True
     except asyncio.TimeoutError:
-        await user.send("You are clearly not available to talk.")
-        return False
+        print(f"{user} is not available (timed out)")
     except NotAvailable:
-        return False
+        print(f"{user} is not available (refused)")
+    return available
 
 def is_command(message):
     bot = config.bot
@@ -141,15 +145,15 @@ class ConversationsCog(BaseCog, name = "Conversations"):
             raise SendableException(ctx.translate("already_running_conversation"))
 
         conversant, _ = Conversant.get_or_create(user_id = ctx.author.id)
-        if not conversant.enabled: 
+        if not conversant.enabled:
             conversant.enabled = True
             conversant.save()
 
         user_ids = []
         user_ids_in_conversation = list(self.cached_conversations.keys())
-        for conversant in Conversant.get_available(user_ids_in_conversation):
-            if conversant.user_id != ctx.author.id:
-                user_ids.append(conversant.user_id)
+        for cs in Conversant.get_available(user_ids_in_conversation):
+            if cs.user_id != ctx.author.id:
+                user_ids.append(cs.user_id)
 
         if len(user_ids) == 0:
             raise SendableException(ctx.translate("no_conversants_available"))
@@ -161,6 +165,8 @@ class ConversationsCog(BaseCog, name = "Conversations"):
         user_to_speak_to = None
         for user_id in user_ids:
             user = self.bot.get_user(user_id)
+            if user is None:
+                continue
             if await check_if_available(user):
                 user_to_speak_to = user
                 break

@@ -226,22 +226,27 @@ class Item(BaseModel):
 
     @classmethod
     def get_random(cls):
-        query = cls.raw("""
+        query = """
             SELECT results.* FROM (
-            SELECT {table_name}.*, @running_total AS previous_total, @running_total := @running_total + chance AS running_total, until.rand
+            SELECT {table_name}.*, @running_total AS previous_total, @running_total := @running_total + {chance_column_name} AS running_total, until.rand
             FROM (
                 SELECT round(rand() * init.max) AS rand FROM (
-                SELECT sum(chance) - 1 AS max FROM {table_name} WHERE holiday_name IS NULL AND explorable = 1
+                SELECT sum({chance_column_name}) - 1 AS max FROM {table_name} {where}
                 ) AS init
             ) AS until,
-            (SELECT * FROM {table_name} WHERE holiday_name IS NULL AND explorable = 1) AS {table_name},
+            (SELECT * FROM {table_name} {where}) AS {table_name},
             ( SELECT @running_total := 0.00 ) AS vars
             ) AS results
             WHERE results.rand >= results.previous_total AND results.rand < results.running_total;
-        """.format(table_name = cls._meta.table_name)
+        """
 
+        query = query.format(
+            table_name = cls._meta.table_name,
+            where = "WHERE holiday_name IS NULL AND explorable = 1",
+            chance_column_name = "chance"
         )
-        for item in query:
+
+        for item in cls.raw(query):
             return item
 
     @property
