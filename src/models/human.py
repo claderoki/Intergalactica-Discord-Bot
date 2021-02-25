@@ -140,7 +140,7 @@ class Human(BaseModel):
         if self.date_of_birth is not None:
             days_until_birthday = self.days_until_birthday
             age = self.age
-            value = f"{self.zodiac_sign.emoji} {self.age}"
+            value = f"{self.zodiac_sign.emoji} {age}"
             if days_until_birthday < 10:
                 value += f" (days left: {days_until_birthday})"
             values.append(value)
