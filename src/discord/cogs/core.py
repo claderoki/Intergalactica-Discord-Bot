@@ -16,4 +16,7 @@ class BaseCog(commands.Cog):
             task.add_exception_type(peewee.OperationalError)
             task.add_exception_type(peewee.InterfaceError)
             # task.add_exception_type(client_exceptions.ServerDisconnectedError)
-            task.start()
+            try:
+                task.start()
+            except RuntimeError:
+                pass
