@@ -735,7 +735,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         """Old."""
         human = ctx.get_human()
 
-        scenario = Scenario.get_random()
+        scenario = Scenario.get_random(win = random.randint(0,2) == 1)
         money = scenario.random_value
         embed = discord.Embed(color = ctx.guild_color)
         embed.description = scenario.text

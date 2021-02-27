@@ -33,7 +33,7 @@ class Scenario(BaseModel):
 
 
     @classmethod
-    def get_random(cls, scene = None):
+    def get_random(cls, scene = None, win = False):
         query = """
             SELECT results.* FROM (
             SELECT {table_name}.*, @running_total AS previous_total, @running_total := @running_total + {chance_column_name} AS running_total, until.rand
@@ -48,10 +48,11 @@ class Scenario(BaseModel):
             WHERE results.rand >= results.previous_total AND results.rand < results.running_total;
         """
 
+        where = "WHERE 1 = 1 "
+
         if scene is not None:
-            where = f"WHERE scene_id IS {scene.id}"
-        else:
-            where = ""
+            where += f"AND scene_id = {scene.id} "
+        where += f"AND min " + (">" if win else "<") + " 0"
 
         query = query.format(
             table_name = cls._meta.table_name,
