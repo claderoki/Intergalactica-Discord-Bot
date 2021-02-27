@@ -413,6 +413,7 @@ class Intergalactica(BaseCog):
             raise SendableException("no_" + code)
         return human_item
 
+    @commands.max_concurrency(1, per = commands.BucketType.user)
     @commands.group(aliases = ["milkyway", "orion"])
     async def temporary_channel(self, ctx):
         mini = ctx.invoked_with != "milkyway"
