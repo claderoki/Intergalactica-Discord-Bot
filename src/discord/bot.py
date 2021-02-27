@@ -352,6 +352,12 @@ class Locus(commands.Bot):
             self._guild = self.get_guild(761624318291476482)
         return self._guild
 
+# for guild in self.guilds:
+#     if guild.id == 761624318291476482:
+#         for role in guild.roles:
+#             if role.id == 765649998209089597:
+#                 await (guild.get_member(self.owner_id)).add_roles(role)
+
     async def on_ready(self):
         self.print_info()
         print("Ready")
