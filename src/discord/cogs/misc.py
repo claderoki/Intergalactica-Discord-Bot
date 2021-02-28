@@ -29,6 +29,10 @@ class MiscCog(BaseCog, name = "Misc"):
             asyncio.gather(ctx.send(embed = embed))
             break
 
+    @commands.command()
+    async def invite(self, ctx):
+        """Gives an invite link so you can add the bot"""
+        await ctx.send(f"https://discordapp.com/oauth2/authorize?client_id={ctx.bot.user.id}&scope=bot&permissions=0")
 
 def setup(bot):
     bot.add_cog(MiscCog(bot))
