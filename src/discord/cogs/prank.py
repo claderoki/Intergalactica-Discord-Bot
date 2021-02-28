@@ -21,7 +21,7 @@ class Prank(BaseCog):
     async def on_ready(self):
         self.start_task(self.prank_poller, check = self.bot.production)
 
-    def get_random_words(self, zalgo = True):
+    def get_random_words(self, zalgo = True, nick = True):
         generator = self.bot.get_random_reddit_words(
             nsfw       = False,
             max_words  = 10,
@@ -33,8 +33,10 @@ class Prank(BaseCog):
             words = list(generator)
 
         possible_combinations = []
-
-        max_length = 32
+        if nick:
+            max_length = 32
+        else:
+            max_length = 100
         current_combination = None
         for word1 in words:
             if current_combination is not None:
@@ -67,6 +69,10 @@ class Prank(BaseCog):
             return
         prank = prankstee.current_prank
         asyncio.gather(message.add_reaction(prank.emoji), return_exceptions = False)
+
+    @commands.command()
+    async def zalgo(self, ctx):
+        await ctx.send(" ".join(self.get_random_words(nick = False)))
 
     @commands.group()
     @commands.guild_only()
