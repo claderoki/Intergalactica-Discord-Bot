@@ -96,6 +96,7 @@ class Intergalactica(BaseCog):
     _channel_ids = {
         "general"        : 744650481682481233,
         "roles"          : 742303560988885044,
+        "warns"          : 777888951523606548,
         "selfies"        : 744703465086779393,
         "concerns"       : 758296826549108746,
         "staff_votes"    : 795644055979294720,
@@ -504,6 +505,13 @@ class Intergalactica(BaseCog):
         human_item.save()
         temp_channel.save()
         await ctx.send(f"Okay. This channel has been extended until `{temp_channel.expiry_date}`")
+
+    @commands.has_guild_permissions(administrator = True)
+    @commands.command()
+    async def warn(self, ctx, member : discord.Member, *, reason):
+        await member.send(f"Hello {member}, this is an official warning. Reason: **{reason}**. Please be more careful in the future.")
+        channel = self.get_channel("warns")
+        await channel.send(f"Warned {member} for {reason}")
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
