@@ -3,6 +3,7 @@ from enum import Enum
 import math
 
 import discord
+from discord.channel import DMChannel
 import requests
 
 import src.config as config
@@ -12,8 +13,9 @@ from src.utils.general import html_to_discord
 async def delete_message(message):
     try:
         await message.delete()
+        return True
     except:
-        pass
+        return False
 
 class DiscordUI(UI):
     def __init__(self, ctx):
@@ -25,6 +27,8 @@ class DiscordUI(UI):
 
     def __check(self, word, letters_used, player):
         def __check2(message):
+            dm = isinstance(message.channel, discord.DMChannel)
+
             if self.ctx.channel.id != message.channel.id:
                 return False
             if player.identity.member.id != message.author.id:
@@ -32,13 +36,19 @@ class DiscordUI(UI):
                 return False
             if len(message.content) == 1 and " " not in message.content:
                 letter = message.content.lower()
-                asyncio.gather(delete_message(message))
+                if not dm:
+                    asyncio.gather(delete_message(message))
+                else:
+                    self.invalid_messages += 1
                 if letter not in letters_used:
                     return True
                 else:
                     self.send_error(f"Letter '{letter}' has already been used")
             elif len(message.content) == len(word):
-                asyncio.gather(delete_message(message))
+                if not dm:
+                    asyncio.gather(delete_message(message))
+                else:
+                    self.invalid_messages += 1
                 return True
             else:
                 self.invalid_messages += 1
