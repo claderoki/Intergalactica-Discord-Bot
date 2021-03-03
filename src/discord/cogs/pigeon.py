@@ -428,13 +428,14 @@ class PigeonCog(BaseCog, name = "Pigeon"):
             mail.item = await waiter.wait()
         except Skipped:
             pass
+        
+        if mail.item is not None:
+            human_item, _ = HumanItem.get_or_create(item = mail.item, human = sender.human)
+            if human_item.amount < 1:
+                raise SendableException(ctx.translate("item_not_found"))
 
-        human_item, _ = HumanItem.get_or_create(item = mail.item, human = sender.human)
-        if human_item.amount < 1:
-            raise SendableException(ctx.translate("item_not_found"))
-
-        human_item.amount -= 1
-        human_item.save()
+            human_item.amount -= 1
+            human_item.save()
 
         mail.residence   = sender.human.country
         mail.destination = recipient.country
@@ -738,7 +739,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         """Old."""
         human = ctx.get_human()
 
-        scenario = Scenario.get_random(win = random.randint(0,2) == 1)
+        scenario = Scenario.get_random(win = random.randint(0,5) != 1)
         money = scenario.random_value
         embed = discord.Embed(color = ctx.guild_color)
         embed.description = scenario.text

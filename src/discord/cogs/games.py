@@ -30,7 +30,7 @@ class Games(BaseCog):
         embed = discord.Embed(color = ctx.guild_color)
         lines = []
         lines.append(f"{emojis['join']}: join the game")
-        lines.append(f"{emojis['start']}: start the game (creater only)")
+        lines.append(f"{emojis['start']}: start the game (creator only)")
         lines.append(f"Current players:\n{members[0].mention} (creator)")
 
         embed.description = "\n".join(lines)
