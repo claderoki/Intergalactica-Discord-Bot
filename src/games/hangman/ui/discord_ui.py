@@ -9,6 +9,12 @@ import src.config as config
 from .ui import UI
 from src.utils.general import html_to_discord
 
+async def delete_message(message):
+    try:
+        await message.delete()
+    except:
+        pass
+
 class DiscordUI(UI):
     def __init__(self, ctx):
         self.message = None
@@ -26,13 +32,13 @@ class DiscordUI(UI):
                 return False
             if len(message.content) == 1 and " " not in message.content:
                 letter = message.content.lower()
-                asyncio.gather(message.delete(), return_exceptions = False)
+                asyncio.gather(delete_message(message))
                 if letter not in letters_used:
                     return True
                 else:
                     self.send_error(f"Letter '{letter}' has already been used")
             elif len(message.content) == len(word):
-                asyncio.gather(message.delete(), return_exceptions = False)
+                asyncio.gather(delete_message(message))
                 return True
             else:
                 self.invalid_messages += 1
@@ -51,7 +57,7 @@ class DiscordUI(UI):
             guess = None
 
         if self.mention_message is not None:
-            asyncio.gather(self.mention_message.delete(), return_exceptions = False)
+            asyncio.gather(delete_message(self.mention_message))
 
         return guess.content.lower() if guess is not None else None
 
@@ -81,7 +87,7 @@ class DiscordUI(UI):
         embed.add_field(name = "\uFEFF", value = "\n".join(guess_info), inline = False)
         if self.message is None or self.invalid_messages > 3:
             if self.message is not None:
-                asyncio.gather(self.message.delete(), return_exceptions = False)
+                asyncio.gather(delete_message(self.message))
             self.message = await self.ctx.send(content = content, embed = embed)
             self.invalid_messages = 0
         else:
