@@ -424,7 +424,10 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         await mail.editor_for(ctx, "gold", min = 0, max = sender.human.gold, skippable = True)
 
         waiter = ItemWaiter(ctx, prompt = ctx.translate("mail_item_prompt"), skippable = True)
-        mail.item = await waiter.wait()
+        try:
+            mail.item = await waiter.wait()
+        except Skipped:
+            pass
 
         human_item, _ = HumanItem.get_or_create(item = mail.item, human = sender.human)
         if human_item.amount < 1:
