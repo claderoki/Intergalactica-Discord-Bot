@@ -72,7 +72,7 @@ class FarmingCog(BaseCog, name = "Farming"):
 
         human_item = HumanItem.get_or_none(item = item, human = ctx.get_human())
         if human_item is None or human_item.amount <= 0:
-            raise SendableException(ctx.translate("item_not_enough").format(amount = 1))
+            raise SendableException(ctx.translate("item_not_enough").format(item = item, amount = 1))
 
         ctx.farm.plant(crop = crop)
 

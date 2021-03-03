@@ -368,13 +368,13 @@ class Intergalactica(BaseCog):
             raise SendableException(ctx.translate("group_already_exists"))
         else:
             group.join(ctx.author, is_owner = True)
-            await ctx.send(ctx.translate("group_created"))
+            await ctx.send(ctx.translate("group_created").format(group = group))
 
     @group.command(name = "join")
     async def group_join(self, ctx, group : MentionGroup):
         created = group.join(ctx.author)
         if created:
-            await ctx.send(ctx.translate("group_joined"))
+            await ctx.send(ctx.translate("group_joined").format(group = group))
         else:
             await ctx.send(ctx.translate("group_already_joined"))
 

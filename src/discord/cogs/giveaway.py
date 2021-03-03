@@ -69,7 +69,14 @@ class GiveawayCog(BaseCog, name = "Giveaway"):
 
                 reaction = [x for x in message.reactions if str(x.emoji) == self.participate_emoji][0]
                 role_needed = giveaway.role_needed
-                participants = [x for x in await reaction.users().flatten() if (role_needed is None or role_needed in x.roles) and not x.bot]
+
+                participants = []
+                for user in await reaction.users().flatten():
+                    if isinstance(user, discord.User) or user.bot:
+                        continue
+                    if role_needed is None or role_needed in user.roles:
+                        participants.append(user)
+
                 if len(participants) == 0:
                     continue
 
