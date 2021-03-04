@@ -280,7 +280,8 @@ class Intergalactica(BaseCog):
             if self.last_member_join is not None and "welcome" in message.content.lower():
                 time_here = relativedelta(datetime.datetime.utcnow(), self.last_member_join)
                 if time_here.minutes <= 5:
-                    asyncio.gather(message.add_reaction("❤️"))
+                    emoji = random.choice(("💛", "🧡", "🤍", "💙", "🤎", "🖤", "💜", "💚", "❤️"))
+                    asyncio.gather(message.add_reaction(emoji))
             elif random.randint(0, 1000) == 1:
                 asyncio.gather(message.add_reaction("🤏"))
 
