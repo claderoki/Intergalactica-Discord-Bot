@@ -143,11 +143,16 @@ class TemporaryChannel(BaseModel):
         return channel
 
 class Reminder(BaseModel):
-    channel_id          = peewee.BigIntegerField (null = False)
+    channel_id          = peewee.BigIntegerField (null = True)
     user_id             = peewee.BigIntegerField (null = False)
     due_date            = peewee.DateTimeField   (null = False)
     text                = peewee.TextField       (null = False)
     finished            = peewee.BooleanField    (null = False, default = False)
+    dm                  = peewee.BooleanField    (null = False, default = False)
+
+    @property
+    def sendable(self):
+        return self.channel if not self.dm else self.user
 
 class Earthling(BaseModel):
     user_id              = peewee.BigIntegerField  (null = False)

@@ -395,6 +395,14 @@ class PigeonCog(BaseCog, name = "Pigeon"):
                 retrieval = MailRetrieval(activity)
                 embed = retrieval.embed
                 retrieval.commit()
+
+                Reminder.create(
+                    user_id    = activity.recipient.user_id,
+                    channel_id = None,
+                    dm         = True,
+                    text       = ctx.translate("pigeon_inbox_unread_mail"),
+                    due_date   = datetime.datetime.utcnow()
+                )
                 return asyncio.gather(ctx.send(embed = embed))
             else:
                 embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to send a message!"
@@ -428,7 +436,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
             mail.item = await waiter.wait()
         except Skipped:
             pass
-        
+
         if mail.item is not None:
             human_item, _ = HumanItem.get_or_create(item = mail.item, human = sender.human)
             if human_item.amount < 1:
