@@ -53,7 +53,7 @@ async def on_malicious_action(action : MaliciousAction, member : discord.Member,
         lines.append(", ".join([f"**{x}**" for x in words]))
         embed.description = "{}\n{}".format("\n".join(lines), embed.description)
 
-        sendable = member.guild.get_channel(Intergalactica._channel_ids["staff_chat"])
+        sendable = member.guild.get_channel(Intergalactica._channel_ids["c3po-log"])
         asyncio.gather(sendable.send(embed = embed))
 
         ban_if_new = True
@@ -105,7 +105,8 @@ class Intergalactica(BaseCog):
         "bot_commands"   : 796413360706682933,
         "introductions"  : 742567349613232249,
         "tabs"           : 757961433911787592,
-        "logs"           : 796438050091171870
+        "logs"           : 796438050091171870,
+        "c3po-log"       : 817078062784708608,
     }
 
     async def get_invites(self, message):
@@ -280,7 +281,7 @@ class Intergalactica(BaseCog):
             if self.last_member_join is not None and "welcome" in message.content.lower():
                 time_here = relativedelta(datetime.datetime.utcnow(), self.last_member_join)
                 if time_here.minutes <= 5:
-                    emoji = random.choice(("💛", "🧡", "🤍", "💙", "🤎", "🖤", "💜", "💚", "❤️"))
+                    emoji = random.choice(("💛", "🧡", "🤍", "💙", "🖤", "💜", "💚", "❤️"))
                     asyncio.gather(message.add_reaction(emoji))
             elif random.randint(0, 1000) == 1:
                 asyncio.gather(message.add_reaction("🤏"))
@@ -483,7 +484,7 @@ class Intergalactica(BaseCog):
         await ctx.send("A request has been sent to the staff.")
 
         temp_channel.save()
-        await self.get_channel("bot_commands").send(embed = temp_channel.ticket_embed)
+        await self.get_channel("c3po-log").send(embed = temp_channel.ticket_embed)
 
     @temporary_channel.command(name = "extend")
     async def temporary_channel_extend(self, ctx, channel : discord.TextChannel):
@@ -532,7 +533,7 @@ class Intergalactica(BaseCog):
                 if time_here.hours >= 12:
                     channel = self.get_channel("staff_votes")
                     asyncio.gather(channel.send(f"Should {member} get selfie access?"))
-                asyncio.gather(self.log("bot_commands", f"**{member}** {member.mention} has achieved the rank needed for selfies ({role.name})."))
+                asyncio.gather(self.log("c3po-log", f"**{member}** {member.mention} has achieved the rank needed for selfies ({role.name})."))
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -703,7 +704,7 @@ class Intergalactica(BaseCog):
                 embed = Embed.success(None)
                 submissions = await reddit_advertisement.advertise()
                 embed.set_author(name = "bump_successful", url = submissions[0].shortlink)
-                asyncio.gather(self.log("bot_commands", embed = embed))
+                asyncio.gather(self.log("c3po-log", embed = embed))
 
                 await asyncio.sleep(10)
                 for submission in submissions:
@@ -783,7 +784,7 @@ class Intergalactica(BaseCog):
                     time_here = relativedelta(datetime.datetime.utcnow(), member.joined_at)
                     if time_here.hours >= 6:
                         asyncio.gather(member.kick(reason = "Missing mandatory roles."))
-                        await self.log("bot_commands", f"**{member}** {member.mention} was kicked due to missing roles")
+                        await self.log("c3po-log", f"**{member}** {member.mention} was kicked due to missing roles")
 
     @tasks.loop(hours = 12)
     async def birthday_poller(self):
@@ -799,7 +800,7 @@ class Intergalactica(BaseCog):
 
         with database.connection_context():
             for human in query:
-                await self.log("bot_commands", f"**{human.user}** {human.mention} Should be celebrating their birthday today.")
+                await self.log("c3po-log", f"**{human.user}** {human.mention} Should be celebrating their birthday today.")
 
 def member_is_legal(member):
     age_roles = Intergalactica._role_ids["age"].values()
