@@ -60,6 +60,10 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         "pigeon",
     ]
 
+    subcommands_pvp_only = [
+        "rob"
+    ]
+
     subcommands_no_require_available = [
         "status",
         "relationships",
@@ -80,6 +84,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         "feed",
         "play",
         "date",
+        "rob",
         "poop",
     ] + subcommands_no_require_available
 
@@ -130,19 +135,18 @@ class PigeonCog(BaseCog, name = "Pigeon"):
             pigeon_raise_if_unavailable(ctx, pigeon, name = name)
         if command_name not in self.subcommands_no_require_stats:
             pigeon_raise_if_stats_too_low(ctx, pigeon, name = name)
+        if command_name in self.subcommands_pvp_only and not pigeon.pvp:
+            raise SendableException(ctx.translate("pvp_not_enabled"))
+
         return pigeon
 
     @commands.group()
     async def pigeon(self, ctx):
-        # if ctx.invoked_subcommand is None:
-        #     return await ctx.send_help(ctx.command)
-
         ctx.human = ctx.get_human()
         for message in list(ctx.human.system_messages.where(SystemMessage.read == False)):
             await ctx.send(embed = message.embed)
             message.read = True
             message.save()
-            # return
 
         self.pigeon_check(ctx, human = ctx.human)
 
@@ -257,6 +261,10 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         pigeon.pvp = not pigeon.pvp
         pigeon.save()
         asyncio.gather(ctx.send(f"Okay. PvP is now " + ("on" if pigeon.pvp else "off")))
+
+    @pigeon.command(name = "rob")
+    async def pigeon_rob(self, ctx, member : discord.Member):
+        await ctx.send("OK")
 
     @pigeon.command(name = "date")
     @commands.max_concurrency(1, per = commands.BucketType.user)
