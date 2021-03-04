@@ -51,9 +51,37 @@ class ItemWaiter(StrWaiter):
         raise ConversionFailed("Item not found.")
 
 class PigeonCog(BaseCog, name = "Pigeon"):
-    subcommands_no_require_pigeon = ["buy", "history", "scoreboard", "help", "inbox", "pigeon"]
-    subcommands_no_require_available = ["status", "relationships", "reject", "stats", "languages", "storytime", "retrieve", "gender", "name", "accept"] + subcommands_no_require_pigeon
-    subcommands_no_require_stats = ["heal", "clean", "feed", "play", "date", "poop"] + subcommands_no_require_available
+    subcommands_no_require_pigeon = [
+        "buy",
+        "history",
+        "scoreboard",
+        "help",
+        "inbox",
+        "pigeon",
+    ]
+
+    subcommands_no_require_available = [
+        "status",
+        "relationships",
+        "reject",
+        "stats",
+        "languages",
+        "storytime",
+        "retrieve",
+        "gender",
+        "name",
+        "accept",
+        "pvp",
+    ] + subcommands_no_require_pigeon
+
+    subcommands_no_require_stats = [
+        "heal",
+        "clean",
+        "feed",
+        "play",
+        "date",
+        "poop",
+    ] + subcommands_no_require_available
 
     def __init__(self, bot):
         super().__init__(bot)
@@ -218,6 +246,17 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         footer.append(f"or '{ctx.prefix}pigeon reject' to reject")
         embed.set_footer(text = "\n".join(footer))
         asyncio.gather(channel.send(embed = embed)) 
+
+    @pigeon.command(name = "pvp")
+    async def pigeon_pvp(self, ctx):
+        pigeon = ctx.pigeon
+
+        if pigeon.pvp and not pigeon.can_disable_pvp:
+            raise SendableException(ctx.translate("pvped_too_recently"))
+
+        pigeon.pvp = not pigeon.pvp
+        pigeon.save()
+        asyncio.gather(ctx.send(f"Okay. PvP is now " + ("on" if pigeon.pvp else "off")))
 
     @pigeon.command(name = "date")
     @commands.max_concurrency(1, per = commands.BucketType.user)

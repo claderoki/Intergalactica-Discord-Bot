@@ -3,8 +3,8 @@ from enum import Enum
 import math
 import random
 
+from dateutil.relativedelta import relativedelta
 import discord
-from countryinfo import CountryInfo
 import peewee
 
 from .base import BaseModel, EnumField, PercentageField, TimeDeltaField, CountryField, LanguageField
@@ -93,6 +93,15 @@ class Pigeon(BaseModel):
     health              = PercentageField        (null = False, default = 100)
     status              = EnumField              (Status, default = Status.idle)
     gender              = EnumField              (Gender, default = Gender.other)
+    pvp                 = peewee.BooleanField    (null = False, default = False)
+    last_used_pvp       = peewee.DateTimeField   (null = True)
+
+    @property
+    def can_disable_pvp(self):
+        if self.last_used_pvp is None:
+            return True
+
+        return (relativedelta(datetime.datetime.utcnow(), self.last_used_pvp).hours > 12)
 
     def study_language(self, language, mastery = 1):
         language, _ = LanguageMastery.get_or_create(pigeon = self, language = language)
