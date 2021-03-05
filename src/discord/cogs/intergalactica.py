@@ -761,14 +761,12 @@ class Intergalactica(BaseCog):
         query = query.where(Reminder.due_date <= datetime.datetime.utcnow())
 
         for reminder in query:
-            channel = self.bot.get_channel(reminder.channel_id)
-            user = reminder.user
-            channel = channel or user
-            if user is not None:
+            sendable = reminder.sendable
+            if sendable is not None:
                 embed = discord.Embed(color = self.bot.get_dominant_color(None))
                 embed.set_author(name = "Reminder", icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/804862458070040616/1.webp")
                 embed.description = reminder.text
-                asyncio.gather(channel.send(content = user.mention, embed = embed))
+                asyncio.gather(sendable.send(content = f"<@{reminder.user_id}>", embed = embed))
 
             reminder.finished = True
             reminder.save()

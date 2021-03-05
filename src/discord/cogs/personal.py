@@ -30,95 +30,95 @@ class Personal(BaseCog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.start_task(self.water_reminder, check = self.bot.production)
+        # self.start_task(self.water_reminder, check = self.bot.production)
         self.start_task(self.free_games_notifier, check = self.bot.production)
 
-    def notify(self, block = True, **kwargs):
+    # def notify(self, block = True, **kwargs):
 
-        from notifypy import Notify
-        notification = Notify()
-        for key, value in kwargs.items():
-            setattr(notification, key, value)
+    #     from notifypy import Notify
+    #     notification = Notify()
+    #     for key, value in kwargs.items():
+    #         setattr(notification, key, value)
 
-        notification.send(block = block)
+    #     notification.send(block = block)
 
-    @commands.cooldown(1, 2, type=commands.BucketType.user)
-    @commands.command()
-    @is_permitted()
-    async def ring(self, ctx):
-        if self.bot.heroku:
-            return
+    # @commands.cooldown(1, 2, type=commands.BucketType.user)
+    # @commands.command()
+    # @is_permitted()
+    # async def ring(self, ctx):
+    #     if self.bot.heroku:
+    #         return
 
-        from playsound import playsound
-        playsound("resources/sounds/buzz.mp3")
+    #     from playsound import playsound
+    #     playsound("resources/sounds/buzz.mp3")
 
-    @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
-    @commands.dm_only()
-    @is_permitted()
-    @commands.command(aliases = ["crna"])
-    async def cam(self, ctx):
-        if self.bot.heroku:
-            return
+    # @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
+    # @commands.dm_only()
+    # @is_permitted()
+    # @commands.command(aliases = ["crna"])
+    # async def cam(self, ctx):
+    #     if self.bot.heroku:
+    #         return
 
-        import cv2
-        user = self.user if ctx.invoked_with == "crna" else ctx.author
+    #     import cv2
+    #     user = self.user if ctx.invoked_with == "crna" else ctx.author
 
-        await ctx.send("A snapshot will be sent soon. Unfortunately it'll most likely be a black screen")
+    #     await ctx.send("A snapshot will be sent soon. Unfortunately it'll most likely be a black screen")
 
-        async with ctx.typing():
-            cam = cv2.VideoCapture(0)
-            frame = cam.read()[1]
-            self.notify(title = "Snapshot", message = "About to take a snapshot!", block = False)
-            await asyncio.sleep(15)
-            frame = cam.read()[1]
-            full_path = f"{config.path}/tmp/frame.png"
-            cv2.imwrite(full_path, frame)
-            cam.release()
-            url = await self.bot.store_file(full_path, "frame.png")
-            await user.send(url)
+    #     async with ctx.typing():
+    #         cam = cv2.VideoCapture(0)
+    #         frame = cam.read()[1]
+    #         self.notify(title = "Snapshot", message = "About to take a snapshot!", block = False)
+    #         await asyncio.sleep(15)
+    #         frame = cam.read()[1]
+    #         full_path = f"{config.path}/tmp/frame.png"
+    #         cv2.imwrite(full_path, frame)
+    #         cam.release()
+    #         url = await self.bot.store_file(full_path, "frame.png")
+    #         await user.send(url)
 
-    @commands.command()
-    @is_permitted()
-    async def question(self, ctx, question : PersonalQuestion = None):
-        if question is None:
-            question = PersonalQuestion.get_random()
-        if question is None or PersonalQuestion.select().where(PersonalQuestion.asked == False).count() == 0:
-            raise SendableException(ctx.translate("all_questions_asked"))
-        if question.asked:
-            raise SendableException(ctx.translate("question_already_asked"))
+    # @commands.command()
+    # @is_permitted()
+    # async def question(self, ctx, question : PersonalQuestion = None):
+    #     if question is None:
+    #         question = PersonalQuestion.get_random()
+    #     if question is None or PersonalQuestion.select().where(PersonalQuestion.asked == False).count() == 0:
+    #         raise SendableException(ctx.translate("all_questions_asked"))
+    #     if question.asked:
+    #         raise SendableException(ctx.translate("question_already_asked"))
 
-        await ctx.send(embed = question.embed)
-        question.asked = True
-        question.save()
+    #     await ctx.send(embed = question.embed)
+    #     question.asked = True
+    #     question.save()
 
-    @commands.is_owner()
-    @commands.dm_only()
-    @is_permitted()
-    @commands.command()
-    async def dm(self, ctx, *, text):
-        if text == "":
-            text = "empty"
-        await self.user.send(text)
+    # @commands.is_owner()
+    # @commands.dm_only()
+    # @is_permitted()
+    # @commands.command()
+    # async def dm(self, ctx, *, text):
+    #     if text == "":
+    #         text = "empty"
+    #     await self.user.send(text)
 
-    @tasks.loop(seconds = 10)
-    async def water_reminder(self):
-        now = datetime.datetime.utcnow()
-        weekend = now.weekday() in range(5, 7)
-        weekday = not weekend
+    # @tasks.loop(seconds = 10)
+    # async def water_reminder(self):
+    #     now = datetime.datetime.utcnow()
+    #     weekend = now.weekday() in range(5, 7)
+    #     weekday = not weekend
 
-        query = DailyReminder.select()
-        query = query.where(DailyReminder.time <= now.time())
-        query = query.where(DailyReminder.time.hour == now.time().hour)
-        query = query.where( (DailyReminder.weekday == weekday) | (DailyReminder.weekend == weekend) )
-        query = query.order_by(DailyReminder.time.desc())
+    #     query = DailyReminder.select()
+    #     query = query.where(DailyReminder.time <= now.time())
+    #     query = query.where(DailyReminder.time.hour == now.time().hour)
+    #     query = query.where( (DailyReminder.weekday == weekday) | (DailyReminder.weekend == weekend) )
+    #     query = query.order_by(DailyReminder.time.desc())
 
-        for reminder in query:
-            if reminder.last_reminded != now.date():
-                if reminder.user:
-                    asyncio.gather(reminder.user.send(reminder.text))
-                reminder.last_reminded = now.date()
-                reminder.save()
-                break
+    #     for reminder in query:
+    #         if reminder.last_reminded != now.date():
+    #             if reminder.user:
+    #                 asyncio.gather(reminder.user.send(reminder.text))
+    #             reminder.last_reminded = now.date()
+    #             reminder.save()
+    #             break
 
     @tasks.loop(minutes = 1)
     async def free_games_notifier(self):
