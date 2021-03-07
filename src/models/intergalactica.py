@@ -181,7 +181,8 @@ class Earthling(BaseModel):
 
     @property
     def personal_role(self):
-        return self.guild.get_role(self.personal_role_id)
+        if self.guild is not None:
+            return self.guild.get_role(self.personal_role_id)
 
     @personal_role.setter
     def personal_role(self, value):
