@@ -95,6 +95,13 @@ class Pigeon(BaseModel):
     gender              = EnumField              (Gender, default = Gender.other)
     pvp                 = peewee.BooleanField    (null = False, default = False)
     last_used_pvp       = peewee.DateTimeField   (null = True)
+    jailed_until        = peewee.DateTimeField   (null = True)
+
+    @property
+    def is_jailed(self):
+        if self.jailed_until is None:
+            return False
+        return self.jailed_until > datetime.datetime.utcnow()
 
     @property
     def can_disable_pvp(self):
@@ -102,6 +109,13 @@ class Pigeon(BaseModel):
             return True
 
         return (relativedelta(datetime.datetime.utcnow(), self.last_used_pvp).hours > 12)
+
+    @property
+    def pvp_action_available(self):
+        if self.last_used_pvp is None:
+            return True
+
+        return (relativedelta(datetime.datetime.utcnow(), self.last_used_pvp).hours > 3)
 
     def study_language(self, language, mastery = 1):
         language, _ = LanguageMastery.get_or_create(pigeon = self, language = language)

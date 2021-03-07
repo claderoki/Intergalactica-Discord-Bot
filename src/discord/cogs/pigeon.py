@@ -1,3 +1,4 @@
+import enum
 import random
 import asyncio
 
@@ -119,6 +120,9 @@ class PigeonCog(BaseCog, name = "Pigeon"):
             setattr(ctx, name, pigeon)
             pigeon_raise_if_not_exist(ctx, pigeon, name = name)
 
+            if pigeon.is_jailed:
+                raise SendableException(ctx.translate(f"{name}_pigeon_jailed"))
+
             if pigeon.status == Pigeon.Status.idle:
                 #TODO: optimize.
                 activities = []
@@ -136,7 +140,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         if command_name not in self.subcommands_no_require_stats:
             pigeon_raise_if_stats_too_low(ctx, pigeon, name = name)
         if command_name in self.subcommands_pvp_only and not pigeon.pvp:
-            raise SendableException(ctx.translate("pvp_not_enabled"))
+            raise SendableException(ctx.translate(f"{name}_pvp_not_enabled"))
 
         return pigeon
 
@@ -264,7 +268,43 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @pigeon.command(name = "rob")
     async def pigeon_rob(self, ctx, member : discord.Member):
-        await ctx.send("OK")
+        pigeon = ctx.pigeon
+        if not pigeon.pvp_action_available:
+            raise SendableException(ctx.translate("pvp_action_not_available_yet"))
+        if member.id == ctx.author.id:
+            raise SendableException(ctx.translate("cannot_rob_self"))
+
+        human1 = ctx.get_human()
+        human2 = ctx.get_human(member.id)
+
+        class RobType(enum.Enum):
+            item = 1
+            gold = 2
+
+        class RobResult(enum.Enum):
+            success = 1
+            failure = 2
+
+        # type = RobType.gold if random.randint(0, 1) == 1 else RobType.item
+        type = RobType.gold
+        pigeon.last_used_pvp = datetime.datetime.utcnow()
+
+        if type == RobType.gold:
+            amount = random.randint(0, 100)
+            amount = min(human2.gold, amount)
+            result = RobResult.failure if random.randint(0, 3) == 1 else RobResult.success
+            if result == RobResult.success:
+                human2.gold -= amount
+                human1.gold += amount
+                human2.save()
+                human1.save()
+                await ctx.send(f"You successfully steal {Pigeon.emojis['gold']}{amount} from {human2.user}")
+            elif result == RobResult.failure:
+                jail_time = 3
+                pigeon.jailed_until = datetime.datetime.utcnow() + datetime.timedelta(hours = jail_time)
+                await ctx.send(f"You fail to steal from {human2.user} and are put in jail for {jail_time} hours")
+
+            pigeon.save()
 
     @pigeon.command(name = "date")
     @commands.max_concurrency(1, per = commands.BucketType.user)
@@ -813,6 +853,9 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     @commands.cooldown(1, (3600 * 1), type = commands.BucketType.user)
     async def poop(self, ctx, member : discord.Member):
         """Poop on someone elses pigeon."""
+        if ctx.author.id != 815156623659106324 and member.id == ctx.author.id:
+            raise SendableException(ctx.translate("cannot_poop_self"))
+
         self.pigeon_check(ctx, member, name = "pigeon2")
         relationship = PigeonRelationship.get_or_create_for(ctx.pigeon, ctx.pigeon2)
         price = 5
