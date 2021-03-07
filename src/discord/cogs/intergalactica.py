@@ -16,6 +16,7 @@ from src.discord.helpers.embed import Embed
 from src.models import Reminder, MentionGroup, MentionMember, Item, Human, Earthling, TemporaryVoiceChannel, TemporaryChannel, HumanItem, RedditAdvertisement, database
 from src.discord.helpers.waiters import IntWaiter
 import src.discord.helpers.pretty as pretty
+import src.discord.helpers.paginating as paginating
 from src.discord.cogs.core import BaseCog
 
 def is_intergalactica():
@@ -507,6 +508,22 @@ class Intergalactica(BaseCog):
         human_item.save()
         temp_channel.save()
         await ctx.send(f"Okay. This channel has been extended until `{temp_channel.expiry_date}`")
+
+    @temporary_channel.command(name = "history")
+    async def temporary_channel_history(self, ctx):
+        query = TemporaryChannel.select()
+        query = query.where(TemporaryChannel.type == ctx.type)
+        query = query.where(TemporaryChannel.active == False)
+        query = query.where(TemporaryChannel.status == TemporaryChannel.Status.accepted)
+        query = query.where(TemporaryChannel.guild_id == ctx.guild.id)
+
+        data = []
+        data.append(("name", "creator"))
+        for channel in query:
+            data.append((channel.name, pretty.limit_str(channel.user, 10)))
+
+        table = pretty.Table.from_list(data, first_header = True)
+        await table.to_paginator(ctx, 10).wait()
 
     @commands.has_guild_permissions(administrator = True)
     @commands.command()
