@@ -119,7 +119,7 @@ class BaseModel(peewee.Model):
     @property
     def channel(self):
         if self._channel is None:
-            self._channel = self.guild.get_channel(self.channel_id)
+            self._channel = self.bot.get_channel(self.channel_id)
         return self._channel
 
     class Meta:
