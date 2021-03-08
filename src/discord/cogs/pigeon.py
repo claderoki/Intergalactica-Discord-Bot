@@ -755,6 +755,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "scoreboard")
+    @commands.guild_only()
     async def pigeon_scoreboard(self, ctx):
         """View the scoreboard."""
         query = Pigeon.select()
