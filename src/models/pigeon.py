@@ -134,7 +134,7 @@ class Pigeon(BaseModel):
             )
 
     def update_stats(self, data, increment = True, save = True):
-        human = self.bot.get_human(user_id = self.human.user_id)
+        human = self.bot.get_human(user = self.human.user_id)
         for key, value in data.items():
             if key == "gold":
                 human.gold += value
@@ -340,7 +340,7 @@ class Fight(Challenge):
         error_messages = []
         i = 1
         for pigeon in self.pigeons:
-            human = self.bot.get_human(user_id = pigeon.human.user_id)
+            human = self.bot.get_human(user = pigeon.human.user_id)
             if human.gold < self.bet:
                 error_messages.append(ctx.translate("pigeon{i}_not_enough_gold").format(bet = self.bet))
             i += 1

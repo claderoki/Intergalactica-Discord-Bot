@@ -237,7 +237,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         await fight.editor_for(ctx, "bet", min = 0, max = min([ctx.pigeon1.human.gold, ctx.pigeon2.human.gold]), skippable = True)
 
         ctx.raise_if_not_enough_gold(fight.bet, ctx.get_human(), name = "pigeon1")
-        ctx.raise_if_not_enough_gold(fight.bet, ctx.get_human(user_id = member.id), name = "pigeon2")
+        ctx.raise_if_not_enough_gold(fight.bet, ctx.get_human(user = member), name = "pigeon2")
 
         fight.save()
 
@@ -354,7 +354,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
         if isinstance(challenge, Fight):
             for pigeon in challenge.pigeons:
-                human = ctx.get_human(user_id = pigeon.human.user_id)
+                human = ctx.get_human(user = pigeon.human.user_id)
                 human.gold -= challenge.bet
                 human.save()
 
@@ -1042,7 +1042,7 @@ def get_winnings_value(**kwargs):
     return ", ".join(lines)
 
 def get_winnings_value_included(pigeon, **kwargs):
-    human = config.bot.get_human(user_id = pigeon.human.user_id)
+    human = config.bot.get_human(user = pigeon.human.user_id)
     lines = []
     for key, value in kwargs.items():
         if value != 0:
