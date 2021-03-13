@@ -65,7 +65,12 @@ class GiveawayCog(BaseCog, name = "Giveaway"):
             query = query.where(Giveaway.due_date <= datetime.datetime.utcnow())
             for giveaway in query:
                 channel = giveaway.channel
-                message = await channel.fetch_message(giveaway.message_id)
+                try:
+                    message = await channel.fetch_message(giveaway.message_id)
+                except discord.errors.NotFound:
+                    giveaway.finished = True
+                    giveaway.save()
+                    continue
 
                 reaction = [x for x in message.reactions if str(x.emoji) == self.participate_emoji][0]
                 role_needed = giveaway.role_needed
