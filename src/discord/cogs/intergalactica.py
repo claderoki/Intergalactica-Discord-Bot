@@ -373,6 +373,11 @@ class Intergalactica(BaseCog):
             group.join(ctx.author, is_owner = True)
             await ctx.send(ctx.translate("group_created").format(group = group))
 
+    @group.command(name = "vc")
+    @commands.has_role(_role_ids["5k+"])
+    async def group_vc(self, ctx, group : MentionGroup):
+        return await self.bot.get_command("vcchannel create")(ctx, group.name)
+
     @group.command(name = "join")
     async def group_join(self, ctx, group : MentionGroup):
         created = group.join(ctx.author)
