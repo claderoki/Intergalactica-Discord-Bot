@@ -209,7 +209,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     async def pigeon_name(self, ctx):
         """Change your pigeons name."""
         cost = 50
-        ctx.raise_if_not_enough_gold(cost, ctx.pigeon.human)
+        ctx.raise_if_not_enough_gold(cost, ctx.get_human())
         await ctx.pigeon.editor_for(ctx, "name")
         ctx.pigeon.save()
         embed = self.get_base_embed(ctx.guild)
@@ -236,8 +236,8 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
         await fight.editor_for(ctx, "bet", min = 0, max = min([ctx.pigeon1.human.gold, ctx.pigeon2.human.gold]), skippable = True)
 
-        ctx.raise_if_not_enough_gold(fight.bet, ctx.pigeon1.human, name = "pigeon1")
-        ctx.raise_if_not_enough_gold(fight.bet, ctx.pigeon2.human, name = "pigeon2")
+        ctx.raise_if_not_enough_gold(fight.bet, ctx.get_human(), name = "pigeon1")
+        ctx.raise_if_not_enough_gold(fight.bet, ctx.get_human(user_id = member.id), name = "pigeon2")
 
         fight.save()
 
@@ -354,7 +354,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
         if isinstance(challenge, Fight):
             for pigeon in challenge.pigeons:
-                human = pigeon.human
+                human = ctx.get_human(user_id = pigeon.human.user_id)
                 human.gold -= challenge.bet
                 human.save()
 
@@ -422,8 +422,9 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     async def pigeon_explore(self, ctx):
         """Have your pigeon exploring countries."""
         pigeon = ctx.pigeon
+        human = ctx.human()
 
-        residence = pigeon.human.country or Country.random()
+        residence = human.country or Country.random()
         destination = Country.random()
 
         exploration = Exploration(residence = residence, destination = destination, pigeon = pigeon)
@@ -512,11 +513,12 @@ class PigeonCog(BaseCog, name = "Pigeon"):
             ctx.channel = await ctx.author.create_dm()
 
         recipient = ctx.get_human(user = user)
+        human = ctx.get_human()
 
         mail = Mail(recipient = recipient, sender = sender, read = False)
 
         await mail.editor_for(ctx, "message")
-        await mail.editor_for(ctx, "gold", min = 0, max = sender.human.gold, skippable = True)
+        await mail.editor_for(ctx, "gold", min = 0, max = human.gold, skippable = True)
 
         waiter = ItemWaiter(ctx, prompt = ctx.translate("mail_item_prompt"), skippable = True)
         try:
@@ -525,21 +527,21 @@ class PigeonCog(BaseCog, name = "Pigeon"):
             pass
 
         if mail.item is not None:
-            human_item, _ = HumanItem.get_or_create(item = mail.item, human = sender.human)
+            human_item, _ = HumanItem.get_or_create(item = mail.item, human = human)
             if human_item.amount < 1:
                 raise SendableException(ctx.translate("item_not_found"))
 
             human_item.amount -= 1
             human_item.save()
 
-        mail.residence   = sender.human.country
+        mail.residence   = human.country
         mail.destination = recipient.country
         mail.end_date = mail.start_date + datetime.timedelta(minutes = mail.calculate_duration())
-        sender.human.gold -= mail.gold or 0
+        human.gold -= mail.gold or 0
         sender.status = Pigeon.Status.mailing
 
         mail.save()
-        sender.human.save()
+        human.save()
         sender.save()
 
         remind_emoji = "❗"
@@ -592,8 +594,8 @@ class PigeonCog(BaseCog, name = "Pigeon"):
             mail.read = True
             mail.save()
             if mail.gold > 0:
-                mail.recipient.gold += mail.gold
-                mail.recipient.save()
+                human.gold += mail.gold
+                human.save()
             if mail.item is not None:
                 human_item, _ = HumanItem.get_or_create(item = mail.item, human = mail.recipient)
                 human_item.amount += 1
@@ -1039,11 +1041,12 @@ def get_winnings_value(**kwargs):
     return ", ".join(lines)
 
 def get_winnings_value_included(pigeon, **kwargs):
+    human = config.bot.get_human(user_id = pigeon.human.user_id)
     lines = []
     for key, value in kwargs.items():
         if value != 0:
             if key == "gold":
-                current_value = pigeon.human.gold
+                current_value = human.gold
             else:
                 current_value = getattr(pigeon, key)
             new_value = current_value + value
