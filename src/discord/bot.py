@@ -283,8 +283,7 @@ class Locus(commands.Bot):
             user_id = user
         else:
             user_id = user.id
-        return Human.get_or_create(user_id = user_id)[0]
- 
+        # return Human.get_or_create(user_id = user_id)[0]
         if user_id not in self._human_cache:
             human, _ = Human.get_or_create(user_id = user_id)
             self._human_cache[user_id] = human
