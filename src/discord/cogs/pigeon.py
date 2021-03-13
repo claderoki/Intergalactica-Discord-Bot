@@ -422,7 +422,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     async def pigeon_explore(self, ctx):
         """Have your pigeon exploring countries."""
         pigeon = ctx.pigeon
-        human = ctx.human()
+        human = ctx.human
 
         residence = human.country or Country.random()
         destination = Country.random()
