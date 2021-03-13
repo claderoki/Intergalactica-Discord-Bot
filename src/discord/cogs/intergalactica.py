@@ -244,7 +244,11 @@ class Intergalactica(BaseCog):
 
                 for vote, vote_count in votes.items():
                     if not is_skip_vote(vote):
-                        percentage = vote_count/(len(staff_members)-skipped_member_count)*100
+                        try:
+                            total_votes = (len(staff_members)-skipped_member_count)
+                        except ZeroDivisionError:
+                            total_votes = 0
+                        percentage = (vote_count/total_votes)*100
                         cleaned_value = clean_value(percentage)
                         lines.append(f"{vote}: {vote_count} **{cleaned_value}%**")
                 embed.description = "\n".join(lines)
