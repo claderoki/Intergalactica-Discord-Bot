@@ -25,7 +25,7 @@ def seconds_readable(seconds):
     delta = relativedelta(seconds = seconds)
     normalize = lambda x : int(x) if x % 1 == 0 else round(x, 2)
     text = []
-    for attr in ('days','hours','minutes', 'seconds'):
+    for attr in ("days","hours","minutes", "seconds"):
         value = getattr(delta, attr)
         if value:
             text.append(f"{normalize(value)}{attr[0]}")
