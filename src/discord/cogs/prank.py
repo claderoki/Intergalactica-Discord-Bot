@@ -75,7 +75,9 @@ class Prank(BaseCog):
         await ctx.send(" ".join(self.get_random_words(nick = False)))
 
     @commands.group()
+
     @commands.guild_only()
+    @commands.max_concurrency(1, per = commands.BucketType.user)
     async def prank(self, ctx):
         pass
 
