@@ -7,7 +7,7 @@ from dateutil.relativedelta import relativedelta
 import discord
 import peewee
 
-from .base import BaseModel, EnumField, PercentageField, TimeDeltaField, CountryField, LanguageField
+from .base import BaseModel, EnumField, EmojiField, PercentageField, TimeDeltaField, CountryField, LanguageField
 from .human import Human, Item, HumanItem
 from src.utils.enums import Gender
 
@@ -286,7 +286,7 @@ class Mail(TravelActivity):
     sender      = peewee.ForeignKeyField (Pigeon, null = False, backref = "outbox", on_delete = "CASCADE")
     gold        = peewee.IntegerField    (null = False, default = 0)
     item        = peewee.ForeignKeyField (Item, null = True)
-    message     = peewee.TextField       (null = True)
+    message     = EmojiField             (null = True)
     read        = peewee.BooleanField    (null = False, default = True)
 
 class Exploration(TravelActivity):
