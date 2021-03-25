@@ -414,7 +414,7 @@ class Intergalactica(BaseCog):
             item = Item.get(code = code)
         )
         if human_item is None or human_item.amount == 0:
-            raise SendableException("no_" + code)
+            raise SendableException(self.bot.translate("no_" + code))
         return human_item
 
     @commands.max_concurrency(1, per = commands.BucketType.user)
