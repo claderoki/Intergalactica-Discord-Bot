@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import random
+from src.discord.cogs.personal import Personal
 
 import discord
 from discord.ext import commands
@@ -13,7 +14,14 @@ from src.discord.cogs.core import BaseCog
 
 class NotAvailable(Exception): pass
 
+user_ids_currently_being_checked = []
+
 async def check_if_available(user):
+    if user.id in user_ids_currently_being_checked:
+        return False
+
+    user_ids_currently_being_checked.append(user.id)
+
     def check(message):
         if message.author.id != user.id:
             return False
@@ -26,7 +34,12 @@ async def check_if_available(user):
         return False
 
     timeout = 60
-    await user.send("Are you available to talk? (yes | no)", delete_after = timeout)
+
+    try:
+        await user.send("Are you available to talk? (yes | no)", delete_after = timeout)
+    except discord.errors.Forbidden:
+        return False
+
     available = False
     print(f"Checking to see if {user} is available...")
     try:
@@ -37,6 +50,8 @@ async def check_if_available(user):
         print(f"{user} is not available (timed out)")
     except NotAvailable:
         print(f"{user} is not available (refused)")
+
+    user_ids_currently_being_checked.remove(user.id)
     return available
 
 def is_command(message):
@@ -76,12 +91,19 @@ class ConversationsCog(BaseCog, name = "Conversations"):
             return
         if is_command(message):
             return
-        if message.author.id not in self.cached_conversations:
+        try:
+            conversation = self.get_conversation(message.author)
+        except:
             return
 
-        conversation = self.cached_conversations[message.author.id]
         other = conversation.get_other(message.author)
         await other.send(message.content)
+
+    def get_conversation(self, user):
+        try:
+            return self.cached_conversations[user.id]
+        except KeyError:
+            raise SendableException(self.bot.translate("no_running_conversation"))
 
     @commands.group()
     @commands.dm_only()
@@ -94,10 +116,7 @@ class ConversationsCog(BaseCog, name = "Conversations"):
         """Invite the other person to reveal eachother.
            You'll need to have been in a conversation for at least 30 minutes to be able to do this.
         """
-        if ctx.author.id not in self.cached_conversations:
-            raise SendableException(ctx.translate("no_running_conversation"))
-
-        conversation = self.cached_conversations[ctx.author.id]
+        conversation = self.get_conversation(ctx.author)
 
         if conversation.duration.minutes < 30:
             raise SendableException(ctx.translate("conversation_too_short"))
@@ -127,18 +146,20 @@ class ConversationsCog(BaseCog, name = "Conversations"):
     @conversation.command(name = "end")
     async def conversation_end(self, ctx):
         """Ends the currently active conversation."""
-        if ctx.author.id not in self.cached_conversations:
-            raise SendableException(ctx.translate("no_running_conversation"))
+        conversation = self.get_conversation(ctx.author)
 
-        conversation = self.cached_conversations[ctx.author.id]
         conversation.end_time = datetime.datetime.utcnow()
         conversation.finished = True
         conversation.save()
 
         for user_id in conversation.get_user_ids():
             user = self.bot.get_user(user_id)
-            del self.cached_conversations[user.id]
-            await user.send(ctx.translate("conversation_ended"))
+            try:
+                del self.cached_conversations[user.id]
+            except:
+                pass
+            finally:
+                await user.send(ctx.translate("conversation_ended"))
 
     @conversation.command(name = "start")
     async def conversation_start(self, ctx):

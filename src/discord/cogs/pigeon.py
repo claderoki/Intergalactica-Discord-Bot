@@ -852,7 +852,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @pigeon.command()
     @commands.cooldown(1, (3600 * 1), type = commands.BucketType.user)
-    async def poop(self, ctx, member : discord.Member):
+    async def pigeon_poop(self, ctx, member : discord.Member):
         """Poop on someone elses pigeon."""
         if ctx.author.id != 815156623659106324 and member.id == ctx.author.id:
             raise SendableException(ctx.translate("cannot_poop_self"))
@@ -872,11 +872,13 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         lines.append(ctx.pigeon.name)
         data1 = {"cleanliness": 5}
         lines.append(get_winnings_value(**data1))
+        ctx.pigeon.pooped_victim_count += 1
         ctx.pigeon.update_stats(data1)
 
         lines.append(ctx.pigeon2.name)
         data2 = {"cleanliness": -10}
         lines.append(get_winnings_value(**data2))
+        ctx.pigeon2.pooped_on_count += 1
         ctx.pigeon2.update_stats(data2)
 
         embed.description = "\n".join(lines)

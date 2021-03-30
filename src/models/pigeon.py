@@ -96,6 +96,8 @@ class Pigeon(BaseModel):
     pvp                 = peewee.BooleanField    (null = False, default = False)
     last_used_pvp       = peewee.DateTimeField   (null = True)
     jailed_until        = peewee.DateTimeField   (null = True)
+    pooped_on_count     = peewee.IntegerField    (null = False, default = 0)
+    poop_victim_count   = peewee.IntegerField    (null = False, default = 0)
 
     @property
     def is_jailed(self):

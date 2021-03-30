@@ -60,6 +60,7 @@ class Profile(BaseCog):
             human.save()
 
     @commands.command()
+    @commands.guild_only()
     async def zodiac(self, ctx, sign : EnumConverter(ZodiacSign) = None):
         if sign is None:
             human = ctx.get_human()
@@ -88,6 +89,7 @@ class Profile(BaseCog):
         await table.to_paginator(ctx, 15).wait()
 
     @commands.command()
+    @commands.guild_only()
     async def scoreboard(self, ctx):
         query = Human.select()
         query = query.join(Earthling, on=(Human.id == Earthling.human))

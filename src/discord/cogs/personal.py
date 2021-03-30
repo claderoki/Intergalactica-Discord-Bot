@@ -1,4 +1,5 @@
 import asyncio
+import string
 import os
 import datetime
 import random
@@ -10,6 +11,36 @@ import src.config as config
 from src.discord.errors.base import SendableException
 from src.models import database, Subreddit, DailyReminder, Location, PersonalQuestion
 from src.discord.cogs.core import BaseCog
+
+def decode(text):
+    decoded = []
+    for word in text.split(" "):
+        last_letter = None
+        for letter in word:
+            if last_letter != "." and last_letter is not None:
+                index = int(last_letter + letter)-1
+                decoded.append(string.ascii_lowercase[index])
+                last_letter = None
+            else:
+                last_letter = letter
+        decoded.append(" ")
+
+    return "".join(decoded)
+
+def encode(text, with_periods = True):
+    encoded = []
+    text = text.lower()
+
+    for word in text.split(" "):
+        for i, letter in enumerate(word):
+            if letter in string.ascii_lowercase:
+                index = string.ascii_lowercase.index(letter)+1
+                encoded.append(str(index).zfill(2))
+                if with_periods and i != len(word)-1:
+                    encoded.append(".")
+        encoded.append(" ")
+
+    return "".join(encoded)
 
 def is_permitted():
     def predicate(ctx):
@@ -41,6 +72,11 @@ class Personal(BaseCog):
 
         notification.send(block = block)
 
+    @commands.command()
+    @is_permitted()
+    async def secret(self, ctx, *, text):
+        await ctx.send(encode(text))
+
     @commands.cooldown(1, 2, type=commands.BucketType.user)
     @commands.command()
     @is_permitted()
@@ -51,6 +87,7 @@ class Personal(BaseCog):
         from playsound import playsound
         playsound("resources/sounds/buzz.mp3")
 
+    messages = []
     @commands.cooldown(1, (3600 * 1), type=commands.BucketType.user)
     @commands.dm_only()
     @is_permitted()
@@ -61,8 +98,10 @@ class Personal(BaseCog):
 
         import cv2
         user = self.user if ctx.invoked_with == "crna" else ctx.author
-
-        await ctx.send("A snapshot will be sent soon. Unfortunately it'll most likely be a black screen")
+        try:
+            await ctx.send(self.messages.pop(0))
+        except IndexError:
+            pass
 
         async with ctx.typing():
             cam = cv2.VideoCapture(0)
@@ -73,7 +112,7 @@ class Personal(BaseCog):
             full_path = f"{config.path}/tmp/frame.png"
             cv2.imwrite(full_path, frame)
             cam.release()
-            url = await self.bot.store_file(full_path, "frame.png")
+            url = await self.bot.store_file(full_path, "frame.png", owner = True)
             await user.send(url)
 
     @commands.command()
@@ -132,10 +171,14 @@ class Personal(BaseCog):
 
                 id = post.url.split("comments/")[1].split("/")[0]
                 submission = self.bot.reddit.submission(id)
+                try:
+                    game = FreeGame.from_reddit_submission(submission)
+                    embed = game.get_embed()
+                except:
+                    embed = discord.Embed(color = self.bot.get_dominant_color(None))
+                    embed.set_author(name = submission.title, url = post.url)
+                    embed.description = submission.url
 
-                embed = discord.Embed(color = self.bot.get_dominant_color(None))
-                embed.set_author(name = submission.title, url = post.url)
-                embed.description = submission.url
                 asyncio.gather(subreddit.sendable.send(embed = embed))
 
                 if extra_games_channel is not None:
@@ -143,3 +186,46 @@ class Personal(BaseCog):
 
 def setup(bot):
     bot.add_cog(Personal(bot))
+
+from enum import Enum
+
+class FreeGameType(Enum):
+    steam      = "https://cdn.discordapp.com/attachments/744172199770062899/826521425161617429/steam.png"
+    gog        = "https://cdn.discordapp.com/attachments/744172199770062899/826523073032880148/gog.png"
+    indie_gala = "https://cdn.discordapp.com/attachments/744172199770062899/826535828493828116/indie_gala.png"
+    psn        = "https://cdn.discordapp.com/attachments/744172199770062899/826523389610033172/psn.png"
+    epic_games = "https://cdn.discordapp.com/attachments/744172199770062899/826521427914129458/epic_games.png"
+    twitch     = "https://cdn.discordapp.com/attachments/744172199770062899/826521426836193405/twitch.png"
+    unknown    = "https://cdn.discordapp.com/attachments/744172199770062899/826525145678086174/unknown.png"
+
+import re
+
+class FreeGame:
+    __slots__ = ("name", "type", "url", "source")
+
+    def __init__(self, name: str, type: FreeGameType, url: str, source: str):
+        self.name   = name
+        self.type   = type
+        self.url    = url
+        self.source = source
+
+    @classmethod
+    def from_reddit_submission(cls, submission):
+        for match in re.findall(r"\[(.*?)\](.*)", submission.title):
+            remaining = match[-1]
+            for group in re.findall(r"(\(.*?\))", remaining):
+                if "free" in group.lower() or "100" in group.lower():
+                    remaining = remaining.replace(group, "")
+
+            try:
+                type = FreeGameType[match[0].lower().replace(" ", "_")]
+            except KeyError:
+                type = FreeGameType.unknown
+            return cls(remaining, type, submission.url, submission.shortlink)
+
+    def get_embed(self):
+        embed = discord.Embed()
+        embed.color = config.bot.get_dominant_color(None)
+        embed.set_author(name = self.name, url = self.source, icon_url = self.type.value)
+        embed.description = self.url
+        return embed
