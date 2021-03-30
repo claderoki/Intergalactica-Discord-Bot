@@ -244,7 +244,11 @@ class Intergalactica(BaseCog):
 
                 for vote, vote_count in votes.items():
                     if not is_skip_vote(vote):
-                        percentage = vote_count/(len(staff_members)-skipped_member_count)*100
+                        try:
+                            total_votes = (len(staff_members)-skipped_member_count)
+                        except ZeroDivisionError:
+                            total_votes = 0
+                        percentage = (vote_count/total_votes)*100
                         cleaned_value = clean_value(percentage)
                         lines.append(f"{vote}: {vote_count} **{cleaned_value}%**")
                 embed.description = "\n".join(lines)
@@ -372,6 +376,11 @@ class Intergalactica(BaseCog):
         else:
             group.join(ctx.author, is_owner = True)
             await ctx.send(ctx.translate("group_created").format(group = group))
+
+    @group.command(name = "vc")
+    @commands.has_role(_role_ids["5k+"])
+    async def group_vc(self, ctx, group : MentionGroup):
+        return await self.bot.get_command("vcchannel create")(ctx, group.name)
 
     @group.command(name = "join")
     async def group_join(self, ctx, group : MentionGroup):

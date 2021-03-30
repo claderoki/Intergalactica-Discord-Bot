@@ -25,7 +25,7 @@ def seconds_readable(seconds):
     delta = relativedelta(seconds = seconds)
     normalize = lambda x : int(x) if x % 1 == 0 else round(x, 2)
     text = []
-    for attr in ('days','hours','minutes', 'seconds'):
+    for attr in ("days","hours","minutes", "seconds"):
         value = getattr(delta, attr)
         if value:
             text.append(f"{normalize(value)}{attr[0]}")
@@ -283,8 +283,7 @@ class Locus(commands.Bot):
             user_id = user
         else:
             user_id = user.id
-        return Human.get_or_create(user_id = user_id)[0]
- 
+        # return Human.get_or_create(user_id = user_id)[0]
         if user_id not in self._human_cache:
             human, _ = Human.get_or_create(user_id = user_id)
             self._human_cache[user_id] = human
