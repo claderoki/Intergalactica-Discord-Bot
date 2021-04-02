@@ -1,3 +1,6 @@
+
+from enum import Enum
+import re
 import asyncio
 import string
 import os
@@ -160,7 +163,8 @@ class Personal(BaseCog):
 
     @tasks.loop(minutes = 1)
     async def free_games_notifier(self):
-        extra_games_channel = self.bot.get_channel(742205149862428702)
+        ids = [742205149862428702]
+        channels = [self.bot.get_channel(x) for x in ids]
 
         with database.connection_context():
             for subreddit in Subreddit.select().where(Subreddit.automatic == False):
@@ -171,34 +175,36 @@ class Personal(BaseCog):
 
                 id = post.url.split("comments/")[1].split("/")[0]
                 submission = self.bot.reddit.submission(id)
-                try:
-                    game = FreeGame.from_reddit_submission(submission)
-                    embed = game.get_embed()
-                except:
-                    embed = discord.Embed(color = self.bot.get_dominant_color(None))
-                    embed.set_author(name = submission.title, url = post.url)
-                    embed.description = submission.url
 
-                asyncio.gather(subreddit.sendable.send(embed = embed))
+                skipped_channel_ids = []
 
-                if extra_games_channel is not None:
-                    asyncio.gather(extra_games_channel.send(embed = embed))
+                # try:
+                game = FreeGame.from_reddit_submission(submission)
+                embed = game.get_embed()
+                if game.type not in (FreeGameType.steam, FreeGameType.gog, FreeGameType.epicgames, FreeGameType.unknown):
+                    skipped_channel_ids.append(784439833975062546)
+                # except Exception as e:
+                #     print("FREE GAME: ",e)
+                #     embed = discord.Embed(color = self.bot.get_dominant_color(None))
+                #     embed.set_author(name = submission.title, url = post.url)
+                #     embed.description = submission.url
+
+                channels.append(subreddit.sendable)
+                for channel in [x for x in channels if x.id not in skipped_channel_ids]:
+                    asyncio.gather(channel.send(embed = embed))
 
 def setup(bot):
     bot.add_cog(Personal(bot))
 
-from enum import Enum
-
 class FreeGameType(Enum):
     steam      = "https://cdn.discordapp.com/attachments/744172199770062899/826521425161617429/steam.png"
     gog        = "https://cdn.discordapp.com/attachments/744172199770062899/826523073032880148/gog.png"
-    indie_gala = "https://cdn.discordapp.com/attachments/744172199770062899/826535828493828116/indie_gala.png"
+    indiegala  = "https://cdn.discordapp.com/attachments/744172199770062899/826535828493828116/indie_gala.png"
     psn        = "https://cdn.discordapp.com/attachments/744172199770062899/826523389610033172/psn.png"
-    epic_games = "https://cdn.discordapp.com/attachments/744172199770062899/826521427914129458/epic_games.png"
+    epicgames  = "https://cdn.discordapp.com/attachments/744172199770062899/826521427914129458/epic_games.png"
     twitch     = "https://cdn.discordapp.com/attachments/744172199770062899/826521426836193405/twitch.png"
     unknown    = "https://cdn.discordapp.com/attachments/744172199770062899/826525145678086174/unknown.png"
-
-import re
+    itchio     = "https://cdn.discordapp.com/attachments/744172199770062899/826864490053763122/itchio.png"
 
 class FreeGame:
     __slots__ = ("name", "type", "url", "source")
@@ -218,10 +224,10 @@ class FreeGame:
                     remaining = remaining.replace(group, "")
 
             try:
-                type = FreeGameType[match[0].lower().replace(" ", "_")]
+                type = FreeGameType[match[0].lower().replace(" ", "").replace(".", "")]
             except KeyError:
                 type = FreeGameType.unknown
-            return cls(remaining, type, submission.url, submission.shortlink)
+            return cls(remaining.strip(), type, submission.url, submission.shortlink)
 
     def get_embed(self):
         embed = discord.Embed()

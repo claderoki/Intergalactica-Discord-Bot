@@ -852,7 +852,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         human.save()
         await ctx.send(embed = embed)
 
-    @pigeon.command()
+    @pigeon.command(name = "poop")
     @commands.cooldown(1, (3600 * 1), type = commands.BucketType.user)
     async def pigeon_poop(self, ctx, member : discord.Member):
         """Poop on someone elses pigeon."""
@@ -874,7 +874,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         lines.append(ctx.pigeon.name)
         data1 = {"cleanliness": 5}
         lines.append(get_winnings_value(**data1))
-        ctx.pigeon.pooped_victim_count += 1
+        ctx.pigeon.poop_victim_count += 1
         ctx.pigeon.update_stats(data1)
 
         lines.append(ctx.pigeon2.name)

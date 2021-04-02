@@ -344,7 +344,7 @@ class Fight(Challenge):
         for pigeon in self.pigeons:
             human = self.bot.get_human(user = pigeon.human.user_id)
             if human.gold < self.bet:
-                error_messages.append(ctx.translate("pigeon{i}_not_enough_gold").format(bet = self.bet))
+                error_messages.append(ctx.translate(f"pigeon{i}_not_enough_gold").format(bet = self.bet))
             i += 1
         return error_messages
 
