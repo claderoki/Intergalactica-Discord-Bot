@@ -535,6 +535,7 @@ class Intergalactica(BaseCog):
         await table.to_paginator(ctx, 10).wait()
 
     @commands.has_guild_permissions(administrator = True)
+    @is_intergalactica()
     @commands.command()
     async def warn(self, ctx, member : discord.Member, *, reason):
         await member.send(f"Hello {member}, this is an official warning. Reason: **{reason}**. Please be more careful in the future.")
