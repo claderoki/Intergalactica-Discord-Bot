@@ -13,8 +13,8 @@ from dateutil.relativedelta import relativedelta
 from src.discord.errors.base import SendableException
 from src.discord.helpers.utility import get_context_embed
 from src.discord.helpers.embed import Embed
-from src.models import Reminder, MentionGroup, MentionMember, Item, Human, Earthling, TemporaryVoiceChannel, TemporaryChannel, HumanItem, RedditAdvertisement, database
-from src.discord.helpers.waiters import IntWaiter
+from src.models import Reminder, MentionGroup, Item, Human, Earthling, TemporaryVoiceChannel, TemporaryChannel, HumanItem, RedditAdvertisement, database
+from src.discord.helpers.waiters import IntWaiter, MemberWaiter
 import src.discord.helpers.pretty as pretty
 import src.discord.helpers.paginating as paginating
 from src.discord.cogs.core import BaseCog
@@ -244,13 +244,22 @@ class Intergalactica(BaseCog):
 
                 for vote, vote_count in votes.items():
                     if not is_skip_vote(vote):
+                        total_votes = (len(staff_members)-skipped_member_count)
                         try:
-                            total_votes = (len(staff_members)-skipped_member_count)
+                            percentage = (vote_count/total_votes)*100
                         except ZeroDivisionError:
-                            total_votes = 0
-                        percentage = (vote_count/total_votes)*100
+                            percentage = 0
+
                         cleaned_value = clean_value(percentage)
                         lines.append(f"{vote}: {vote_count} **{cleaned_value}%**")
+                        if vote == self.vote_emojis[0] and vote_count == len(staff_members):
+                            if "selfie access" in message.content:
+                                user_id = MemberWaiter.get_id(message.content)
+                                member = message.guild.get_member(user_id)
+                                selfie_role = message.guild.get_role(self._role_ids["selfies"])
+                                await member.add_roles(selfie_role)
+                                embed.set_footer(text = "Selfie role assigned.")
+
                 embed.description = "\n".join(lines)
                 asyncio.gather(self.get_channel("staff_chat").send(embed = embed))
 
@@ -559,7 +568,7 @@ class Intergalactica(BaseCog):
                 time_here = relativedelta(datetime.datetime.utcnow(), member.joined_at)
                 if time_here.hours >= 12:
                     channel = self.get_channel("staff_votes")
-                    asyncio.gather(channel.send(f"Should {member} get selfie access?"))
+                    asyncio.gather(channel.send(f"Should {member.mention} (**{member}**) get selfie access?"))
                 asyncio.gather(self.log("c3po-log", f"**{member}** {member.mention} has achieved the rank needed for selfies ({role.name})."))
 
     @commands.Cog.listener()
