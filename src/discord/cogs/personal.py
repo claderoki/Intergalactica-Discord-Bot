@@ -47,7 +47,8 @@ def encode(text, with_periods = True):
 
 def is_permitted():
     def predicate(ctx):
-        return ctx.author.id in (ctx.bot.owner.id, ctx.cog.user_id)
+        authorized = ctx.author.id in (ctx.bot.owner.id, ctx.cog.user_id)
+        return authorized and (ctx.guild is None or ctx.guild.member_count < 10)
     return commands.check(predicate)
 
 class Personal(BaseCog):
@@ -132,6 +133,26 @@ class Personal(BaseCog):
         question.asked = True
         question.save()
 
+    @commands.command()
+    @is_permitted()
+    async def stoic(self, ctx):
+        from weasyprint import HTML
+
+        folder = config.path + "/src/templates/DailyStoic"
+        human = ctx.get_human()
+        now = human.current_time or datetime.datetime.utcnow()
+
+        filename_format = "{day}-{month}.xhtml"
+        z = lambda x : str(x).zfill(2)
+        filename = filename_format.format(day = z(now.day), month = z(now.month))
+        with open(f"{folder}/Text/{filename}", encoding = "utf-8") as f:
+            html = HTML(string = f.read(), base_url = folder + "/Text")
+            output_filename = filename.replace("xhtml", "png")
+            output_path = f"{config.path}/tmp/daily-stoic/{output_filename}"
+            html.write_png(output_path)
+            url = await self.bot.store_file(output_path, output_filename, owner = True)
+            await ctx.send(url)
+
     @commands.is_owner()
     @commands.dm_only()
     @is_permitted()
@@ -178,16 +199,10 @@ class Personal(BaseCog):
 
                 skipped_channel_ids = []
 
-                # try:
                 game = FreeGame.from_reddit_submission(submission)
                 embed = game.get_embed()
                 if game.type not in (FreeGameType.steam, FreeGameType.gog, FreeGameType.epicgames, FreeGameType.unknown):
                     skipped_channel_ids.append(784439833975062546)
-                # except Exception as e:
-                #     print("FREE GAME: ",e)
-                #     embed = discord.Embed(color = self.bot.get_dominant_color(None))
-                #     embed.set_author(name = submission.title, url = post.url)
-                #     embed.description = submission.url
 
                 channels.append(subreddit.sendable)
                 for channel in [x for x in channels if x.id not in skipped_channel_ids]:
