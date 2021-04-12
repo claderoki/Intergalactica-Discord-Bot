@@ -455,7 +455,10 @@ class Intergalactica(BaseCog):
         await temp_channel.create_channel()
         temp_channel.status = TemporaryChannel.Status.accepted
         temp_channel.save()
-        await temp_channel.user.send(f"Your request for a temporary channel was accepted.")
+        try:
+            await temp_channel.user.send(f"Your request for a temporary channel was accepted.")
+        except:
+            pass
         asyncio.gather(ctx.success())
 
     @commands.has_guild_permissions(administrator = True)
@@ -473,7 +476,10 @@ class Intergalactica(BaseCog):
         human_item.amount += temp_channel.pending_items
         human_item.save()
         temp_channel.save()
-        await temp_channel.user.send(f"Your request for a temporary channel was denied. Reason: `{temp_channel.deny_reason}`")
+        try:
+            await temp_channel.user.send(f"Your request for a temporary channel was denied. Reason: `{temp_channel.deny_reason}`")
+        except:
+            pass
         asyncio.gather(ctx.success())
 
     @temporary_channel.command(name = "create")
