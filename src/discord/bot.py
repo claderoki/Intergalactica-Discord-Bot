@@ -83,11 +83,12 @@ class Locus(commands.Bot):
         self.owm_api = OpenWeatherMapApi(config.environ["owm_key"])
 
         self.reddit = praw.Reddit(
-            client_id     = config.environ["reddit_client_id"],
-            client_secret = config.environ["reddit_client_secret"],
-            user_agent    = config.environ["reddit_user_agent"],
-            username      = config.environ["reddit_username"],
-            password      = config.environ["reddit_password"]
+            client_id       = config.environ["reddit_client_id"],
+            client_secret   = config.environ["reddit_client_secret"],
+            user_agent      = config.environ["reddit_user_agent"],
+            username        = config.environ["reddit_username"],
+            password        = config.environ["reddit_password"],
+            check_for_async = False
         )
 
         self.before_invoke(self.before_any_command)
