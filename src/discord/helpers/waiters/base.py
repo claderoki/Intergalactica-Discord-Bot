@@ -332,11 +332,14 @@ class MemberWaiter(MessageWaiter):
     def instructions(self):
         return "@mention"
 
+    def get_id(argument):
+        for id in re.findall(r'<@!?([0-9]+)>', argument):
+            return int(id)
+
     def convert(self, argument):
         # commands.MemberConverter().convert(self.ctx, argument)
-        match = re.match(r'<@!?([0-9]+)>$', argument)
-        if match:
-            id = int(match.group(1))
+        id = self.get_id(argument)
+        if id is not None:
             return self.ctx.guild.get_member(id)
 
         raise ConversionFailed("Message needs to be a @mention.")

@@ -13,6 +13,8 @@ import src.discord.helpers.pretty as pretty
 from src.discord.helpers.waiters import StrWaiter, BoolWaiter
 from src.discord.cogs.core import BaseCog
 
+pranks_in_progress = []
+
 class Prank(BaseCog):
     def __init__(self, bot):
         super().__init__(bot)
@@ -235,28 +237,37 @@ class Prank(BaseCog):
 
         await ctx.send(embed = embed)
 
+    async def pre_prank(self, ctx, member):
+        if member.id in pranks_in_progress:
+            raise SendableException(ctx.translate("already_in_progress"))
+        pranks_in_progress.append(member.id)
+        ctx.member = member
+
     @prank.command(name = "nickname", aliases = ["nick"] )
     async def prank_nickname(self, ctx, member : discord.Member):
-        if not self.bot.can_change_nick(member):
+        await self.pre_prank(ctx, member)
+        if not self.bot.can_change_nick(ctx.member):
             raise SendableException(ctx.translate("cannot_change_nickname"))
         if not self.bot.can_change_nick(ctx.author):
             raise SendableException(ctx.translate("cannot_toggle_because_cannot_change_nickname"))
 
-        await self.prank_check(ctx, member)
+        await self.prank_check(ctx, ctx.member)
 
         waiter = StrWaiter(ctx, max_words = None, prompt = ctx.translate("nickname_prank_prompt"), max_length = 32)
         new_nickname = await waiter.wait()
 
         await self.create_prank(
             ctx,
-            embed_description = f"Nickname of {member.mention} has been changed to **{new_nickname}**.",
+            embed_description = f"Nickname of {ctx.member.mention} has been changed to **{new_nickname}**.",
             new_nickname = new_nickname,
-            old_nickname = member.nick
+            old_nickname = ctx.member.nick
         )
 
     @prank.command(name = "role")
     async def prank_role(self, ctx, member : discord.Member):
-        await self.prank_check(ctx, member)
+        await self.pre_prank(ctx, member)
+
+        await self.prank_check(ctx, ctx.member)
 
         waiter = StrWaiter(ctx, max_words = None, prompt = ctx.translate("role_prank_prompt"))
         role_name = await waiter.wait()
@@ -269,7 +280,8 @@ class Prank(BaseCog):
 
     @prank.command(name = "emoji")
     async def prank_emoji(self, ctx, member : discord.Member):
-        await self.prank_check(ctx, member)
+        await self.pre_prank(ctx, member)
+        await self.prank_check(ctx, ctx.member)
 
         waiter = StrWaiter(ctx, max_words = 1, prompt = ctx.translate("emoji_prank_prompt"))
         emoji_ = await waiter.wait()
@@ -283,6 +295,15 @@ class Prank(BaseCog):
             embed_description = None,
             emoji = emoji_
         )
+
+    @prank_emoji.after_invoke
+    @prank_nickname.after_invoke
+    @prank_role.after_invoke
+    async def after_prank(self, ctx):
+        try:
+            pranks_in_progress.remove(ctx.member.id)
+        except:
+            pass
 
     @commands.guild_only()
     @commands.has_guild_permissions(administrator = True)
