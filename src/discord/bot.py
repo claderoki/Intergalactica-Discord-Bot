@@ -179,7 +179,7 @@ class Locus(commands.Bot):
     def load_all_cogs(self):
         cogs = [
             "profile",
-            "conversions",
+            "conversions.cog",
             "management",
             "poll",
             "games",

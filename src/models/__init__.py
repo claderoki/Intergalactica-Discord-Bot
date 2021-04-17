@@ -13,6 +13,7 @@ from .qotd import Category, Question, CategoryChannel, QuestionConfig
 from .intergalactica import MentionGroup, MentionMember
 from .farming import Farm, Crop, FarmCrop
 from .conversation import Conversant, Conversation, Participant
+from .conversions import Currency, Measurement, StoredUnit
 
 database = BaseModel._meta.database
 
@@ -20,6 +21,9 @@ def setup():
     with database.connection_context():
         # database.drop_tables([Conversant, Participant, Conversation])
         database.create_tables([Conversant, Participant, Conversation])
+
+        # database.drop_tables([Currency, Measurement])
+        database.create_tables([Currency, Measurement])
 
         # database.drop_tables([Farm, Crop, FarmCrop])
         database.create_tables([Farm, Crop, FarmCrop])
