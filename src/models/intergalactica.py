@@ -230,7 +230,10 @@ class RedditAdvertisement(BaseModel):
         subreddits = [self.bot.reddit.subreddit(x) for x in subreddit_names]
         submissions = []
         for subreddit in subreddits:
-            submission = subreddit.submit(self.description, url = await self.get_invite_url())
+            try:
+                submission = subreddit.submit(self.description, url = await self.get_invite_url())
+            except:
+                continue
             submissions.append(submission)
             self.last_advertised = datetime.datetime.utcnow()
         self.save()
