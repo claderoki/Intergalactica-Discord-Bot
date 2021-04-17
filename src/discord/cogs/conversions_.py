@@ -18,15 +18,6 @@ from src.discord.cogs.core import BaseCog
 
 currency_converter = CurrencyConverter()
 
-class Conversion:
-    pass
-class CurrencyConversion(Conversion):
-    pass
-class TimezoneConversion(Conversion):
-    pass
-class MeasurementConversion(Conversion):
-    pass
-
 measurements = [
     ("c", "f"),
     ("kg", "lb"),

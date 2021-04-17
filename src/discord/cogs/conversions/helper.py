@@ -6,12 +6,12 @@ class RegexType(Enum):
     measurement = 2
 
 class RegexHelper:
-    __slots__ = ("type", "values")
+    __slots__ = ("type", "values", "_regex")
 
     def __init__(self, type: RegexType):
         self.type   = type
         self.values = set()
-        self.regex  = None
+        self._regex = None
 
     def add_value(self, value):
         self.values.add(value)
@@ -25,9 +25,9 @@ class RegexHelper:
 
     @property
     def regex(self):
-        if self.regex is None:
-            self.regex = self._build()
-        return self.regex
+        if self._regex is None:
+            self._regex = self._build()
+        return self._regex
 
     def match(self, content):
         matches = re.findall(self.regex, content)
@@ -39,5 +39,4 @@ class RegexHelper:
                 elif self.type == RegexType.currency:
                     unit = match[0]
                     value = float(match[1])
-
-                yield value, unit
+                yield unit, value

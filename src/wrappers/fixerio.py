@@ -58,13 +58,23 @@ class Api:
         return symbols
 
     def latest(self, base = None, symbols = None, date = None):
-        if not isinstance(symbols, str):
+        if not isinstance(symbols, str) and symbols is not None:
             symbols = ",".join(symbols)
 
         base_default = "EUR"
 
+        kwargs = {}
+        kwargs["date"] = date
+        kwargs["base"] = base
+
+        if symbols is not None:
+            kwargs["symbols"] = symbols
+
         if base != base_default:
-            json = self.__request("latest", base = base_default, symbols = f"{symbols},{base}", date = date)
+            kwargs["base"] = base_default
+            if symbols is not None:
+                kwargs["symbols"] = f"{symbols},{base}"
+            json = self.__request("latest", **kwargs)
             base_value = json["rates"][base or base_default]
             new_json = {k:v for k, v in json.items() if k in ("success", "timestamp", "date")}
             new_json["base"] = base or base_default
@@ -76,7 +86,8 @@ class Api:
 
             return new_json
         else:
-            json = self.__request("latest", base = base, symbols = symbols, date = date)
+
+            json = self.__request("latest", **kwargs)
             return json
 
     def convert(self, base, to, amount = 1, date = None):

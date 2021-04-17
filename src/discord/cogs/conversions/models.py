@@ -9,6 +9,7 @@ class UnitType(Enum):
 class UnitSubType(Enum):
     length      = 1
     temperature = 2
+    mass        = 3
 
 class Unit:
     __slots__ = ("name", "code", "symbol", "type", "subtype")
@@ -27,6 +28,9 @@ class Unit:
         else:
             return cls(stored_unit.name, stored_unit.code, stored_unit.symbol, UnitType.measurement, stored_unit.subtype)
 
+def clean_value(value):
+    return 
+
 class Conversion:
     __slots__ = ("unit", "value")
 
@@ -35,7 +39,19 @@ class Conversion:
         self.value = value
 
     def __str__(self):
-        return f"{self.value}{self.unit.symbol}"
+        if self.unit.type == UnitType.measurement:
+            return f"{self.value}{self.unit.symbol}"
+        else:
+            return f"{self.value}{self.unit.code}"
+
+    def get_value_string(self):
+        return str(int(self.value) if self.value % 1 == 0 else round(self.value, 2))
+
+    def get_clean_string(self):
+        if self.unit.type == UnitType.measurement:
+            return f"{self.get_value_string()}{self.unit.symbol}"
+        else:
+            return f"{self.unit.symbol}{self.get_value_string()} ({self.unit.name})"
 
 class ConversionResult:
     __slots__ = ("base", "to")

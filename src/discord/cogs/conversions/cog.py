@@ -12,6 +12,22 @@ from .models import Unit, UnitSubType, UnitType, Conversion, ConversionResult
 from .helper import RegexHelper, RegexType
 
 
+from measurement.measures import Mass
+
+# base = Mass(g = 1)
+
+# for unit in Mass.get_units():
+#     value = getattr(base, unit)
+#     measurement = Measurement(
+#         rate = value,
+#         name = unit,
+#         is_base = unit == "g",
+#         code = unit,
+#         symbol = unit,
+#         subtype = UnitSubType.mass
+#     )
+#     measurement.save()
+
 measurements = [
     ("c", "f"),
     ("kg", "lb"),
@@ -43,10 +59,12 @@ def add_to_mapping(text, stored_unit: StoredUnit, is_symbol):
     text = text.lower()
     if text in unit_mapping:
         existing = unit_mapping[text]
-
-        if not is_symbol and existing != stored_unit:
-            print(value, "is double =>", existing, stored_unit, ", skipping.")
+        if existing == stored_unit:
             return
+
+        if not is_symbol:
+            return
+
         if isinstance(existing, list):
             existing.append(stored_unit)
         else:
@@ -74,14 +92,34 @@ for cls in (Currency, Measurement):
                 array = currency_units if cls == Currency else measurement_units
                 array.add(value)
 
-def get_context_currency_codes(message):
-    return ["PHP", "USD"]
+async def get_context_currency_codes(message):
+    query = Human.select(Human.country, Human.currencies)
+    query = query.join(Earthling, on=(Human.id == Earthling.human))
+    query = query.where((Human.country != None) | (Human.currencies != None))
 
-def get_linked_codes(base: Conversion, message: discord.Message):
+    ids = set((message.author.id, ))
+    if message.guild is not None:
+        async for msg in message.channel.history(limit=20):
+            if not msg.author.bot:
+                ids.add(msg.author.id)
+    query = query.where(Human.user_id.in_(ids))
+
+    currencies = set()
+    for human in query:
+        for currency in human.all_currencies:
+            if currency is not None:
+                currencies.add(currency.alpha_3)
+
+    return currencies
+
+async def get_linked_codes(base: Conversion, message: discord.Message):
     if base.unit.type == UnitType.measurement:
-        return other_measurements[base.unit.code]
+        try:
+            return other_measurements[base.unit.code]
+        except KeyError:
+            return []
     else:
-        return get_context_currency_codes(message)
+        return await get_context_currency_codes(message)
 
 def convert(base: StoredUnit, to: StoredUnit, value: float) -> float:
     if base.code == "c" and to.code == "f":
@@ -91,12 +129,22 @@ def convert(base: StoredUnit, to: StoredUnit, value: float) -> float:
     else:
         return (to.rate * value) / base.rate
 
-def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, message: discord.Message) -> ConversionResult:
+async def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, message: discord.Message) -> ConversionResult:
     base = Conversion(Unit.from_stored_unit(base_stored_unit), value)
     to   = []
-    for code in get_linked_codes(base, message):
+    for code in await get_linked_codes(base, message):
         code = code.lower()
-        stored_unit = unit_mapping[code]
+        if code == base_stored_unit.code.lower():
+            continue
+        try:
+            stored_unit = unit_mapping[code]
+        except KeyError:
+            continue
+
+        if isinstance(stored_unit, list):
+            print(stored_unit, "wtf?")
+            continue
+
         converted   = convert(base_stored_unit, stored_unit, value)
         to.append(Conversion(Unit.from_stored_unit(stored_unit), converted))
     return ConversionResult(base, to)
@@ -110,79 +158,52 @@ def text_to_units(text):
         unit = [unit]
     return unit
 
+def add_conversion_result_to_embed(embed: discord.Embed, conversion_result: ConversionResult):
+    kwargs = {}
+    kwargs["name"] = conversion_result.base.get_clean_string()
+    lines = []
+    for to in conversion_result.to:
+        lines.append(to.get_clean_string())
+    if len(lines) == 0:
+        return
+
+    kwargs["value"] = "\n".join(lines)
+    embed.add_field(**kwargs)
+
 class ConversionCog(BaseCog, name = "Conversion"):
     @commands.Cog.listener()
     async def on_ready(self):
-        self.start_task(self.currency_rate_updater, check = True)
+        self.start_task(self.currency_rate_updater, check = self.bot.production)
 
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot or "http" in message.content:
             return
 
-        for unit, value in measurement_regex.match(message.content.lower()):
-            pass
-            conversion_results = []
+        conversion_results = []
+        for unit_value, value in measurement_regex.match(message.content.lower()):
+            units = text_to_units(unit_value)
+            for unit in units:
+                conversion_result = await base_to_conversion_result(unit, value, message)
+                conversion_results.append(conversion_result)
 
-            for match in matches:
-                value = float(match[0])
-                units = text_to_units(match[-1])
-                for unit in units:
-                    conversion_result = base_to_conversion_result(unit, value, message)
-                    conversion_results.append(conversion_result)
-
-            print(conversion_results)
+        embed = discord.Embed()
+        if len(conversion_results) > 0:
+            for result in conversion_results:
+                add_conversion_result_to_embed(embed, conversion_result)
+        if len(embed.fields) > 0:
+            await message.channel.send(embed = embed)
 
     @tasks.loop(hours = 1)
     async def currency_rate_updater(self):
         api = FixerioApi(config.environ["fixerio_access_key"])
-        pass
+        rates = api.latest()["rates"]
+        for alpha_3, rate in rates.items():
+            if alpha_3.lower() in unit_mapping:
+                currency = unit_mapping[alpha_3.lower()]
+                if isinstance(currency, Currency):
+                    currency.rate = rate
+                    currency.save()
 
 def setup(bot):
     bot.add_cog(ConversionCog(bot))
-
-
-"""
-
-    def _get_matches(self, content):
-        cleaned_matches = []
-
-        matches = re.findall(self.global_pattern, content)
-        if matches:
-            for match in matches:
-                value = float(match[0])
-                unit = match[-1]
-                is_currency = unit.upper() in self.currency_converter.currencies or unit.lower() in currency_symbols.values()
-
-                type = "currency" if is_currency else "measurement"
-
-                aliases_found = False
-                for _unit, alias in units.items():
-                    if alias.lower() == unit:
-                        aliases_found = True
-                        cleaned_matches.append({"value" : value, "unit" : _unit, "type": type})
-                if not aliases_found:
-                    cleaned_matches.append({"value" : value, "unit" : unit, "type": type})
-
-        matches = re.findall(self.currency_pattern, content)
-        if matches:
-            for match in matches:
-                symbol = match[0]
-                value = match[1]
-                for alpha_2, _symbol in currency_symbols.items():
-                    if symbol == _symbol:
-                        cleaned_matches.append({"value" : value, "unit" : alpha_2.lower(), "type": "currency"})
-
-        matches = re.findall(self.timezone_pattern, content)
-        if matches:
-            for match in matches:
-                timezone, symbol, amount = match
-                symbol = symbol or "+"
-                amount = amount or "0"
-                amount = int(amount)
-                value = amount if symbol != "-" else -amount
-                cleaned_matches.append({"value" : value, "unit" : timezone, "type": "timezone"})
-
-        return cleaned_matches
-
-"""

@@ -17,6 +17,7 @@ class Currency(StoredUnit):
 class MeasurementSubType(Enum):
     length      = 1
     temperature = 2
+    mass        = 3
 
 class Measurement(StoredUnit):
     subtype = EnumField(MeasurementSubType, null = False)
