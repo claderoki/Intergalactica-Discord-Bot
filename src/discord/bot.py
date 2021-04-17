@@ -163,7 +163,7 @@ class Locus(commands.Bot):
     def gold_emoji(self):
         return emoji.emojize(":euro:")
 
-    def get_dominant_color(self, guild):
+    def get_dominant_color(self, guild = None):
         # obj = guild if guild is not None else self.user
         obj = self.user
         if obj.id not in self._dominant_colors:

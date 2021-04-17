@@ -187,10 +187,10 @@ class ConversionCog(BaseCog, name = "Conversion"):
                 conversion_result = await base_to_conversion_result(unit, value, message)
                 conversion_results.append(conversion_result)
 
-        embed = discord.Embed()
+        embed = discord.Embed(color = self.bot.get_dominant_color())
         if len(conversion_results) > 0:
             for result in conversion_results:
-                add_conversion_result_to_embed(embed, conversion_result)
+                add_conversion_result_to_embed(embed, result)
         if len(embed.fields) > 0:
             await message.channel.send(embed = embed)
 
