@@ -177,6 +177,9 @@ class ConversionCog(BaseCog, name = "Conversion"):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if not self.bot.production:
+            return
+
         if message.author.bot or "http" in message.content:
             return
 
