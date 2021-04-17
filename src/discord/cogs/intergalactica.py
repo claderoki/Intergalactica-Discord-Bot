@@ -412,6 +412,18 @@ class Intergalactica(BaseCog):
         else:
             raise SendableException(ctx.translate("group_member_only_command"))
 
+    @group.command(name = "list")
+    async def group_create(self, ctx):
+        groups = MentionGroup.select(MentionGroup.name).where(MentionGroup.guild_id == ctx.guild.id)
+
+        data = []
+        data.append(("name", ))
+        for group in groups:
+            data.append((group.name, ))
+
+        table = pretty.Table.from_list(data, first_header = True)
+        await table.to_paginator(ctx, 10).wait()
+
     @commands.command(name = "vcchannel")
     @is_intergalactica()
     @commands.has_role(_role_ids["5k+"])
