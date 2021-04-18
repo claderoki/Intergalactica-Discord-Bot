@@ -56,6 +56,8 @@ class BaseModel(peewee.Model):
             return IntWaiter(ctx, **kwargs)
         if isinstance(field, peewee.DateField):
             return DateWaiter(ctx, **kwargs)
+        if isinstance(field, peewee.TimeField):
+            return TimeWaiter(ctx, **kwargs)
 
     async def editor_for(self, ctx, attr, on_skip = "pass", **kwargs):
         waiter = self.waiter_for(ctx, attr, **kwargs)
