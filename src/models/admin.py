@@ -1,10 +1,30 @@
 import datetime
 import asyncio
+from enum import Enum
 
 import peewee
 import discord
 
-from .base import BaseModel, EmojiField
+from .base import BaseModel, EmojiField, JsonField, EnumField
+
+class DailyReminderTime(BaseModel):
+    class TimeType(Enum):
+        local = 1
+        utc   = 2
+
+    week_days = JsonField        (null = False)
+    time      = peewee.TimeField (null = True)
+    time_type = EnumField        (TimeType, null = False, default = TimeType.utc)
+
+class DailyReminder(DailyReminderTime):
+    class ReminderType(Enum):
+        text  = 1
+        stoic = 2
+
+    type          = EnumField              (ReminderType, null = False, default = ReminderType.text)
+    value         = EmojiField             (null = False)
+    user_id       = peewee.BigIntegerField (null = False)
+    last_reminded = peewee.DateField       (null = True)
 
 class SavedEmoji(BaseModel):
     name        = peewee.CharField        (null = False, unique = True)
@@ -67,14 +87,6 @@ class Location(BaseModel):
     @property
     def google_maps_url(self):
         return f"https://www.google.com/maps/place/{self.latitude}+{self.longitude}/@{self.latitude},{self.longitude},20z"
-
-class DailyReminder(BaseModel):
-    time          = peewee.TimeField       (null = False)
-    text          = EmojiField             (null = False)
-    weekend       = peewee.BooleanField    (null = True)
-    weekday       = peewee.BooleanField    (null = True)
-    user_id       = peewee.BigIntegerField (null = False)
-    last_reminded = peewee.DateField       (null = True)
 
 class PersonalQuestion(BaseModel):
     value = peewee.TextField    (null = False)

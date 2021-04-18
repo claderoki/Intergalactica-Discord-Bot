@@ -9,11 +9,26 @@ import random
 
 import discord
 from discord.ext import commands, tasks
+from weasyprint import HTML
 
 import src.config as config
 from src.discord.errors.base import SendableException
 from src.models import database, Subreddit, DailyReminder, Location, PersonalQuestion
 from src.discord.cogs.core import BaseCog
+from src.discord.helpers.waiters import EnumWaiter
+
+class WeekDays(Enum):
+    weekend = 1
+    week    = 2
+    all     = 3
+
+    def to_list(self):
+        if self == WeekDays.weekend:
+            return [6,7]
+        elif self == WeekDays.week:
+            return [1,2,3,4,5]
+        elif self == WeekDays.all:
+            return [1,2,3,4,5,6,7]
 
 def decode(text):
     decoded = []
@@ -65,7 +80,8 @@ class Personal(BaseCog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.start_task(self.water_reminder, check = self.bot.production)
+        await asyncio.sleep(10)
+        self.start_task(self.daily_reminders, check = not self.bot.production)
         self.start_task(self.free_games_notifier, check = self.bot.production)
 
     def notify(self, block = True, **kwargs):
@@ -133,14 +149,8 @@ class Personal(BaseCog):
         question.asked = True
         question.save()
 
-    @commands.command()
-    @is_permitted()
-    async def stoic(self, ctx):
-        from weasyprint import HTML
-
+    async def generate_daily_stoic(self, now = None):
         folder = config.path + "/src/templates/DailyStoic"
-        human = ctx.get_human()
-        now = human.current_time or datetime.datetime.utcnow()
 
         filename_format = "{day}-{month}.xhtml"
         z = lambda x : str(x).zfill(2)
@@ -150,8 +160,15 @@ class Personal(BaseCog):
             output_filename = filename.replace("xhtml", "png")
             output_path = f"{config.path}/tmp/daily-stoic/{output_filename}"
             html.write_png(output_path)
-            url = await self.bot.store_file(output_path, output_filename, owner = True)
-            await ctx.send(url)
+            return await self.bot.store_file(output_path, output_filename, owner = True)
+
+    @commands.command()
+    @is_permitted()
+    async def stoic(self, ctx):
+        human = ctx.get_human()
+        now = human.current_time or datetime.datetime.utcnow()
+        url = await self.generate_daily_stoic(now = now)
+        await ctx.send(url)
 
     @commands.is_owner()
     @commands.dm_only()
@@ -162,25 +179,64 @@ class Personal(BaseCog):
             text = "empty"
         await self.user.send(text)
 
+    @commands.group(name = "dailyreminder")
+    @is_permitted()
+    async def daily_reminder(self, ctx):
+        pass
+
+    @daily_reminder.command(name = "create")
+    async def daily_reminder_create(self, ctx):
+        reminder = DailyReminder(user_id = ctx.author.id)
+        await reminder.editor_for(ctx, "type")
+        if reminder.type == DailyReminder.ReminderType.text:
+            await reminder.editor_for(ctx, "value", skippable = False)
+        await reminder.editor_for(ctx, "time")
+        await reminder.editor_for(ctx, "time_type")
+
+        waiter = EnumWaiter(ctx, WeekDays, prompt = "daily_reminder_week_days_prompt")
+        weekdays = await waiter.wait()
+        reminder.week_days = weekdays.to_list()
+
+        reminder.save()
+        await ctx.success(ctx.translate("daily_reminder_created"))
+
     @tasks.loop(seconds = 10)
-    async def water_reminder(self):
-        now = datetime.datetime.utcnow()
-        weekend = now.weekday() in range(5, 7)
-        weekday = not weekend
+    async def daily_reminders(self):
 
         query = DailyReminder.select()
-        query = query.where(DailyReminder.time <= now.time())
-        query = query.where(DailyReminder.time.hour == now.time().hour)
-        query = query.where( (DailyReminder.weekday == weekday) | (DailyReminder.weekend == weekend) )
         query = query.order_by(DailyReminder.time.desc())
 
-        for reminder in query:
+        for reminder in DailyReminder:
+            if reminder.time_type == DailyReminder.TimeType.utc:
+                now = datetime.datetime.utcnow()
+            elif reminder.time_type == DailyReminder.TimeType.local:
+                human = self.bot.get_human(user = reminder.user_id)
+                now = human.current_time
+            else:
+                continue
+
+            if now.weekday() not in reminder.week_days:
+                # print("Skipping because weekday not valid")
+                continue
+            if reminder.time > now.time():
+                # print("Skipping because time > current time")
+                continue
+            if reminder.time.hour != now.hour:
+                # print("Skipping because hour != current time")
+                continue
+
             if reminder.last_reminded != now.date():
-                if reminder.user:
-                    asyncio.gather(reminder.user.send(reminder.text))
+                content = None
+
+                if reminder.type == DailyReminder.Type.text:
+                    content = reminder.value
+                elif reminder.type == DailyReminder.Type.stoic:
+                    content = await self.generate_daily_stoic(now = now)
+                user = reminder.user
+                if user:
+                    asyncio.gather(reminder.user.send(content))
                 reminder.last_reminded = now.date()
                 reminder.save()
-                break
 
     @tasks.loop(minutes = 1)
     async def free_games_notifier(self):
