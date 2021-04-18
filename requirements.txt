@@ -16,3 +16,4 @@ countryinfo
 currencyconverter
 praw
 covid
+weasyprint
