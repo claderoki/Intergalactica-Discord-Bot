@@ -17,7 +17,6 @@ class MiscCog(BaseCog, name = "Misc"):
     async def urban(self, ctx, *, query):
         url = f"https://api.urbandictionary.com/v0/define?term={query}"
         request = requests.get(url)
-        # print(request.json())
         json = request.json()
 
         embed = discord.Embed(color = ctx.guild_color)

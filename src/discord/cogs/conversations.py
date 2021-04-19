@@ -41,15 +41,13 @@ async def check_if_available(user):
         return False
 
     available = False
-    print(f"Checking to see if {user} is available...")
     try:
         await config.bot.wait_for("message", check = check, timeout = timeout)
-        print(f"{user} is available...")
         available = True
     except asyncio.TimeoutError:
-        print(f"{user} is not available (timed out)")
+        pass
     except NotAvailable:
-        print(f"{user} is not available (refused)")
+        pass
 
     user_ids_currently_being_checked.remove(user.id)
     return available

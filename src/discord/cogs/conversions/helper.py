@@ -34,7 +34,6 @@ class RegexHelper:
     def regex(self):
         if self._regex is None:
             self._regex = self._build()
-            print(self._regex)
         return self._regex
 
     def match(self, content):
