@@ -55,6 +55,9 @@ class UnitMapping:
     def __init__(self):
         self.values = {}
 
+    def __iter__(self):
+        yield from self.values
+
     def _add_value(self, value: str, stored_unit: StoredUnit):
         value = value.lower()
         if value in self.values:

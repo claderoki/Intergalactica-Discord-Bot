@@ -118,9 +118,10 @@ All the users that wrote something for the last 20 messages are collected and th
     async def currency_rate_updater(self):
         api = FixerioApi(config.environ["fixerio_access_key"])
         rates = api.latest()["rates"]
+        values = unit_mapping.values
         for alpha_3, rate in rates.items():
-            if alpha_3.lower() in unit_mapping:
-                currency = unit_mapping[alpha_3.lower()]
+            if alpha_3.lower() in values:
+                currency = values[alpha_3.lower()]
                 if isinstance(currency, Currency):
                     currency.rate = rate
                     currency.save()
