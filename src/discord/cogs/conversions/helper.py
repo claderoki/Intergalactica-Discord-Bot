@@ -2,10 +2,9 @@ import re
 from enum import Enum
 
 import discord
-from discord.channel import DMChannel
 
-from .models import StoredUnit, Conversion, UnitType
-from src.models import Human, Earthling
+from .models import StoredUnit
+from src.models import Human
 
 class RegexType(Enum):
     currency   = 1

@@ -21,7 +21,13 @@ class StoredUnit(BaseModel):
 
     @property
     def should_exclude_symbol(self):
-        return "$" in self.symbol or "." in self.symbol or self.symbol.lower() in ("p", "k", "s", "r", "t")
+        if "$" in self.symbol:
+            return True
+        if "." in self.symbol:
+            return True
+        if self.symbol.lower() in ("p", "k", "s", "r", "t", "e", "d"):
+            return True
+        return False
 
 class Currency(StoredUnit):
     pass

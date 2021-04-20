@@ -23,10 +23,13 @@ def add_stored_unit_to_regexes(stored_unit: StoredUnit):
             currency_regex.add_value(symbol)
     measurement_regex.add_value(stored_unit.code.lower())
 
-for cls in (Currency, Measurement):
-    for stored_unit in cls:
-        unit_mapping.add(stored_unit)
-        add_stored_unit_to_regexes(stored_unit)
+def add_all_to_mapping():
+    for cls in (Currency, Measurement):
+        for stored_unit in cls:
+            unit_mapping.add(stored_unit)
+            add_stored_unit_to_regexes(stored_unit)
+
+add_all_to_mapping()
 
 async def get_linked_codes(base: Conversion, message: discord.Message):
     if base.unit.type == UnitType.measurement:
