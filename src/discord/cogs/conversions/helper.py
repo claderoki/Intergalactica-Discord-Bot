@@ -2,6 +2,7 @@ import re
 from enum import Enum
 
 import discord
+from discord.channel import DMChannel
 
 from .models import StoredUnit, Conversion, UnitType
 from src.models import Human, Earthling
@@ -87,7 +88,7 @@ class UnitMapping:
 
     def add(self, stored_unit: StoredUnit):
         symbol = stored_unit.symbol.lower()
-        if not should_exclude(symbol):
+        if not stored_unit.should_exclude_symbol:
             self._add_value(symbol, stored_unit)
         self._add_value(stored_unit.code.lower(), stored_unit)
 
@@ -115,14 +116,15 @@ def get_other_measurements():
 
 async def get_context_currency_codes(message):
     query = Human.select(Human.country, Human.currencies)
-    query = query.join(Earthling, on=(Human.id == Earthling.human))
     query = query.where((Human.country != None) | (Human.currencies != None))
 
     ids = set((message.author.id, ))
-    if message.guild is not None:
-        async for msg in message.channel.history(limit=20):
-            if not msg.author.bot:
-                ids.add(msg.author.id)
+    if not isinstance(message.channel, discord.DMChannel):
+        if message.guild is not None:
+            async for msg in message.channel.history(limit=20):
+                if not msg.author.bot:
+                    ids.add(msg.author.id)
+
     query = query.where(Human.user_id.in_(ids))
 
     currencies = set()

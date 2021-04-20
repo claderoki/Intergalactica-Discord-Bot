@@ -19,6 +19,10 @@ class StoredUnit(BaseModel):
         else:
             return (to.rate * value) / self.rate
 
+    @property
+    def should_exclude_symbol(self):
+        return "$" in self.symbol or "." in self.symbol or self.symbol.lower() in ("p", "k", "s", "r")
+
 class Currency(StoredUnit):
     pass
 

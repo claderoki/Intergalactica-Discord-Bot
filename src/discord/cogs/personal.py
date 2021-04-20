@@ -81,7 +81,7 @@ class Personal(BaseCog):
     @commands.Cog.listener()
     async def on_ready(self):
         await asyncio.sleep(10)
-        self.start_task(self.daily_reminders, check = not self.bot.production)
+        self.start_task(self.daily_reminders, check = True)
         self.start_task(self.free_games_notifier, check = self.bot.production)
 
     def notify(self, block = True, **kwargs):
@@ -202,9 +202,13 @@ class Personal(BaseCog):
 
     @tasks.loop(seconds = 10)
     async def daily_reminders(self):
-
         query = DailyReminder.select()
         query = query.order_by(DailyReminder.time.desc())
+
+        if self.bot.production:
+            query = query.where(DailyReminder.type == DailyReminder.ReminderType.text)
+        else:
+            query = query.where(DailyReminder.type == DailyReminder.ReminderType.stoic)
 
         for reminder in DailyReminder:
             if reminder.time_type == DailyReminder.TimeType.utc:
@@ -214,24 +218,18 @@ class Personal(BaseCog):
                 now = human.current_time
             else:
                 continue
-
-            if now.weekday() not in reminder.week_days:
-                # print("Skipping because weekday not valid")
+            if now.weekday()+1 not in reminder.week_days:
                 continue
             if reminder.time > now.time():
-                # print("Skipping because time > current time")
                 continue
             if reminder.time.hour != now.hour:
-                # print("Skipping because hour != current time")
                 continue
 
             if reminder.last_reminded != now.date():
-                content = None
+                content = reminder.value or ""
 
-                if reminder.type == DailyReminder.Type.text:
-                    content = reminder.value
-                elif reminder.type == DailyReminder.Type.stoic:
-                    content = await self.generate_daily_stoic(now = now)
+                if reminder.type == DailyReminder.ReminderType.stoic:
+                    content += "\n" + await self.generate_daily_stoic(now = now)
                 user = reminder.user
                 if user:
                     asyncio.gather(reminder.user.send(content))

@@ -19,7 +19,7 @@ currency_regex = RegexHelper(RegexType.currency)
 def add_stored_unit_to_regexes(stored_unit: StoredUnit):
     if isinstance(stored_unit, Currency):
         symbol = stored_unit.symbol.lower()
-        if not should_exclude(symbol):
+        if not stored_unit.should_exclude_symbol:
             currency_regex.add_value(symbol)
     measurement_regex.add_value(stored_unit.code.lower())
 
@@ -73,28 +73,29 @@ class ConversionCog(BaseCog, name = "Conversion"):
     @commands.command()
     async def conversions(self, ctx):
         embed = discord.Embed(color = self.bot.get_dominant_color())
-        embed.add_field(
-            name = "Measurements",
-            value = "EXPLANATION",
-            inline = False
-        )
+        # embed.add_field(
+        #     name = "Measurements",
+        #     value = "EXPLANATION",
+        #     inline = False
+        # )
         embed.add_field(
             name = "Currencies",
             value = """Currencies can be converted the following ways:
-by writing either €50 or 50EUR in the chat.
-(note: some symbols that are used for too many currencies are excluded, like the dollar symbol)
+by writing either **€50** or **50EUR** in the chat.
+(*note: some symbols that are used for too many currencies are excluded, like the dollar symbol*)
 
 Whatever you write in chat will be converted to currencies based on the conversation:
 All the users that wrote something for the last 20 messages are collected and their currencies are used to convert to.
-(note that you will have to either have a country set `/profile setup country` or  have some currencies added `currency add usd`)
+(note: you will have to have a country set `/profile setup country` or have some currencies added `currency add usd`)
 """,
             inline = False
         )
+        await ctx.send(embed = embed)
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        # if not self.bot.production:
-        #     return
+        if not self.bot.production:
+            return
 
         if message.author.bot or "http" in message.content:
             return
