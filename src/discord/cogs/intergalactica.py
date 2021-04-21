@@ -389,11 +389,19 @@ class Intergalactica(BaseCog):
 
     @group.command(name = "vc")
     @commands.has_role(_role_ids["5k+"])
-    async def group_vc(self, ctx, group : MentionGroup):
+    async def group_vc(self, ctx,*, name):
+        try:
+            group = MentionGroup.get(name = name)
+        except MentionGroup.DoesNotExist:
+            raise SendableException(ctx.translate("group_not_found").format(name = name))
         return await self.bot.get_command("vcchannel create")(ctx, group.name)
 
     @group.command(name = "join")
-    async def group_join(self, ctx, group : MentionGroup):
+    async def group_join(self, ctx,*, name):
+        try:
+            group = MentionGroup.get(name = name)
+        except MentionGroup.DoesNotExist:
+            raise SendableException(ctx.translate("group_not_found").format(name = name))
         created = group.join(ctx.author)
         if created:
             await ctx.send(ctx.translate("group_joined").format(group = group))
@@ -401,12 +409,20 @@ class Intergalactica(BaseCog):
             await ctx.send(ctx.translate("group_already_joined"))
 
     @group.command(name = "leave")
-    async def group_leave(self, ctx, group : MentionGroup):
+    async def group_leave(self, ctx,*, name):
+        try:
+            group = MentionGroup.get(name = name)
+        except MentionGroup.DoesNotExist:
+            raise SendableException(ctx.translate("group_not_found").format(name = name))
         group.leave(ctx.author)
         await ctx.send("group_left")
 
     @group.command(name = "mention")
-    async def group_mention(self, ctx, group : MentionGroup):
+    async def group_mention(self, ctx,*, name):
+        try:
+            group = MentionGroup.get(name = name)
+        except MentionGroup.DoesNotExist:
+            raise SendableException(ctx.translate("group_not_found").format(name = name))
         if group.is_member(ctx.author):
             await ctx.send(group.mention_string)
         else:
@@ -624,11 +640,11 @@ class Intergalactica(BaseCog):
         if new:
             first_earthling = Earthling.select().where(Earthling.personal_role_id != None).first()
             if first_earthling is not None and first_earthling.personal_role is not None:
-                position = max(1, first_earthling.personal_role.position)
+                position = first_earthling.personal_role.position
             else:
                 position = 1
             role = await ctx.guild.create_role(**kwargs)
-            await role.edit(position = position)
+            await role.edit(position = max(1, position))
             earthling.personal_role = role
             earthling.save()
             await ctx.send(ctx.bot.translate("role_created").format(role = role))
