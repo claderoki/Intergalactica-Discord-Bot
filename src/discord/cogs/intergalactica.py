@@ -620,10 +620,13 @@ class Intergalactica(BaseCog):
             kwargs["name"] = ctx.author.display_name
 
         earthling, _ = Earthling.get_or_create_for_member(ctx.author)
-        new = earthling.personal_role_id is None or earthling.personal_role is None
+        new = earthling.personal_role is None
         if new:
             first_earthling = Earthling.select().where(Earthling.personal_role_id != None).first()
-            position = first_earthling.personal_role.position if first_earthling else 0
+            if first_earthling is not None and first_earthling.personal_role is not None:
+                position = max(0, first_earthling.personal_role.position)
+            else:
+                position = 0
             role = await ctx.guild.create_role(**kwargs)
             await role.edit(position = position)
             earthling.personal_role = role
@@ -645,7 +648,7 @@ class Intergalactica(BaseCog):
         is_nitro_booster = ctx.author.premium_since is not None
         allowed = has_5k or is_nitro_booster
 
-        raise SendableException("This command is bugged so its temporarily disabled")
+        # raise SendableException("This command is bugged so its temporarily disabled")
 
         if not allowed:
             raise SendableException("You are not allowed to run this command yet, needed: 5k+ XP or Nitro Booster")

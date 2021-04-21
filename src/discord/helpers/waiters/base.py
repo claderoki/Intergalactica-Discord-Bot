@@ -90,7 +90,6 @@ class MessageWaiter(Waiter):
 
         try:
             self.converted = self.convert(words)
-            return True
         except ConversionFailed as e:
             self._send(message.channel, embed = Embed.error(f"{e} Try again."))
             return False

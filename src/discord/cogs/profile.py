@@ -404,12 +404,12 @@ class Profile(BaseCog):
     async def earthling_purger(self):
         with database.connection_context():
             to_purge = []
-            earthlings = list(Earthling)
+            earthlings = list(Earthling.select().order_by(Earthling.guild_id))
             for earthling in earthlings:
                 if earthling.guild is None or earthling.member is None:
                     to_purge.append(earthling)
 
-            if len(to_purge) != len(earthlings):
+            if len(to_purge) < (len(earthlings)//2):
                 for earthling in to_purge:
                     role = earthling.personal_role
                     if role is not None:
