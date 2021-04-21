@@ -624,9 +624,9 @@ class Intergalactica(BaseCog):
         if new:
             first_earthling = Earthling.select().where(Earthling.personal_role_id != None).first()
             if first_earthling is not None and first_earthling.personal_role is not None:
-                position = max(0, first_earthling.personal_role.position)
+                position = max(1, first_earthling.personal_role.position)
             else:
-                position = 0
+                position = 1
             role = await ctx.guild.create_role(**kwargs)
             await role.edit(position = position)
             earthling.personal_role = role
