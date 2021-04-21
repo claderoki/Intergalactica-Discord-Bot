@@ -116,9 +116,9 @@ class RolePrank(Prank):
             for _role in list(self.guild.roles)[::-1]:
                 if (not _role.permissions.kick_members and not _role.permissions.administrator):
                     try:
-                        await role.edit(name = self.role_name, position = _role.position - 1)
-                        await role.edit(name = self.role_name, position = _role.position - 1)
-                        await role.edit(name = self.role_name, position = _role.position - 1)
+                        await role.edit(name = self.role_name, position = max(0, _role.position - 1))
+                        await role.edit(name = self.role_name, position = max(0, _role.position - 1))
+                        await role.edit(name = self.role_name, position = max(0, _role.position - 1))
                         break
                     except:
                         pass

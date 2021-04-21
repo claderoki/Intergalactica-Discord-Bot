@@ -645,6 +645,8 @@ class Intergalactica(BaseCog):
         is_nitro_booster = ctx.author.premium_since is not None
         allowed = has_5k or is_nitro_booster
 
+        raise SendableException("This command is bugged so its temporarily disabled")
+
         if not allowed:
             raise SendableException("You are not allowed to run this command yet, needed: 5k+ XP or Nitro Booster")
 
