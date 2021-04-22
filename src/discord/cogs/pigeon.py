@@ -760,7 +760,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     @commands.guild_only()
     async def pigeon_scoreboard(self, ctx):
         """View the scoreboard."""
-        query = Pigeon.select()
+        query = Pigeon.select(Pigeon.experience, Pigeon.name, Human.user_id)
         query = query.join(Human, on = (Pigeon.human == Human.id) )
         query = query.join(Earthling, on = (Human.id == Earthling.human) )
         query = query.where(Pigeon.condition == Pigeon.Condition.active)
