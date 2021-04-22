@@ -3,7 +3,6 @@ import random
 import io
 import datetime
 import os
-from discord.ext.commands.errors import NotOwner
 import cProfile
 import pstats
 
@@ -56,6 +55,7 @@ class Locus(commands.Bot):
         commands.errors.RoleNotFound,
         commands.errors.MaxConcurrencyReached,
         commands.errors.NotOwner,
+        commands.errors.NSFWChannelRequired,
         SendableException,
     )
 
