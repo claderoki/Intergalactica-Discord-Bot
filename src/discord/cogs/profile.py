@@ -91,7 +91,7 @@ class Profile(BaseCog):
     @commands.command()
     @commands.guild_only()
     async def scoreboard(self, ctx):
-        query = Human.select()
+        query = Human.select(Human.user_id, Human.gold)
         query = query.join(Earthling, on=(Human.id == Earthling.human))
         query = query.where(Earthling.guild_id == ctx.guild.id)
         query = query.order_by(Human.gold.desc())
