@@ -113,21 +113,26 @@ class Prank(BaseCog):
 
     @prank.command(name = "scoreboard")
     async def prank_scoreboard(self, ctx):
-        query = Prankster.select()
-        query = query.where(Prankster.guild_id == ctx.guild.id)
+
+        query = """SELECT
+prankster.user_id, COUNT(nickname_prank.id) as people_pranked
+FROM
+prankster
+INNER JOIN nickname_prank ON prankster.id = nickname_prank.pranked_by_id
+WHERE prankster.guild_id = {guild_id}
+GROUP BY user_id
+ORDER BY people_pranked DESC"""
 
         table = pretty.Table()
         table.add_row(pretty.Row(("Prankster", "People pranked (nick)"), header = True))
 
-        for prankster in query:
-            member = prankster.member
-            if member is not None:
-                query = NicknamePrank.select()
-                query = query.where(NicknamePrank.finished == True)
-                query = query.where(NicknamePrank.pranked_by == prankster)
-                table.add_row(pretty.Row((str(member), query.count())))
+        cursor = database.execute_sql(query.format(guild_id = ctx.guild.id))
+        for user_id, people_pranked in cursor:
+            member = ctx.guild.get_member(user_id)
+            if member is None:
+                continue
 
-        table.sort(1, int)
+            table.add_row(pretty.Row((str(member), people_pranked)))
 
         await table.to_paginator(ctx, 15).wait()
 

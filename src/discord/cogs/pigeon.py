@@ -403,16 +403,25 @@ class PigeonCog(BaseCog, name = "Pigeon"):
     @pigeon.command(name = "relationships")
     async def pigeon_relationships(self, ctx):
         """View your pigeons relationships."""
-        query = PigeonRelationship.select()
-        query = query.where((PigeonRelationship.pigeon1 == ctx.pigeon) | (PigeonRelationship.pigeon2 == ctx.pigeon))
-        query = query.order_by(PigeonRelationship.score.asc())
+
+        query = """
+SELECT
+pigeon_relationship.score,
+(CASE WHEN p1.id={pigeon_id} THEN p2.name ELSE p1.name END) as other_name
+FROM pigeon_relationship
+INNER JOIN pigeon p1 ON pigeon1_id = p1.id
+INNER JOIN pigeon p2 ON pigeon2_id = p2.id
+WHERE pigeon1_id = {pigeon_id} OR pigeon2_id = {pigeon_id}
+ORDER BY score DESC;
+        """
 
         table = Table(padding = 0)
         table.add_row(Row(["name", "score", "title"], header = True))
 
-        for relationship in query:
-            other = relationship.pigeon1 if relationship.pigeon1 != ctx.pigeon else relationship.pigeon2
-            values = [limit_str(other.name, 10), relationship.score, relationship.title]
+        cursor = database.execute_sql(query.format(pigeon_id = ctx.pigeon.id))
+
+        for score, other_name in cursor:
+            values = [limit_str(other_name, 10), score, PigeonRelationship._get_title(score)]
             table.add_row(Row(values))
 
         await table.to_paginator(ctx, 15).wait()

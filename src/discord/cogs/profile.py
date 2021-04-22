@@ -95,6 +95,7 @@ class Profile(BaseCog):
         query = query.join(Earthling, on=(Human.id == Earthling.human))
         query = query.where(Earthling.guild_id == ctx.guild.id)
         query = query.order_by(Human.gold.desc())
+        # query = query.limit(10)
 
         table = pretty.Table()
         table.add_row(pretty.Row(["rank", "gold", "member"], header = True))
