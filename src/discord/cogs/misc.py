@@ -14,6 +14,7 @@ class MiscCog(BaseCog, name = "Misc"):
         super().__init__(bot)
 
     @commands.command()
+    @commands.is_nsfw()
     async def urban(self, ctx, *, query):
         url = f"https://api.urbandictionary.com/v0/define?term={query}"
         request = requests.get(url)
