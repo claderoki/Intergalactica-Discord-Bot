@@ -653,10 +653,10 @@ ORDER BY score DESC;
 
         query = f"""
 SELECT
-SUM(CASE WHEN ({win_condition}) THEN bet ELSE 0 END) as gold_won,
-SUM(CASE WHEN ({win_condition}) THEN 0 ELSE -bet END) as gold_lost,
-COUNT(CASE WHEN ({win_condition}) THEN bet ELSE 0 END) as fights_won,
-COUNT(CASE WHEN ({win_condition}) THEN 0 ELSE bet END) as fights_lost
+COALESCE(SUM(CASE WHEN ({win_condition}) THEN bet ELSE 0 END), 0) as gold_won,
+COALESCE(SUM(CASE WHEN ({win_condition}) THEN 0 ELSE -bet END), 0) as gold_lost,
+COALESCE(SUM(CASE WHEN ({win_condition}) THEN 1 ELSE 0 END), 0) as fights_won,
+COALESCE(SUM(CASE WHEN ({win_condition}) THEN 0 ELSE 1 END), 0) as fights_lost
 FROM fight
 WHERE finished = 1
 AND (pigeon1_id = {ctx.pigeon.id}  OR pigeon2_id = {ctx.pigeon.id} )
@@ -673,19 +673,12 @@ AND (pigeon1_id = {ctx.pigeon.id}  OR pigeon2_id = {ctx.pigeon.id} )
         embed.add_field(name = f"Fights {Pigeon.Status.fighting.value}", value = "\n".join(lines), inline = False)
 
         query = f"""
-            SELECT total_dates, rejections FROM
-
-            (SELECT count(*) as total_dates
+            SELECT
+            COALESCE(SUM(CASE WHEN (accepted=1) THEN 1 ELSE 0 END), 0) as total_dates,
+            COALESCE(SUM(CASE WHEN (pigeon2_id={ctx.pigeon.id} AND accepted=0) THEN 1 ELSE 0 END),0) as total_rejections
             FROM date
-            WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
-            AND accepted = 1
-            ) as d1,
-
-            (SELECT count(*) as rejections
-            FROM date
-            WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
-            AND (pigeon2_id = {pigeon.id} AND accepted = 0)
-            ) as d2;
+            WHERE finished=1
+            AND (pigeon1_id = {ctx.pigeon.id}  OR pigeon2_id = {ctx.pigeon.id} )
         """
 
         cursor = database.execute_sql(query)
