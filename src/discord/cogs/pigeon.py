@@ -649,25 +649,22 @@ ORDER BY score DESC;
         lines.append(f"Total gold sent: {total_gold_sent}")
         embed.add_field(name = f"Mails {Pigeon.Status.mailing.value}", value = "\n".join(lines), inline = False)
 
-        query = f"""
-            SELECT COALESCE(gold_won, 0), COALESCE(-gold_lost, 0), COALESCE(fights_won, 0), COALESCE(fights_lost, 0) FROM
-            (SELECT SUM(bet) as gold_won, count(*) as fights_won
-            FROM fight
-            WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
-            AND ( (pigeon1_id = {pigeon.id} AND won = 1) OR (pigeon2_id = {pigeon.id} AND won = 0))
-            ) as f1,
+        win_condition = f"(pigeon1_id={ctx.pigeon.id} AND won=1) OR (pigeon2_id={ctx.pigeon.id} AND won=0)"
 
-            (SELECT SUM(bet) as gold_lost, count(*) as fights_lost
-            FROM fight
-            WHERE finished = 1 AND (pigeon1_id = {pigeon.id} OR pigeon2_id = {pigeon.id})
-            AND ( (pigeon1_id = {pigeon.id} AND won = 0) OR (pigeon2_id = {pigeon.id} AND won = 1))
-            ) as f2;
+        query = f"""
+SELECT
+SUM(CASE WHEN ({win_condition}) THEN bet ELSE 0 END) as gold_won,
+SUM(CASE WHEN ({win_condition}) THEN 0 ELSE -bet END) as gold_lost,
+COUNT(CASE WHEN ({win_condition}) THEN bet ELSE 0 END) as fights_won,
+COUNT(CASE WHEN ({win_condition}) THEN 0 ELSE bet END) as fights_lost
+FROM fight
+WHERE finished = 1
+AND (pigeon1_id = {ctx.pigeon.id}  OR pigeon2_id = {ctx.pigeon.id} )
         """
 
         cursor = database.execute_sql(query)
         gold_won, gold_lost, fights_won, fights_lost = cursor.fetchone()
         profit = gold_won + gold_lost
-
 
         lines = []
         lines.append(f"Total fights won : {fights_won}")
