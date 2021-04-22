@@ -454,13 +454,13 @@ class Intergalactica(BaseCog):
         TemporaryVoiceChannel.create(guild_id = ctx.guild.id, channel_id = channel.id)
         await ctx.success()
 
-    def get_human_item(self, user, code = None):
+    def get_human_item(self, user, code = None, raise_on_empty = True):
         #TODO: optimize
         human_item = HumanItem.get_or_none(
             human = self.bot.get_human(user = user),
             item = Item.get(code = code)
         )
-        if human_item is None or human_item.amount == 0:
+        if human_item is None or (human_item.amount == 0 and raise_on_empty):
             raise SendableException(self.bot.translate("no_" + code))
         return human_item
 
@@ -501,7 +501,7 @@ class Intergalactica(BaseCog):
         temp_channel.status = TemporaryChannel.Status.denied
         temp_channel.active = False
         temp_channel.deny_reason = reason
-        human_item = self.get_human_item(temp_channel.user, code = temp_channel.item_code)
+        human_item = self.get_human_item(temp_channel.user, code = temp_channel.item_code, raise_on_empty = False)
         human_item.amount += temp_channel.pending_items
         human_item.save()
         temp_channel.save()
