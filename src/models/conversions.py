@@ -25,7 +25,7 @@ class StoredUnit(BaseModel):
             return True
         if "." in self.symbol:
             return True
-        if self.symbol.lower() in ("p", "k", "s", "r", "t", "e", "d"):
+        if self.symbol.lower() in ("p", "k", "s", "r", "t", "e", "d", "m"):
             return True
         return False
 
