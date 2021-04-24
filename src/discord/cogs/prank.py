@@ -121,10 +121,10 @@ prankster
 INNER JOIN nickname_prank ON prankster.id = nickname_prank.pranked_by_id
 WHERE prankster.guild_id = {guild_id}
 GROUP BY user_id
-ORDER BY people_pranked DESC"""
+ORDER BY people_nick_pranked DESC"""
 
         table = pretty.Table()
-        table.add_row(pretty.Row(("Prankster", "People pranked (nick)"), header = True))
+        table.add_row(pretty.Row(("Prankster", "Pranks (nick)"), header = True))
 
         cursor = database.execute_sql(query.format(guild_id = ctx.guild.id))
         for user_id, people_nick_pranked in cursor:
