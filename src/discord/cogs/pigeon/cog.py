@@ -25,31 +25,47 @@ class ItemWaiter(StrWaiter):
         super().__init__(ctx, max_words = None, **kwargs)
         self.show_instructions = False
         self.case_sensitive = False
+        self.item_mapping = {}
+        self.in_inventory = in_inventory
+        self.table = None
 
         if in_inventory:
-            query = HumanItem.select()
-            query = query.where(HumanItem.human == ctx.get_human())
-            query = query.where(HumanItem.amount > 0)
-            self.inventory = list(query)
-            self.items = [x.item for x in self.inventory]
-        else:
-            self.items = list(Item.select())
+            query = f"""
+            SELECT
+            item.id as id, item.name as item_name, human_item.amount as amount
+            FROM
+            human_item
+            INNER JOIN item ON human_item.item_id = item.id
+            WHERE human_id = {ctx.get_human()}
+            AND amount > 0
+            """
 
-        self.allowed_words = [x.name.lower() for x in self.items]
+            cursor = database.execute_sql(query)
+
+            data = [("name", "amount")]
+            for id, item_name, amount in cursor:
+                self.allowed_words.append(item_name.lower())
+                data.append((item_name, amount))
+                self.item_mapping[item_name.lower()] = id
+        else:
+            data = [("name",)]
+            for item in Item.select(Item.id, Item.name):
+                data.append((item.name,))
+                self.allowed_words.append(item.name.lower())
+                self.item_mapping[item.name.lower()] = item.id
+
+        self.table = Table.from_list(data, first_header = True)
 
     async def wait(self, *args, **kwargs):
-        data = [(x.item.name, x.amount) for x in self.inventory]
-        data.insert(0, ("name", "amount"))
-        table = Table.from_list(data, first_header = True)
-        asyncio.gather(table.to_paginator(self.ctx, 15).wait())
+        asyncio.gather(self.table.to_paginator(self.ctx, 15).wait())
         await asyncio.sleep(0.5)
         return await super().wait(*args, **kwargs)
 
     def convert(self, argument):
-        for item in self.items:
-            if item.name.lower() == argument.lower():
-                return item
-        raise ConversionFailed("Item not found.")
+        id = self.item_mapping.get(argument)
+        if id is None:
+            raise ConversionFailed("Item not found.")
+        return id
 
 class PigeonCog(BaseCog, name = "Pigeon"):
     subcommands_no_require_pigeon = [
