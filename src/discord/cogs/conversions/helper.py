@@ -73,7 +73,7 @@ class UnitMapping:
 
     def get_unit(self, value, type: UnitType = None):
         units = self.get_units(value, type = type)
-        if units is not None:
+        if units is not None and len(units) > 0:
             return units[0]
 
     def get_units(self, value, type: UnitType = None):
