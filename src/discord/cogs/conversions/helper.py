@@ -3,8 +3,8 @@ from enum import Enum
 
 import discord
 
-from .models import StoredUnit
-from src.models import Human
+from .models import StoredUnit, UnitType
+from src.models import Human, Currency, Measurement
 
 class RegexType(Enum):
     currency   = 1
@@ -71,19 +71,28 @@ class UnitMapping:
         else:
             self.values[value] = stored_unit
 
-    def get_unit(self, value):
-        units = self.get_units(value)
+    def get_unit(self, value, type: UnitType = None):
+        units = self.get_units(value, type = type)
         if units is not None:
             return units[0]
 
-    def get_units(self, value):
+    def get_units(self, value, type: UnitType = None):
         try:
             unit = self.values[value.lower()]
         except KeyError:
             return None
-        if not isinstance(unit, list):
-            unit = [unit]
-        return unit
+        all_units = unit if isinstance(unit, list) else [unit]
+        if type is None:
+            return all_units
+
+        units = []
+        if type is not None:
+            for unit in all_units:
+                if type == UnitType.measurement and isinstance(unit, Measurement):
+                    units.append(unit)
+                elif type == UnitType.measurement and isinstance(unit, Currency):
+                    units.append(unit)
+        return units
 
     def add(self, stored_unit: StoredUnit):
         symbol = stored_unit.symbol.lower()

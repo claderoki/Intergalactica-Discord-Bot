@@ -47,7 +47,7 @@ async def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, 
         code = code.lower()
         if code == base_stored_unit.code.lower():
             continue
-        stored_unit = unit_mapping.get_unit(code)
+        stored_unit = unit_mapping.get_unit(code, type = base.unit.type)
 
         if stored_unit is None:
             continue
