@@ -15,7 +15,7 @@ from src.utils.country import Country
 from src.discord.helpers.paginating import Paginator
 from src.discord.errors.base import SendableException
 from src.discord.helpers.pretty import prettify_dict, limit_str, Table, Row
-from src.discord.helpers.exploration_retrieval import ExplorationRetrieval, MailRetrieval
+from .exploration_retrieval import ExplorationRetrieval, MailRetrieval
 from src.utils.enums import Gender
 from src.discord.helpers.converters import EnumConverter
 from src.discord.cogs.core import BaseCog

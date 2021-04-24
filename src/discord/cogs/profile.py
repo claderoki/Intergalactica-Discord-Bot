@@ -385,11 +385,28 @@ class Profile(BaseCog):
 
     @commands.command()
     async def inventory(self, ctx, member : discord.Member = None):
-        human = ctx.get_human(user = (member or ctx.author))
+        member = member or ctx.author
+        human = ctx.get_human(user = member)
 
-        data = [(x.item.name, x.amount) for x in human.human_items if x.amount > 0]
+        query = f"""
+        SELECT
+        item.name as item_name, human_item.amount as amount
+        FROM
+        human_item
+        INNER JOIN item ON human_item.item_id = item.id
+        WHERE human_id = {human.id}
+        AND amount > 0
+        """
+
+        cursor = database.execute_sql(query)
+
+        data = []
+        for item_name, amount in cursor:
+            data.append((item_name, amount))
+
         data.insert(0, ("name", "amount"))
         table = pretty.Table.from_list(data, first_header = True)
+        table.title = f"{member}s inventory"
         await table.to_paginator(ctx, 15).wait()
 
     @item.command(name = "view")

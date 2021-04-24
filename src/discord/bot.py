@@ -190,7 +190,7 @@ class Locus(commands.Bot):
             "admin",
             "misc",
             "prank",
-            "pigeon",
+            "pigeon.cog",
             "covid",
             "conversations",
             "qotd",

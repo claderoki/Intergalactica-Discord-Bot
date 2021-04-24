@@ -41,10 +41,11 @@ def prettify_dict(data, emojis = None):
     return "\n".join(lines)
 
 class Table:
-    def __init__(self, rows = None, sep = " | ", padding = 2):
+    def __init__(self, rows = None, sep = " | ", padding = 2, title = None):
         self._rows = rows or []
         self.sep = sep
         self.padding = padding
+        self.title = None
 
     @classmethod
     def from_list(cls, data, first_header = False, **kwargs):
@@ -71,6 +72,9 @@ class Table:
             if header is not None:
                 table.add_row(header)
             embed = discord.Embed(color = ctx.guild_color)
+            if self.title is not None:
+                embed.title = self.title
+
             embed.description = table.generate()
             paginator.add_page(Page(embed))
 
