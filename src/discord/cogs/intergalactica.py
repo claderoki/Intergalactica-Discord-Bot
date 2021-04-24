@@ -281,7 +281,7 @@ class Intergalactica(BaseCog):
         if message.guild is not None and message.guild.id != self.guild_id:
             return
 
-        words = self.blacklisted_words_used(message.content)
+        words = self.blacklisted_words_used(message.content.lower())
         if len(words) > 0:
             await on_malicious_action(MaliciousAction.blacklisted_word, message.author, message = message, words = words)
 
