@@ -28,9 +28,6 @@ class Unit:
         else:
             return cls(stored_unit.name, stored_unit.code, stored_unit.symbol, UnitType.measurement, stored_unit.subtype)
 
-def clean_value(value):
-    return 
-
 class Conversion:
     __slots__ = ("unit", "value")
 
