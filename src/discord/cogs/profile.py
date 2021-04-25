@@ -427,7 +427,7 @@ class Profile(BaseCog):
             to_purge = []
             earthlings = list(Earthling.select().order_by(Earthling.guild_id))
             for earthling in earthlings:
-                if earthling.guild is None or earthling.member is None:
+                if earthling.guild is None or earthling.member is None or earthling.member.bot:
                     to_purge.append(earthling)
 
             if len(to_purge) < (len(earthlings)//2):
