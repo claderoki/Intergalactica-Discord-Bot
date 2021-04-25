@@ -5,6 +5,7 @@ import datetime
 import os
 import cProfile
 import pstats
+from discord.ext.commands.errors import CheckFailure
 
 import requests
 import praw
@@ -56,6 +57,7 @@ class Locus(commands.Bot):
         commands.errors.MaxConcurrencyReached,
         commands.errors.NotOwner,
         commands.errors.NSFWChannelRequired,
+        commands.errors.CheckFailure,
         SendableException,
     )
 

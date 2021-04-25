@@ -20,9 +20,15 @@ from src.models import (Earthling, Human, HumanItem, Item, MentionGroup,
                         RedditAdvertisement, Reminder, TemporaryChannel,
                         TemporaryVoiceChannel, database)
 
-def is_intergalactica():
+
+class SpecificGuildOnly(commands.errors.CheckFailure):
+    def __init__(self, guild_id):
+        super().__init__(f"This command can only be used in guild `{guild_id}`")
+
+def specific_guild_only(guild_id):
     def predicate(ctx):
-        return ctx.guild and ctx.guild.id == Intergalactica.guild_id
+        if not ctx.guild or ctx.guild.id != guild_id:
+            raise SpecificGuildOnly(guild_id)
     return commands.check(predicate)
 
 class MaliciousAction(Enum):
@@ -71,11 +77,13 @@ async def on_malicious_action(action : MaliciousAction, member : discord.Member,
         if Intergalactica.member_is_new(member):
             await member.ban(reason = action.ban_reason)
 
+
+guild_id = 742146159711092757
 class Intergalactica(BaseCog):
     last_member_join = None
 
     vote_emojis = ("✅", "❎", "❓")
-    guild_id = 742146159711092757
+    guild_id = guild_id
 
     _role_ids = {
         "selfies"   : 748566253534445568,
@@ -442,7 +450,7 @@ class Intergalactica(BaseCog):
         await table.to_paginator(ctx, 10).wait()
 
     @commands.command(name = "vcchannel")
-    @is_intergalactica()
+    @specific_guild_only(guild_id)
     @commands.has_role(_role_ids["5k+"])
     async def vc_channel(self, ctx, *args):
         name = " ".join(args) if len(args) > 0 else None
@@ -580,7 +588,7 @@ class Intergalactica(BaseCog):
         await table.to_paginator(ctx, 10).wait()
 
     @commands.has_guild_permissions(administrator = True)
-    @is_intergalactica()
+    @specific_guild_only(guild_id)
     @commands.command()
     async def warn(self, ctx, member : discord.Member, *, reason):
         await member.send(f"Hello {member}, this is an official warning. Reason: **{reason}**. Please be more careful in the future.")
@@ -659,7 +667,7 @@ class Intergalactica(BaseCog):
         await ctx.author.add_roles(role)
 
     @commands.group()
-    @is_intergalactica()
+    @specific_guild_only(guild_id)
     async def role(self, ctx):
         has_5k = ctx.guild.get_role(self._role_ids["5k+"]) in ctx.author.roles
         is_nitro_booster = ctx.author.premium_since is not None

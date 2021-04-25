@@ -390,21 +390,24 @@ class Profile(BaseCog):
 
         query = f"""
         SELECT
-        item.name as item_name, human_item.amount as amount
+        item.name as item_name, human_item.amount as amount, IFNULL(item_category.name, 'N/A') AS category_name
         FROM
         human_item
         INNER JOIN item ON human_item.item_id = item.id
+        LEFT JOIN item_category ON item.category_id = item_category.id
         WHERE human_id = {human.id}
         AND amount > 0
+        AND (item_category.name IS NULL OR item_category.name != 'Christmas')
+        ORDER BY amount
         """
 
         cursor = database.execute_sql(query)
 
         data = []
-        for item_name, amount in cursor:
-            data.append((item_name, amount))
+        for item_name, amount, category_name in cursor:
+            data.append((item_name, amount, category_name))
 
-        data.insert(0, ("name", "amount"))
+        data.insert(0, ("name", "", "category"))
         table = pretty.Table.from_list(data, first_header = True)
         table.title = f"{member}s inventory"
         await table.to_paginator(ctx, 15).wait()

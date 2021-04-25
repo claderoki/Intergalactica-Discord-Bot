@@ -91,7 +91,9 @@ class Human(BaseModel):
         elif self.country is not None:
             if self.country.alpha_2 not in ("US", "CA"):
                 latlng = self.country.capital_latlng()
-                return Timezone.from_location(*latlng[::-1]).name
+                timezone = Timezone.from_location(*latlng[::-1])
+                if timezone is not None:
+                    return timezone.name
 
     def add_item(self, item, amount = 1, found = False):
         human_item, created = HumanItem.get_or_create(item = item, human = self)
