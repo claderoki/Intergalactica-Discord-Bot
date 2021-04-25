@@ -30,7 +30,7 @@ class Inactive(BaseCog):
 
             if rows_affected == 0:
                 try:
-                    Earthling.create(
+                    Earthling.insert(
                         guild_id = member.guild.id,
                         user_id = member.id,
                         human = config.bot.get_human(user = member)
@@ -56,10 +56,11 @@ class Inactive(BaseCog):
             self.set_active_or_create(member)
 
     def iter_inactives(self, guild):
-        for earthling in Earthling.select(Earthling.guild_id, Earthling.user_id).where(Earthling.guild_id == guild.id):
+        query = Earthling.select(Earthling.guild_id, Earthling.user_id, Earthling.last_active)
+        for earthling in query.where(Earthling.guild_id == guild.id):
             if earthling.guild is None or earthling.member is None:
                 continue
-            if earthling.inactive and not earthling.member.bot:
+            if earthling.inactive:
                 yield earthling
 
     @commands.has_guild_permissions(administrator = True)
@@ -76,7 +77,7 @@ class Inactive(BaseCog):
                 lines.append( str(earthling.member) )
 
         if len(inactive_members) == 0:
-            return ctx.error("NO INACTIVES TO BE DESTROYED")
+            return await ctx.error("NO INACTIVES TO BE DESTROYED")
 
         embed.description = "\n".join(lines)
         await ctx.send(embed = embed)
@@ -86,8 +87,9 @@ class Inactive(BaseCog):
         if to_kick:
             for member in inactive_members:
                 await member.kick(reason = "Inactivity")
-
-        await ctx.success("Done destroying inactives.")
+            await ctx.success("Done destroying inactives.")
+        else:
+            await ctx.success("Canceled the destruction of the inactives.")
 
 def setup(bot):
     bot.add_cog(Inactive(bot))
