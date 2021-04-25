@@ -22,24 +22,41 @@ class Inactive(BaseCog):
             return
 
         with database.connection_context():
-            earthling, created = Earthling.get_or_create_for_member(member)
-            if not created:
-                earthling.last_active = datetime.datetime.utcnow()
-                earthling.save()
+            now = datetime.datetime.utcnow()
+            query = Earthling.update(last_active = now)
+            query = query.where(Earthling.user_id == member.id)
+            query = query.where(Earthling.guild_id == member.guild.id)
+            rows_affected = query.execute()
+
+            if rows_affected == 0:
+                try:
+                    Earthling.create(
+                        guild_id = member.guild.id,
+                        user_id = member.id,
+                        human = config.bot.get_human(user = member)
+                    )
+                except Exception as e:
+                    pass
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if not self.bot.production:
+            return
+
         if message.guild:
             self.set_active_or_create(message.author)
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
+        if not self.bot.production:
+            return
+
         joined = before.channel is None and after.channel is not None
         if joined:
             self.set_active_or_create(member)
 
     def iter_inactives(self, guild):
-        for earthling in Earthling.select().where(Earthling.guild_id == guild.id):
+        for earthling in Earthling.select(Earthling.guild_id, Earthling.user_id).where(Earthling.guild_id == guild.id):
             if earthling.guild is None or earthling.member is None:
                 continue
             if earthling.inactive and not earthling.member.bot:
@@ -58,15 +75,19 @@ class Inactive(BaseCog):
                 inactive_members.append(earthling.member)
                 lines.append( str(earthling.member) )
 
+        if len(inactive_members) == 0:
+            return ctx.error("NO INACTIVES TO BE DESTROYED")
+
         embed.description = "\n".join(lines)
         await ctx.send(embed = embed)
 
-        if len(inactive_members) > 0:
-            waiter = BoolWaiter(ctx, prompt = "Kick?")
-            to_kick = await waiter.wait()
-            if to_kick:
-                for member in inactive_members:
-                    await member.kick(reason = "Inactivity")
+        waiter = BoolWaiter(ctx, prompt = "Kick?")
+        to_kick = await waiter.wait()
+        if to_kick:
+            for member in inactive_members:
+                await member.kick(reason = "Inactivity")
+
+        await ctx.success("Done destroying inactives.")
 
 def setup(bot):
     bot.add_cog(Inactive(bot))
