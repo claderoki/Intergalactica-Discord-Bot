@@ -17,11 +17,11 @@ measurement_regex = RegexHelper(RegexType.measurement)
 currency_regex = RegexHelper(RegexType.currency)
 
 def add_stored_unit_to_regexes(stored_unit: StoredUnit):
+    measurement_regex.add_value(stored_unit.code.lower())
     if isinstance(stored_unit, Currency):
         symbol = stored_unit.symbol.lower()
         if not stored_unit.should_exclude_symbol:
             currency_regex.add_value(symbol)
-    measurement_regex.add_value(stored_unit.code.lower())
 
 def add_all_to_mapping():
     for cls in (Currency, Measurement):
@@ -36,7 +36,7 @@ async def get_linked_codes(base: Conversion, message: discord.Message):
         try:
             return other_measurements[base.unit.code]
         except KeyError:
-            return []
+            return ()
     else:
         return await get_context_currency_codes(message)
 
