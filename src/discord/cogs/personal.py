@@ -205,9 +205,9 @@ class Personal(BaseCog):
         query = DailyReminder.select()
         query = query.order_by(DailyReminder.time.desc())
 
-        if self.bot.production:
+        if self.bot.heroku:
             query = query.where(DailyReminder.type == DailyReminder.ReminderType.text)
-        else:
+        elif not self.bot.production:
             query = query.where(DailyReminder.type == DailyReminder.ReminderType.stoic)
 
         for reminder in DailyReminder:
@@ -215,7 +215,7 @@ class Personal(BaseCog):
                 now = datetime.datetime.utcnow()
             elif reminder.time_type == DailyReminder.TimeType.local:
                 human = self.bot.get_human(user = reminder.user_id)
-                now = human.current_time
+                now = human.current_time or datetime.datetime.utcnow()
             else:
                 continue
             if now.weekday()+1 not in reminder.week_days:
