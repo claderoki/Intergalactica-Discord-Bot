@@ -30,6 +30,16 @@ class MiscCog(BaseCog, name = "Misc"):
             break
 
     @commands.command()
+    async def advice(self, ctx):
+        url = "https://api.adviceslip.com/advice"
+        request = requests.get(url)
+        json = request.json()
+        embed = discord.Embed(color = ctx.guild_color)
+        embed.description = json["slip"]["advice"]
+        embed.title = "Advice"
+        await ctx.send(embed = embed)
+
+    @commands.command()
     async def invite(self, ctx):
         """Gives an invite link so you can add the bot"""
         await ctx.send(f"https://discordapp.com/oauth2/authorize?client_id={ctx.bot.user.id}&scope=bot&permissions=0")
