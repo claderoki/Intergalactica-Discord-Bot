@@ -140,16 +140,31 @@ class PigeonCog(BaseCog, name = "Pigeon"):
                 raise SendableException(ctx.translate(f"{name}_pigeon_jailed"))
 
             if pigeon.status == Pigeon.Status.idle:
-                #TODO: optimize.
-                activities = []
-                activities.append(pigeon.explorations.where(Exploration.finished == False))
-                activities.append(pigeon.outbox.where(Mail.finished == False))
-                activities.append(pigeon.fights.where(Fight.finished == False))
+                query = f"""
+                SELECT
+                exploration.id as exploration_id, mail.id as mail_id, fight.id as fight_id, date.id as date_id
+                FROM
+                pigeon
+                LEFT JOIN exploration
+                    ON (exploration.pigeon_id = pigeon.id AND exploration.finished = 0)
+                LEFT JOIN mail
+                    ON (mail.sender_id = pigeon.id AND mail.finished = 0)
+                LEFT JOIN fight
+                    ON ((fight.pigeon1_id = pigeon.id OR fight.pigeon2_id = pigeon.id) AND fight.finished = 0)
+                LEFT JOIN date
+                    ON ((date.pigeon1_id = pigeon.id OR date.pigeon2_id = pigeon.id) AND date.finished = 0)
+                WHERE pigeon.id = {pigeon.id}
+                """
 
-                for activity_group in activities:
-                    for activity in activity_group:
-                        activity.finished = True
-                        activity.save()
+                cursor = database.execute_sql(query)
+                for row in cursor:
+                    classes = [Exploration, Mail, Fight, Date]
+                    i = 0
+                    for id in row:
+                        if id is not None:
+                            cls = classes[i]
+                            cls.update(finished = True).where(cls.id == 1).execute()
+                        i += 1
 
         if command_name not in self.subcommands_no_require_available:
             pigeon_raise_if_unavailable(ctx, pigeon, name = name)
