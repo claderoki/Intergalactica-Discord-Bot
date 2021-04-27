@@ -197,6 +197,7 @@ class Locus(commands.Bot):
             "conversations",
             "qotd",
             "giveaway",
+            "trivia.cog",
         ]
 
         if True:
