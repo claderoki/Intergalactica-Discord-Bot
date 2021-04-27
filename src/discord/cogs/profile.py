@@ -68,7 +68,7 @@ class Profile(BaseCog):
                 raise SendableException(ctx.translate("date_of_birth_not_set"))
             sign = human.zodiac_sign
 
-        query = Human.select(Human.user_id, Human.zodiac_sign)
+        query = Human.select(Human.user_id, Human.date_of_birth)
         query = query.join(Earthling, on=(Human.id == Earthling.human))
         query = query.where(Earthling.guild_id == ctx.guild.id)
         query = query.where(Human.date_of_birth != None)
