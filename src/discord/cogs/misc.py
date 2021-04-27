@@ -31,6 +31,8 @@ class MiscCog(BaseCog, name = "Misc"):
 
     @commands.command()
     async def advice(self, ctx):
+        if ctx.channel.id == 835646945442791424:
+            return
         url = "https://api.adviceslip.com/advice"
         request = requests.get(url)
         json = request.json()

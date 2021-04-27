@@ -29,6 +29,7 @@ def specific_guild_only(guild_id):
     def predicate(ctx):
         if not ctx.guild or ctx.guild.id != guild_id:
             raise SpecificGuildOnly(guild_id)
+        return True
     return commands.check(predicate)
 
 class MaliciousAction(Enum):
@@ -609,11 +610,9 @@ class Intergalactica(BaseCog):
 
         if role == self.role_needed_for_selfie_vote:
             if member.guild.get_role(self._role_ids["selfies"]) not in member.roles:
-                time_here = relativedelta(datetime.datetime.utcnow(), member.joined_at)
-                if time_here.hours >= 12:
-                    channel = self.get_channel("staff_votes")
-                    asyncio.gather(channel.send(f"Should {member.mention} (**{member}**) get selfie access?"))
-                asyncio.gather(self.log("c3po-log", f"**{member}** {member.mention} has achieved the rank needed for selfies ({role.name})."))
+                channel = self.get_channel("staff_votes")
+                asyncio.gather(channel.send(f"Should {member.mention} (**{member}**) get selfie access?"))
+                # asyncio.gather(self.log("c3po-log", f"**{member}** {member.mention} has achieved the rank needed for selfies ({role.name})."))
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
