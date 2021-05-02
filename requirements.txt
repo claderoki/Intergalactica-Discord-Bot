@@ -9,9 +9,6 @@ emoji
 pycountry
 python-dateutil
 pymysql
-Pillow
-matplotlib
-numpy
 countryinfo
 currencyconverter
 praw

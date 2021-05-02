@@ -4,9 +4,9 @@ from enum import Enum
 import io
 import asyncio
 
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-import numpy as np
+# import matplotlib.pyplot as plt
+# import matplotlib.ticker as ticker
+# import numpy as np
 import peewee
 from emoji import emojize
 
@@ -14,7 +14,6 @@ from src.utils.general import text_to_emojis
 import src.config as config
 from .base import BaseModel, EnumField, EmojiField
 from src.discord.helpers.waiters import TimeDeltaWaiter
-
 
 def calculate_percentage(part, total):
     if total > 0:
@@ -134,47 +133,47 @@ class Poll(BaseModel):
         data.sort(key = lambda x : x["count"], reverse = True)
         return data
 
-    def get_result_image_url(self):
-        votes = self.votes
+    # def get_result_image_url(self):
+    #     votes = self.votes
 
-        plt.rcdefaults()
-        plt.style.use('seaborn-pastel')
-        plt.rcParams.update({'figure.autolayout': True})
-        fig, ax = plt.subplots()
-        for axis in (ax.xaxis, ax.yaxis):
-            axis.set_major_locator(ticker.MaxNLocator(integer=True))
+    #     plt.rcdefaults()
+    #     plt.style.use('seaborn-pastel')
+    #     plt.rcParams.update({'figure.autolayout': True})
+    #     fig, ax = plt.subplots()
+    #     for axis in (ax.xaxis, ax.yaxis):
+    #         axis.set_major_locator(ticker.MaxNLocator(integer=True))
 
-        bar_x = list(range(len(votes)))
-        bar_height = [x["count"] for x in votes]
-        bar_tick_label = [x["text"] for x in votes]
-        bar_label = [str(x["percentage"]) + "%" for x in votes]
+    #     bar_x = list(range(len(votes)))
+    #     bar_height = [x["count"] for x in votes]
+    #     bar_tick_label = [x["text"] for x in votes]
+    #     bar_label = [str(x["percentage"]) + "%" for x in votes]
 
-        bar_plot = plt.bar(bar_x, bar_height, tick_label=bar_tick_label)
+    #     bar_plot = plt.bar(bar_x, bar_height, tick_label=bar_tick_label)
 
-        for idx,rect in enumerate(bar_plot):
-            height = rect.get_height()
-            x = rect.get_x() + rect.get_width()/2.
-            y = 0.5*height
-            ax.text(x, y, bar_label[idx], ha='center', va='bottom', rotation=0)
+    #     for idx,rect in enumerate(bar_plot):
+    #         height = rect.get_height()
+    #         x = rect.get_x() + rect.get_width()/2.
+    #         y = 0.5*height
+    #         ax.text(x, y, bar_label[idx], ha='center', va='bottom', rotation=0)
 
-        plt.ylim(0,20)
+    #     plt.ylim(0,20)
 
-        if len(self.changes) > 0:
-            ax.set_title(self.generate_question(mention = False))
-        else:
-            ax.set_title(self.question)
+    #     if len(self.changes) > 0:
+    #         ax.set_title(self.generate_question(mention = False))
+    #     else:
+    #         ax.set_title(self.question)
 
-        ax.margins(0.3)
-        ax.axis('tight')
-        fig.tight_layout()
+    #     ax.margins(0.3)
+    #     ax.axis('tight')
+    #     fig.tight_layout()
 
-        stream = io.BytesIO()
-        plt.savefig(stream, format = 'png', transparent = False)
+    #     stream = io.BytesIO()
+    #     plt.savefig(stream, format = 'png', transparent = False)
 
-        return self.bot.store_file(stream, "results.png")
+    #     return self.bot.store_file(stream, "results.png")
 
     async def get_results_embed(self):
-        url = await self.get_result_image_url()
+        # url = await self.get_result_image_url()
 
         changes = list(self.changes)
         passed = self.passed
@@ -193,7 +192,7 @@ class Poll(BaseModel):
             if len(changes) > 0 and passed:
                 embed.set_footer(text = "Changes have been implemented.")
 
-        embed.set_image(url = url)
+        # embed.set_image(url = url)
 
         return embed
 
