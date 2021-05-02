@@ -39,7 +39,8 @@ class MentionGroup(BaseModel):
     def mention_string(self):
         mentions = []
         for mention_member in self.mention_members:
-            mentions.append(mention_member.mention)
+            if mention_member.member is not None:
+                mentions.append(mention_member.member.mention)
         return ", ".join(mentions)
 
     @classmethod

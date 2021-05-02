@@ -59,8 +59,9 @@ class BaseModel(peewee.Model):
         if isinstance(field, peewee.TimeField):
             return TimeWaiter(ctx, **kwargs)
 
-    async def editor_for(self, ctx, attr, on_skip = "pass", **kwargs):
-        waiter = self.waiter_for(ctx, attr, **kwargs)
+    async def editor_for(self, ctx, attr, on_skip = "pass", waiter = None, **kwargs):
+        if waiter is None:
+            waiter = self.waiter_for(ctx, attr, **kwargs)
         try:
             value = await waiter.wait()
             if attr == "due_date":

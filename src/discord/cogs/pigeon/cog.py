@@ -62,7 +62,7 @@ class ItemWaiter(StrWaiter):
         return await super().wait(*args, **kwargs)
 
     def convert(self, argument):
-        id = self.item_mapping.get(argument)
+        id = self.item_mapping.get(argument.lower())
         if id is None:
             raise ConversionFailed("Item not found.")
         return id

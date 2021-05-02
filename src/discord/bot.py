@@ -195,7 +195,7 @@ class Locus(commands.Bot):
             "pigeon.cog",
             "covid",
             "conversations",
-            "qotd",
+            # "qotd",
             "giveaway",
             "trivia.cog",
         ]

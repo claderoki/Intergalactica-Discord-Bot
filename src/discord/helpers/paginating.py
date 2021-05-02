@@ -66,6 +66,8 @@ class Paginator:
         if user.id != self._ctx.author.id:
             return False
 
+        if reaction.message.id != self._message.id:
+            return False
         emoji = str(reaction.emoji)
         if emoji not in self._actions:
             return False

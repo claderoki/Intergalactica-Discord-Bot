@@ -11,6 +11,7 @@ from src.discord.helpers.embed import Embed
 
 class ConversionFailed(Exception): pass
 class Skipped(Exception): pass
+class Cancelled(Exception): pass
 
 def _get_id_match(argument):
     return re.compile(r'([0-9]{15,21})$').match(argument)
@@ -25,7 +26,7 @@ class Waiter:
         return config.bot
 
 class MessageWaiter(Waiter):
-    __slots__ = ("ctx","prompt", "end_prompt", "timeout", "show_instructions", "members", "channels", "converted", "max_words", "skippable", "skip_command")
+    __slots__ = ("ctx","prompt", "end_prompt", "timeout", "show_instructions", "members", "channels", "converted", "max_words", "skippable", "skip_command", "cancellable", "cancel_command")
 
     def __init__(self,
     ctx,
@@ -39,6 +40,8 @@ class MessageWaiter(Waiter):
     max_words = 1,
     skippable = False,
     skip_command = ">>skip",
+    cancellable = False,
+    cancel_command = ">>cancel",
     **kwargs):
         super().__init__(**kwargs)
         self.ctx = ctx
@@ -51,6 +54,8 @@ class MessageWaiter(Waiter):
         self.max_words = max_words
         self.skippable = skippable
         self.skip_command = skip_command
+        self.cancellable = cancellable
+        self.cancel_command = cancel_command
 
         self.channels.append(ctx.channel)
 
@@ -83,6 +88,9 @@ class MessageWaiter(Waiter):
         if self.skippable and message.content == self.skip_command:
             raise Skipped()
 
+        if self.cancellable and message.content == self.cancel_command:
+            raise Cancelled()
+
         if self.max_words is None:
             words = message.content
         else:
@@ -104,8 +112,11 @@ class MessageWaiter(Waiter):
         instructions = self.instructions
         if instructions is not None and self.show_instructions:
             footer.append(instructions)
+
         if self.skippable:
-            footer.append(f"This can be skipped with '{self.skip_command}'")
+            footer.append(f"'{self.skip_command}' to skip")
+        if self.cancellable:
+            footer.append(f"'{self.cancel_command}' to cancel")
 
         if len(footer) > 0:
             embed.set_footer( text = "\n".join(footer))

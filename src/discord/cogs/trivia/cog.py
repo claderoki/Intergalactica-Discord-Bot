@@ -29,7 +29,7 @@ class TriviaCog(BaseCog, name = "Trivia"):
     async def trivia_start(self, ctx, amount: int = 1):
         # waiter = EnumWaiter(ctx, Category, skippable = True, reverse = True)
         # category = await waiter.wait()
-
+        amount = min(50, max(0, amount))
         scores = {}
         i = 0
         for question in TriviaApi.get_questions(amount = amount):
@@ -81,7 +81,8 @@ class TriviaCog(BaseCog, name = "Trivia"):
                         continue
                     if a in user_answers and member in user_answers[a]:
                         user_answers[a].remove(member)
-                user_answers[answer].append(member)
+                if member not in user_answers[answer]:
+                    user_answers[answer].append(member)
                 return False
 
             try:
@@ -126,8 +127,14 @@ class TriviaCog(BaseCog, name = "Trivia"):
         embed = discord.Embed(color = discord.Color.green())
         embed.title = "Total scores"
         description = []
+        i = 0
+        highest_score = 0
         for member, score in scores.items():
-            description.append(f"{member}:  {score}")
+            if i == 0:
+                highest_score = score
+            star = "(🌟)" if (highest_score == score and score > 0) else ""
+            description.append(f"{member}:  {score} {star}")
+            i += 1
         embed.description = "\n".join(description)
         await ctx.send(embed = embed)
 

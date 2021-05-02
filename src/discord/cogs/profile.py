@@ -8,13 +8,40 @@ from discord.ext import commands, tasks
 import emoji
 import pycountry
 
-from src.models import Human, Earthling, HumanItem, Pigeon, Mail, Item, database
+from src.models import Human, Earthling, HumanItem, Pigeon, Mail, ItemCategory, Item, database
 from src.discord.helpers.converters import convert_to_date, EnumConverter
 from src.discord.helpers.waiters import *
 import src.discord.helpers.pretty as pretty
 from src.discord.errors.base import SendableException
 from src.utils.zodiac import ZodiacSign
 from src.discord.cogs.core import BaseCog
+
+class ItemCategoryIdWaiter(StrWaiter):
+    def __init__(self, ctx, **kwargs):
+        super().__init__(ctx, max_words = None, **kwargs)
+        self.show_instructions = False
+        self.case_sensitive = False
+        self.id_mapping = {}
+
+        data = [("name",)]
+
+        for category in ItemCategory.select(ItemCategory.name, ItemCategory.id):
+            name = category.name.lower()
+            self.id_mapping[name] = category.id
+            data.append((name,))
+
+        self.table = pretty.Table.from_list(data, first_header = True)
+
+    async def wait(self, *args, **kwargs):
+        asyncio.gather(self.table.to_paginator(self.ctx, 15).wait())
+        await asyncio.sleep(0.5)
+        return await super().wait(*args, **kwargs)
+
+    def convert(self, argument):
+        id = self.id_mapping.get(argument.lower())
+        if id is None:
+            raise ConversionFailed("Category not found.")
+        return id
 
 def is_tester(member):
     with database.connection_context():
@@ -256,6 +283,40 @@ class Profile(BaseCog):
     async def daily(self, ctx):
         asyncio.gather(ctx.send(ctx.translate("not_implemented_yet")))
 
+    @commands.group(name = "category", aliases = ["catagory"])
+    async def item_category(self, ctx):
+        pass
+
+    @item_category.command(name = "create", aliases = ["edit"])
+    async def item_category_create(self, ctx, *, name):
+        if name == "":
+            raise commands.errors.MissingRequiredArgument("name")
+        if not is_tester(ctx.author):
+            raise SendableException(ctx.translate("not_a_tester"))
+
+        category, new = ItemCategory.get_or_create(name = name)
+        if not new:
+            await category.editor_for(ctx, "name")
+
+        waiter = ItemCategoryIdWaiter(ctx, skippable = True, prompt = ctx.translate("item_category_parent_prompt"))
+        try:
+            category.parent = await waiter.wait()
+        except Skipped:
+            pass
+
+        category.save()
+        await ctx.success(ctx.translate("ok"))
+
+    @item_category.command(name = "list")
+    async def item_category_list(self, ctx):
+        categories = ItemCategory.select(ItemCategory.name)
+
+        table = pretty.Table()
+        table.add_row(pretty.Row(("name",), header = True))
+        for category in categories:
+            table.add_row(pretty.Row((category.name,)))
+        await table.to_paginator(ctx, 15).wait()
+
     @commands.group()
     async def item(self, ctx):
         pass
@@ -270,13 +331,19 @@ class Profile(BaseCog):
         item, new = Item.get_or_create(name = name)
 
         if not new:
-            await item.editor_for(ctx, "name", skippable = not new)
+            await item.editor_for(ctx, "name", skippable = not new, cancellable = True)
 
-        await item.editor_for(ctx, "description", skippable = not new)
-        await item.editor_for(ctx, "rarity", skippable = True)
-        await item.editor_for(ctx, "explorable", skippable = True)
+        await item.editor_for(ctx, "description", skippable = not new, cancellable = True)
+        await item.editor_for(ctx, "rarity", skippable = True, cancellable = True)
+        await item.editor_for(ctx, "explorable", skippable = True, cancellable = True)
 
-        waiter = AttachmentWaiter(ctx, prompt = ctx.translate("item_image_prompt"), skippable = not new)
+        waiter = ItemCategoryIdWaiter(ctx, skippable = True, cancellable = True)
+        try:
+            item.category_id = await waiter.wait()
+        except Skipped:
+            pass
+
+        waiter = AttachmentWaiter(ctx, prompt = ctx.translate("item_image_prompt"), skippable = not new, cancellable = True)
         try:
             item.image_url = await waiter.wait(store = True)
         except Skipped: pass
@@ -350,6 +417,27 @@ class Profile(BaseCog):
         item.save()
         await ctx.send("OK")
 
+    @item.command(name = "category")
+    async def item_category_command(self, ctx,*, name):
+        if name == "":
+            raise commands.errors.MissingRequiredArgument("name")
+
+        if not is_tester(ctx.author):
+            raise SendableException(ctx.translate("not_a_tester"))
+        try:
+            item = Item.get(name = name)
+        except Item.DoesNotExist:
+            raise SendableException("Item not found.")
+
+        waiter = ItemCategoryIdWaiter(ctx, skippable = True, prompt = ctx.translate("item_category_parent_prompt"))
+        try:
+            item.category = await waiter.wait()
+        except Skipped:
+            pass
+
+        item.save()
+        await ctx.send("OK")
+
     @commands.has_guild_permissions(administrator = True)
     @item.command(name = "give")
     async def item_give(self, ctx, member : discord.Member, *, name):
@@ -367,12 +455,17 @@ class Profile(BaseCog):
 
     @item.command(name = "list")
     async def item_list(self, ctx):
-        items = Item.select().order_by(Item.chance.desc())
+        query = """
+        SELECT item.name as item_name,  IFNULL(item_category.name, 'N/A') as category_name
+        FROM item
+        LEFT JOIN item_category ON item_category.id = item.category_id
+        ORDER BY item.category_id DESC
+        """
 
         table = pretty.Table()
-        table.add_row(pretty.Row(("name", "rarity"), header = True))
-        for item in items:
-            table.add_row(pretty.Row((item.name, item.rarity.name)))
+        table.add_row(pretty.Row(("name", "category"), header = True))
+        for item_name, category_name in database.execute_sql(query):
+            table.add_row(pretty.Row((item_name, category_name)))
         await table.to_paginator(ctx, 15).wait()
 
     @item.command(name = "usable")
@@ -397,8 +490,7 @@ class Profile(BaseCog):
         LEFT JOIN item_category ON item.category_id = item_category.id
         WHERE human_id = {human.id}
         AND amount > 0
-        AND (item_category.name IS NULL OR item_category.name != 'Christmas')
-        ORDER BY amount
+        ORDER BY amount DESC
         """
 
         cursor = database.execute_sql(query)
@@ -436,6 +528,11 @@ class Profile(BaseCog):
                     if role is not None:
                         await role.delete()
                     earthling.delete_instance()
+
+        # with database.connection_context():
+        #     for guild in self.bot.guilds:
+        #         for member in guild.members:
+        #             earthling = Earthling.get_or_create_for_member(member)
 
 def setup(bot):
     bot.add_cog(Profile(bot))
