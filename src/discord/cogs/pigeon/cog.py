@@ -733,6 +733,12 @@ AND (pigeon1_id = {ctx.pigeon.id}  OR pigeon2_id = {ctx.pigeon.id} )
 
         embed.add_field(name = f"Human", value = "\n".join(lines), inline = False)
 
+        lines = []
+        lines.append(f"Pooped on **{pigeon.poop_victim_count}** pigeons")
+        lines.append(f"Been pooped on **{pigeon.pooped_on_count}** times")
+
+        embed.add_field(name = f"Poop stats 💩", value = "\n".join(lines), inline = False)
+
         asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "history")
