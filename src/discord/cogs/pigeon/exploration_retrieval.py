@@ -6,9 +6,7 @@ import discord
 from src.models import Item, Pigeon, Buff, PigeonRelationship
 from src.utils.country import Country
 import src.config as config
-from src.discord.cogs.conversions.cog import ConversionCog, base_measurement_to_conversion_result
-from src.discord.cogs.conversions.models import Unit, Conversion
-
+from src.discord.cogs.conversions.cog import ConversionCog
 
 def percentage_chance(chance):
     return random.randint(0,100) < chance
@@ -85,7 +83,7 @@ class ExplorationRetrieval(ActivityRetrieval):
         text = f"`{pigeon.name}` soared through the skies for **{self.exploration.duration_in_minutes}** minutes"
 
         unit = ConversionCog.unit_mapping.get_unit("km")
-        result = base_measurement_to_conversion_result(unit, kms)
+        result = ConversionCog.base_measurement_to_conversion_result(unit, kms)
 
         text += f" over a distance of **{result.base.get_value_string()}** {result.base.unit.symbol}"
         for to in result.to:

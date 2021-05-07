@@ -31,19 +31,6 @@ def add_all_to_mapping():
 
 add_all_to_mapping()
 
-
-def get_linked_measurements(base: Conversion):
-    try:
-        return other_measurements[base.unit.code]
-    except KeyError:
-        return ()
-
-async def get_linked_codes(base: Conversion, message: discord.Message):
-    if base.unit.type == UnitType.measurement:
-        return get_linked_measurements(base)
-    else:
-        return await get_context_currency_codes(message)
-
 def base_measurement_to_conversion_result(base_stored_unit: StoredUnit, value: float) -> ConversionResult:
     base = Conversion(Unit.from_stored_unit(base_stored_unit), value)
     to   = []
@@ -59,6 +46,18 @@ def base_measurement_to_conversion_result(base_stored_unit: StoredUnit, value: f
         converted = base_stored_unit.to(stored_unit, value)
         to.append(Conversion(Unit.from_stored_unit(stored_unit), converted))
     return ConversionResult(base, to)
+
+def get_linked_measurements(base: Conversion):
+    try:
+        return other_measurements[base.unit.code]
+    except KeyError:
+        return ()
+
+async def get_linked_codes(base: Conversion, message: discord.Message):
+    if base.unit.type == UnitType.measurement:
+        return get_linked_measurements(base)
+    else:
+        return await get_context_currency_codes(message)
 
 async def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, message: discord.Message) -> ConversionResult:
     base = Conversion(Unit.from_stored_unit(base_stored_unit), value)
@@ -90,6 +89,10 @@ def add_conversion_result_to_embed(embed: discord.Embed, conversion_result: Conv
 
 class ConversionCog(BaseCog, name = "Conversion"):
     unit_mapping = unit_mapping
+
+    @classmethod
+    def base_measurement_to_conversion_result(cls, base_stored_unit: StoredUnit, value: float) -> ConversionResult:
+        return base_measurement_to_conversion_result(base_stored_unit = base_stored_unit, value = value)
 
     @commands.Cog.listener()
     async def on_ready(self):

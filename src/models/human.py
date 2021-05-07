@@ -164,7 +164,19 @@ class Human(BaseModel):
         if self.city is not None:
             city = self.bot.owm_api.by_q(self.city, self.country.alpha_2 if self.country else None)
             if city is not None:
-                values.append(f"{city.weather_infos[0].emoji} {city.temperature_info.temperature}{city.unit.symbol}")
+                emoji = city.weather_infos[0].emoji
+                temp = city.temperature_info.temperature
+                symbol = city.unit.symbol
+                cog = config.bot.cogs["Conversion"]
+                unit = cog.unit_mapping.get_unit("c")
+                result = cog.base_measurement_to_conversion_result(unit, temp)
+
+                value = f"{emoji} {temp}{symbol}"
+                for to in result.to:
+                    value += f" / {to.get_clean_string()}"
+
+                values.append(value)
+
         elif show_all:
             values.append("🌡️ N/A")
 
