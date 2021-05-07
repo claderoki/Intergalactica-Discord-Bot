@@ -3,9 +3,12 @@ import random
 
 import discord
 
-from src.models import Item, Pigeon, Buff, PigeonBuff, PigeonRelationship
+from src.models import Item, Pigeon, Buff, PigeonRelationship
 from src.utils.country import Country
 import src.config as config
+from src.discord.cogs.conversions.cog import ConversionCog, base_measurement_to_conversion_result
+from src.discord.cogs.conversions.models import Unit, Conversion
+
 
 def percentage_chance(chance):
     return random.randint(0,100) < chance
@@ -76,8 +79,18 @@ class ExplorationRetrieval(ActivityRetrieval):
     def embed(self):
         embed = self.base_embed
         pigeon = self.exploration.pigeon
+
+        kms = int(self.exploration.distance_in_km)
+
         text = f"`{pigeon.name}` soared through the skies for **{self.exploration.duration_in_minutes}** minutes"
-        text += f" over a distance of **{int(self.exploration.distance_in_km)}** km"
+
+        unit = ConversionCog.unit_mapping.get_unit("km")
+        result = base_measurement_to_conversion_result(unit, kms)
+
+        text += f" over a distance of **{result.base.get_clean_value()}**{result.base.unit.symbol}"
+        for to in result.to:
+            text += f" / **{int(to.get_clean_value())}**{to.unit.symbol}"
+
         text += f" until {pigeon.gender.get_pronoun()} finally reached **{self.exploration.destination.name()}**"
 
         embed.description = text
