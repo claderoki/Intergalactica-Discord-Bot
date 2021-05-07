@@ -170,8 +170,12 @@ class Earthling(BaseModel):
 
     @property
     def inactive(self):
+        delta = config.inactive_delta
+        if self.guild_id == 729843647347949638:
+            delta = datetime.timedelta(weeks = 8)
+
         last_active = self.last_active or self.member.joined_at
-        return (last_active + config.inactive_delta) < datetime.datetime.utcnow()
+        return (last_active + delta) < datetime.datetime.utcnow()
 
     @property
     def base_embed(self):

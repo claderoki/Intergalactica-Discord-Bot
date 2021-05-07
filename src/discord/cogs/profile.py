@@ -438,21 +438,6 @@ class Profile(BaseCog):
         item.save()
         await ctx.send("OK")
 
-    @commands.has_guild_permissions(administrator = True)
-    @item.command(name = "give")
-    async def item_give(self, ctx, member : discord.Member, *, name):
-        if name == "":
-            raise commands.errors.MissingRequiredArgument("name")
-        try:
-            item = Item.get(name = name)
-        except Item.DoesNotExist:
-            raise SendableException("Item not found.")
-
-        member = member or ctx.author
-        human = ctx.get_human(user = member)
-        human.add_item(item, 1)
-        await ctx.send("added")
-
     @item.command(name = "list")
     async def item_list(self, ctx):
         query = """
