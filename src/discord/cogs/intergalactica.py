@@ -157,6 +157,7 @@ class Intergalactica(BaseCog):
         self.start_task(self.temp_channel_checker, check = self.bot.production)
         self.start_task(self.disboard_bump_available_notifier, check = self.bot.production)
         self.start_task(self.introduction_purger, check = self.bot.production)
+        self.start_task(self.introduction_purger_mouse, check = self.bot.production)
         await asyncio.sleep( (60 * 60) * 3 )
         self.start_task(self.birthday_poller, check = self.bot.production)
 
@@ -672,8 +673,6 @@ class Intergalactica(BaseCog):
         is_nitro_booster = ctx.author.premium_since is not None
         allowed = has_5k or is_nitro_booster
 
-        # raise SendableException("This command is bugged so its temporarily disabled")
-
         if not allowed:
             raise SendableException("You are not allowed to run this command yet, needed: 5k+ XP or Nitro Booster")
 
@@ -691,7 +690,7 @@ class Intergalactica(BaseCog):
     @commands.is_owner()
     @role.command(name = "list")
     async def role_list(self, ctx):
-        query = Earthling.select()
+        query = Earthling.select(Earthling.guild_id, Earthling.personal_role_id)
         query = query.where(Earthling.guild_id == ctx.guild.id)
         query = query.where(Earthling.personal_role_id != None)
         roles = []
@@ -834,6 +833,27 @@ class Intergalactica(BaseCog):
                 description = introduction.content
             )
             tasks.append(self.log("logs", embed = embed))
+            tasks.append(introduction.delete())
+
+        asyncio.gather(*tasks)
+
+    @tasks.loop(hours = 3)
+    async def introduction_purger_mouse(self):
+        tasks = []
+        total_messages = 0
+        messages_to_remove = []
+        guild = self.bot.get_guild(729843647347949638)
+        channel = guild.get_channel(729909501578182747)
+
+        async for introduction in channel.history(limit=200):
+            if isinstance(introduction.author, discord.User):
+                messages_to_remove.append(introduction)
+            total_messages += 1
+
+        if len(messages_to_remove) >= (total_messages//2):
+            return
+
+        for introduction in messages_to_remove:
             tasks.append(introduction.delete())
 
         asyncio.gather(*tasks)
