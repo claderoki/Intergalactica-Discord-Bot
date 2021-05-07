@@ -87,9 +87,10 @@ class ExplorationRetrieval(ActivityRetrieval):
         unit = ConversionCog.unit_mapping.get_unit("km")
         result = base_measurement_to_conversion_result(unit, kms)
 
-        text += f" over a distance of **{result.base.get_clean_value()}**{result.base.unit.symbol}"
+        text += f" over a distance of **{result.base.get_value_string()}** {result.base.unit.symbol}"
         for to in result.to:
-            text += f" / **{int(to.get_clean_value())}**{to.unit.symbol}"
+
+            text += f" / **{int(float(to.get_value_string()))}** {to.unit.symbol}"
 
         text += f" until {pigeon.gender.get_pronoun()} finally reached **{self.exploration.destination.name()}**"
 
