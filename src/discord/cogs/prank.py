@@ -313,7 +313,7 @@ ORDER BY people_nick_pranked DESC"""
     @commands.guild_only()
     @commands.has_guild_permissions(administrator = True)
     @prank.command(name = "revert")
-    async def prank_revert(self, ctx, member : discord.Member = None):
+    async def prank_revert(self, ctx, member : discord.Member):
         """
         3 types:
             1. Admin revert (when admin wants to revert a prank and give the pranker their gold back)
