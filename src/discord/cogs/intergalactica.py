@@ -527,7 +527,6 @@ class ChannelHelper:
         async for introduction in channel.history(limit=200):
             if isinstance(introduction.author, discord.User):
                 messages_to_remove.append(introduction)
-                print(introduction)
             total_messages += 1
 
         if len(messages_to_remove) >= (total_messages//2):
@@ -542,7 +541,7 @@ class ChannelHelper:
                 tasks.append(log_channel.send(embed = embed))
             tasks.append(introduction.delete())
 
-        # asyncio.gather(*tasks)
+        asyncio.gather(*tasks)
 
 class MemberHelper:
     __slots__ = ()
