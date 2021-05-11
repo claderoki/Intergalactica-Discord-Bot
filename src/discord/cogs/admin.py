@@ -18,6 +18,14 @@ class Admin(BaseCog):
     async def on_ready(self):
         self.guilds = [x for x in self.bot.guilds if x.owner_id == self.bronk_id]
 
+    @commands.is_owner()
+    @commands.command()
+    async def update(self, ctx):
+        import git
+        repo = git.Repo(config.path)
+        repo.remotes.origin.pull()
+        await ctx.success()
+
     @commands.command(name = "unusedroles")
     async def unused_roles(self, ctx):
         roles = []
