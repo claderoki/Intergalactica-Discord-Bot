@@ -2,35 +2,22 @@ import asyncio
 import datetime
 import random
 import re
-import typing
 from enum import Enum
 
 import discord
-import src.discord.helpers.paginating as paginating
-import src.discord.helpers.pretty as pretty
-from dateutil.relativedelta import relativedelta
 from discord.ext import commands, tasks
-from emoji import demojize, emojize
+
+from dateutil.relativedelta import relativedelta
+import src.config as config
 from src.discord.cogs.core import BaseCog
 from src.discord.errors.base import SendableException
+from src.discord.helpers.checks import specific_guild_only
 from src.discord.helpers.embed import Embed
 from src.discord.helpers.utility import get_context_embed
-from src.discord.helpers.waiters import IntWaiter, MemberWaiter
-from src.models import (Earthling, Human, HumanItem, Item, MentionGroup,
-                        RedditAdvertisement, Reminder, TemporaryChannel,
+from src.discord.helpers.waiters import MemberWaiter
+from src.models import (Earthling, Human, Item, RedditAdvertisement, Reminder,
                         TemporaryVoiceChannel, database)
 
-
-class SpecificGuildOnly(commands.errors.CheckFailure):
-    def __init__(self, guild_id):
-        super().__init__(f"This command can only be used in guild `{guild_id}`")
-
-def specific_guild_only(guild_id):
-    def predicate(ctx):
-        if not ctx.guild or ctx.guild.id != guild_id:
-            raise SpecificGuildOnly(guild_id)
-        return True
-    return commands.check(predicate)
 
 class MaliciousAction(Enum):
     blacklisted_word = 1
@@ -78,14 +65,15 @@ async def on_malicious_action(action : MaliciousAction, member : discord.Member,
         if Intergalactica.member_is_new(member):
             await member.ban(reason = action.ban_reason)
 
+guild_id       = 742146159711092757
+mouse_guild_id = 729843647347949638
 
-guild_id = 742146159711092757
 class Intergalactica(BaseCog):
     last_member_join = None
 
     vote_emojis = ("✅", "❎", "❓")
     guild_id = guild_id
-
+    mouse_guild_id = mouse_guild_id
     _role_ids = {
         "selfies"   : 748566253534445568,
         "admin"     : 742243945693708381,
@@ -146,20 +134,17 @@ class Intergalactica(BaseCog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.guild = self.bot.get_guild(self.guild_id)
-        self.bot.get_dominant_color(self.guild)
         self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = 120)
         self.role_needed_for_selfie_vote = self.guild.get_role(self._role_ids["ranks"]["nova"])
 
-        self.start_task(self.reminder_notifier, check = self.bot.production)
-        self.start_task(self.reddit_advertiser, check = self.bot.production)
-        self.start_task(self.illegal_member_notifier, check = self.bot.production)
-        self.start_task(self.temp_vc_poller, check = self.bot.production)
-        self.start_task(self.temp_channel_checker, check = self.bot.production)
-        self.start_task(self.disboard_bump_available_notifier, check = self.bot.production)
-        self.start_task(self.introduction_purger, check = self.bot.production)
-        self.start_task(self.introduction_purger_mouse, check = self.bot.production)
+        self.start_task(self.reddit_advertiser,                 check = self.bot.production)
+        self.start_task(self.illegal_member_purger,             check = not self.bot.production)
+        self.start_task(self.introduction_purger,               check = not self.bot.production)
+        self.start_task(self.temp_vc_poller,                    check = not self.bot.production)
+        self.start_task(self.disboard_bump_available_notifier,  check = self.bot.production)
+        self.start_task(self.reminder_notifier,                 check = self.bot.production)
         await asyncio.sleep( (60 * 60) * 3 )
-        self.start_task(self.birthday_poller, check = self.bot.production)
+        self.start_task(self.birthday_poller,                   check = self.bot.production)
 
     def on_milkyway_purchased(self, channel, member, amount):
         with database.connection_context():
@@ -379,78 +364,6 @@ class Intergalactica(BaseCog):
             except:
                 pass
 
-    @commands.guild_only()
-    @commands.group(name = "group")
-    async def group(self, ctx):
-        pass
-
-    @group.command(name = "create")
-    async def group_create(self, ctx):
-        group = MentionGroup(guild_id = ctx.guild.id)
-        await group.editor_for(ctx, "name")
-        group.name = group.name.lower()
-
-        try:
-            group.save()
-        except:
-            raise SendableException(ctx.translate("group_already_exists"))
-        else:
-            group.join(ctx.author, is_owner = True)
-            await ctx.send(ctx.translate("group_created").format(group = group))
-
-    @group.command(name = "vc")
-    @commands.has_role(_role_ids["5k+"])
-    async def group_vc(self, ctx,*, name):
-        try:
-            group = MentionGroup.get(name = name)
-        except MentionGroup.DoesNotExist:
-            raise SendableException(ctx.translate("group_not_found").format(name = name))
-        return await self.bot.get_command("vcchannel create")(ctx, group.name)
-
-    @group.command(name = "join")
-    async def group_join(self, ctx,*, name):
-        try:
-            group = MentionGroup.get(name = name)
-        except MentionGroup.DoesNotExist:
-            raise SendableException(ctx.translate("group_not_found").format(name = name))
-        created = group.join(ctx.author)
-        if created:
-            await ctx.send(ctx.translate("group_joined").format(group = group))
-        else:
-            await ctx.send(ctx.translate("group_already_joined"))
-
-    @group.command(name = "leave")
-    async def group_leave(self, ctx,*, name):
-        try:
-            group = MentionGroup.get(name = name)
-        except MentionGroup.DoesNotExist:
-            raise SendableException(ctx.translate("group_not_found").format(name = name))
-        group.leave(ctx.author)
-        await ctx.send("group_left")
-
-    @group.command(name = "mention")
-    async def group_mention(self, ctx,*, name):
-        try:
-            group = MentionGroup.get(name = name)
-        except MentionGroup.DoesNotExist:
-            raise SendableException(ctx.translate("group_not_found").format(name = name))
-        if group.is_member(ctx.author):
-            await ctx.send(group.mention_string)
-        else:
-            raise SendableException(ctx.translate("group_member_only_command"))
-
-    @group.command(name = "list")
-    async def group_list(self, ctx):
-        groups = MentionGroup.select(MentionGroup.name).where(MentionGroup.guild_id == ctx.guild.id)
-
-        data = []
-        data.append(("name", ))
-        for group in groups:
-            data.append((group.name, ))
-
-        table = pretty.Table.from_list(data, first_header = True)
-        await table.to_paginator(ctx, 10).wait()
-
     @commands.command(name = "vcchannel")
     @specific_guild_only(guild_id)
     @commands.has_role(_role_ids["5k+"])
@@ -464,130 +377,6 @@ class Intergalactica(BaseCog):
         channel = await category.create_voice_channel(name or "Temporary voice channel", reason = f"Requested by {ctx.author}")
         TemporaryVoiceChannel.create(guild_id = ctx.guild.id, channel_id = channel.id)
         await ctx.success()
-
-    def get_human_item(self, user, code = None, raise_on_empty = True):
-        #TODO: optimize
-        human_item = HumanItem.get_or_none(
-            human = self.bot.get_human(user = user),
-            item = Item.get(code = code)
-        )
-        if human_item is None or (human_item.amount == 0 and raise_on_empty):
-            raise SendableException(self.bot.translate("no_" + code))
-        return human_item
-
-    @commands.max_concurrency(1, per = commands.BucketType.user)
-    @commands.group(aliases = ["milkyway", "orion"])
-    async def temporary_channel(self, ctx):
-        mini = ctx.invoked_with != "milkyway"
-        ctx.type = TemporaryChannel.Type.mini if mini else TemporaryChannel.Type.normal
-
-    @commands.has_guild_permissions(administrator = True)
-    @temporary_channel.command(name = "accept")
-    async def temporary_channel_accept(self, ctx, temp_channel : TemporaryChannel):
-        if temp_channel.status != TemporaryChannel.Status.pending:
-            raise SendableException(ctx.translate("temp_channel_not_pending"))
-        if not temp_channel.active:
-            raise SendableException(ctx.translate("temp_channel_not_active"))
-        temp_channel.set_expiry_date(
-            datetime.timedelta(days = temp_channel.days * temp_channel.pending_items)
-        )
-        temp_channel.pending_items = 0
-        await temp_channel.create_channel()
-        temp_channel.status = TemporaryChannel.Status.accepted
-        temp_channel.save()
-        try:
-            await temp_channel.user.send(f"Your request for a temporary channel was accepted.")
-        except:
-            pass
-        asyncio.gather(ctx.success())
-
-    @commands.has_guild_permissions(administrator = True)
-    @temporary_channel.command(name = "deny")
-    async def temporary_channel_deny(self, ctx, temp_channel : TemporaryChannel, *, reason):
-        if temp_channel.status != TemporaryChannel.Status.pending:
-            raise SendableException(ctx.translate("temp_channel_not_pending"))
-        if not temp_channel.active:
-            raise SendableException(ctx.translate("temp_channel_not_active"))
-
-        temp_channel.status = TemporaryChannel.Status.denied
-        temp_channel.active = False
-        temp_channel.deny_reason = reason
-        human_item = self.get_human_item(temp_channel.user, code = temp_channel.item_code, raise_on_empty = False)
-        human_item.amount += temp_channel.pending_items
-        human_item.save()
-        temp_channel.save()
-        try:
-            await temp_channel.user.send(f"Your request for a temporary channel was denied. Reason: `{temp_channel.deny_reason}`")
-        except:
-            pass
-        asyncio.gather(ctx.success())
-
-    @temporary_channel.command(name = "create")
-    async def temporary_channel_create(self, ctx):
-        temp_channel = TemporaryChannel(
-            guild_id = ctx.guild.id,
-            user_id  = ctx.author.id,
-            type     = ctx.type
-        )
-
-        human_item   = self.get_human_item(ctx.author, code = temp_channel.item_code)
-
-        if human_item.amount > 1:
-            waiter = IntWaiter(ctx, prompt = ctx.translate(f"{temp_channel.item_code}_count_prompt"), min = 1, max = human_item.amount)
-            items_to_use = await waiter.wait()
-        else:
-            items_to_use = 1
-
-        temp_channel.pending_items = items_to_use
-
-        human_item.amount -= items_to_use
-        human_item.save()
-
-        await temp_channel.editor_for(ctx, "name")
-        await temp_channel.editor_for(ctx, "topic")
-
-        await ctx.send("A request has been sent to the staff.")
-
-        temp_channel.save()
-        await self.get_channel("c3po-log").send(embed = temp_channel.ticket_embed)
-
-    @temporary_channel.command(name = "extend")
-    async def temporary_channel_extend(self, ctx, channel : discord.TextChannel):
-        try:
-            temp_channel = TemporaryChannel.get(channel_id = channel.id, guild_id = ctx.guild.id)
-        except TemporaryChannel.DoesNotExist:
-            raise SendableException(ctx.translate("temp_channel_not_found"))
-
-        human_item = self.get_human_item(ctx.author, code = temp_channel.item_code)
-
-        if human_item.amount > 1:
-            waiter = IntWaiter(ctx, prompt = ctx.translate("temporary_channel_count_prompt"), min = 1, max = human_item.amount)
-            items_to_use = await waiter.wait()
-        else:
-            items_to_use = 1
-
-        temp_channel.set_expiry_date(datetime.timedelta(days = temp_channel.days * items_to_use))
-        asyncio.gather(temp_channel.update_channel_topic())
-        human_item.amount -= items_to_use
-        human_item.save()
-        temp_channel.save()
-        await ctx.send(f"Okay. This channel has been extended until `{temp_channel.expiry_date}`")
-
-    @temporary_channel.command(name = "history")
-    async def temporary_channel_history(self, ctx):
-        query = TemporaryChannel.select()
-        query = query.where(TemporaryChannel.type == ctx.type)
-        query = query.where(TemporaryChannel.active == False)
-        query = query.where(TemporaryChannel.status == TemporaryChannel.Status.accepted)
-        query = query.where(TemporaryChannel.guild_id == ctx.guild.id)
-
-        data = []
-        data.append(("name", "creator"))
-        for channel in query:
-            data.append((channel.name, pretty.limit_str(channel.user, 10)))
-
-        table = pretty.Table.from_list(data, first_header = True)
-        await table.to_paginator(ctx, 10).wait()
 
     @commands.has_guild_permissions(administrator = True)
     @specific_guild_only(guild_id)
@@ -613,7 +402,6 @@ class Intergalactica(BaseCog):
             if member.guild.get_role(self._role_ids["selfies"]) not in member.roles:
                 channel = self.get_channel("staff_votes")
                 asyncio.gather(channel.send(f"Should {member.mention} (**{member}**) get selfie access?"))
-                # asyncio.gather(self.log("c3po-log", f"**{member}** {member.mention} has achieved the rank needed for selfies ({role.name})."))
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -631,151 +419,9 @@ class Intergalactica(BaseCog):
                 added_role = role
                 break
 
-        for rank_name, rank_id in self._role_ids["ranks"].items():
+        for _, rank_id in self._role_ids["ranks"].items():
             if added_role.id == rank_id:
                 await self.on_rank(after, added_role)
-
-    async def edit_personal_role(self, ctx, **kwargs):
-        attr_name = ctx.command.name
-        attr_value = kwargs[attr_name]
-
-        if attr_name == "name":
-            kwargs["color"] = ctx.guild_color
-        elif attr_name == "color":
-            kwargs["name"] = ctx.author.display_name
-
-        earthling, _ = Earthling.get_or_create_for_member(ctx.author)
-        new = earthling.personal_role is None
-        if new:
-            first_earthling = Earthling.select().where(Earthling.personal_role_id != None).first()
-            if first_earthling is not None and first_earthling.personal_role is not None:
-                position = first_earthling.personal_role.position
-            else:
-                position = 1
-            role = await ctx.guild.create_role(**kwargs)
-            await role.edit(position = max(1, position))
-            earthling.personal_role = role
-            earthling.save()
-            await ctx.send(ctx.bot.translate("role_created").format(role = role))
-        else:
-            role = earthling.personal_role
-            await role.edit(**{attr_name : attr_value})
-            msg = ctx.bot.translate(f"attr_added").format(name = "role's " + attr_name, value = attr_value)
-            embed = discord.Embed(color = role.color, title = msg)
-            await ctx.send(embed = embed)
-
-        await ctx.author.add_roles(role)
-
-    @commands.group()
-    @specific_guild_only(guild_id)
-    async def role(self, ctx):
-        has_5k = ctx.guild.get_role(self._role_ids["5k+"]) in ctx.author.roles
-        is_nitro_booster = ctx.author.premium_since is not None
-        allowed = has_5k or is_nitro_booster
-
-        if not allowed:
-            raise SendableException("You are not allowed to run this command yet, needed: 5k+ XP or Nitro Booster")
-
-    @role.command(name = "color", aliases = ["colour"])
-    async def role_color(self, ctx, color : discord.Color = None):
-        if color is None:
-            color = self.bot.calculate_dominant_color(self.bot._get_icon_url(ctx.author))
-
-        await self.edit_personal_role(ctx, color = color)
-
-    @role.command(name = "name")
-    async def role_name(self, ctx, *, name : str):
-        await self.edit_personal_role(ctx, name = name)
-
-    @commands.is_owner()
-    @role.command(name = "list")
-    async def role_list(self, ctx):
-        query = Earthling.select(Earthling.guild_id, Earthling.personal_role_id)
-        query = query.where(Earthling.guild_id == ctx.guild.id)
-        query = query.where(Earthling.personal_role_id != None)
-        roles = []
-        for earthling in query:
-            role = earthling.personal_role
-            if role is None:
-                earthling.personal_role_id = None
-                earthling.save()
-            else:
-                roles.append(role)
-        roles.sort(key = lambda x : x.position)
-
-        table = pretty.Table()
-        table.add_row(pretty.Row(["role", "pos", "in use"], header = True))
-
-        for role in roles:
-            values = [role.name, role.position, len(role.members) > 0]
-            table.add_row(pretty.Row(values))
-        await table.to_paginator(ctx, 20).wait()
-
-        table = pretty.Table()
-
-    @commands.is_owner()
-    @role.command(name = "link")
-    async def role_link(self, ctx, role : discord.Role):
-        members = role.members
-
-        if len(members) > 3:
-            await ctx.send("Too many people have this role.")
-        else:
-            for member in role.members:
-                human, _ = Earthling.get_or_create_for_member(ctx.author)
-                human.personal_role_id = role.id
-                human.save()
-
-            await ctx.send(ctx.translate("roles_linked"))
-
-    @role.command(name = "delete")
-    async def delete_role(self, ctx):
-        earthling, _ = Earthling.get_or_create_for_member(ctx.author)
-        if earthling.personal_role_id is not None:
-            role = earthling.personal_role
-            if role is not None:
-                await role.delete()
-
-            earthling.personal_role_id = None
-            earthling.save()
-
-            await ctx.send(ctx.bot.translate("attr_removed").format(name = "role"))
-
-    @role.command(name = "reset")
-    @commands.is_owner()
-    async def role_reset(self, ctx):
-        roles_deleted = []
-        for earthling in Earthling:
-            if earthling.personal_role_id is not None:
-                role = earthling.personal_role
-                if role is not None and earthling.member is None:
-                    roles_deleted.append(role.name)
-                    asyncio.gather(role.delete())
-
-        embed = self.bot.get_base_embed()
-        if len(roles_deleted) > 0:
-            embed.title = "The following roles were purged:"
-            lines = "`\n`".join(roles_deleted)
-            embed.description = f"`{lines}`"
-        else:
-            embed.description = "No roles needed purging."
-
-        asyncio.gather(ctx.send(embed = embed))
-
-    @tasks.loop(hours = 1)
-    async def temp_channel_checker(self):
-        with database.connection_context():
-            query = TemporaryChannel.select()
-            query = query.where(TemporaryChannel.active == True)
-            query = query.where(TemporaryChannel.expiry_date != None)
-            query = query.where(TemporaryChannel.expiry_date <= datetime.datetime.utcnow())
-            for temp_channel in query:
-                channel = temp_channel.channel
-                temp_channel.active = False
-                if channel is not None:
-                    await channel.delete(reason = "Expired")
-                temp_channel.channel_id = None
-                temp_channel.save()
 
     @tasks.loop(hours = 1)
     async def reddit_advertiser(self):
@@ -798,7 +444,6 @@ class Intergalactica(BaseCog):
         if self.bump_available <= datetime.datetime.utcnow():
             bot_spam = self.get_channel("bot_spam")
             last_message = bot_spam.last_message
-            # bumper_role_mention = f"<@&{self._role_ids['bumper']}>"
             content = "A bump is available! `!d bump` to bump."
 
             if last_message is None or last_message.content != content:
@@ -812,51 +457,15 @@ class Intergalactica(BaseCog):
                 if channel is None or len(channel.members) == 0:
                     temporary_voice_channel.delete_instance()
 
-    @tasks.loop(hours = 3)
+    @tasks.loop(minutes = 20)
     async def introduction_purger(self):
-        tasks = []
-        total_messages = 0
-        messages_to_remove = []
+        channels = []
+        channels.append(self.get_channel("introductions"))
+        channels.append(self.bot.get_channel(729909501578182747))
+        channels.append(self.bot.get_channel(841049839466053693))
 
-        async for introduction in self.get_channel("introductions").history(limit=200):
-            if isinstance(introduction.author, discord.User):
-                messages_to_remove.append(introduction)
-            total_messages += 1
-
-        if len(messages_to_remove) >= (total_messages//2):
-            return
-
-        for introduction in messages_to_remove:
-            embed = discord.Embed(
-                color = self.bot.get_dominant_color(self.guild),
-                title = f"Purged: Introduction by {introduction.author}",
-                description = introduction.content
-            )
-            tasks.append(self.log("logs", embed = embed))
-            tasks.append(introduction.delete())
-
-        asyncio.gather(*tasks)
-
-    @tasks.loop(hours = 3)
-    async def introduction_purger_mouse(self):
-        tasks = []
-        total_messages = 0
-        messages_to_remove = []
-        guild = self.bot.get_guild(729843647347949638)
-        channel = guild.get_channel(729909501578182747)
-
-        async for introduction in channel.history(limit=200):
-            if isinstance(introduction.author, discord.User):
-                messages_to_remove.append(introduction)
-            total_messages += 1
-
-        if len(messages_to_remove) >= (total_messages//2):
-            return
-
-        for introduction in messages_to_remove:
-            tasks.append(introduction.delete())
-
-        asyncio.gather(*tasks)
+        for channel in channels:
+            await ChannelHelper.cleanup_channel(channel)
 
     @tasks.loop(seconds = 30)
     async def reminder_notifier(self):
@@ -876,17 +485,19 @@ class Intergalactica(BaseCog):
             reminder.save()
 
     @tasks.loop(hours = 1)
-    async def illegal_member_notifier(self):
-        for member in self.guild.members:
-            if member.bot:
+    async def illegal_member_purger(self):
+        for guild in self.bot.guilds:
+            if guild.id not in (self.mouse_guild_id, self.guild_id):
                 continue
 
-            if not member_is_legal(member):
-                with database.connection_context():
+            for member in guild.members:
+                if member.bot:
+                    continue
+
+                if not MemberHelper.has_mandatory_roles(member):
                     time_here = relativedelta(datetime.datetime.utcnow(), member.joined_at)
                     if time_here.hours >= 6:
-                        asyncio.gather(member.kick(reason = "Missing mandatory roles."))
-                        await self.log("c3po-log", f"**{member}** {member.mention} was kicked due to missing roles")
+                        asyncio.gather(member.kick(reason = "Missing mandatory role(s)"))
 
     @tasks.loop(hours = 12)
     async def birthday_poller(self):
@@ -904,20 +515,81 @@ class Intergalactica(BaseCog):
             for human in query:
                 await self.log("c3po-log", f"**{human.user}** {human.mention} Should be celebrating their birthday today.")
 
-def member_is_legal(member):
-    age_roles = Intergalactica._role_ids["age"].values()
-    gender_roles = Intergalactica._role_ids["gender"].values()
+class ChannelHelper:
+    __slots__ = ()
 
-    has_age_role = False
-    has_gender_role = False
+    @classmethod
+    async def cleanup_channel(cls, channel: discord.TextChannel, log_channel: discord.TextChannel = None):
+        """Clears messages from users no longer in the guild."""
+        tasks = []
+        total_messages = 0
+        messages_to_remove = []
+        async for introduction in channel.history(limit=200):
+            if isinstance(introduction.author, discord.User):
+                messages_to_remove.append(introduction)
+                print(introduction)
+            total_messages += 1
 
-    for role in member.roles:
-        if role.id in age_roles:
-            has_age_role = True
-        elif role.id in gender_roles:
-            has_gender_role = True
+        if len(messages_to_remove) >= (total_messages//2):
+            return
+        for introduction in messages_to_remove:
+            if log_channel is not None:
+                embed = discord.Embed(
+                    color = config.bot.get_dominant_color(),
+                    title = f"Purged: Introduction by {introduction.author}",
+                    description = introduction.content
+                )
+                tasks.append(log_channel.send(embed = embed))
+            tasks.append(introduction.delete())
 
-    return has_age_role and has_gender_role
+        # asyncio.gather(*tasks)
+
+class MemberHelper:
+    __slots__ = ()
+
+    @classmethod
+    def _has_mandatory_roles_mouse(cls, member) -> bool:
+        role = member.guild.get_role(729913735946305548)
+        if role is None:
+            return True
+        return role in member.roles
+
+    @classmethod
+    def _has_mandatory_roles_intergalactica(cls, member) -> bool:
+        age_roles = [member.guild.get_role(x).id for x in Intergalactica._role_ids["age"].values()]
+        gender_roles = [member.guild.get_role(x).id for x in Intergalactica._role_ids["gender"].values()]
+
+        has_age_role = False
+        has_gender_role = False
+
+        for role in member.roles:
+            if role.id in age_roles:
+                has_age_role = True
+            elif role.id in gender_roles:
+                has_gender_role = True
+
+        return has_age_role and has_gender_role
+
+    @classmethod
+    def has_mandatory_roles(cls, member) -> bool:
+        if member.guild.id == Intergalactica.guild_id:
+            return cls._has_mandatory_roles_intergalactica(member)
+        elif member.guild.id == Intergalactica.mouse_guild_id:
+            return cls._has_mandatory_roles_mouse(member)
+        else:
+            return True
+
+    @classmethod
+    def is_new(cls, member) -> bool:
+        if member.guild.id == guild_id:
+            for role in member.roles:
+                if role.id == cls._role_ids["vc_access"]:
+                    return False
+                if role.id == cls._role_ids["5k+"]:
+                    return False
+                return True
+
+        return False
 
 def setup(bot):
     bot.add_cog(Intergalactica(bot))

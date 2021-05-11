@@ -3,6 +3,7 @@ import datetime
 
 import discord
 from discord.ext import commands, tasks
+from discord.ext.commands.core import has_guild_permissions
 from emoji import emojize
 
 from src.discord.helpers.waiters import *
@@ -27,8 +28,8 @@ class PollCog(BaseCog, name = "Poll"):
     async def on_raw_reaction_add(self, payload):
         if not self.any_active_polls:
             return
-        if not self.bot.production:
-            return
+        # if not self.bot.production:
+        #     return
 
         emoji = str(payload.emoji)
         member = payload.member
@@ -154,18 +155,21 @@ class PollCog(BaseCog, name = "Poll"):
     async def poll_group(self, ctx):
         if ctx.guild.id in (695416318681415790, 761624318291476482):
             pass
-        else:
-            if not ctx.author.guild_permissions.administrator:
-                raise commands.errors.MissingPermissions(["administrator"])
+        # else:
+        #     if ctx.author.id in (219254670722465792, 775454576492281866):
+        #         pass
+        #     elif not ctx.author.guild_permissions.administrator:
+        #         raise commands.errors.MissingPermissions(["administrator"])
 
     @poll_group.command()
+    @has_guild_permissions(administrator = True)
     async def template(self, ctx, name):
         prompt = lambda x : ctx.translate(f"poll_{x}_prompt")
 
         template, _ = PollTemplate.get_or_create(name = name, guild_id = ctx.guild.id)
         poll = await self.setup_poll(ctx, template)
 
-        waiter = TimeDeltaWaiter(ctx, prompt = prompt("due_date"), max_words = 2)
+        waiter = TimeDeltaWaiter(ctx, prompt = prompt("due_date"))
         message = await waiter.wait(raw = True)
         poll.delta = message.content
 
@@ -248,10 +252,12 @@ class PollCog(BaseCog, name = "Poll"):
         poll.save()
 
     @poll_group.group(name = "change")
+    @has_guild_permissions(administrator = True)
     async def change(self, ctx):
         pass
 
     @change.command("delete")
+    @has_guild_permissions(administrator = True)
     async def change_delete(self, ctx, discordObject : typing.Union[discord.TextChannel, discord.Role] ):
         poll_channel = ctx.channel
 
@@ -274,6 +280,7 @@ class PollCog(BaseCog, name = "Poll"):
         poll.save()
 
     @change.command("create")
+    @has_guild_permissions(administrator = True)
     async def change_create(self, ctx, type : str,  name : str):
         template       = PollTemplate.get(name = "change", guild_id = ctx.guild.id)
         poll           = Poll.from_template(template)

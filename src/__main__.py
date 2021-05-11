@@ -26,4 +26,9 @@ from src.discord.bot import Locus
 config.bot = Locus(mode)
 config.bot.heroku = service == "heroku"
 config.bot.load_all_cogs()
+
+# while config.bot.restarting:
 config.bot.run(config.environ.discord_token)
+
+    # repo = git.Repo(config.path)
+    # repo.remotes.origin.pull()

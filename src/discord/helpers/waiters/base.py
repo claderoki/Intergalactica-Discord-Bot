@@ -26,7 +26,23 @@ class Waiter:
         return config.bot
 
 class MessageWaiter(Waiter):
-    __slots__ = ("ctx","prompt", "end_prompt", "timeout", "show_instructions", "members", "channels", "converted", "max_words", "skippable", "skip_command", "cancellable", "cancel_command")
+    __slots__ = (
+        "ctx",
+        "prompt",
+        "end_prompt",
+        "timeout",
+        "show_instructions",
+        "members",
+        "channels",
+        "converted",
+        "max_words",
+        "skippable",
+        "skip_command",
+        "cancellable",
+        "cancel_command",
+        "failures",
+        "failure_limit"
+    )
 
     def __init__(self,
     ctx,
@@ -56,6 +72,8 @@ class MessageWaiter(Waiter):
         self.skip_command = skip_command
         self.cancellable = cancellable
         self.cancel_command = cancel_command
+        self.failures = 0
+        self.failure_limit = 3
 
         self.channels.append(ctx.channel)
 
@@ -99,7 +117,11 @@ class MessageWaiter(Waiter):
         try:
             self.converted = self.convert(words)
         except ConversionFailed as e:
+            if self.failures > self.failure_limit:
+                self._send(message.channel, embed = Embed.error(f"Cancelled due to failing {self.failure_limit} times."))
+                raise Cancelled()
             self._send(message.channel, embed = Embed.error(f"{e} Try again."))
+            self.failures += 1
             return False
 
         return True
@@ -444,8 +466,8 @@ class DateWaiter(StrWaiter):
         return True
 
 class TimeDeltaWaiter(MessageWaiter):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, max_words = 2, **kwargs)
+    def __init__(self, ctx, *args, **kwargs):
+        super().__init__(ctx, *args, max_words = 2, **kwargs)
 
     @property
     def instructions(self):

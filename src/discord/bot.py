@@ -197,6 +197,9 @@ class Locus(commands.Bot):
             "conversations",
             # "qotd",
             "giveaway",
+            "temp_channels",
+            "groups",
+            "personal_roles",
             "trivia.cog",
         ]
 

@@ -160,7 +160,7 @@ class Personal(BaseCog):
             output_filename = filename.replace("xhtml", "png")
             output_path = f"{config.path}/tmp/daily-stoic/{output_filename}"
             html.write_png(output_path)
-            return await self.bot.store_file(output_path, output_filename, owner = True)
+            return await self.bot.store_file(output_path, output_filename, owner = False)
 
     @commands.command()
     @is_permitted()
