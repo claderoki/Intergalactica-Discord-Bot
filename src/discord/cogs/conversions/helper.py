@@ -90,7 +90,7 @@ class UnitMapping:
             for unit in all_units:
                 if type == UnitType.measurement and isinstance(unit, Measurement):
                     units.append(unit)
-                elif type == UnitType.measurement and isinstance(unit, Currency):
+                elif type == UnitType.currency and isinstance(unit, Currency):
                     units.append(unit)
         return units
 
