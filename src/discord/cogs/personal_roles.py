@@ -56,7 +56,7 @@ class PersonalRoleCog(BaseCog, name = "Personal role"):
     @commands.group()
     @specific_guild_only(intergalactica_guild_id)
     async def role(self, ctx):
-        has_5k = ctx.guild.get_role(self._role_ids["5k+"]) in ctx.author.roles
+        has_5k = ctx.guild.get_role(778744417322139689) in ctx.author.roles
         is_nitro_booster = ctx.author.premium_since is not None
         has_personal_role = False
         allowed = has_5k or is_nitro_booster or has_personal_role
