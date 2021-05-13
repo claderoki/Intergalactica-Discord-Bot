@@ -13,9 +13,28 @@ if both of them like eachother they get matched.
 If they get matched .......... uhh what then?
     - Maybe both pigeons are asked a series of questions about themselves, if both have similar responses the date goes better??
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 models:
     pigeon_dating_profile
         description
         avatar_url
 
-pagination where you can select each page. 
+pagination where you can select each page.
+
+class PigeonDatingProfile(BaseModel):
+    pigeon = peewee.ForeignKeyField(Pigeon)
+
+class about:
+    pass

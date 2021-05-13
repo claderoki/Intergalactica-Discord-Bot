@@ -1,24 +1,25 @@
+import asyncio
 import enum
 import random
-import asyncio
 
 import discord
 from discord.ext import commands, tasks
-from countryinfo import CountryInfo
-import peewee
 
 import src.config as config
-from src.models import HumanItem, Human, Scenario, Fight, Reminder, Pigeon, Buff, PigeonBuff, PigeonRelationship, Earthling, Item, Exploration, LanguageMastery, Mail, Settings, SystemMessage, Date, database
-from src.models.base import PercentageField
-from src.discord.helpers.waiters import *
-from src.utils.country import Country
-from src.discord.helpers.paginating import Paginator
-from src.discord.errors.base import SendableException
-from src.discord.helpers.pretty import prettify_dict, limit_str, Table, Row
-from .exploration_retrieval import ExplorationRetrieval, MailRetrieval
-from src.utils.enums import Gender
-from src.discord.helpers.converters import EnumConverter
 from src.discord.cogs.core import BaseCog
+from src.discord.errors.base import SendableException
+from src.discord.helpers.converters import EnumConverter
+from src.discord.helpers.paginating import Paginator, Page
+from src.discord.helpers.pretty import Row, Table, limit_str, prettify_dict
+from src.discord.helpers.waiters import *
+from src.models import (Date, Earthling, Exploration, Fight, Human,
+                        HumanItem, Item, LanguageMastery, Mail, Pigeon,
+                        PigeonRelationship, Reminder, Scenario, PigeonDatingProfile,
+                        Settings, SystemMessage, database)
+from src.models.base import PercentageField
+from src.utils.country import Country
+from src.utils.enums import Gender
+from .exploration_retrieval import ExplorationRetrieval, MailRetrieval
 
 class ItemWaiter(StrWaiter):
     def __init__(self, ctx, in_inventory = True, **kwargs):
@@ -86,6 +87,8 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         "relationships",
         "reject",
         "stats",
+        "dating",
+        "setup"
         "languages",
         "storytime",
         "retrieve",
@@ -368,6 +371,70 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         footer.append(f"or '{ctx.prefix}pigeon reject' to reject")
         embed.set_footer(text = "\n".join(footer))
         asyncio.gather(channel.send(embed = embed))
+
+    @pigeon.group(name = "dating")
+    @commands.dm_only()
+    async def pigeon_dating_group(self, ctx):
+        pass
+
+    @pigeon_dating_group.command(name = "setup")
+    async def pigeon_dating_setup(self, ctx):
+
+        images = [
+            {
+                "url": "https://cdn.discordapp.com/attachments/744172199770062899/842369406926848031/544787861_d054117d36.jpg",
+                "title": "The Badass"
+            },
+            {
+                "url": "https://cdn.discordapp.com/attachments/744172199770062899/842369406952275988/cool_pigeon_by_radical_yuris-d5weoam.png",
+                "title": "Thinks hes cool"
+            },
+            {
+                "url": "https://cdn.discordapp.com/attachments/744172199770062899/842369433534988398/image1.png",
+                "title": "Nerdy"
+            }
+        ]
+
+        paginator = Paginator(ctx, select_mode = True)
+
+        for image in images:
+            embed = discord.Embed(color = ctx.guild_color)
+            embed.title = image["title"]
+            embed.set_image(url = image["url"])
+            paginator.add_page(Page(embed, identifier = image["url"]))
+
+        profile = PigeonDatingProfile.get_or_none(pigeon = ctx.pigeon)
+        if profile is None:
+            profile = PigeonDatingProfile()
+
+        await profile.editor_for(ctx, "description")
+        profile.image_url = await paginator.wait()
+        profile.save()
+        await ctx.success(ctx.translate("pigeon_dating_profile_setup"))
+
+    @pigeon_dating_group.command(name = "search")
+    async def pigeon_dating_search(self, ctx):
+        query = PigeonDatingProfile.raw(f"""
+            SELECT pigeon_dating_profile.* FROM pigeon_dating_profile
+            INNER JOIN pigeon ON pigeon_dating_profile.pigeon_id = pigeon.id
+            LEFT JOIN pigeon_dating_participant p1 ON p1.pigeon_id = pigeon.id
+            LEFT JOIN pigeon_dating_participant p2 ON p2.pigeon_id = pigeon.id
+            LEFT JOIN pigeon_dating_relationship ON ((participant1_id = p1.id OR participant2_id = p2.id))
+            WHERE (p1.status IS NULL AND p2.status IS NULL AND pigeon.id != {ctx.pigeon.id})
+            """
+        )
+
+        paginator = Paginator(ctx, select_mode = True)
+
+        for profile in query:
+            embed = discord.Embed(color = ctx.guild_color)
+            embed.title = profile.description
+            embed.set_image(url = profile.image_url)
+            paginator.add_page(Page(embed, identifier = profile))
+
+        if len(paginator._pages) > 0:
+            profile = await paginator.wait()
+            print(profile)
 
     @pigeon.command(name = "accept")
     async def pigeon_accept(self, ctx):

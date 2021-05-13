@@ -27,7 +27,7 @@ class BaseModel(peewee.Model):
             if "due_date" not in attr:
                 if field.default is not None:
                     kwargs["prompt"] += f"\nDefault: **{prettify_value(field.default)}**"
-                if value is not None:
+                if value is not None and value != "":
                     kwargs["prompt"] += f"\nCurrent: **{prettify_value(value)}**"
 
         if "skippable" not in kwargs:
@@ -43,6 +43,8 @@ class BaseModel(peewee.Model):
             return RoleWaiter(ctx, **kwargs)
         if attr == "due_date":
             return TimeDeltaWaiter(ctx, **kwargs)
+        if attr == "image_url":
+            AttachmentWaiter(ctx, **kwargs)
 
         if isinstance(field, CountryField):
             return CountryWaiter(ctx, **kwargs)

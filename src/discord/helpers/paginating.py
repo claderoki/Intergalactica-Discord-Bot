@@ -10,15 +10,18 @@ class Paginator:
         previous = 1
         next     = 2
         stop     = 3
+        select   = 4
 
-    _actions = {"⬅️": Action.previous, "➡️" : Action.next, "⏹️": Action.stop}
+    _actions = {"⬅️": Action.previous, "➡️" : Action.next, "⏹️": Action.stop, "✅": Action.select}
 
-    __slots__ = ("_pages", "_current_page", "_message", "_ctx")
-    def __init__(self, ctx, pages = None):
-        self._pages = pages or []
-        self._current_page = 0
-        self._message = None
-        self._ctx = ctx
+    __slots__ = ("_pages", "_current_page", "_message", "_ctx", "_select_mode", "_selected_page")
+    def __init__(self, ctx, pages = None, select_mode = False):
+        self._pages         = pages or []
+        self._select_mode   = select_mode
+        self._current_page  = 0
+        self._message       = None
+        self._ctx           = ctx
+        self._selected_page = None
 
     def add_page(self, page):
         self._pages.append(page)
@@ -76,6 +79,9 @@ class Paginator:
 
         if action == self.Action.stop:
             return True
+        elif action == self.Action.select and self._select_mode:
+            self._selected_page = self.current_page
+            return True
         elif action == self.Action.next:
             self.next()
             asyncio.gather(self.remove_reaction(reaction, user))
@@ -85,19 +91,25 @@ class Paginator:
 
         return False
 
+    def add_reactions(self):
+        for emoji, action in self._actions.items():
+            if action != self.Action.select or self._select_mode:
+                asyncio.gather(self._message.add_reaction(emoji))
+
     async def wait(self, timeout = 360):
         self.__show_pages()
         await self.reload()
         if len(self._pages) == 1:
             return
-        for emoji in self._actions.keys():
-            asyncio.gather(self._message.add_reaction(emoji))
+        self.add_reactions()
         try:
             await self._ctx.bot.wait_for("reaction_add", timeout = timeout, check = self.__check)
         except asyncio.TimeoutError:
             pass
 
         asyncio.gather(self.clear_reactions())
+        if self._select_mode and self._selected_page is not None:
+            return self._selected_page.identifier
 
     def __show_pages(self):
         for i, page in enumerate(self._pages):
@@ -113,9 +125,10 @@ class Paginator:
         field_groups = split_list(embed.fields, max_fields)
 
         for fields in field_groups:
-            base_embed             = discord.Embed()
-            base_embed.color       = embed.color
-            base_embed.description = embed.description
+            base_embed = discord.Embed(
+                color = embed.color,
+                description = embed.description
+            )
 
             for field in fields:
                 base_embed.add_field(name = field.name, value = field.value, inline = field.inline)
@@ -124,9 +137,10 @@ class Paginator:
         return paginator
 
 class Page:
-    __slots__ = ("embed", )
-    def __init__(self, embed):
+    __slots__ = ("embed", "identifier")
+    def __init__(self, embed, identifier = None):
         self.embed = embed
+        self.identifier = identifier
 
     def set_page_number(self, index, total):
         text = ""

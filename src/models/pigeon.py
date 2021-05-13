@@ -262,6 +262,23 @@ class PigeonRelationship(BaseModel):
         else:
             return cls.create(pigeon1 = pigeon1, pigeon2 = pigeon2)
 
+class PigeonDatingProfile(BaseModel):
+    pigeon      = peewee.ForeignKeyField(Pigeon)
+    description = peewee.TextField()
+    image_url   = peewee.TextField()
+
+class PigeonDatingParticipant(BaseModel):
+    class Status(Enum):
+        liked    = 1
+        disliked = 2
+
+    status = EnumField(Status, null = False, default = False)
+    pigeon = peewee.ForeignKeyField(Pigeon)
+
+class PigeonDatingRelationship(BaseModel):
+    participant1      = peewee.ForeignKeyField(PigeonDatingParticipant)
+    participant2      = peewee.ForeignKeyField(PigeonDatingParticipant)
+
 class LanguageMastery(BaseModel):
     language = LanguageField()
     mastery  = PercentageField(null = False, default = 0)

@@ -272,7 +272,7 @@ class AttachmentWaiter(MessageWaiter):
             return False
         return True
 
-    async def wait(self, store = False, raw = False):
+    async def wait(self, store = True, raw = False):
         message = await super().wait(raw = True)
         if not raw:
             attachment = message.attachments[0]
