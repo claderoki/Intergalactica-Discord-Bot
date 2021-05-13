@@ -9,7 +9,7 @@ import random
 
 import discord
 from discord.ext import commands, tasks
-from weasyprint import HTML
+# from weasyprint import HTML
 
 import src.config as config
 from src.discord.errors.base import SendableException
@@ -149,26 +149,26 @@ class Personal(BaseCog):
         question.asked = True
         question.save()
 
-    async def generate_daily_stoic(self, now = None):
-        folder = config.path + "/src/templates/DailyStoic"
+    # async def generate_daily_stoic(self, now = None):
+    #     folder = config.path + "/src/templates/DailyStoic"
 
-        filename_format = "{day}-{month}.xhtml"
-        z = lambda x : str(x).zfill(2)
-        filename = filename_format.format(day = z(now.day), month = z(now.month))
-        with open(f"{folder}/Text/{filename}", encoding = "utf-8") as f:
-            html = HTML(string = f.read(), base_url = folder + "/Text")
-            output_filename = filename.replace("xhtml", "png")
-            output_path = f"{config.path}/tmp/daily-stoic/{output_filename}"
-            html.write_png(output_path)
-            return await self.bot.store_file(output_path, output_filename, owner = False)
+    #     filename_format = "{day}-{month}.xhtml"
+    #     z = lambda x : str(x).zfill(2)
+    #     filename = filename_format.format(day = z(now.day), month = z(now.month))
+    #     with open(f"{folder}/Text/{filename}", encoding = "utf-8") as f:
+    #         html = HTML(string = f.read(), base_url = folder + "/Text")
+    #         output_filename = filename.replace("xhtml", "png")
+    #         output_path = f"{config.path}/tmp/daily-stoic/{output_filename}"
+    #         html.write_png(output_path)
+    #         return await self.bot.store_file(output_path, output_filename, owner = False)
 
-    @commands.command()
-    @is_permitted()
-    async def stoic(self, ctx):
-        human = ctx.get_human()
-        now = human.current_time or datetime.datetime.utcnow()
-        url = await self.generate_daily_stoic(now = now)
-        await ctx.send(url)
+    # @commands.command()
+    # @is_permitted()
+    # async def stoic(self, ctx):
+    #     human = ctx.get_human()
+    #     now = human.current_time or datetime.datetime.utcnow()
+    #     url = await self.generate_daily_stoic(now = now)
+    #     await ctx.send(url)
 
     @commands.is_owner()
     @commands.dm_only()
@@ -229,7 +229,8 @@ class Personal(BaseCog):
                 content = reminder.value or ""
 
                 if reminder.type == DailyReminder.ReminderType.stoic:
-                    content += "\n" + await self.generate_daily_stoic(now = now)
+                    continue
+                    # content += "\n" + await self.generate_daily_stoic(now = now)
                 user = reminder.user
                 if user:
                     asyncio.gather(reminder.user.send(content))
