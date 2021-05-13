@@ -1,5 +1,6 @@
 import os
 import argparse
+import sys
 
 import src.config as config
 from src.utils.environmental_variables import EnvironmentalVariables
@@ -27,8 +28,11 @@ config.bot = Locus(mode)
 config.bot.heroku = service == "heroku"
 config.bot.load_all_cogs()
 
-# while config.bot.restarting:
-config.bot.run(config.environ.discord_token)
+args = []
+args.append("-m src")
+for arg in sys.argv[1:]:
+    args.append(arg)
 
-    # repo = git.Repo(config.path)
-    # repo.remotes.origin.pull()
+config.bot.run(config.environ.discord_token)
+if config.bot.restarting:
+    os.execl(sys.executable, os.path.abspath(config.path), *args)

@@ -13,7 +13,9 @@ class EnvironmentalVariables(dict):
         "reddit_client_secret",
         "reddit_user_agent",
         "reddit_username",
-        "reddit_password"
+        "reddit_password",
+        "wordnik_api_key",
+        "fixerio_access_key"
     )
 
     def __init__(self, data):

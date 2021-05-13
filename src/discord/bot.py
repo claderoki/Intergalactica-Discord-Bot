@@ -70,6 +70,7 @@ class Locus(commands.Bot):
         self.mode = mode
         self.production = mode == config.Mode.production
         self.heroku = False
+        self.restarting = False
 
         os.makedirs(f"{config.path}/tmp", exist_ok = True)
 

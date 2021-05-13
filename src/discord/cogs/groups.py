@@ -56,7 +56,7 @@ class GroupsCog(BaseCog, name = "Groups"):
         except MentionGroup.DoesNotExist:
             raise SendableException(ctx.translate("group_not_found").format(name = name))
         group.leave(ctx.author)
-        await ctx.send("group_left")
+        await ctx.send(ctx.translate("group_left"))
 
     @group.command(name = "mention")
     async def group_mention(self, ctx,*, name):
