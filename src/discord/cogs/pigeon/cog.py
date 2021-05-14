@@ -13,7 +13,7 @@ from src.discord.helpers.paginating import Paginator, Page
 from src.discord.helpers.pretty import Row, Table, limit_str, prettify_dict
 from src.discord.helpers.waiters import *
 from src.models import (Date, Earthling, Exploration, Fight, Human,
-                        HumanItem, Item, LanguageMastery, Mail, Pigeon,
+                        HumanItem, Item, PigeonDatingAvatar, LanguageMastery, Mail, Pigeon,
                         PigeonRelationship, Reminder, Scenario, PigeonDatingProfile,
                         Settings, SystemMessage, database)
 from src.models.base import PercentageField
@@ -227,7 +227,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         table.add_row(Row(["name", "%", "rank"], header = True))
 
         for language_mastery in ctx.pigeon.language_masteries.order_by(LanguageMastery.mastery.desc()):
-            values = [str(language_mastery.language.name), str(language_mastery.mastery)+"%", str(language_mastery.rank)]
+            values = [str(language_mastery.language.name.replace(" (macrolanguage)", "")), str(language_mastery.mastery)+"%", str(language_mastery.rank)]
             table.add_row(Row(values))
 
         await table.to_paginator(ctx, 15).wait()
@@ -379,35 +379,25 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
     @pigeon_dating_group.command(name = "setup")
     async def pigeon_dating_setup(self, ctx):
-
-        images = [
-            {
-                "url": "https://cdn.discordapp.com/attachments/744172199770062899/842369406926848031/544787861_d054117d36.jpg",
-                "title": "The Badass"
-            },
-            {
-                "url": "https://cdn.discordapp.com/attachments/744172199770062899/842369406952275988/cool_pigeon_by_radical_yuris-d5weoam.png",
-                "title": "Thinks hes cool"
-            },
-            {
-                "url": "https://cdn.discordapp.com/attachments/744172199770062899/842369433534988398/image1.png",
-                "title": "Nerdy"
-            }
-        ]
+        images = [{"url": x.image_url, "description": x.description} for x in PigeonDatingAvatar]
 
         paginator = Paginator(ctx, select_mode = True)
 
         for image in images:
-            embed = discord.Embed(color = ctx.guild_color)
-            embed.title = image["title"]
+            embed = discord.Embed(
+                color = ctx.guild_color,
+                title = "Choose your avatar",
+                description = image["description"],
+            )
+
             embed.set_image(url = image["url"])
             paginator.add_page(Page(embed, identifier = image["url"]))
 
         profile = PigeonDatingProfile.get_or_none(pigeon = ctx.pigeon)
         if profile is None:
-            profile = PigeonDatingProfile()
+            profile = PigeonDatingProfile(pigeon = ctx.pigeon)
 
-        await profile.editor_for(ctx, "description")
+        await profile.editor_for(ctx, "description", skippable = (profile.id is not None))
         profile.image_url = await paginator.wait()
         profile.save()
         await ctx.success(ctx.translate("pigeon_dating_profile_setup"))
@@ -827,6 +817,11 @@ AND (pigeon1_id = {ctx.pigeon.id}  OR pigeon2_id = {ctx.pigeon.id} )
         """Check the status of your pigeon."""
         if member is not None:
             self.pigeon_check(ctx, member = member)
+
+        if ctx.pigeon.pvp_action_available:
+            await ctx.send("yes")
+        else:
+            await ctx.send("no")
 
         pigeon = ctx.pigeon
 

@@ -98,7 +98,8 @@ class ExplorationRetrieval(ActivityRetrieval):
         if self.Bonus.language in self.bonuses:
             language = self.language
             if language is not None:
-                bonus_messages[self.Bonus.language] = f"A helpful {self.exploration.destination.demonym()} person also taught {pigeon.gender.get_pronoun(object = True)} some {language.name}!"
+                language_name = language.name.replace(" (macrolanguage)", "")
+                bonus_messages[self.Bonus.language] = f"A helpful {self.exploration.destination.demonym()} person also taught {pigeon.gender.get_pronoun(object = True)} some {language_name}!"
             else:
                 bonus_messages[self.Bonus.language] = f"{pigeon.gender.get_pronoun().title()} even picked up some of the local language!"
 

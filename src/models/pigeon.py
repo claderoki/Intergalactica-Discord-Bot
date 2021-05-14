@@ -110,14 +110,16 @@ class Pigeon(BaseModel):
         if self.last_used_pvp is None:
             return True
 
-        return (relativedelta(datetime.datetime.utcnow(), self.last_used_pvp).hours > 12)
+        difference = relativedelta(datetime.datetime.utcnow(), self.last_used_pvp)
+        return difference.hours >= 12 or difference.days > 1
 
     @property
     def pvp_action_available(self):
         if self.last_used_pvp is None:
             return True
 
-        return (relativedelta(datetime.datetime.utcnow(), self.last_used_pvp).hours > 3)
+        difference = relativedelta(datetime.datetime.utcnow(), self.last_used_pvp)
+        return difference.hours >= 3 or difference.days > 1
 
     def study_language(self, language, mastery = 1):
         language, _ = LanguageMastery.get_or_create(pigeon = self, language = language)
@@ -261,6 +263,10 @@ class PigeonRelationship(BaseModel):
             return relationship
         else:
             return cls.create(pigeon1 = pigeon1, pigeon2 = pigeon2)
+
+class PigeonDatingAvatar(BaseModel):
+    description = peewee.TextField()
+    image_url   = peewee.TextField()
 
 class PigeonDatingProfile(BaseModel):
     pigeon      = peewee.ForeignKeyField(Pigeon)
