@@ -88,7 +88,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         "reject",
         "stats",
         "dating",
-        "setup"
+        "setup",
         "languages",
         "storytime",
         "retrieve",
