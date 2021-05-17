@@ -170,7 +170,7 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
     @tasks.loop(hours = 1)
     async def temp_channel_checker(self):
         with database.connection_context():
-            query = TemporaryChannel.select(TemporaryChannel.guild_id, TemporaryChannel.channel_id)
+            query = TemporaryChannel.select(TemporaryChannel.guild_id, TemporaryChannel.channel_id, TemporaryChannel.active)
             query = query.where(TemporaryChannel.active == True)
             query = query.where(TemporaryChannel.expiry_date != None)
             query = query.where(TemporaryChannel.expiry_date <= datetime.datetime.utcnow())
@@ -178,7 +178,10 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
                 channel = temp_channel.channel
                 temp_channel.active = False
                 if channel is not None:
-                    await channel.delete(reason = "Expired")
+                    try:
+                        await channel.delete(reason = "Expired")
+                    except:
+                        pass
                 temp_channel.channel_id = None
                 temp_channel.save()
 

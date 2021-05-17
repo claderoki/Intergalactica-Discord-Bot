@@ -19,6 +19,7 @@ from src.models import (Earthling, Human, Item, RedditAdvertisement, Reminder,
                         TemporaryVoiceChannel, database)
 
 
+
 class MaliciousAction(Enum):
     blacklisted_word = 1
     invite_url       = 2
@@ -344,11 +345,6 @@ class Intergalactica(BaseCog):
         text = self.bot.translate("member_" + type)
 
         embed = discord.Embed(color = self.bot.get_dominant_color(member.guild))
-        if type == "join":
-            name = f"Welcome to {member.guild.name}!"
-        else:
-            name = "Farewell, Earthling."
-        embed.set_author(name = name, icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/768460504649695282/c3p0.png")
         embed.description = text.format(member = member)
 
         asyncio.gather(welcome_channel.send(embed = embed))
@@ -388,11 +384,47 @@ class Intergalactica(BaseCog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        await self.on_member_leave_or_join(member, "join")
+        if not self.bot.production:
+            return
+
+        if member.guild.id == mouse_guild_id:
+            role    = member.guild.get_role(841072184953012275)
+            general = member.guild.get_channel(729909438378541116)
+            await general.send(f"Welcome to the server ({member.mention}), {role.mention} say hello!")
+
+        if member.guild.id != self.guild_id:
+            return
+
+        welcome_channel = member.guild.system_channel
+        text = self.bot.translate("member_join")
+
+        embed = discord.Embed(color = self.bot.get_dominant_color(member.guild))
+        embed.description = text.format(member = member)
+
+        asyncio.gather(welcome_channel.send(embed = embed))
+
+        self.last_member_join = datetime.datetime.utcnow()
+        text = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
+        message = await self.get_channel("general").send(text)
+        self.welcome_messages[member.id] = message
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        await self.on_member_leave_or_join(member, "leave")
+        if not self.bot.production or member.guild.id != self.guild_id:
+            return
+
+        welcome_channel = member.guild.system_channel
+        text = self.bot.translate("member_leave")
+
+        embed = discord.Embed(color = self.bot.get_dominant_color(member.guild))
+        embed.description = text.format(member = member)
+
+        asyncio.gather(welcome_channel.send(embed = embed))
+
+        try:
+            await self.welcome_messages[member.id].delete()
+        except:
+            pass
 
     async def on_rank(self, member, role):
         role_to_add = self.guild.get_role(self._role_ids["5k+"])

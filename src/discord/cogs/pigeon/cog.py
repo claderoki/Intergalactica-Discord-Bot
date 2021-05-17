@@ -411,8 +411,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
             LEFT JOIN pigeon_dating_participant p2 ON p2.pigeon_id = pigeon.id
             LEFT JOIN pigeon_dating_relationship ON ((participant1_id = p1.id OR participant2_id = p2.id))
             WHERE (p1.status IS NULL AND p2.status IS NULL AND pigeon.id != {ctx.pigeon.id})
-            """
-        )
+            """)
 
         paginator = Paginator(ctx, select_mode = True)
 
