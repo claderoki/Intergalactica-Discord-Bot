@@ -139,9 +139,9 @@ class Intergalactica(BaseCog):
         self.role_needed_for_selfie_vote = self.guild.get_role(self._role_ids["ranks"]["nova"])
 
         self.start_task(self.reddit_advertiser,                 check = self.bot.production)
-        self.start_task(self.illegal_member_purger,             check = not self.bot.production)
-        self.start_task(self.introduction_purger,               check = not self.bot.production)
-        self.start_task(self.temp_vc_poller,                    check = not self.bot.production)
+        self.start_task(self.illegal_member_purger,             check = self.bot.production)
+        self.start_task(self.introduction_purger,               check = self.bot.production)
+        self.start_task(self.temp_vc_poller,                    check = self.bot.production)
         self.start_task(self.disboard_bump_available_notifier,  check = self.bot.production)
         self.start_task(self.reminder_notifier,                 check = self.bot.production)
         await asyncio.sleep( (60 * 60) * 3 )
