@@ -204,7 +204,7 @@ class Locus(commands.Bot):
             "trivia.cog",
         ]
 
-        if True:
+        if False:
             cogs.append("personal")
         if True:
             cogs.append("intergalactica")

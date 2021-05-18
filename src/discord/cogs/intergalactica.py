@@ -337,29 +337,6 @@ class Intergalactica(BaseCog):
         channel = self.get_channel(channel_name)
         await channel.send(content = content, **kwargs)
 
-    async def on_member_leave_or_join(self, member, type):
-        if not self.bot.production or member.guild.id != self.guild_id:
-            return
-
-        welcome_channel = member.guild.system_channel
-        text = self.bot.translate("member_" + type)
-
-        embed = discord.Embed(color = self.bot.get_dominant_color(member.guild))
-        embed.description = text.format(member = member)
-
-        asyncio.gather(welcome_channel.send(embed = embed))
-
-        if type == "join":
-            self.last_member_join = datetime.datetime.utcnow()
-            text = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
-            message = await self.get_channel("general").send(text)
-            self.welcome_messages[member.id] = message
-        elif type == "leave" and member.id in self.welcome_messages:
-            try:
-                await self.welcome_messages[member.id].delete()
-            except:
-                pass
-
     @commands.command(name = "vcchannel")
     @specific_guild_only(guild_id)
     @commands.has_role(_role_ids["5k+"])
@@ -390,27 +367,27 @@ class Intergalactica(BaseCog):
         if member.guild.id == mouse_guild_id:
             role    = member.guild.get_role(841072184953012275)
             general = member.guild.get_channel(729909438378541116)
-            await general.send(f"Welcome to the server ({member.mention}), {role.mention} say hello!")
+            await general.send(f"Welcome to the server {member.mention}, {role.mention} say hello!")
 
-        if member.guild.id != self.guild_id:
-            return
+        elif member.guild.id != self.guild_id:
+            welcome_channel = member.guild.system_channel
+            text = self.bot.translate("member_join")
 
-        welcome_channel = member.guild.system_channel
-        text = self.bot.translate("member_join")
+            embed = discord.Embed(color = self.bot.get_dominant_color(member.guild))
+            embed.description = text.format(member = member)
 
-        embed = discord.Embed(color = self.bot.get_dominant_color(member.guild))
-        embed.description = text.format(member = member)
+            asyncio.gather(welcome_channel.send(embed = embed))
 
-        asyncio.gather(welcome_channel.send(embed = embed))
-
-        self.last_member_join = datetime.datetime.utcnow()
-        text = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
-        message = await self.get_channel("general").send(text)
-        self.welcome_messages[member.id] = message
+            self.last_member_join = datetime.datetime.utcnow()
+            text = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
+            message = await self.get_channel("general").send(text)
+            self.welcome_messages[member.id] = message
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        if not self.bot.production or member.guild.id != self.guild_id:
+        if not self.bot.production:
+            return
+        if member.guild.id != self.guild_id:
             return
 
         welcome_channel = member.guild.system_channel
