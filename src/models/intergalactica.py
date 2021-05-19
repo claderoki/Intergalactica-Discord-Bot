@@ -208,6 +208,17 @@ class TemporaryVoiceChannel(BaseModel):
     def delete_instance(self, *args, **kwargs):
         if self.channel is not None:
             asyncio.gather(self.channel.delete(reason = "Temporary VC channel removed."))
+
+        super().delete_instance(*args, **kwargs)
+
+class TemporaryTextChannel(BaseModel):
+    guild_id    = peewee.BigIntegerField  (null = False)
+    channel_id  = peewee.BigIntegerField  (null = False)
+    temp_vc     = peewee.ForeignKeyField  (TemporaryVoiceChannel, null = False)
+
+    def delete_instance(self, *args, **kwargs):
+        if self.channel is not None:
+            asyncio.gather(self.channel.delete(reason = "Temporary VC channel removed."))
         super().delete_instance(*args, **kwargs)
 
 class RedditAdvertisement(BaseModel):

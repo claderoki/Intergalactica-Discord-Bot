@@ -16,7 +16,7 @@ from src.discord.helpers.embed import Embed
 from src.discord.helpers.utility import get_context_embed
 from src.discord.helpers.waiters import MemberWaiter
 from src.models import (Earthling, Human, Item, RedditAdvertisement, Reminder,
-                        TemporaryVoiceChannel, database)
+                        TemporaryVoiceChannel, TemporaryTextChannel, database)
 
 
 
@@ -141,7 +141,7 @@ class Intergalactica(BaseCog):
         self.start_task(self.reddit_advertiser,                 check = self.bot.production)
         self.start_task(self.illegal_member_purger,             check = self.bot.production)
         self.start_task(self.introduction_purger,               check = self.bot.production)
-        self.start_task(self.temp_vc_poller,                    check = self.bot.production)
+        self.start_task(self.temp_vc_poller,                    check = not self.bot.production)
         self.start_task(self.disboard_bump_available_notifier,  check = self.bot.production)
         self.start_task(self.reminder_notifier,                 check = self.bot.production)
         await asyncio.sleep( (60 * 60) * 3 )
@@ -351,6 +351,39 @@ class Intergalactica(BaseCog):
         TemporaryVoiceChannel.create(guild_id = ctx.guild.id, channel_id = channel.id)
         await ctx.success()
 
+    @commands.command(name = "textchannel")
+    @specific_guild_only(guild_id)
+    @commands.has_role(_role_ids["5k+"])
+    async def text_channel(self, ctx, *args):
+
+        category = None
+        for category in ctx.guild.categories:
+            if category.id == 742146159711092759:
+                break
+        if category is None:
+            raise SendableException(ctx.translate("wtf_wrong_with_category"))
+
+        voice = ctx.author.voice
+        if voice is None:
+            raise SendableException(ctx.translate("not_in_voice_channel"))
+
+        vc = TemporaryVoiceChannel.select(TemporaryVoiceChannel.id)\
+            .where(TemporaryVoiceChannel.channel_id == voice.channel.id)\
+            .first()
+
+        if vc is None:
+            raise SendableException(ctx.translate("not_in_a_temp_vc"))
+
+        if TemporaryTextChannel.select().where(TemporaryTextChannel.temp_vc == vc.id).count() > 0:
+            raise SendableException(ctx.translate("already_exists"))
+
+        channel = await category.create_text_channel(voice.channel.name, reason = f"Requested by {ctx.author}")
+        # await channel.edit(position = vc.channel.position)
+
+        TemporaryTextChannel.create(temp_vc = vc, channel_id = channel.id, guild_id = ctx.guild.id)
+
+        await ctx.success()
+
     @commands.has_guild_permissions(administrator = True)
     @specific_guild_only(guild_id)
     @commands.command()
@@ -464,6 +497,11 @@ class Intergalactica(BaseCog):
             for temporary_voice_channel in TemporaryVoiceChannel:
                 channel = temporary_voice_channel.channel
                 if channel is None or len(channel.members) == 0:
+                    query = TemporaryTextChannel.select()
+                    query = query.where(TemporaryTextChannel.temp_vc == temporary_voice_channel)
+
+                    for temporary_text_channel in query:
+                        temporary_text_channel.delete_instance()
                     temporary_voice_channel.delete_instance()
 
     @tasks.loop(minutes = 20)

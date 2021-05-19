@@ -1,6 +1,6 @@
 from .base import BaseModel
 from .human import Human, Item, HumanItem, ItemCategory
-from .intergalactica import Earthling, Reminder, TemporaryVoiceChannel, TemporaryChannel, RedditAdvertisement
+from .intergalactica import Earthling, Reminder, TemporaryVoiceChannel, TemporaryTextChannel, TemporaryChannel, RedditAdvertisement
 from .settings import Settings, NamedEmbed, NamedChannel, Translation, Locale
 from .ticket import Ticket, Reply
 from .poll import Change, Parameter, Poll, PollTemplate, Vote, Option
@@ -52,8 +52,8 @@ def setup():
         # database.drop_tables([Human, Item, HumanItem, ItemCategory])
         database.create_tables([Human, Item, HumanItem, ItemCategory])
 
-        # database.drop_tables([Earthling, TemporaryChannel, Reminder, TemporaryVoiceChannel, RedditAdvertisement])
-        database.create_tables([Earthling, TemporaryChannel, Reminder, TemporaryVoiceChannel, RedditAdvertisement])
+        # database.drop_tables([Earthling, TemporaryChannel, Reminder, TemporaryVoiceChannel, TemporaryTextChannel, RedditAdvertisement])
+        database.create_tables([Earthling, TemporaryChannel, Reminder, TemporaryVoiceChannel, TemporaryTextChannel, RedditAdvertisement])
 
         # database.drop_tables([Settings, NamedEmbed, NamedChannel, Locale, Translation])
         database.create_tables([Settings, NamedEmbed, NamedChannel, Locale, Translation])

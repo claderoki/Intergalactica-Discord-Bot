@@ -260,6 +260,8 @@ ORDER BY people_nick_pranked DESC"""
 
         waiter = StrWaiter(ctx, max_words = None, prompt = ctx.translate("nickname_prank_prompt"), max_length = 32)
         new_nickname = await waiter.wait()
+        if new_nickname is None:
+            raise SendableException(ctx.translate("timed_out"))
 
         await self.create_prank(
             ctx,

@@ -11,15 +11,6 @@ from src.discord.errors.base import SendableException
 from src.discord.helpers.waiters import IntWaiter
 from src.models import (TemporaryChannel, HumanItem, Item, database)
 
-def get_human_item(self, user, code = None, raise_on_empty = True):
-    #TODO: optimize
-    human_item = HumanItem.get_or_none(
-        human = config.bot.get_human(user = user),
-        item = Item.get(code = code)
-    )
-    if human_item is None or (human_item.amount == 0 and raise_on_empty):
-        raise SendableException(self.bot.translate("no_" + code))
-    return human_item
 
 class TempChannelsCog(BaseCog, name = "Milkyway"):
     def __init__(self, bot):
@@ -28,6 +19,16 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
     @commands.Cog.listener()
     async def on_ready(self):
         self.start_task(self.temp_channel_checker, check = self.bot.production)
+
+    def get_human_item(self, user, code = None, raise_on_empty = True):
+        #TODO: optimize
+        human_item = HumanItem.get_or_none(
+            human = config.bot.get_human(user = user),
+            item = Item.get(code = code)
+        )
+        if human_item is None or (human_item.amount == 0 and raise_on_empty):
+            raise SendableException(self.bot.translate("no_" + code))
+        return human_item
 
     @commands.max_concurrency(1, per = commands.BucketType.user)
     @commands.group(aliases = ["milkyway", "orion"])
