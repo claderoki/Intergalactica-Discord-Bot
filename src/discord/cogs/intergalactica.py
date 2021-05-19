@@ -141,7 +141,7 @@ class Intergalactica(BaseCog):
         self.start_task(self.reddit_advertiser,                 check = self.bot.production)
         self.start_task(self.illegal_member_purger,             check = self.bot.production)
         self.start_task(self.introduction_purger,               check = self.bot.production)
-        self.start_task(self.temp_vc_poller,                    check = not self.bot.production)
+        self.start_task(self.temp_vc_poller,                    check = self.bot.production)
         self.start_task(self.disboard_bump_available_notifier,  check = self.bot.production)
         self.start_task(self.reminder_notifier,                 check = self.bot.production)
         await asyncio.sleep( (60 * 60) * 3 )
@@ -402,7 +402,7 @@ class Intergalactica(BaseCog):
             general = member.guild.get_channel(729909438378541116)
             await general.send(f"Welcome to the server {member.mention}, {role.mention} say hello!")
 
-        elif member.guild.id != self.guild_id:
+        elif member.guild.id == self.guild_id:
             welcome_channel = member.guild.system_channel
             text = self.bot.translate("member_join")
 
