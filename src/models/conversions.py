@@ -23,6 +23,8 @@ class StoredUnit(BaseModel):
     def should_exclude_symbol(self):
         if "$" in self.symbol:
             return True
+        if "£" in self.symbol:
+            return True
         if "." in self.symbol:
             return True
         if self.symbol.lower() in ("p", "k", "s", "r", "t", "e", "d", "m", "km", "g", "ar", "l", "le", "ush", "br"):
