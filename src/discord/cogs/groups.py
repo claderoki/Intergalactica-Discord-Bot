@@ -69,6 +69,16 @@ class GroupsCog(BaseCog, name = "Groups"):
         else:
             raise SendableException(ctx.translate("group_member_only_command"))
 
+    @group.command(name = "members")
+    async def group_members(self, ctx,*, name):
+        try:
+            group = MentionGroup.get(name = name)
+        except MentionGroup.DoesNotExist:
+            raise SendableException(ctx.translate("group_not_found").format(name = name))
+
+        users = "`, `".join([str(x.user) for x in group.mention_members if x.user is not None])
+        await ctx.send("`"+users+"`")
+
     @group.command(name = "list")
     async def group_list(self, ctx):
         groups = MentionGroup.select(MentionGroup.name).where(MentionGroup.guild_id == ctx.guild.id)
