@@ -514,10 +514,10 @@ class Profile(BaseCog):
                         await role.delete()
                     earthling.delete_instance()
 
-        # with database.connection_context():
-        #     for guild in self.bot.guilds:
-        #         for member in guild.members:
-        #             earthling = Earthling.get_or_create_for_member(member)
+        with database.connection_context():
+            for guild in self.bot.guilds:
+                for member in guild.members:
+                    earthling = Earthling.get_or_create_for_member(member)
 
 def setup(bot):
     bot.add_cog(Profile(bot))

@@ -817,11 +817,6 @@ AND (pigeon1_id = {ctx.pigeon.id}  OR pigeon2_id = {ctx.pigeon.id} )
         if member is not None:
             self.pigeon_check(ctx, member = member)
 
-        if ctx.pigeon.pvp_action_available:
-            await ctx.send("yes")
-        else:
-            await ctx.send("no")
-
         pigeon = ctx.pigeon
 
         data = {}
