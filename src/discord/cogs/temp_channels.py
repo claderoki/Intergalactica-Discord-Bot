@@ -9,6 +9,7 @@ from discord.ext import commands, tasks
 from src.discord.cogs.core import BaseCog
 from src.discord.errors.base import SendableException
 from src.discord.helpers.waiters import IntWaiter
+from src.discord.helpers.checks import specific_guild_only
 from src.models import (TemporaryChannel, HumanItem, Item, database)
 
 
@@ -31,6 +32,7 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
         return human_item
 
     @commands.max_concurrency(1, per = commands.BucketType.user)
+    @specific_guild_only(742146159711092757)
     @commands.group(aliases = ["milkyway", "orion"])
     async def temporary_channel(self, ctx):
         mini = ctx.invoked_with != "milkyway"
@@ -128,7 +130,8 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
         await ctx.send("A request has been sent to the staff.")
 
         temp_channel.save()
-        await self.get_channel("c3po-log").send(embed = temp_channel.ticket_embed)
+
+        await ctx.guild.get_channel(817078062784708608).send(embed = temp_channel.ticket_embed)
 
     @temporary_channel.command(name = "extend")
     async def temporary_channel_extend(self, ctx, channel : discord.TextChannel):

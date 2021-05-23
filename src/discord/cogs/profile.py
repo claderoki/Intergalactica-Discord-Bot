@@ -517,7 +517,8 @@ class Profile(BaseCog):
         with database.connection_context():
             for guild in self.bot.guilds:
                 for member in guild.members:
-                    earthling = Earthling.get_or_create_for_member(member)
+                    if not member.not:
+                        earthling = Earthling.get_or_create_for_member(member)
 
 def setup(bot):
     bot.add_cog(Profile(bot))
