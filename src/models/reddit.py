@@ -66,7 +66,10 @@ class Subreddit(BaseModel):
             kwargs["embed"] = embed
         sendable = self.sendable
         if sendable is not None:
-            await self.sendable.send(*args, **kwargs)
+            try:
+                await self.sendable.send(*args, **kwargs)
+            except discord.errors.Forbidden:
+                return
 
     @property
     def latest_post(self):
