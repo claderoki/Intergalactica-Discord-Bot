@@ -10,7 +10,7 @@ import src.config as config
 from src.models import Human, Prankster, NicknamePrank, HumanItem, Item, EmojiPrank, RolePrank, database
 from src.discord.errors.base import SendableException
 import src.discord.helpers.pretty as pretty
-from src.discord.helpers.waiters import StrWaiter, BoolWaiter
+from src.discord.helpers.waiters import StrWaiter, BoolWaiter, Skipped
 from src.discord.cogs.core import BaseCog
 
 pranks_in_progress = []
@@ -326,15 +326,22 @@ ORDER BY people_nick_pranked DESC"""
         prankster, _ = Prankster.get_or_create(user_id = member.id, guild_id = ctx.guild.id)
         prank = prankster.current_prank
         if prank is not None:
+
+            waiter = BoolWaiter(ctx, skippable = True, prompt = ctx.translate("give_stuff_back_prompt"))
+            try:
+                give_stuff_back = await waiter.wait() 
+            except Skipped:
+                give_stuff_back = True
+
             prank.end_date = prank.start_date
             prank.save()
-
-            human = ctx.get_human(user = prank.pranked_by.user_id)
-            if prank.purchase_type == NicknamePrank.PurchaseType.gold:
-                human.gold += prank.cost
-                human.save()
-            elif prank.purchase_type == NicknamePrank.PurchaseType.item:
-                human.add_item(Item.get(code = prank.item_code), 1)
+            if give_stuff_back:
+                human = ctx.get_human(user = prank.pranked_by.user_id)
+                if prank.purchase_type == NicknamePrank.PurchaseType.gold:
+                    human.gold += prank.cost
+                    human.save()
+                elif prank.purchase_type == NicknamePrank.PurchaseType.item:
+                    human.add_item(Item.get(code = prank.item_code), 1)
             await ctx.success(ctx.translate("prank_reverted"))
 
     @tasks.loop(minutes = 1)
