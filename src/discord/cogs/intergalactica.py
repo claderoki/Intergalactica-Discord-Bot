@@ -392,6 +392,27 @@ class Intergalactica(BaseCog):
         channel = self.get_channel("warns")
         await channel.send(f"Warned {member} for {reason}")
 
+    @commands.has_guild_permissions(administrator = True)
+    @specific_guild_only(guild_id)
+    @commands.command()
+    async def selfies(self, ctx):
+        members = []
+
+        rank_ids = [x for x in self._role_ids["ranks"].values() if x != self._role_ids["ranks"]["luna"]]
+
+        for member in ctx.guild.members:
+            has_selfie_role = False
+            has_more_than_10k_role = False
+            for role in member.roles:
+                if role.id == self._role_ids["selfies"]:
+                    has_selfie_role = True
+                if role.id in rank_ids:
+                    has_more_than_10k_role = True
+            if not has_selfie_role and has_more_than_10k_role:
+                members.append(member)
+
+        await ctx.send("\n".join([str(x) for x in members]))
+
     @commands.Cog.listener()
     async def on_member_join(self, member):
         if not self.bot.production:

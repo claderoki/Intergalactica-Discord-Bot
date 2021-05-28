@@ -72,6 +72,7 @@ class FarmCrop(BaseModel):
         hours_per_stage = (grow_time.seconds / 3600) / Crop.max_stages
 
         difference = relativedelta(datetime.datetime.utcnow(), self.planted_at)
+        hours = difference.hours + (difference.days * 24)
 
-        stage = math.ceil(difference.hours / hours_per_stage)
+        stage = math.ceil(hours / hours_per_stage)
         return max(min(stage, Crop.max_stages), 1)
