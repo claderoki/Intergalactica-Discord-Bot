@@ -746,7 +746,7 @@ IFNULL(SUM(CASE WHEN ({win_condition}) THEN 1 ELSE 0 END), 0) as fights_won,
 IFNULL(SUM(CASE WHEN ({win_condition}) THEN 0 ELSE 1 END), 0) as fights_lost
 FROM fight
 WHERE finished = 1
-AND (pigeon1_id = {ctx.pigeon.id}  OR pigeon2_id = {ctx.pigeon.id} )
+AND (pigeon1_id = {ctx.pigeon.id} OR pigeon2_id = {ctx.pigeon.id})
         """
 
         cursor = database.execute_sql(query)

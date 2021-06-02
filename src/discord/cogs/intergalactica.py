@@ -110,7 +110,10 @@ class Intergalactica(BaseCog):
     }
 
     async def get_invites(self, message):
-        regex = re.compile(r'discord(?:\.com|app\.com|\.gg)/(?:invite/)?([a-zA-Z0-9\-]{2,32})')
+        if "cdn" in message:
+            return None
+
+        regex = re.compile(r'discord(?:app|\.gg)/(?:invite/)?([a-zA-Z0-9\-]{2,32})')
         invite_urls = regex.findall(message)
         if len(invite_urls) == 0:
             return None
