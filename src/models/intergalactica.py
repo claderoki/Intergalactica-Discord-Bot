@@ -72,7 +72,7 @@ class TemporaryChannel(BaseModel):
         normal = 0
         mini   = 1
 
-    guild_id            = peewee.BigIntegerField (null = False)
+    guild_id            = peewee.BigIntegerField (null = False, default = None)
     name                = EmojiField             (null = False)
     topic               = EmojiField             (null = False)
     channel_id          = peewee.BigIntegerField (null = True)
