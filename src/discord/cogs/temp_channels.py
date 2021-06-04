@@ -174,7 +174,7 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
     @tasks.loop(hours = 1)
     async def temp_channel_checker(self):
         with database.connection_context():
-            query = TemporaryChannel.select(TemporaryChannel.guild_id, TemporaryChannel.channel_id, TemporaryChannel.active)
+            query = TemporaryChannel.select(TemporaryChannel.id, TemporaryChannel.guild_id, TemporaryChannel.channel_id, TemporaryChannel.active)
             query = query.where(TemporaryChannel.active == True)
             query = query.where(TemporaryChannel.expiry_date != None)
             query = query.where(TemporaryChannel.expiry_date <= datetime.datetime.utcnow())
