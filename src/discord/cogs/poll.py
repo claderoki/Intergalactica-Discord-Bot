@@ -18,18 +18,21 @@ class PollCog(BaseCog, name = "Poll"):
 
     def __init__(self, bot):
         super().__init__(bot)
+        self.recheck_active_polls()
+
+    def recheck_active_polls(self):
         self.any_active_polls = (Poll.select().where(Poll.ended == False).count() > 0)
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.start_task(self.poller, check = self.bot.production)
+        self.start_task(self.poller, check = not self.bot.production)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         if not self.any_active_polls:
             return
-        # if not self.bot.production:
-        #     return
+        if self.bot.production:
+            return
 
         emoji = str(payload.emoji)
         member = payload.member
@@ -70,7 +73,7 @@ class PollCog(BaseCog, name = "Poll"):
                     return asyncio.gather(member.send(embed = Embed.error(f"To vote for this poll you need the **{role}** role.")))
 
             new_vote, created = Vote.get_or_create(option = option, user_id = member.id)
-
+            print(new_vote)
             votes = [new_vote]
             for option in poll.options:
                 vote = option.votes.where(Vote.user_id == member.id).first()
@@ -301,7 +304,7 @@ class PollCog(BaseCog, name = "Poll"):
         self.any_active_polls = True
         poll.save()
 
-    @tasks.loop(minutes=2)
+    @tasks.loop(minutes = 2)
     async def poller(self):
         with database:
             query = Poll.select()
@@ -323,8 +326,9 @@ class PollCog(BaseCog, name = "Poll"):
                         await message.delete()
                     except:
                         pass
-                self.any_active_polls = False
                 poll.save()
+
+            self.recheck_active_polls()
 
 def setup(bot):
     bot.add_cog(PollCog(bot))

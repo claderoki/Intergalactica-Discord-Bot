@@ -12,6 +12,7 @@ from emoji import emojize
 
 from src.utils.general import text_to_emojis
 import src.config as config
+import src.discord.helpers.pretty as pretty
 from .base import BaseModel, EnumField, EmojiField
 from src.discord.helpers.waiters import TimeDeltaWaiter
 
@@ -173,12 +174,14 @@ class Poll(BaseModel):
     #     return self.bot.store_file(stream, "results.png")
 
     async def get_results_embed(self):
-        # url = await self.get_result_image_url()
+        votes = [list(x.values()) for x in self.votes]
+        votes.insert(0, ("%", "option", "count"))
+        table = pretty.Table.from_list(votes, first_header = True)
 
         changes = list(self.changes)
         passed = self.passed
 
-        embed = discord.Embed(description = f"Poll #{self.id} results", color = self.bot.get_dominant_color(self.guild))
+        embed = discord.Embed(description = f"Poll #{self.id} results\n\n**{self.question}?**\n{table.generate()}", color = self.bot.get_dominant_color(self.guild))
 
         if self.type == self.Type.bool:
             if passed:
@@ -191,8 +194,6 @@ class Poll(BaseModel):
 
             if len(changes) > 0 and passed:
                 embed.set_footer(text = "Changes have been implemented.")
-
-        # embed.set_image(url = url)
 
         return embed
 

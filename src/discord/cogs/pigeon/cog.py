@@ -311,6 +311,10 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         human1 = ctx.get_human()
         human2 = ctx.get_human(member.id)
 
+        pigeon2 = human2.pigeon
+        if not pigeon2.pvp:
+            raise SendableException(ctx.translate("pigeon2_pvp_not_enabled"))
+
         class RobType(enum.Enum):
             item = 1
             gold = 2
