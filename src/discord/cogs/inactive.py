@@ -62,7 +62,8 @@ class Inactive(BaseCog):
             if earthling.guild is None or earthling.member is None:
                 continue
             if earthling.inactive:
-                yield earthling
+                if earthling.guild_id == 729843647347949638 and 852955124967276556 not in [x.id for x in earthling.member.roles]:
+                    yield earthling
 
     @commands.has_guild_permissions(administrator = True)
     @commands.command()

@@ -175,7 +175,7 @@ class Poll(BaseModel):
 
     async def get_results_embed(self):
         votes = [list(x.values()) for x in self.votes]
-        votes.insert(0, ("%", "option", "count"))
+        votes.insert(0, ("%", "choice", "votes"))
         table = pretty.Table.from_list(votes, first_header = True)
 
         changes = list(self.changes)

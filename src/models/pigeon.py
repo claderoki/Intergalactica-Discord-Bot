@@ -119,7 +119,8 @@ class Pigeon(BaseModel):
             return True
 
         difference = relativedelta(datetime.datetime.utcnow(), self.last_used_pvp)
-        return difference.hours >= 3 or difference.days > 1
+
+        return difference.hours >= 3 or difference.days >= 1 or difference.weeks >= 1 or difference.months >= 1
 
     def study_language(self, language, mastery = 1):
         language, _ = LanguageMastery.get_or_create(pigeon = self, language = language)

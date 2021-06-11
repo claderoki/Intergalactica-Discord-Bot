@@ -130,15 +130,17 @@ class TemporaryChannel(BaseModel):
             self.expiry_date = datetime.datetime.utcnow()
         self.expiry_date = self.expiry_date + delta
 
-    async def create_channel(self):
+    def get_category(self):
+        category_id = {742146159711092757:764486536783462442, 842154624869859368:842154624869859369, 729843647347949638:729908592911843338}[self.guild.id]
         for category in self.guild.categories:
-            if category.id == 764486536783462442:
-                break
+            if category.id == category_id:
+                return category
 
+    async def create_channel(self):
         channel = await self.guild.create_text_channel(
             name = self.name,
             topic = self.get_topic(),
-            category = category
+            category = self.get_category()
         )
         self.channel_id = channel.id
         return channel

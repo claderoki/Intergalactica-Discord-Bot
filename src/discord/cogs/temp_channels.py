@@ -2,13 +2,14 @@ import asyncio
 import datetime
 
 import discord
+from discord.ext.commands.errors import MissingPermissions
 
 import src.discord.helpers.pretty as pretty
 import src.config as config
 from discord.ext import commands, tasks
 from src.discord.cogs.core import BaseCog
 from src.discord.errors.base import SendableException
-from src.discord.helpers.waiters import IntWaiter
+from src.discord.helpers.waiters import IntWaiter, TimeDeltaWaiter
 from src.discord.helpers.checks import specific_guild_only
 from src.models import (TemporaryChannel, HumanItem, Item, database)
 
@@ -32,11 +33,27 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
         return human_item
 
     @commands.max_concurrency(1, per = commands.BucketType.user)
-    @specific_guild_only(742146159711092757)
     @commands.group(aliases = ["milkyway", "orion"])
     async def temporary_channel(self, ctx):
+        ctx.admins = ctx.guild.id in (842154624869859368, 729843647347949638)
+        if not ctx.admins and ctx.guild.id != 742146159711092757:
+            raise SendableException("no")
+
         mini = ctx.invoked_with != "milkyway"
         ctx.type = TemporaryChannel.Type.mini if mini else TemporaryChannel.Type.normal
+
+    async def create_pending(self, temp_channel: TemporaryChannel, expiry_date: datetime.datetime = None):
+        if expiry_date is None:
+            temp_channel.set_expiry_date(
+                datetime.timedelta(days = temp_channel.days * temp_channel.pending_items)
+            )
+        else:
+            temp_channel.set_expiry_date(expiry_date)
+
+        temp_channel.pending_items = 0
+        await temp_channel.create_channel()
+        temp_channel.status = TemporaryChannel.Status.accepted
+        temp_channel.save()
 
     @commands.has_guild_permissions(administrator = True)
     @temporary_channel.command(name = "accept")
@@ -45,13 +62,7 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
             raise SendableException(ctx.translate("temp_channel_not_pending"))
         if not temp_channel.active:
             raise SendableException(ctx.translate("temp_channel_not_active"))
-        temp_channel.set_expiry_date(
-            datetime.timedelta(days = temp_channel.days * temp_channel.pending_items)
-        )
-        temp_channel.pending_items = 0
-        await temp_channel.create_channel()
-        temp_channel.status = TemporaryChannel.Status.accepted
-        temp_channel.save()
+        await self.create_pending(temp_channel)
         try:
             await temp_channel.user.send(f"Your request for a temporary channel was accepted.")
         except:
@@ -93,6 +104,10 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
 
     @temporary_channel.command(name = "create")
     async def temporary_channel_create(self, ctx):
+        if ctx.admins:
+            if not ctx.author.guild_permissions.administrator:
+                raise MissingPermissions(["administrator"])
+
         TEMP_CHANNEL_LIMIT = 10
 
         amount = TemporaryChannel\
@@ -105,33 +120,37 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
         if amount >= TEMP_CHANNEL_LIMIT:
             raise SendableException(ctx.translate("too_many_temporary_channels_active"))
 
-        temp_channel = TemporaryChannel(
-            guild_id = ctx.guild.id,
-            user_id  = ctx.author.id,
-            type     = ctx.type
+        temp_channel      = TemporaryChannel(
+            guild_id      = ctx.guild.id,
+            user_id       = ctx.author.id,
+            type          = ctx.type,
+            pending_items = 1
         )
 
-        human_item   = self.get_human_item(ctx.author, code = temp_channel.item_code)
+        if not ctx.admins:
+            human_item = self.get_human_item(ctx.author, code = temp_channel.item_code)
 
-        if human_item.amount > 1:
-            waiter = IntWaiter(ctx, prompt = ctx.translate(f"{temp_channel.item_code}_count_prompt"), min = 1, max = human_item.amount)
-            items_to_use = await waiter.wait()
-        else:
-            items_to_use = 1
+            if human_item.amount > 1:
+                waiter = IntWaiter(ctx, prompt = ctx.translate(f"{temp_channel.item_code}_count_prompt"), min = 1, max = human_item.amount)
+                items_to_use = await waiter.wait()
+            else:
+                items_to_use = 1
 
-        temp_channel.pending_items = items_to_use
+            temp_channel.pending_items = items_to_use
 
-        human_item.amount -= items_to_use
-        human_item.save()
+            human_item.amount -= items_to_use
+            human_item.save()
 
         await temp_channel.editor_for(ctx, "name")
         await temp_channel.editor_for(ctx, "topic")
 
-        await ctx.send("A request has been sent to the staff.")
-
-        temp_channel.save()
-
-        await ctx.guild.get_channel(817078062784708608).send(embed = temp_channel.ticket_embed)
+        if ctx.admins:
+            waiter = TimeDeltaWaiter(ctx)
+            await self.create_pending(temp_channel, expiry_date = await waiter.wait())
+        else:
+            await ctx.send("A request has been sent to the staff.")
+            temp_channel.save()
+            await ctx.guild.get_channel(817078062784708608).send(embed = temp_channel.ticket_embed)
 
     @temporary_channel.command(name = "extend")
     async def temporary_channel_extend(self, ctx, channel : discord.TextChannel):
@@ -140,19 +159,25 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
         except TemporaryChannel.DoesNotExist:
             raise SendableException(ctx.translate("temp_channel_not_found"))
 
-        human_item = self.get_human_item(ctx.author, code = temp_channel.item_code)
+        if not ctx.admins:
+            human_item = self.get_human_item(ctx.author, code = temp_channel.item_code)
 
-        if human_item.amount > 1:
-            waiter = IntWaiter(ctx, prompt = ctx.translate("temporary_channel_count_prompt"), min = 1, max = human_item.amount)
-            items_to_use = await waiter.wait()
+            if human_item.amount > 1:
+                waiter = IntWaiter(ctx, prompt = ctx.translate("temporary_channel_count_prompt"), min = 1, max = human_item.amount)
+                items_to_use = await waiter.wait()
+            else:
+                items_to_use = 1
+
+            temp_channel.set_expiry_date(datetime.timedelta(days = temp_channel.days * items_to_use))
+            asyncio.gather(temp_channel.update_channel_topic())
+            human_item.amount -= items_to_use
+            human_item.save()
+            temp_channel.save()
         else:
-            items_to_use = 1
+            waiter = TimeDeltaWaiter(ctx)
+            temp_channel.set_expiry_date(await waiter.wait())
+            asyncio.gather(temp_channel.update_channel_topic())
 
-        temp_channel.set_expiry_date(datetime.timedelta(days = temp_channel.days * items_to_use))
-        asyncio.gather(temp_channel.update_channel_topic())
-        human_item.amount -= items_to_use
-        human_item.save()
-        temp_channel.save()
         await ctx.send(f"Okay. This channel has been extended until `{temp_channel.expiry_date}`")
 
     @temporary_channel.command(name = "history")

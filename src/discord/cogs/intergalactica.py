@@ -146,6 +146,7 @@ class Intergalactica(BaseCog):
         self.start_task(self.introduction_purger,               check = self.bot.production)
         self.start_task(self.temp_vc_poller,                    check = self.bot.production)
         self.start_task(self.disboard_bump_available_notifier,  check = self.bot.production)
+        self.start_task(self.mouse_role_cleanup,                check = self.bot.production)
         self.start_task(self.reminder_notifier,                 check = self.bot.production)
         await asyncio.sleep( (60 * 60) * 3 )
         self.start_task(self.birthday_poller,                   check = self.bot.production)
@@ -537,6 +538,17 @@ class Intergalactica(BaseCog):
 
         for channel in channels:
             await ChannelHelper.cleanup_channel(channel)
+
+    @tasks.loop(hours = 5)
+    async def mouse_role_cleanup(self):
+        guild = self.bot.get_guild(mouse_guild_id)
+        new_role = guild.get_role(764586989466943549)
+
+        for member in guild.members:
+            time_here = relativedelta(datetime.datetime.utcnow(), member.joined_at)
+            more_than_week = time_here.weeks >= 1 or time_here.months > 1 or time_here.years >= 1
+            if more_than_week and new_role in member.roles:
+                await member.remove_roles(new_role)
 
     @tasks.loop(seconds = 30)
     async def reminder_notifier(self):
