@@ -21,7 +21,8 @@ class PollCog(BaseCog, name = "Poll"):
         self.recheck_active_polls()
 
     def recheck_active_polls(self):
-        self.any_active_polls = (Poll.select().where(Poll.ended == False).count() > 0)
+        self.any_active_polls = True
+        # self.any_active_polls = (Poll.select().where(Poll.ended == False).count() > 0)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -250,7 +251,7 @@ class PollCog(BaseCog, name = "Poll"):
 
         message = await poll.send()
         poll.message_id = message.id
-        self.any_active_polls = True
+        self.recheck_active_polls()
 
         poll.save()
 
@@ -279,7 +280,7 @@ class PollCog(BaseCog, name = "Poll"):
 
         message = await poll.send()
         poll.message_id = message.id
-        self.any_active_polls = True
+        self.recheck_active_polls()
         poll.save()
 
     @change.command("create")
@@ -301,7 +302,7 @@ class PollCog(BaseCog, name = "Poll"):
 
         message = await poll.send()
         poll.message_id = message.id
-        self.any_active_polls = True
+        self.recheck_active_polls()
         poll.save()
 
     @tasks.loop(minutes = 2)
@@ -311,7 +312,6 @@ class PollCog(BaseCog, name = "Poll"):
             query = query.where(Poll.ended == False)
             query = query.where(Poll.due_date <= datetime.datetime.utcnow())
             for poll in query:
-                self.any_active_polls = True
                 if poll.type == Poll.Type.bool and poll.passed:
                     for change in poll.changes:
                         await change.implement()
