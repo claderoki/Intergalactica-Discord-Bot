@@ -41,12 +41,23 @@ class Conversion:
         else:
             return f"{self.value}{self.unit.code}"
 
+    @classmethod
+    def _normalize_value(cls, value) -> str:
+        return str(int(value) if value % 1 == 0 else round(value, 2))
+
     def get_value_string(self):
-        return str(int(self.value) if self.value % 1 == 0 else round(self.value, 2))
+        return self._normalize_value(self.value)
 
     def get_clean_string(self):
         if self.unit.type == UnitType.measurement:
-            return f"{self.get_value_string()}{self.unit.symbol}"
+            text = f"{self.get_value_string()}{self.unit.symbol}"
+            if self.unit.name == "feet":
+                value = self.value
+                remaining = self.value % 1
+                value -= remaining
+                inches = self._normalize_value(remaining * 12)
+                text += f"\n{self._normalize_value(value)}'{inches}\""
+            return text
         else:
             return f"{self.unit.symbol}{self.get_value_string()} ({self.unit.name})"
 
