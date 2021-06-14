@@ -279,10 +279,6 @@ class Profile(BaseCog):
         else:
             await ctx.send("No events this month")
 
-    @commands.command()
-    async def daily(self, ctx):
-        asyncio.gather(ctx.send(ctx.translate("not_implemented_yet")))
-
     @commands.group(name = "category", aliases = ["catagory"])
     async def item_category(self, ctx):
         pass
@@ -452,6 +448,21 @@ class Profile(BaseCog):
         for item_name, category_name in database.execute_sql(query):
             table.add_row(pretty.Row((item_name, category_name)))
         await table.to_paginator(ctx, 15).wait()
+
+    @item.command(name = "gregory")
+    async def item_gregory(self, ctx):
+        query = """
+        SELECT item.name as item_name,  rarity
+        FROM item
+        ORDER BY item.rarity DESC
+        """
+
+        table = pretty.Table()
+        table.add_row(pretty.Row(("name", "rarity"), header = True))
+        for item_name, category_name in database.execute_sql(query):
+            table.add_row(pretty.Row((item_name, category_name)))
+        await table.to_paginator(ctx, 15).wait()
+
 
     @item.command(name = "usable")
     async def item_usable(self, ctx):
