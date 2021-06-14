@@ -18,23 +18,27 @@ class Admin(BaseCog):
     async def on_ready(self):
         self.guilds = [x for x in self.bot.guilds if x.owner_id == self.bronk_id]
 
-    @commands.is_owner()
-    @commands.command()
-    async def update(self, ctx):
-        await ctx.success("Updating the repository...")
+    async def update_bot(self, ctx):
+        await ctx.success("Updating the bot...")
         import git
         repo = git.Repo(config.path)
         repo.remotes.origin.pull()
+
+    async def restart_bot(self, ctx):
         ctx.bot.restarting = True
         await ctx.success("Restarting the bot...")
         await ctx.bot.logout()
 
     @commands.is_owner()
     @commands.command()
+    async def update(self, ctx):
+        await self.update_bot(ctx)
+        await self.restart_bot(ctx)
+
+    @commands.is_owner()
+    @commands.command()
     async def restart(self, ctx):
-        ctx.bot.restarting = True
-        await ctx.success("Restarting the bot...")
-        await ctx.bot.logout()
+        await self.restart_bot(ctx)
 
     @commands.command(name = "unusedroles")
     async def unused_roles(self, ctx):

@@ -372,6 +372,9 @@ class Locus(commands.Bot):
         self._emoji_mapping = {}
         for emoji in self.guild.emojis:
             self._emoji_mapping[emoji.name] = emoji
+        if self.restarted:
+            await self.owner.send(embed = Embed.success("Successfully restarted"))
+            self.restarted = False
 
     def get_missing_translations(self, locale):
         if locale not in self.missing_translations:

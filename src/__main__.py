@@ -1,3 +1,4 @@
+from operator import rshift
 import os
 import argparse
 import sys
@@ -8,6 +9,8 @@ from src.utils.environmental_variables import EnvironmentalVariables
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', default=config.Mode.development.name, choices=[x.name for x in list(config.Mode)])
 parser.add_argument('--service', default="none", choices=["heroku", "none"])
+parser.add_argument('--restarted', default='0', choices = ['0', '1'])
+
 args = parser.parse_args()
 mode = config.Mode[args.mode]
 service = args.service
@@ -27,12 +30,17 @@ from src.discord.bot import Locus
 config.bot = Locus(mode)
 config.bot.heroku = service == "heroku"
 config.bot.load_all_cogs()
+config.bot.restarted = args.restarted == "1"
+config.bot.run(config.environ.discord_token)
 
 args = []
-args.append("-m src")
+args.append("-m")
+args.append("src")
+
 for arg in sys.argv[1:]:
     args.append(arg)
 
-config.bot.run(config.environ.discord_token)
 if config.bot.restarting:
+    args.append(f"--restarted=1")
+
     os.execl(sys.executable, os.path.abspath(config.path), *args)
