@@ -26,13 +26,13 @@ class PollCog(BaseCog, name = "Poll"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.start_task(self.poller, check = not self.bot.production)
+        self.start_task(self.poller, check = self.bot.production)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         if not self.any_active_polls:
             return
-        if self.bot.production:
+        if not self.bot.production:
             return
 
         emoji = str(payload.emoji)
