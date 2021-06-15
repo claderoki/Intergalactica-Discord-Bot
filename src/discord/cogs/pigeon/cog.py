@@ -145,11 +145,11 @@ class PigeonCog(BaseCog, name = "Pigeon"):
             if pigeon.status == Pigeon.Status.idle:
                 query = f"""
                 SELECT
-                exploration.id as exploration_id, mail.id as mail_id, fight.id as fight_id, date.id as date_id
+                legacy_exploration.id as exploration_id, mail.id as mail_id, fight.id as fight_id, date.id as date_id
                 FROM
                 pigeon
-                LEFT JOIN exploration
-                    ON (exploration.pigeon_id = pigeon.id AND exploration.finished = 0)
+                LEFT JOIN legacy_exploration
+                    ON (legacy_exploration.pigeon_id = pigeon.id AND legacy_exploration.finished = 0)
                 LEFT JOIN mail
                     ON (mail.sender_id = pigeon.id AND mail.finished = 0)
                 LEFT JOIN fight
@@ -714,7 +714,7 @@ ORDER BY score DESC;
 
         query = f"""
             SELECT COUNT(DISTINCT destination) as unique_countries_visited, COUNT(*) as total_countries_visited
-            FROM exploration
+            FROM legacy_exploration
             WHERE pigeon_id = {pigeon.id}
             AND finished = 1;
         """
