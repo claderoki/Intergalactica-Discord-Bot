@@ -325,6 +325,9 @@ class Exploration(TravelActivity):
     name         = peewee.TextField       (null = True)
     pigeon       = peewee.ForeignKeyField (Pigeon, null = False, backref = "explorations", on_delete = "CASCADE")
 
+    class Meta:
+        table_name = "legacy_exploration"
+
     @property
     def xp_worth(self):
         return math.ceil(self.duration_in_minutes)
