@@ -236,7 +236,6 @@ class PigeonRelationship(BaseModel):
     def title(self):
         return self._get_title(self.score)
 
-
     @classmethod
     def select_for(cls, pigeon, active = True):
         query = cls.select()

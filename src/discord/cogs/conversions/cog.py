@@ -143,7 +143,7 @@ All the users that wrote something for the last 20 messages are collected and th
         if len(embed.fields) > 0:
             await message.channel.send(embed = embed)
 
-    @tasks.loop(hours = 2)
+    @tasks.loop(hours = 5)
     async def currency_rate_updater(self):
         api = FixerioApi(config.environ["fixerio_access_key"])
         rates = api.latest()["rates"]

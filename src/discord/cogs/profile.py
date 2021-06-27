@@ -463,6 +463,44 @@ class Profile(BaseCog):
             table.add_row(pretty.Row((item_name, category_name)))
         await table.to_paginator(ctx, 15).wait()
 
+    @item.command(name = "ok")
+    async def item_ok(self, ctx):
+        season_codes = ["winter", "autumn", "summer", "spring"]
+        seasons = {x: [] for x in ItemCategory.select(ItemCategory.id, ItemCategory.name).where(ItemCategory.code.in_(season_codes))}
+
+        for season, children in seasons.items():
+            parent_id = season.id
+            first = True
+            i = 0
+            while i > 1 or first:
+                first = False
+                i = 0
+                for child in ItemCategory.select(ItemCategory.id).where(ItemCategory.parent == parent_id):
+                    children.append(child.id)
+                    i += 1
+
+        table = pretty.Table()
+        table.add_row(pretty.Row(("season", "count", "rarity"), header = True))
+
+        for season, children in seasons.items():
+            ids = []
+            for id in children:
+                ids.append(id)
+            ids.append(season.id)
+
+            query = f"""
+                SELECT
+                COUNT(*), rarity
+                FROM
+                item
+                WHERE category_id IN ({','.join(str(x) for x in ids)})
+                GROUP BY rarity
+            """
+
+            for count, rarity in database.execute_sql(query):
+                table.add_row(pretty.Row((season.name, count, rarity)))
+
+        await table.to_paginator(ctx, 15).wait()
 
     @item.command(name = "usable")
     async def item_usable(self, ctx):
