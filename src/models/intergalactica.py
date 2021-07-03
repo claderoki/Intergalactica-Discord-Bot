@@ -257,3 +257,24 @@ class RedditAdvertisement(BaseModel):
         self.save()
 
         return submissions
+
+class Advertisement(BaseModel):
+    guild_id        = peewee.BigIntegerField (null = False)
+    description     = peewee.TextField       (null = False)
+    invite_url      = peewee.TextField       (null = True)
+    log_channel_id  = peewee.BigIntegerField (null = True)
+
+class AdvertisementSubreddit(BaseModel):
+    advertisement         = peewee.ForeignKeyField (Advertisement, backref = "subreddits")
+    last_advertised       = peewee.DateTimeField   (null = True)
+    name                  = peewee.TextField       (null = False)
+    hours_inbetween_posts = peewee.IntegerField    (null = False, default = 24)
+
+    @property
+    def post_allowed(self):
+        if self.last_advertised is None:
+            return True
+
+        allowed_at = self.last_advertised + datetime.timedelta(hours = self.hours_inbetween_posts)
+
+        return allowed_at < datetime.datetime.utcnow()

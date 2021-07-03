@@ -11,6 +11,7 @@ from .prank import NicknamePrank, Prankster, EmojiPrank, RolePrank
 from .reddit import Subreddit
 from .qotd import Category, Question, CategoryChannel, QuestionConfig
 from .intergalactica import MentionGroup, MentionMember
+from .intergalactica import Advertisement, AdvertisementSubreddit
 from .farming import Farm, Crop, FarmCrop
 from .conversation import Conversant, Conversation, Participant
 from .conversions import Currency, Measurement, StoredUnit
@@ -21,6 +22,9 @@ def setup():
     with database.connection_context():
         # database.drop_tables([Conversant, Participant, Conversation])
         database.create_tables([Conversant, Participant, Conversation])
+
+        # database.drop_tables([Advertisement, AdvertisementSubreddit])
+        database.create_tables([Advertisement, AdvertisementSubreddit])
 
         # database.drop_tables([Currency, Measurement])
         database.create_tables([Currency, Measurement])
