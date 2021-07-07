@@ -7,12 +7,13 @@ from src.models import Advertisement
 from src.discord.cogs.custom.shared.helpers import GuildHelper
 from src.discord.helpers.embed import Embed
 from src.discord.cogs.custom.shared.helpers import Logger
+import src.config as config
 
 class CustomCog(BaseCog):
     praw_instances = {}
 
     async def on_ready(self):
-        self.start_task(self.advertisement, check = True)
+        self.start_task(self.advertisement, check = config.production)
 
     @tasks.loop(hours = 1)
     async def advertisement(self):
