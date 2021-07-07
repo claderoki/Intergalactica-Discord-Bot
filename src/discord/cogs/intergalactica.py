@@ -604,6 +604,9 @@ class ChannelHelper:
     @classmethod
     async def cleanup_channel(cls, channel: discord.TextChannel, log_channel: discord.TextChannel = None):
         """Clears messages from users no longer in the guild."""
+        if channel is None:
+            return
+
         tasks = []
         total_messages = 0
         messages_to_remove = []
