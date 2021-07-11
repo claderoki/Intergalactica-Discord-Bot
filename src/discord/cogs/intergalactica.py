@@ -98,15 +98,14 @@ class Intergalactica(BaseCog):
         "roles"          : 742303560988885044,
         "warns"          : 777888951523606548,
         "selfies"        : 744703465086779393,
-        "concerns"       : 758296826549108746,
-        "staff_votes"    : 795644055979294720,
-        "staff_chat"     : 796413284105453589,
+        "concerns"       : 863775516998107186,
+        "staff_votes"    : 863775839945621534,
+        "staff_chat"     : 863774968848449546,
         "bot_spam"       : 742163352712642600,
-        "bot_commands"   : 796413360706682933,
+        "bot_commands"   : 863775558977323008,
         "introductions"  : 742567349613232249,
-        "tabs"           : 757961433911787592,
-        "logs"           : 796438050091171870,
-        "c3po-log"       : 817078062784708608,
+        "logs"           : 863775748400349214,
+        "c3po-log"       : 863775783940390912,
     }
 
     async def get_invites(self, message):
