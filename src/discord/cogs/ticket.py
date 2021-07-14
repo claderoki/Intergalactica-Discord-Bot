@@ -26,7 +26,7 @@ class TicketCog(BaseCog, name = "Ticket"):
         if member is None:
             return
         #TODO: hardcoded channel.
-        channel = guild.get_channel(758296826549108746)
+        channel = guild.get_channel(863775516998107186)
 
         anonymous = True
         ticket = Ticket.create(

@@ -150,7 +150,7 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
         else:
             await ctx.send("A request has been sent to the staff.")
             temp_channel.save()
-            await ctx.guild.get_channel(817078062784708608).send(embed = temp_channel.ticket_embed)
+            await ctx.guild.get_channel(863775783940390912).send(embed = temp_channel.ticket_embed)
 
     @temporary_channel.command(name = "extend")
     async def temporary_channel_extend(self, ctx, channel : discord.TextChannel):

@@ -11,7 +11,7 @@ class Mouse(CustomCog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.guild.id != self.guild_id:
+        if message.guild is None or message.guild.id != self.guild_id:
             return
 
         await super().on_message(message)
@@ -38,7 +38,7 @@ class AnimalCrossingBotHelper:
     bot_id = 701038771776520222
 
     __slots__ = ()
-    
+
     @classmethod
     def is_not_allowed(cls, message):
         return message.channel.id == 763146096766877697 and message.content and message.content.lower().startswith("ac!profile set")
