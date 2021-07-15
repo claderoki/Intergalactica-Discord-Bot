@@ -158,7 +158,7 @@ class Reminder(BaseModel):
         return self.channel if not self.dm else self.user
 
     class Meta:
-        class_name = "legacy_reminder"
+        table_name = "legacy_reminder"
 
 class Earthling(BaseModel):
     user_id              = peewee.BigIntegerField  (null = False)
