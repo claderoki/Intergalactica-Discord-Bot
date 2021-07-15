@@ -157,6 +157,9 @@ class Reminder(BaseModel):
     def sendable(self):
         return self.channel if not self.dm else self.user
 
+    class Meta:
+        class_name = "legacy_reminder"
+
 class Earthling(BaseModel):
     user_id              = peewee.BigIntegerField  (null = False)
     guild_id             = peewee.BigIntegerField  (null = False)
