@@ -72,11 +72,12 @@ class Pigeon(BaseModel):
     }
 
     class Status(Enum):
-        idle      = "💤"
-        mailing   = "📧"
-        exploring = "🗺️"
-        fighting  = "⚔️"
-        dating    = "❤️"
+        idle            = "💤"
+        mailing         = "📧"
+        exploring       = "🗺️"
+        fighting        = "⚔️"
+        dating          = "❤️"
+        space_exploring = "🗺️"
 
     class Condition(Enum):
         active   = 1
