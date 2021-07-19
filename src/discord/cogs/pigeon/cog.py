@@ -166,7 +166,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
                     for id in row:
                         if id is not None:
                             cls = classes[i]
-                            cls.update(finished = True).where(cls.id == 1).execute()
+                            cls.update(finished = True).where(cls.id == id).execute()
                         i += 1
 
         if command_name not in self.subcommands_no_require_available:
@@ -328,7 +328,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         pigeon.last_used_pvp = datetime.datetime.utcnow()
 
         if type == RobType.gold:
-            amount = random.randint(0, 100)
+            amount = random.randint(10, 100)
             amount = min(human2.gold, amount)
             result = RobResult.failure if random.randint(0, 3) == 1 else RobResult.success
             if result == RobResult.success:
@@ -877,49 +877,49 @@ AND (pigeon1_id = {ctx.pigeon.id} OR pigeon2_id = {ctx.pigeon.id})
 
         await table.to_paginator(ctx, 15).wait()
 
-    def increase_stats(self, ctx, attr_name, attr_increase, cost, message):
-        pigeon = ctx.pigeon
+    # def increase_stats(self, ctx, attr_name, attr_increase, cost, message):
+    #     pigeon = ctx.pigeon
 
-        value = getattr(pigeon, attr_name)
-        if value == 100:
-            ctx.command.reset_cooldown(ctx)
-            raise SendableException(ctx.translate(f"{attr_name}_already_max"))
-        try:
-            ctx.raise_if_not_enough_gold(cost, pigeon.human)
-        except SendableException:
-            ctx.command.reset_cooldown(ctx)
-            raise
+    #     value = getattr(pigeon, attr_name)
+    #     if value == 100:
+    #         ctx.command.reset_cooldown(ctx)
+    #         raise SendableException(ctx.translate(f"{attr_name}_already_max"))
+    #     try:
+    #         ctx.raise_if_not_enough_gold(cost, pigeon.human)
+    #     except SendableException:
+    #         ctx.command.reset_cooldown(ctx)
+    #         raise
 
-        pigeon.update_stats({attr_name : attr_increase, "gold": -cost})
+    #     pigeon.update_stats({attr_name : attr_increase, "gold": -cost})
 
-        embed = self.get_base_embed(ctx.guild )
-        embed.description = message.format(pigeon = pigeon)
-        embed.description += get_winnings_value(**{attr_name : attr_increase, "gold" : -cost})
-        asyncio.gather(ctx.send(embed = embed))
+        # embed = self.get_base_embed(ctx.guild )
+        # embed.description = message.format(pigeon = pigeon)
+        # embed.description += get_winnings_value(**{attr_name : attr_increase, "gold" : -cost})
+        # asyncio.gather(ctx.send(embed = embed))
 
-    @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
-    @pigeon.command(name = "clean")
-    async def pigeon_clean(self, ctx):
-        """Clean your pigeon."""
-        self.increase_stats(ctx, "cleanliness", 25, 15, "You happily clean up the fecal matter of `{pigeon.name}`.\n")
+    # @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
+    # @pigeon.command(name = "clean")
+    # async def pigeon_clean(self, ctx):
+    #     """Clean your pigeon."""
+    #     self.increase_stats(ctx, "cleanliness", 25, 15, "You happily clean up the fecal matter of `{pigeon.name}`.\n")
 
-    @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
-    @pigeon.command(name = "feed")
-    async def pigeon_feed(self, ctx):
-        """Feed your pigeon."""
-        self.increase_stats(ctx, "food", 25, 15, "You feed `{pigeon.name}` some seeds and whatever else they eat.\n")
+    # @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
+    # @pigeon.command(name = "feed")
+    # async def pigeon_feed(self, ctx):
+    #     """Feed your pigeon."""
+    #     self.increase_stats(ctx, "food", 25, 15, "You feed `{pigeon.name}` some seeds and whatever else they eat.\n")
 
-    @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
-    @pigeon.command(name = "heal")
-    async def pigeon_heal(self, ctx):
-        """Heal your pigeon."""
-        self.increase_stats(ctx, "health", 20, 15, "You give `{pigeon.name}` some seed you found inside your couch and convince it of its healing effects.\n")
+    # @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
+    # @pigeon.command(name = "heal")
+    # async def pigeon_heal(self, ctx):
+    #     """Heal your pigeon."""
+    #     self.increase_stats(ctx, "health", 20, 15, "You give `{pigeon.name}` some seed you found inside your couch and convince it of its healing effects.\n")
 
-    @commands.cooldown(1, (3600 * 2), type=commands.BucketType.user)
-    @pigeon.command(name = "play")
-    async def pigeon_play(self, ctx):
-        """Play with your pigeon."""
-        self.increase_stats(ctx, "happiness", 20, 15, "You play a game of tennis with your pigeon. `{pigeon.name}` happily falls asleep.\n")
+    # @commands.cooldown(1, (3600 * 2), type=commands.BucketType.user)
+    # @pigeon.command(name = "play")
+    # async def pigeon_play(self, ctx):
+    #     """Play with your pigeon."""
+        # self.increase_stats(ctx, "happiness", 20, 15, "You play a game of tennis with your pigeon. `{pigeon.name}` happily falls asleep.\n")
 
     @pigeon.command(name = "help")
     async def pigeon_help(self, ctx):
