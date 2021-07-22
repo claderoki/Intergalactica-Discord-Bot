@@ -424,8 +424,8 @@ class Intergalactica(BaseCog):
         if member.guild.id == mouse_guild_id:
             role    = member.guild.get_role(841072184953012275)
             general = member.guild.get_channel(729909438378541116)
-            await general.send(f"Welcome to the server {member.mention}, {role.mention} say hello!")
-
+            message = await general.send(f"Welcome to the server {member.mention}, {role.mention} say hello!")
+            self.welcome_messages[member.id] = message
         elif member.guild.id == self.guild_id:
             welcome_channel = member.guild.system_channel
             text = self.bot.translate("member_join")
