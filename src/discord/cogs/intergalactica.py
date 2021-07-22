@@ -445,6 +445,12 @@ class Intergalactica(BaseCog):
     async def on_member_remove(self, member):
         if not self.bot.production:
             return
+
+        try:
+            await self.welcome_messages[member.id].delete()
+        except:
+            pass
+
         if member.guild.id != self.guild_id:
             return
 
@@ -455,11 +461,6 @@ class Intergalactica(BaseCog):
         embed.description = text.format(member = member)
 
         asyncio.gather(welcome_channel.send(embed = embed))
-
-        try:
-            await self.welcome_messages[member.id].delete()
-        except:
-            pass
 
     async def on_rank(self, member, role):
         role_to_add = self.guild.get_role(self._role_ids["5k+"])
