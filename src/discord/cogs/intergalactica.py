@@ -437,7 +437,10 @@ class Intergalactica(BaseCog):
             asyncio.gather(welcome_channel.send(embed = embed))
 
             self.last_member_join = datetime.datetime.utcnow()
-            text = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
+            if random.randint(0, 1000) == 0:
+                text = "Hello and Welcome! My name is C-3PO and I’ll be around to assist you with anything you may need during your stay. I have prepared a fresh pigeon for you and can share many interesting facts about our server. I hope you enjoy your stay and I hope you have a wonderful evening."
+            else:
+                text = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
             message = await self.get_channel("general").send(text)
             self.welcome_messages[member.id] = message
 
