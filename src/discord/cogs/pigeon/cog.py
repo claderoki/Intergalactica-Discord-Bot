@@ -815,43 +815,6 @@ AND (pigeon1_id = {ctx.pigeon.id} OR pigeon2_id = {ctx.pigeon.id})
             lines.append(pigeon.name)
         asyncio.gather(ctx.send("```\n{}```".format("\n".join(lines))))
 
-    @pigeon.command(name = "status")
-    async def pigeon_status(self, ctx, member : discord.Member = None):
-        """Check the status of your pigeon."""
-        if member is not None:
-            self.pigeon_check(ctx, member = member)
-
-        pigeon = ctx.pigeon
-
-        data = {}
-        emojis = []
-
-        for attr, emoji in Pigeon.emojis.items():
-            try:
-                value = getattr(pigeon, attr)
-            except AttributeError:
-                continue
-            if isinstance(getattr(Pigeon, attr), PercentageField):
-                data[attr] = f"{value}%"
-            else:
-                data[attr] = f"{value}"
-            emojis.append(emoji)
-
-        emojis.append(pigeon.status.value)
-        data["status"] = pigeon.status.name
-        lines = prettify_dict(data, emojis = emojis)
-        embed = self.get_base_embed(ctx.guild)
-        embed.description = f"```\n{lines}```"
-
-        lines = []
-        for pigeon_buff in pigeon.buffs:
-            buff = pigeon_buff.buff
-            lines.append(f"**{buff.name}**: *{buff.description}*")
-        if len(lines) > 0:
-            embed.add_field(name = "Buffs", value = "\n".join(lines))
-
-        asyncio.gather(ctx.send(embed = embed))
-
     @pigeon.command(name = "scoreboard")
     @commands.guild_only()
     async def pigeon_scoreboard(self, ctx):
