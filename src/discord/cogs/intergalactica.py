@@ -457,7 +457,7 @@ class Intergalactica(BaseCog):
         if member.guild.id != self.guild_id:
             return
 
-        welcome_channel = self.get_channe("welcome")
+        welcome_channel = self.get_channel("welcome")
         text = self.bot.translate("member_leave")
 
         embed = discord.Embed(color = self.bot.get_dominant_color(member.guild))
