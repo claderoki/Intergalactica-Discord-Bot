@@ -96,6 +96,7 @@ class Intergalactica(BaseCog):
     _channel_ids = {
         "general"        : 744650481682481233,
         "roles"          : 742303560988885044,
+        "welcome"        : 742187165659693076,
         "warns"          : 777888951523606548,
         "selfies"        : 744703465086779393,
         "concerns"       : 863775516998107186,
@@ -427,7 +428,7 @@ class Intergalactica(BaseCog):
             message = await general.send(f"Welcome to the server {member.mention}, {role.mention} say hello!")
             self.welcome_messages[member.id] = message
         elif member.guild.id == self.guild_id:
-            welcome_channel = member.guild.system_channel
+            welcome_channel = self.get_channel("welcome")
             text = self.bot.translate("member_join")
 
             embed = discord.Embed(color = self.bot.get_dominant_color(member.guild))
@@ -447,7 +448,7 @@ class Intergalactica(BaseCog):
         if member.guild.id != self.guild_id:
             return
 
-        welcome_channel = member.guild.system_channel
+        welcome_channel = self.get_channe("welcome")
         text = self.bot.translate("member_leave")
 
         embed = discord.Embed(color = self.bot.get_dominant_color(member.guild))
