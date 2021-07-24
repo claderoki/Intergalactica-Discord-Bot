@@ -128,7 +128,7 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         self.start_task(self.date_ticker, check = self.bot.production)
         self.start_task(self.fight_ticker, check = self.bot.production)
         await asyncio.sleep(60 * 60)
-        self.start_task(self.stats_ticker, check = self.bot.production)
+        # self.start_task(self.stats_ticker, check = self.bot.production)
 
     def pigeon_check(self, ctx, member = None, name = "pigeon", human = None):
         cmd = ctx.invoked_subcommand or ctx.command
@@ -911,41 +911,41 @@ AND (pigeon1_id = {ctx.pigeon.id} OR pigeon2_id = {ctx.pigeon.id})
         human.save()
         await ctx.send(embed = embed)
 
-    @pigeon.command(name = "poop")
-    @commands.cooldown(1, (3600 * 1), type = commands.BucketType.user)
-    async def pigeon_poop(self, ctx, member : discord.Member):
-        """Poop on someone elses pigeon."""
-        if ctx.author.id != 815156623659106324 and member.id == ctx.author.id:
-            raise SendableException(ctx.translate("cannot_poop_self"))
+    # @pigeon.command(name = "poop")
+    # @commands.cooldown(1, (3600 * 1), type = commands.BucketType.user)
+    # async def pigeon_poop(self, ctx, member : discord.Member):
+    #     """Poop on someone elses pigeon."""
+    #     if ctx.author.id != 815156623659106324 and member.id == ctx.author.id:
+    #         raise SendableException(ctx.translate("cannot_poop_self"))
 
-        self.pigeon_check(ctx, member, name = "pigeon2")
-        relationship = PigeonRelationship.get_or_create_for(ctx.pigeon, ctx.pigeon2)
-        price = 5
-        relationship.score -= price
-        relationship.save()
+    #     self.pigeon_check(ctx, member, name = "pigeon2")
+    #     relationship = PigeonRelationship.get_or_create_for(ctx.pigeon, ctx.pigeon2)
+    #     price = 5
+    #     relationship.score -= price
+    #     relationship.save()
 
-        embed = self.get_base_embed(ctx.guild)
-        lines = []
-        lines.append(f"Your pigeon successfully poops on `{ctx.pigeon2.name}`")
-        lines.append(f"And to finish it off, `{ctx.pigeon.name}` wipes {ctx.pigeon.gender.get_posessive_pronoun()} butt clean on {ctx.pigeon2.gender.get_posessive_pronoun()} fur.")
-        lines.append("")
+    #     embed = self.get_base_embed(ctx.guild)
+    #     lines = []
+    #     lines.append(f"Your pigeon successfully poops on `{ctx.pigeon2.name}`")
+    #     lines.append(f"And to finish it off, `{ctx.pigeon.name}` wipes {ctx.pigeon.gender.get_posessive_pronoun()} butt clean on {ctx.pigeon2.gender.get_posessive_pronoun()} fur.")
+    #     lines.append("")
 
-        lines.append(ctx.pigeon.name)
-        data1 = {"cleanliness": 5}
-        lines.append(get_winnings_value(**data1))
-        ctx.pigeon.poop_victim_count += 1
-        ctx.pigeon.update_stats(data1)
+    #     lines.append(ctx.pigeon.name)
+    #     data1 = {"cleanliness": 5}
+    #     lines.append(get_winnings_value(**data1))
+    #     ctx.pigeon.poop_victim_count += 1
+    #     ctx.pigeon.update_stats(data1)
 
-        lines.append(ctx.pigeon2.name)
-        data2 = {"cleanliness": -10}
-        lines.append(get_winnings_value(**data2))
-        ctx.pigeon2.pooped_on_count += 1
-        ctx.pigeon2.update_stats(data2)
+    #     lines.append(ctx.pigeon2.name)
+    #     data2 = {"cleanliness": -10}
+    #     lines.append(get_winnings_value(**data2))
+    #     ctx.pigeon2.pooped_on_count += 1
+    #     ctx.pigeon2.update_stats(data2)
 
-        embed.description = "\n".join(lines)
+    #     embed.description = "\n".join(lines)
 
-        embed.set_footer(text = f"-{price} relations")
-        await ctx.send(embed = embed)
+    #     embed.set_footer(text = f"-{price} relations")
+    #     await ctx.send(embed = embed)
 
     @tasks.loop(seconds=30)
     async def date_ticker(self):
@@ -1066,34 +1066,36 @@ AND (pigeon1_id = {ctx.pigeon.id} OR pigeon2_id = {ctx.pigeon.id})
                 fight.finished = True
                 fight.save()
 
-    @tasks.loop(hours = 1)
-    async def stats_ticker(self):
-        with database.connection_context():
-            query = Pigeon.select()
-            query = query.where(Pigeon.condition == Pigeon.Condition.active)
-            query = query.where(Pigeon.status == Pigeon.Status.idle)
+    # @tasks.loop(hours = 1)
+    # async def stats_ticker(self):
+    #     return
 
-            for pigeon in query:
-                data = {
-                    "food"        : -1,
-                    "health"      : -0,
-                    "happiness"   : -1,
-                    "cleanliness" : -1,
-                }
+    #     with database.connection_context():
+    #         query = Pigeon.select()
+    #         query = query.where(Pigeon.condition == Pigeon.Condition.active)
+    #         query = query.where(Pigeon.status == Pigeon.Status.idle)
 
-                for pigeon_buff in pigeon.buffs:
-                    if pigeon_buff.buff.code == "fully_fed":
-                        data["food"] = 0
-                    if pigeon_buff.buff.code == "bleeding":
-                        data["health"] += -2
+    #         for pigeon in query:
+    #             data = {
+    #                 "food"        : -1,
+    #                 "health"      : -0,
+    #                 "happiness"   : -1,
+    #                 "cleanliness" : -1,
+    #             }
 
-                if pigeon.food <= 20 or pigeon.cleanliness <= 20:
-                    data["health"] += -1
-                if pigeon.food == 0:
-                    data["health"] += -2
+    #             for pigeon_buff in pigeon.buffs:
+    #                 if pigeon_buff.buff.code == "fully_fed":
+    #                     data["food"] = 0
+    #                 if pigeon_buff.buff.code == "bleeding":
+    #                     data["health"] += -2
 
-                pigeon.update_stats(data)
-                pigeon.save()
+    #             if pigeon.food <= 20 or pigeon.cleanliness <= 20:
+    #                 data["health"] += -1
+    #             if pigeon.food == 0:
+    #                 data["health"] += -2
+
+    #             pigeon.update_stats(data)
+    #             pigeon.save()
 
 def get_winnings_value(**kwargs):
     lines = []
