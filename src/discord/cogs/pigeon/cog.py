@@ -188,37 +188,37 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
         self.pigeon_check(ctx, human = ctx.human)
 
-    @pigeon.command(name = "buy")
-    @commands.max_concurrency(1, per = commands.BucketType.user)
-    async def pigeon_buy(self, ctx, member : discord.Member = None):
-        """Buying a pigeon."""
-        member = member or ctx.author
-        gift = member.id != ctx.author.id
-        if gift:
-            human = ctx.get_human(user = member)
-        else:
-            human = ctx.human
+    # @pigeon.command(name = "buy")
+    # @commands.max_concurrency(1, per = commands.BucketType.user)
+    # async def pigeon_buy(self, ctx, member : discord.Member = None):
+    #     """Buying a pigeon."""
+    #     member = member or ctx.author
+    #     gift = member.id != ctx.author.id
+    #     if gift:
+    #         human = ctx.get_human(user = member)
+    #     else:
+    #         human = ctx.human
 
-        pigeon = get_active_pigeon(member, human = human)
+    #     pigeon = get_active_pigeon(member, human = human)
 
-        if pigeon is not None:
-            return asyncio.gather(ctx.send(ctx.translate("pigeon_already_purchased").format(name = pigeon.name)))
+    #     if pigeon is not None:
+    #         return asyncio.gather(ctx.send(ctx.translate("pigeon_already_purchased").format(name = pigeon.name)))
 
-        pigeon = Pigeon(human = human)
-        await pigeon.editor_for(ctx, "name")
-        pigeon.save()
+    #     pigeon = Pigeon(human = human)
+    #     await pigeon.editor_for(ctx, "name")
+    #     pigeon.save()
 
-        cost = 50
-        ctx.human.gold -= cost
-        ctx.human.save()
+    #     cost = 50
+    #     ctx.human.gold -= cost
+    #     ctx.human.save()
 
-        embed = self.get_base_embed(ctx.guild)
-        winnings_value = "\n"+(get_winnings_value(gold = -cost))
-        if gift:
-            embed.description = ctx.translate("pigeon_purchased_for").format(member = member) + winnings_value
-        else:
-            embed.description = ctx.translate("pigeon_purchased") + winnings_value
-        asyncio.gather(ctx.send(embed = embed))
+    #     embed = self.get_base_embed(ctx.guild)
+    #     winnings_value = "\n"+(get_winnings_value(gold = -cost))
+    #     if gift:
+    #         embed.description = ctx.translate("pigeon_purchased_for").format(member = member) + winnings_value
+    #     else:
+    #         embed.description = ctx.translate("pigeon_purchased") + winnings_value
+    #     asyncio.gather(ctx.send(embed = embed))
 
     @pigeon.command(name = "languages", aliases = ["lang"])
     async def pigeon_languages(self, ctx):
