@@ -78,6 +78,7 @@ class Pigeon(BaseModel):
         fighting        = "⚔️"
         dating          = "❤️"
         space_exploring = "🗺️"
+        jailed          = ""
 
     class Condition(Enum):
         active   = 1
