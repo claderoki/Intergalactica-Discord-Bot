@@ -135,8 +135,8 @@ class Human(BaseModel):
     def get_embed_field(self, show_all = False):
         #TODO: clean up.
         name = self.user.name
-        if show_all and self.country:
-            name += f" {self.country.flag_emoji}"
+        # if show_all and self.country:
+            # name += f" {self.country.flag_emoji}"
         values = []
 
         if self.date_of_birth is not None:

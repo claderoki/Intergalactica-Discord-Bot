@@ -1150,20 +1150,53 @@ def pigeon_raise_if_stats_too_low(ctx, pigeon, name = "pigeon"):
     raise SendableException(message.format(pigeon = pigeon))
 
 def command_to_field(ctx, command, description = None):
+    if isinstance(command, Cmd):
+        desc = command.description
+    else:
+        desc = command.callback.__doc__
+
     kwargs = {}
     kwargs["value"] = f"`{ctx.prefix}{command.qualified_name}`"
     if description is None:
-        kwargs["name"] = command.callback.__doc__
+        kwargs["name"] = desc
     else:
-        kwargs["value"] += f"\n{command.callback.__doc__}{config.br}"
+        kwargs["value"] += f"\n{desc}{config.br}"
     kwargs["inline"] = False
     return kwargs
+
+class Cmd:
+    __slots__ = ("name", "description")
+
+    def __init__(self, name, description):
+        self.name        = name
+        self.description = description
+
+    @property
+    def qualified_name(self):
+        return "pigeon " + self.name
+
+def get_rust_commands():
+    return (
+        Cmd("train", "Train your pigeon to get more gold"),
+        Cmd("feed", "Feed your pigeon"),
+        Cmd("clean", "Clean your pigeon"),
+        Cmd("heal", "Heal your pigeon"),
+        Cmd("play", "Play with your pigeon"),
+        Cmd("poop", "Poop on other pigeons"),
+        Cmd("spaceplore", "Send your pigeon to other planets"),
+        Cmd("space", "Perform actions on a planet"),
+        Cmd("rob", "Steal from other pigeons"),
+        Cmd("buy", "Get yourself a pigeon"),
+    )
 
 def get_pigeon_tutorial_embed(ctx):
     embed = discord.Embed(color = ctx.guild_color)
     lines = []
 
     for command in ctx.bot.get_command("pigeon").walk_commands():
+        embed.add_field(**command_to_field(ctx, command))
+
+    for command in get_rust_commands():
         embed.add_field(**command_to_field(ctx, command))
 
     embed.description = "\n".join(lines)
