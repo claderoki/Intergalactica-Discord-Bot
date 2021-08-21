@@ -188,38 +188,6 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
         self.pigeon_check(ctx, human = ctx.human)
 
-    # @pigeon.command(name = "buy")
-    # @commands.max_concurrency(1, per = commands.BucketType.user)
-    # async def pigeon_buy(self, ctx, member : discord.Member = None):
-    #     """Buying a pigeon."""
-    #     member = member or ctx.author
-    #     gift = member.id != ctx.author.id
-    #     if gift:
-    #         human = ctx.get_human(user = member)
-    #     else:
-    #         human = ctx.human
-
-    #     pigeon = get_active_pigeon(member, human = human)
-
-    #     if pigeon is not None:
-    #         return asyncio.gather(ctx.send(ctx.translate("pigeon_already_purchased").format(name = pigeon.name)))
-
-    #     pigeon = Pigeon(human = human)
-    #     await pigeon.editor_for(ctx, "name")
-    #     pigeon.save()
-
-    #     cost = 50
-    #     ctx.human.gold -= cost
-    #     ctx.human.save()
-
-    #     embed = self.get_base_embed(ctx.guild)
-    #     winnings_value = "\n"+(get_winnings_value(gold = -cost))
-    #     if gift:
-    #         embed.description = ctx.translate("pigeon_purchased_for").format(member = member) + winnings_value
-    #     else:
-    #         embed.description = ctx.translate("pigeon_purchased") + winnings_value
-    #     asyncio.gather(ctx.send(embed = embed))
-
     @pigeon.command(name = "languages", aliases = ["lang"])
     async def pigeon_languages(self, ctx):
         """View what languages your pigeon knows."""
@@ -299,50 +267,6 @@ class PigeonCog(BaseCog, name = "Pigeon"):
         pigeon.pvp = not pigeon.pvp
         pigeon.save()
         asyncio.gather(ctx.send(f"Okay. PvP is now " + ("on" if pigeon.pvp else "off")))
-
-    # @pigeon.command(name = "rob")
-    # async def pigeon_rob(self, ctx, member : discord.Member):
-    #     pigeon = ctx.pigeon
-    #     if not pigeon.pvp_action_available:
-    #         raise SendableException(ctx.translate("pvp_action_not_available_yet"))
-    #     if member.id == ctx.author.id:
-    #         raise SendableException(ctx.translate("cannot_rob_self"))
-
-    #     human1 = ctx.get_human()
-    #     human2 = ctx.get_human(member.id)
-
-    #     pigeon2 = human2.pigeon
-    #     if not pigeon2.pvp:
-    #         raise SendableException(ctx.translate("pigeon2_pvp_not_enabled"))
-
-    #     class RobType(enum.Enum):
-    #         item = 1
-    #         gold = 2
-
-    #     class RobResult(enum.Enum):
-    #         success = 1
-    #         failure = 2
-
-    #     # type = RobType.gold if random.randint(0, 1) == 1 else RobType.item
-    #     type = RobType.gold
-    #     pigeon.last_used_pvp = datetime.datetime.utcnow()
-
-    #     if type == RobType.gold:
-    #         amount = random.randint(10, 100)
-    #         amount = min(human2.gold, amount)
-    #         result = RobResult.failure if random.randint(0, 3) == 1 else RobResult.success
-    #         if result == RobResult.success:
-    #             human2.gold -= amount
-    #             human1.gold += amount
-    #             human2.save()
-    #             human1.save()
-    #             await ctx.send(f"You successfully steal {Pigeon.emojis['gold']}{amount} from {human2.user}")
-    #         elif result == RobResult.failure:
-    #             jail_time = 3
-    #             pigeon.jailed_until = datetime.datetime.utcnow() + datetime.timedelta(hours = jail_time)
-    #             await ctx.send(f"You fail to steal from {human2.user} and are put in jail for {jail_time} hours")
-
-    #         pigeon.save()
 
     @pigeon.command(name = "date")
     @commands.max_concurrency(1, per = commands.BucketType.user)
@@ -517,9 +441,9 @@ ORDER BY score DESC;
 
         await table.to_paginator(ctx, 15).wait()
 
-    @pigeon.command(name = "explore")
+    @pigeon.command(name = "oldplore")
     @commands.max_concurrency(1, per = commands.BucketType.user)
-    async def pigeon_explore(self, ctx):
+    async def pigeon_oldplore(self, ctx):
         """Have your pigeon exploring countries."""
         pigeon = ctx.pigeon
         human = ctx.human
@@ -840,50 +764,6 @@ AND (pigeon1_id = {ctx.pigeon.id} OR pigeon2_id = {ctx.pigeon.id})
 
         await table.to_paginator(ctx, 15).wait()
 
-    # def increase_stats(self, ctx, attr_name, attr_increase, cost, message):
-    #     pigeon = ctx.pigeon
-
-    #     value = getattr(pigeon, attr_name)
-    #     if value == 100:
-    #         ctx.command.reset_cooldown(ctx)
-    #         raise SendableException(ctx.translate(f"{attr_name}_already_max"))
-    #     try:
-    #         ctx.raise_if_not_enough_gold(cost, pigeon.human)
-    #     except SendableException:
-    #         ctx.command.reset_cooldown(ctx)
-    #         raise
-
-    #     pigeon.update_stats({attr_name : attr_increase, "gold": -cost})
-
-        # embed = self.get_base_embed(ctx.guild )
-        # embed.description = message.format(pigeon = pigeon)
-        # embed.description += get_winnings_value(**{attr_name : attr_increase, "gold" : -cost})
-        # asyncio.gather(ctx.send(embed = embed))
-
-    # @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
-    # @pigeon.command(name = "clean")
-    # async def pigeon_clean(self, ctx):
-    #     """Clean your pigeon."""
-    #     self.increase_stats(ctx, "cleanliness", 25, 15, "You happily clean up the fecal matter of `{pigeon.name}`.\n")
-
-    # @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
-    # @pigeon.command(name = "feed")
-    # async def pigeon_feed(self, ctx):
-    #     """Feed your pigeon."""
-    #     self.increase_stats(ctx, "food", 25, 15, "You feed `{pigeon.name}` some seeds and whatever else they eat.\n")
-
-    # @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
-    # @pigeon.command(name = "heal")
-    # async def pigeon_heal(self, ctx):
-    #     """Heal your pigeon."""
-    #     self.increase_stats(ctx, "health", 20, 15, "You give `{pigeon.name}` some seed you found inside your couch and convince it of its healing effects.\n")
-
-    # @commands.cooldown(1, (3600 * 2), type=commands.BucketType.user)
-    # @pigeon.command(name = "play")
-    # async def pigeon_play(self, ctx):
-    #     """Play with your pigeon."""
-        # self.increase_stats(ctx, "happiness", 20, 15, "You play a game of tennis with your pigeon. `{pigeon.name}` happily falls asleep.\n")
-
     @pigeon.command(name = "help")
     async def pigeon_help(self, ctx):
         embed = get_pigeon_tutorial_embed(ctx)
@@ -910,42 +790,6 @@ AND (pigeon1_id = {ctx.pigeon.id} OR pigeon2_id = {ctx.pigeon.id})
         human.gold += money
         human.save()
         await ctx.send(embed = embed)
-
-    # @pigeon.command(name = "poop")
-    # @commands.cooldown(1, (3600 * 1), type = commands.BucketType.user)
-    # async def pigeon_poop(self, ctx, member : discord.Member):
-    #     """Poop on someone elses pigeon."""
-    #     if ctx.author.id != 815156623659106324 and member.id == ctx.author.id:
-    #         raise SendableException(ctx.translate("cannot_poop_self"))
-
-    #     self.pigeon_check(ctx, member, name = "pigeon2")
-    #     relationship = PigeonRelationship.get_or_create_for(ctx.pigeon, ctx.pigeon2)
-    #     price = 5
-    #     relationship.score -= price
-    #     relationship.save()
-
-    #     embed = self.get_base_embed(ctx.guild)
-    #     lines = []
-    #     lines.append(f"Your pigeon successfully poops on `{ctx.pigeon2.name}`")
-    #     lines.append(f"And to finish it off, `{ctx.pigeon.name}` wipes {ctx.pigeon.gender.get_posessive_pronoun()} butt clean on {ctx.pigeon2.gender.get_posessive_pronoun()} fur.")
-    #     lines.append("")
-
-    #     lines.append(ctx.pigeon.name)
-    #     data1 = {"cleanliness": 5}
-    #     lines.append(get_winnings_value(**data1))
-    #     ctx.pigeon.poop_victim_count += 1
-    #     ctx.pigeon.update_stats(data1)
-
-    #     lines.append(ctx.pigeon2.name)
-    #     data2 = {"cleanliness": -10}
-    #     lines.append(get_winnings_value(**data2))
-    #     ctx.pigeon2.pooped_on_count += 1
-    #     ctx.pigeon2.update_stats(data2)
-
-    #     embed.description = "\n".join(lines)
-
-    #     embed.set_footer(text = f"-{price} relations")
-    #     await ctx.send(embed = embed)
 
     @tasks.loop(seconds=30)
     async def date_ticker(self):
@@ -1066,37 +910,6 @@ AND (pigeon1_id = {ctx.pigeon.id} OR pigeon2_id = {ctx.pigeon.id})
                 fight.finished = True
                 fight.save()
 
-    # @tasks.loop(hours = 1)
-    # async def stats_ticker(self):
-    #     return
-
-    #     with database.connection_context():
-    #         query = Pigeon.select()
-    #         query = query.where(Pigeon.condition == Pigeon.Condition.active)
-    #         query = query.where(Pigeon.status == Pigeon.Status.idle)
-
-    #         for pigeon in query:
-    #             data = {
-    #                 "food"        : -1,
-    #                 "health"      : -0,
-    #                 "happiness"   : -1,
-    #                 "cleanliness" : -1,
-    #             }
-
-    #             for pigeon_buff in pigeon.buffs:
-    #                 if pigeon_buff.buff.code == "fully_fed":
-    #                     data["food"] = 0
-    #                 if pigeon_buff.buff.code == "bleeding":
-    #                     data["health"] += -2
-
-    #             if pigeon.food <= 20 or pigeon.cleanliness <= 20:
-    #                 data["health"] += -1
-    #             if pigeon.food == 0:
-    #                 data["health"] += -2
-
-    #             pigeon.update_stats(data)
-    #             pigeon.save()
-
 def get_winnings_value(**kwargs):
     lines = []
     for key, value in kwargs.items():
@@ -1183,7 +996,7 @@ def get_rust_commands():
         Cmd("heal", "Heal your pigeon"),
         Cmd("play", "Play with your pigeon"),
         Cmd("poop", "Poop on other pigeons"),
-        Cmd("spaceplore", "Send your pigeon to other planets"),
+        Cmd("explore", "Send your pigeon to other planets"),
         Cmd("space", "Perform actions on a planet"),
         Cmd("rob", "Steal from other pigeons"),
         Cmd("buy", "Get yourself a pigeon"),

@@ -121,6 +121,13 @@ def setup(bot):
     bot.add_cog(Games(bot))
 
 def get_random_word():
+    max = 3
+    for i in range(max):
+        word = get_single_random_word()
+        if "-" not in word or i == max-1:
+            return word
+
+def get_single_random_word():
     url = "https://api.wordnik.com/v4/words.json/randomWord"
     params = {
         "api_key": config.environ["wordnik_api_key"],

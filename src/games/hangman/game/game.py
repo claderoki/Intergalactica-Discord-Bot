@@ -4,6 +4,8 @@ from enum import Enum
 
 import discord
 
+from src.wrappers.zalgo import Zalgo
+
 class Game:
     bet = 10
 
@@ -13,7 +15,8 @@ class Game:
 
         self.letters_used = []
         self.words_used = []
-        self.word = word.lower()
+        self.unedited_word = word
+        self.word = Zalgo.dezalgofy(word.lower())
 
         self.board = ["-" for _ in word]
 
@@ -21,7 +24,6 @@ class Game:
 
     def word_guessed(self):
         return "".join(self.board) == self.word
-
 
     def all_players_dead(self) -> bool:
         for player in self.players:

@@ -1,5 +1,7 @@
 import emoji
 
+import re
+
 def split_list(arr, size):
      arrs = []
      while len(arr) > size:
@@ -31,15 +33,17 @@ def html_to_discord(text):
     tags = {
         "i"      : "*",
         "strong" : "**",
-        "em"     : "",
-        "sub"    : "",
-        "xref"   : "",
+        # "em"     : "",
+        # "sub"    : "",
+        # "xref"   : "",
     }
 
     for tag, replacement in tags.items():
         text = text.replace(f"<{tag}>", replacement)
         text = text.replace(f"</{tag}>", replacement)
 
-    return text.strip()
+    cleanr = re.compile('<.*?>')
+    cleantext = re.sub(cleanr, '', text)
+    return cleantext.srip()
 
 
