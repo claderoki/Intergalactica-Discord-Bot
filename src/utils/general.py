@@ -44,6 +44,6 @@ def html_to_discord(text):
 
     cleanr = re.compile('<.*?>')
     cleantext = re.sub(cleanr, '', text)
-    return cleantext.srip()
+    return cleantext.strip()
 
 
