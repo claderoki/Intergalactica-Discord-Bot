@@ -127,23 +127,10 @@ class DiscordUI(UI):
 
         lines.append("\n")
         lines.append(f"**{game.unedited_word}**")
-        definition = get_word_definition(game.unedited_word)
+        definition = game.word_definition
         if definition is not None:
             lines.append(f"*{definition}*")
 
         embed.description = "\n".join(lines)
 
         await self.ctx.send(embed = embed)
-
-def get_word_definition(word):
-    url = f"https://api.wordnik.com/v4/word.json/{word}/definitions"
-    params = {
-        "api_key": config.environ["wordnik_api_key"],
-        "limit": 1,
-        "includeRelated": False,
-    }
-    request = requests.get(url, params = params)
-    try:
-        return html_to_discord(request.json()[0]["text"])
-    except:
-        pass

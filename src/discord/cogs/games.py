@@ -13,6 +13,7 @@ import src.games.tictactoe as tictactoe
 import src.games.hangman as hangman
 from src.games.game.base import AiIdentity, DiscordIdentity
 from src.discord.cogs.core import BaseCog
+from src.utils.general import html_to_discord
 
 class Games(BaseCog):
 
@@ -94,11 +95,18 @@ class Games(BaseCog):
         ctx.raise_if_not_enough_gold(cost)
         players = []
 
+        task = asyncio.create_task(get_word_details())
         members = await self.get_members(ctx, timeout = timeout, gold_needed = cost)
         for member in members:
             players.append(hangman.game.Player(DiscordIdentity(member), cost))
 
-        game = hangman.game.Game(players, get_random_word(), hangman.ui.DiscordUI(ctx))
+        while not task.done():
+            await asyncio.sleep(1)
+
+        result = task.result()
+
+        game = hangman.game.Game(players, result["word"], hangman.ui.DiscordUI(ctx))
+        game.word_definition = result["definition"]
         await game.start()
 
     @commands.command()
@@ -138,3 +146,21 @@ def get_single_random_word():
     }
     request = requests.get(url, params = params)
     return request.json()["word"]
+
+def get_word_definition(word):
+    url = f"https://api.wordnik.com/v4/word.json/{word}/definitions"
+    params = {
+        "api_key": config.environ["wordnik_api_key"],
+        "limit": 1,
+        "includeRelated": False,
+    }
+    request = requests.get(url, params = params)
+    try:
+        return html_to_discord(request.json()[0]["text"])
+    except:
+        pass
+
+async def get_word_details() -> dict:
+    word = get_random_word()
+    definition = get_word_definition(word)
+    return {"word": word, "definition": definition}
