@@ -335,7 +335,7 @@ class Exploration(TravelActivity):
 
     @property
     def gold_worth(self):
-        return math.ceil(self.duration_in_minutes * 0.8)
+        return math.ceil(self.duration_in_minutes * 0.6)
 
 class Challenge(Activity):
     pigeon1    = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
