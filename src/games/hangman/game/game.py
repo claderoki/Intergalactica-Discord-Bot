@@ -100,5 +100,5 @@ class Game:
         await self.ui.stop(reason, self)
 
     class Reasons(Enum):
-        all_players_dead = "Everybody lost"
-        word_guessed     = "Word has been guessed"
+        all_players_dead = "everybody lost"
+        word_guessed     = "word has been guessed"

@@ -11,10 +11,10 @@ class Player:
         return str(self.identity)
 
     @property
-    def dead(self):
+    def dead(self) -> bool:
         return self.incorrect_guesses >= 6
 
-    def get_percentage_guessed(self, word):
+    def get_percentage_guessed(self, word) -> float:
         return (self.correct_guesses / len(word)) * 100
 
     def increment_incorrect(self):

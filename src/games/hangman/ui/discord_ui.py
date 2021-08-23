@@ -115,22 +115,37 @@ class DiscordUI(UI):
         bet_pool += (15 * len(game.players))
         bet_pool = int(bet_pool)
 
-        for player in game.players:
+        total_letters = len(game.word)
+        players = sorted(game.players, key = lambda p: p.correct_guesses - (100 if p.dead else 0), reverse = True)
+        i = 0
+        for player in players:
+            name = player.identity.member.mention
+            gold_emoji = self.ctx.bot.gold_emoji
+
             if player.dead:
                 player.identity.remove_points(player.bet)
-                lines.append(f"{player.identity.member.mention} lost **{player.bet}** gold")
-            else:
-                percentage_guessed = player.get_percentage_guessed(game.word)
-                won = math.ceil(percentage_guessed / 100 * bet_pool)
-                player.identity.add_points(won)
-                lines.append(f"{player.identity.member.mention} won **{won}** gold ({int(percentage_guessed)}%)")
+                lines.append(f"{name}\nLost {gold_emoji} **{player.bet}**")
+                continue
+
+            percentage_guessed = player.get_percentage_guessed(game.word)
+            won = math.ceil(percentage_guessed / 100 * bet_pool)
+
+            if len(players) > 1 and i == 0:
+                next_won = math.ceil(players[i+1].get_percentage_guessed(game.word) / 100 * bet_pool)
+                if won > next_won:
+                    name += " 🌟"
+
+            letters_guessed = player.correct_guesses
+
+            player.identity.add_points(won)
+            lines.append(f"{name}\nWon {gold_emoji}** {won}** ({letters_guessed}/{total_letters}) guessed")
+            i += 1
 
         lines.append("\n")
-        lines.append(f"**{game.unedited_word}**")
-        definition = game.word_definition
-        if definition is not None:
-            lines.append(f"*{definition}*")
 
-        embed.description = "\n".join(lines)
+        definition = game.word_definition
+        embed.add_field(name = game.unedited_word, value = (definition or "no definition"), inline = False)
+
+        embed.description = "\n\n".join(lines)
 
         await self.ctx.send(embed = embed)
