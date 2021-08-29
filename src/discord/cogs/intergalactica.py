@@ -15,7 +15,7 @@ from src.discord.helpers.checks import specific_guild_only
 from src.discord.helpers.embed import Embed
 from src.discord.helpers.utility import get_context_embed
 from src.discord.helpers.waiters import MemberWaiter
-from src.models import (Earthling, Human, Item, RedditAdvertisement, Reminder,
+from src.models import (Earthling, Human, Item, Reminder,
                         TemporaryVoiceChannel, TemporaryTextChannel, database)
 
 
