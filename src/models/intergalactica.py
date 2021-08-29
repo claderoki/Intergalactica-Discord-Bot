@@ -226,48 +226,6 @@ class TemporaryTextChannel(BaseModel):
             asyncio.gather(self.channel.delete(reason = "Temporary VC channel removed."))
         super().delete_instance(*args, **kwargs)
 
-class RedditAdvertisement(BaseModel):
-    last_advertised = peewee.DateTimeField   (null = True)
-    automatic       = peewee.BooleanField    (null = False, default = False)
-    guild_id        = peewee.BigIntegerField (null = False)
-    description     = peewee.TextField       (null = False)
-
-    @property
-    def available(self):
-        if self.last_advertised is None:
-            return True
-        hours = 24
-        if random.randint(0, 3) == 1:
-            hours += 2
-        return (self.last_advertised + datetime.timedelta(hours = hours)) < datetime.datetime.utcnow()
-
-    async def get_invite_url(self):
-        for invite in await self.guild.invites():
-            if invite.max_age == 0 and invite.max_uses == 0:
-                return invite.url
-
-    async def advertise(self):
-        pass
-        # subreddit_names = ["DiscordAdvertising"]
-        # subreddits = [self.bot.reddit.subreddit(x) for x in subreddit_names]
-        # submissions = []
-        # for subreddit in subreddits:
-        #     try:
-        #         # for flair in subreddit.flair(limit=None):
-        #         #     if flair.
-        #         submission = subreddit.submit(
-        #             self.description,
-        #             url = await self.get_invite_url(),
-        #             flair_id = ""
-        #         )
-        #     except:
-        #         continue
-        #     submissions.append(submission)
-        #     self.last_advertised = datetime.datetime.utcnow()
-        # self.save()
-
-        # return submissions
-
 class Advertisement(BaseModel):
     guild_id        = peewee.BigIntegerField (null = False)
     description     = peewee.TextField       (null = False)

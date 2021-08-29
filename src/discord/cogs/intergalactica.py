@@ -141,7 +141,6 @@ class Intergalactica(BaseCog):
         self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = 120)
         self.role_needed_for_selfie_vote = self.guild.get_role(self._role_ids["ranks"]["nova"])
 
-        self.start_task(self.reddit_advertiser,                 check = self.bot.production)
         self.start_task(self.illegal_member_purger,             check = self.bot.production)
         self.start_task(self.introduction_purger,               check = self.bot.production)
         self.start_task(self.temp_vc_poller,                    check = self.bot.production)
@@ -493,22 +492,6 @@ class Intergalactica(BaseCog):
         for _, rank_id in self._role_ids["ranks"].items():
             if added_role.id == rank_id:
                 await self.on_rank(after, added_role)
-
-    @tasks.loop(hours = 1)
-    async def reddit_advertiser(self):
-        query = RedditAdvertisement.select()
-        query = query.where(RedditAdvertisement.guild_id == self.guild.id)
-
-        for reddit_advertisement in query:
-            if reddit_advertisement.available:
-                embed = Embed.success(None)
-                submissions = await reddit_advertisement.advertise()
-                embed.set_author(name = "bump_successful", url = submissions[0].shortlink)
-                asyncio.gather(self.log("c3po-log", embed = embed))
-
-                await asyncio.sleep(10)
-                for submission in submissions:
-                    submission.mod.sfw()
 
     @tasks.loop(minutes = 1)
     async def disboard_bump_available_notifier(self):
