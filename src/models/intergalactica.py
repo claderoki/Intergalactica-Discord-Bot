@@ -247,19 +247,26 @@ class RedditAdvertisement(BaseModel):
                 return invite.url
 
     async def advertise(self):
-        subreddit_names = ["DiscordAdvertising", "discordservers", "DiscordAppServers"]
-        subreddits = [self.bot.reddit.subreddit(x) for x in subreddit_names]
-        submissions = []
-        for subreddit in subreddits:
-            try:
-                submission = subreddit.submit(self.description, url = await self.get_invite_url())
-            except:
-                continue
-            submissions.append(submission)
-            self.last_advertised = datetime.datetime.utcnow()
-        self.save()
+        pass
+        # subreddit_names = ["DiscordAdvertising"]
+        # subreddits = [self.bot.reddit.subreddit(x) for x in subreddit_names]
+        # submissions = []
+        # for subreddit in subreddits:
+        #     try:
+        #         # for flair in subreddit.flair(limit=None):
+        #         #     if flair.
+        #         submission = subreddit.submit(
+        #             self.description,
+        #             url = await self.get_invite_url(),
+        #             flair_id = ""
+        #         )
+        #     except:
+        #         continue
+        #     submissions.append(submission)
+        #     self.last_advertised = datetime.datetime.utcnow()
+        # self.save()
 
-        return submissions
+        # return submissions
 
 class Advertisement(BaseModel):
     guild_id        = peewee.BigIntegerField (null = False)
@@ -272,6 +279,7 @@ class AdvertisementSubreddit(BaseModel):
     last_advertised       = peewee.DateTimeField   (null = True)
     name                  = peewee.TextField       (null = False)
     hours_inbetween_posts = peewee.IntegerField    (null = False, default = 24)
+    flair                 = peewee.TextField       (null = True)
 
     @property
     def post_allowed(self):

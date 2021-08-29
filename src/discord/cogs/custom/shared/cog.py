@@ -33,10 +33,20 @@ class CustomCog(BaseCog):
                 subreddit = praw.subreddit(subreddit_model.name)
                 invite_url = await GuildHelper.get_invite_url(guild)
 
+                flair_id = None
+                if subreddit_model.flair is not None:
+                    for flair in subreddit.flair.link_templates:
+                        if flair["text"] == subreddit_model.flair:
+                            flair_id = flair["id"]
+
                 try:
-                    submission = subreddit.submit(advertisement.description, url = invite_url)
+                    submission = subreddit.submit(
+                      advertisement.description,
+                      url = invite_url,
+                      flair_id = flair_id
+                    )
                 except Exception as e:
-                    print(e)
+                    print('Failed to submit: ', e)
                     continue
 
                 subreddit_model.last_advertised = datetime.datetime.utcnow()
