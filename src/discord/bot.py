@@ -135,10 +135,10 @@ class Locus(commands.Bot):
             file.seek(0)
             data["file"] = file
         elif isinstance(file, str):
-            if file.startswith("http"):
-                data["bytes"] = urlopen(file).read()
-            else:
-                data["path"] = file
+            # if file.startswith("http"):
+            #     data["bytes"] = urlopen(file).read()
+            # else:
+            data["path"] = file
         if "bytes" in data or len(data) == 0:
             data["file"] = io.BytesIO(file)
             if "bytes" in data:
