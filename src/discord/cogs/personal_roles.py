@@ -40,7 +40,10 @@ class PersonalRoleCog(BaseCog, name = "Personal role"):
         if new:
             position = PersonalRoleHelper.calculate_position()
             role = await ctx.guild.create_role(**kwargs)
-            await role.edit(position = position)
+            try:
+                await role.edit(position = position)
+            except:
+                pass
             earthling.personal_role = role
             earthling.save()
             await ctx.send(ctx.bot.translate("role_created").format(role = role))
@@ -54,12 +57,17 @@ class PersonalRoleCog(BaseCog, name = "Personal role"):
         await ctx.author.add_roles(role)
 
     @commands.group()
-    @specific_guild_only(intergalactica_guild_id)
+    # @specific_guild_only(intergalactica_guild_id)
     async def role(self, ctx):
-        has_5k = ctx.guild.get_role(778744417322139689) in ctx.author.roles
-        is_nitro_booster = ctx.author.premium_since is not None
-        has_personal_role = False
-        allowed = has_5k or is_nitro_booster or has_personal_role
+        if ctx.guild.id == intergalactica_guild_id:
+            has_5k = ctx.guild.get_role(778744417322139689) in ctx.author.roles
+            is_nitro_booster = ctx.author.premium_since is not None
+            has_personal_role = False
+            allowed = has_5k or is_nitro_booster or has_personal_role
+        elif ctx.guild.id == 842154624869859368:
+            allowed = True
+        else:
+            raise SendableException("Not allowed in this guild.")
 
         if not allowed:
             raise SendableException("You are not allowed to run this command yet, needed: 5k+ XP or Nitro Booster")
