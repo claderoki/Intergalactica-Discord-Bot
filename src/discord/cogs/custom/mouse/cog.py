@@ -5,6 +5,7 @@ import praw
 
 from src.discord.cogs.custom.shared.cog import CustomCog
 import src.config as config
+from src.utils.string_formatters.uwu import Uwu
 
 class Mouse(CustomCog):
     guild_id = 729843647347949638
@@ -21,6 +22,7 @@ class Mouse(CustomCog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        await asyncio.sleep(1)
         await super().on_ready()
         self.praw_instances[self.guild_id] = praw.Reddit(
             client_id       = config.environ["mouse_reddit_client_id"],
@@ -31,6 +33,11 @@ class Mouse(CustomCog):
             check_for_async = False
         )
  
+    @commands.command()
+    async def uwu(self, ctx, *, text):
+        asyncio.gather(ctx.message.delete(), return_exceptions = False)
+        await ctx.send(Uwu.format(text))
+
 def setup(bot):
     bot.add_cog(Mouse(bot))
 
