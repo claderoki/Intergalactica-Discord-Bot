@@ -77,11 +77,34 @@ class Prank(BaseCog):
         await ctx.send(" ".join(self.get_random_words(nick = False)))
 
     @commands.group()
-
     @commands.guild_only()
     @commands.max_concurrency(1, per = commands.BucketType.user)
     async def prank(self, ctx):
         pass
+
+
+    @prank.command(name = "history")
+    @commands.guild_only()
+    async def prank_history(self, ctx):
+        query = Prankster.select(Prankster.id)
+        query = query.where(Prankster.user_id == ctx.author.id)
+        query = query.where(Prankster.guild_id == ctx.guild.id)
+        prankster = query.first()
+
+        if not prankster:
+            return
+
+        query = NicknamePrank.select(NicknamePrank.new_nickname, NicknamePrank.start_date)
+        query = query.where(NicknamePrank.victim == prankster)
+        query = query.order_by(NicknamePrank.start_date.desc())
+
+        table = pretty.Table()
+        table.add_row(pretty.Row(("Nick", "Pranked at"), header = True))
+
+        for prank in query:
+            table.add_row(pretty.Row((prank.new_nickname,prank.start_date.date())))
+
+        await table.to_paginator(ctx, 15).wait()
 
     @prank.command(name = "toggle", aliases = ["enable", "disable"])
     async def prank_toggle(self, ctx):
