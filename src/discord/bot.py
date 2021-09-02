@@ -195,6 +195,7 @@ class Locus(commands.Bot):
             "prank",
             "pigeon.cog",
             "custom.mouse.cog",
+            "custom.intergalactica.cog",
             "covid",
             "conversations",
             # "qotd",
