@@ -141,8 +141,6 @@ class DiscordUI(UI):
             lines.append(f"{name}\nWon {gold_emoji}** {won}** ({letters_guessed}/{total_letters}) guessed")
             i += 1
 
-        lines.append("\n")
-
         definition = game.word_definition
         embed.add_field(name = game.unedited_word, value = (definition or "no definition"), inline = False)
 
