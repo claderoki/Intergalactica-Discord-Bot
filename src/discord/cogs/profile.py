@@ -158,10 +158,6 @@ class Profile(BaseCog):
         if len(unread_mail) > 0:
             footer.append(f"You have {unread_mail.count()} unread mail! use '{ctx.prefix}inbox' to view")
 
-        # embed.timestamp = human.next_birthday
-        # if embed.timestamp is not None:
-        #     footer.append("Next birthday at")
-
         if len(footer) > 0:
             embed.set_footer(text = "\n".join(footer))
 

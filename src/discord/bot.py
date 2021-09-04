@@ -194,6 +194,7 @@ class Locus(commands.Bot):
             "misc",
             "prank",
             "pigeon.cog",
+            "switch.cog",
             "custom.mouse.cog",
             "custom.intergalactica.cog",
             "covid",

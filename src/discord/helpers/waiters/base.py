@@ -337,7 +337,6 @@ class EnumWaiter(StrWaiter):
         except:
             raise ConversionFailed("Message not valid.")
 
-
 class BoolWaiter(StrWaiter):
 
     @property

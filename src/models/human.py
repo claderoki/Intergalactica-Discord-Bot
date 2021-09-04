@@ -4,13 +4,13 @@ from enum import Enum
 
 import peewee
 import discord
-import emoji
 import pycountry
 
 from .base import BaseModel, EnumField, CountryField
 from src.utils.timezone import Timezone
-import src.config as config
 from src.utils.zodiac import ZodiacSign
+import src.config as config
+import src.discord.cogs.switch as switch
 
 class CurrenciesField(peewee.TextField):
     def db_value(self, value):
@@ -188,7 +188,13 @@ class Human(BaseModel):
         if len(values) == 0:
             values.append("N/A")
 
-        sep  = "\n"
+        friend_code = switch.settings.FriendCodeSetting.get_or_none(human = self)
+        if friend_code is not None:
+            values.append(f"{switch.settings.FriendCodeSetting.symbol} {friend_code.value}")
+        elif show_all:
+            values.append(f"{switch.settings.FriendCodeSetting.symbol} N/A")
+
+        sep = "\n"
         if not show_all:
             sep += "\n"
 

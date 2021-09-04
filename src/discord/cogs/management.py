@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands
 
 import src.config as config
-from src.models import Settings, NamedEmbed, NamedChannel, Translation, Locale, database
+from src.models import Settings, NamedChannel, Translation, Locale, database
 from src.discord.helpers.waiters import *
 from src.discord.errors.base import SendableException
 from src.discord.cogs.core import BaseCog
@@ -110,30 +110,6 @@ class Management(BaseCog):
                     Translation.create(message_key = translation.message_key, value = value, locale = locale)
 
         asyncio.gather(ctx.send(ctx.translate("translations_created")))
-
-    @commands.command()
-    @commands.has_guild_permissions(administrator = True)
-    async def embed(self, ctx, name):
-        settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
-
-        if len(ctx.message.attachments) > 0:
-            attachment = ctx.message.attachments[0]
-            data = json.loads(await attachment.read())
-
-            embed_data = data["embeds"][0]
-            embed = discord.Embed.from_dict(embed_data)
-            await ctx.send(embed = embed)
-
-            named_embed, _ = NamedEmbed.get_or_create(name = name, settings = settings)
-            named_embed.data = embed_data
-            named_embed.save()
-        else:
-            try:
-                named_embed = NamedEmbed.get(name = name, settings = settings)
-            except NamedEmbed.DoesNotExist:
-                await ctx.send("This embed does not exist")
-            else:
-                await ctx.send(embed = named_embed.embed)
 
     @commands.command()
     @commands.has_guild_permissions(administrator = True)
