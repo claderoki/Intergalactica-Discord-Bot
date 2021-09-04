@@ -28,14 +28,18 @@ class UserSettingModel:
 
     __slots__ = ("human_id", "value")
 
+    def get_db_value(self):
+        return self.value
+
     @classmethod
     def get_or_none(cls, human):
         return UserSetting.get_or_none(human = human, code = cls.code)
 
     def save(self):
+        value = self.get_db_value()
         (UserSetting
-            .insert(human = self.human_id, code = self.code, value = self.value)
-            .on_conflict(update = {UserSetting.value: self.value})
+            .insert(human = self.human_id, code = self.code, value = value)
+            .on_conflict(update = {UserSetting.value: value})
             .execute())
 
     def get_waiter_kwargs() -> dict:

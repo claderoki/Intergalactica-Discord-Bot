@@ -238,6 +238,7 @@ class AdvertisementSubreddit(BaseModel):
     name                  = peewee.TextField       (null = False)
     hours_inbetween_posts = peewee.IntegerField    (null = False, default = 24)
     flair                 = peewee.TextField       (null = True)
+    active                = peewee.BooleanField    (null = False, default = True)
 
     @property
     def post_allowed(self):

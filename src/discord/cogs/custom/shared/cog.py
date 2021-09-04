@@ -27,6 +27,8 @@ class CustomCog(BaseCog):
             channel = guild.get_channel(advertisement.log_channel_id)
 
             for subreddit_model in advertisement.subreddits:
+                if not subreddit_model.active:
+                    continue
                 if not subreddit_model.post_allowed:
                     continue
 
