@@ -3,7 +3,7 @@ from src.discord.helpers.settings.base import UserSettingModel, ValidationResult
 class FriendCodeSetting(UserSettingModel):
     code    = "friend_code"
     type    = UserSettingModel.BaseType.string
-    example = "SW-5341-1345-1234"
+    example = "SW-XXXX-XXXX-XXXX"
     symbol  = "🎮"
 
     def validate(self) -> ValidationResult:
