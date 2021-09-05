@@ -289,6 +289,7 @@ class Locus(commands.Bot):
                     break
 
     def get_human(self, ctx = None, user = None):
+        """Cached human, with updated gold."""
         user = user or ctx.author
         if isinstance(user, int):
             user_id = user

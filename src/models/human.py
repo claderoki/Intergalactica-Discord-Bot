@@ -188,11 +188,13 @@ class Human(BaseModel):
         if len(values) == 0:
             values.append("N/A")
 
-        friend_code = switch.settings.FriendCodeSetting.get_or_none(human = self)
-        if friend_code is not None:
-            values.append(f"{switch.settings.FriendCodeSetting.symbol} {friend_code.value}")
-        elif show_all:
-            values.append(f"{switch.settings.FriendCodeSetting.symbol} N/A")
+        if not show_all:
+            classes = (switch.settings.FriendCodeSetting, )
+
+            for cls in classes:
+                model = cls.get_or_none(human = self)
+                if model is not None:
+                    values.append(f"{cls.symbol} {model.value}")
 
         sep = "\n"
         if not show_all:

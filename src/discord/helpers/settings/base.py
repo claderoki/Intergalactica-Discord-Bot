@@ -28,15 +28,21 @@ class UserSettingModel:
 
     __slots__ = ("human_id", "value")
 
-    def get_db_value(self):
-        return self.value
+    def db_value(self, value):
+        return value
+
+    def python_value(self, value):
+        return value
 
     @classmethod
     def get_or_none(cls, human):
-        return UserSetting.get_or_none(human = human, code = cls.code)
+        db_setting = UserSetting.get_or_none(human = human, code = cls.code)
+        if db_setting is None:
+            return None
+        return cls(human_id = human.id, value = db_setting.value)
 
     def save(self):
-        value = self.get_db_value()
+        value = self.db_value(self.value)
         (UserSetting
             .insert(human = self.human_id, code = self.code, value = value)
             .on_conflict(update = {UserSetting.value: value})
@@ -46,9 +52,9 @@ class UserSettingModel:
         return None
 
     @classmethod
-    async def wait(cls, ctx) -> "UserSettingModel":
+    async def wait(cls, ctx, **kwargs) -> "UserSettingModel":
         human = ctx.bot.get_human(user = ctx.message.author)
-        waiter = UserSettingModelWaiter(ctx, cls, human.id, prompt = ctx.translate(cls.code + "_prompt"))
+        waiter = UserSettingModelWaiter(ctx, cls, human.id, prompt = ctx.translate(cls.code + "_prompt"), **kwargs)
         model = await waiter.wait()
         return model
 
@@ -59,8 +65,8 @@ class UserSettingModel:
         if not hasattr(cls, "validate"):
             raise Exception("You do not have the validate method implemented.")
 
-        if not hasattr(cls, "code"):
-            raise Exception("You do not have the code attribute implemented.")
+        # if not hasattr(cls, "code"):
+        #     raise Exception("You do not have the code attribute implemented.")
 
         if not hasattr(cls, "type"):
             raise Exception("You do not have the type attribute implemented.")
@@ -70,7 +76,7 @@ class UserSettingModel:
 
     def __init__(self, human_id: int, value):
         self.human_id = human_id
-        self.value    = value
+        self.value    = self.python_value(value)
 
 class UserSettingModelWaiter(StrWaiter):
     def __init__(self, ctx, setting_class, human_id, **kwargs):
