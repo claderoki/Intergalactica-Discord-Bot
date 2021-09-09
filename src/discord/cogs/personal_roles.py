@@ -1,4 +1,5 @@
 import asyncio
+from enum import Enum
 
 import discord
 from discord.ext import commands
@@ -7,7 +8,7 @@ import src.discord.helpers.pretty as pretty
 from src.discord.cogs.core import BaseCog
 from src.discord.errors.base import SendableException
 from src.models import (Earthling, database)
-from src.discord.helpers.checks import specific_guild_only
+from src.discord.helpers.condition_flow import ConditionBlock, MemberCondition, ConditionFlow, ConditionFlowValidator
 
 class PersonalRoleHelper:
     __slots__ = ()
@@ -20,9 +21,21 @@ class PersonalRoleHelper:
         else:
             return 1
 
-intergalactica_guild_id = 742146159711092757
+class KnownGuild:
+    intergalactica = 742146159711092757
+    mouse          = 842154624869859368
+    kail           = 884843718534901861
 
 class PersonalRoleCog(BaseCog, name = "Personal role"):
+    flows = {
+        KnownGuild.intergalactica: ConditionFlow([
+            ConditionBlock.single(MemberCondition.has_any_role(778744417322139689), 0),
+            ConditionBlock.single(MemberCondition.has_any_role(742147647233720461), 1)
+        ]),
+        KnownGuild.mouse: True,
+        KnownGuild.kail: True
+    }
+
     def __init__(self, bot):
         super().__init__(bot)
 
@@ -57,20 +70,17 @@ class PersonalRoleCog(BaseCog, name = "Personal role"):
         await ctx.author.add_roles(role)
 
     @commands.group()
-    # @specific_guild_only(intergalactica_guild_id)
     async def role(self, ctx):
-        if ctx.guild.id == intergalactica_guild_id:
-            has_5k = ctx.guild.get_role(778744417322139689) in ctx.author.roles
-            is_nitro_booster = ctx.author.premium_since is not None
-            has_personal_role = False
-            allowed = has_5k or is_nitro_booster or has_personal_role
-        elif ctx.guild.id == 842154624869859368:
-            allowed = True
-        else:
+        flow = self.flows.get(ctx.guild.id)
+        if flow is None:
             raise SendableException("Not allowed in this guild.")
+        if flow == True:
+            allowed = True
+        elif isinstance(flow, ConditionFlow):
+            allowed = ConditionFlowValidator.match_flow(ctx.message.author, flow)
 
         if not allowed:
-            raise SendableException("You are not allowed to run this command yet, needed: 5k+ XP or Nitro Booster")
+            raise SendableException("You are not allowed to run this command yet.")
 
     @role.command(name = "color", aliases = ["colour"])
     async def role_color(self, ctx, color : discord.Color = None):

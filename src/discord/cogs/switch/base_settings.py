@@ -5,7 +5,7 @@ class classproperty(property):
         return classmethod(self.fget).__get__(None, owner)()
 
 class SwitchCode(UserSettingModel):
-    type               = UserSettingModel.BaseType.string
+    type = UserSettingModel.BaseType.string
 
     def validate(self) -> ValidationResult:
         """This will validate the (sanitized) value for correctness."""

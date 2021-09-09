@@ -103,3 +103,14 @@ class PersonalQuestion(BaseModel):
 class Word(BaseModel):
     value = peewee.TextField(null = False)
     language = peewee.CharField(null = False, max_length = 2, default = "EN")
+
+class DailyActivity(BaseModel):
+    user_id       = peewee.BigIntegerField (null = False)
+    guild_id      = peewee.BigIntegerField (null = False)
+    message_count = peewee.IntegerField    (null = False, default = 0)
+    date          = peewee.DateField       (null = False, default = lambda : datetime.date.today())
+
+    class Meta:
+        indexes = (
+            (("user_id", "guild_id", "date"), True),
+        )

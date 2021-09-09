@@ -10,9 +10,6 @@ from src.discord.helpers.embed import Embed
 class CustomCog(BaseCog):
     praw_instances = {}
 
-    async def on_message(self, message):
-        pass
-
     async def on_ready(self):
         self.start_task(self.advertisement, check = self.bot.production)
 
