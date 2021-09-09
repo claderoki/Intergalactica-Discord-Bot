@@ -10,7 +10,6 @@ from src.discord.cogs.custom.shared.cog import CustomCog
 import src.config as config
 from src.utils.string_formatters.uwu import Uwu
 from src.models import DailyActivity
-from src.discord.helpers.condition_flow import ConditionBlock, MemberCondition, ConditionFlow, ConditionFlowValidator
 
 class Mouse(CustomCog):
     guild_id = 729843647347949638
@@ -18,6 +17,9 @@ class Mouse(CustomCog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.guild is None or message.guild.id != self.guild_id:
+            return
+
+        if not self.bot.production:
             return
 
         if message.author.bot:

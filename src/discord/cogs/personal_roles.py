@@ -14,8 +14,8 @@ class PersonalRoleHelper:
     __slots__ = ()
 
     @classmethod
-    def calculate_position(cls) -> int:
-        first_earthling = Earthling.select().where(Earthling.personal_role_id != None).first()
+    def calculate_position(cls, guild_id: int) -> int:
+        first_earthling = Earthling.select().where(Earthling.personal_role_id != None).where(Earthling.guild_id == guild_id).first()
         if first_earthling is not None and first_earthling.personal_role is not None:
             return max(1, first_earthling.personal_role.position)
         else:
@@ -51,11 +51,13 @@ class PersonalRoleCog(BaseCog, name = "Personal role"):
         earthling, _ = Earthling.get_or_create_for_member(ctx.author)
         new = earthling.personal_role is None
         if new:
-            position = PersonalRoleHelper.calculate_position()
+            position = PersonalRoleHelper.calculate_position(ctx.guild.id)
             role = await ctx.guild.create_role(**kwargs)
             try:
                 await role.edit(position = position)
-            except:
+                await role.edit(position = position)
+            except Exception as e:
+                print(f"Couldn't move to position {position}: ", e)
                 pass
             earthling.personal_role = role
             earthling.save()
