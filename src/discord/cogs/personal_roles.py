@@ -1,14 +1,14 @@
-import asyncio
-from enum import Enum
+
 
 import discord
 from discord.ext import commands
 
+from src.discord.helpers.known_guilds import KnownGuild
 import src.discord.helpers.pretty as pretty
 from src.discord.cogs.core import BaseCog
 from src.discord.errors.base import SendableException
-from src.models import (Earthling, database)
-from src.discord.helpers.condition_flow import ConditionBlock, MemberCondition, ConditionFlow, ConditionFlowValidator
+from src.models import Earthling
+from src.discord.helpers.condition_flow import ConditionBlock, MemberCondition, ConditionFlow, ConditionFlowValidator, ValidationContext
 
 class PersonalRoleHelper:
     __slots__ = ()
@@ -21,19 +21,18 @@ class PersonalRoleHelper:
         else:
             return 1
 
-class KnownGuild:
-    intergalactica = 742146159711092757
-    mouse          = 842154624869859368
-    kail           = 884843718534901861
-
 class PersonalRoleCog(BaseCog, name = "Personal role"):
     flows = {
         KnownGuild.intergalactica: ConditionFlow([
             ConditionBlock.single(MemberCondition.has_any_role(778744417322139689), 0),
-            ConditionBlock.single(MemberCondition.has_any_role(742147647233720461), 1)
+            ConditionBlock.single(MemberCondition.is_nitro_booster(), 1)
         ]),
-        KnownGuild.mouse: True,
-        KnownGuild.kail: True
+        KnownGuild.cerberus: True,
+        KnownGuild.kail: True,
+        KnownGuild.mouse: ConditionFlow([
+            ConditionBlock.single(MemberCondition.has_any_role(761260319820873809), 0),
+            ConditionBlock.single(MemberCondition.has_any_role(761358543998681150), 0),
+        ])
     }
 
     def __init__(self, bot):
@@ -79,10 +78,17 @@ class PersonalRoleCog(BaseCog, name = "Personal role"):
         if flow == True:
             allowed = True
         elif isinstance(flow, ConditionFlow):
-            allowed = ConditionFlowValidator.match_flow(ctx.message.author, flow)
+            allowed = ConditionFlowValidator.match_flow(ValidationContext.from_message(ctx.message), flow)
 
         if not allowed:
-            raise SendableException("You are not allowed to run this command yet.")
+            first = (Earthling
+                .select(Earthling.personal_role_id)
+                .where(Earthling.guild_id == ctx.guild.id)
+                .where(Earthling.user_id == ctx.message.author.id)
+                .first()
+            )
+            if first is None or first.personal_role_id is None:
+                raise SendableException("You are not allowed to run this command yet.")
 
     @role.command(name = "color", aliases = ["colour"])
     async def role_color(self, ctx, color : discord.Color = None):

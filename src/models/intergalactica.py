@@ -6,6 +6,8 @@ import random
 import peewee
 import discord
 
+from src.discord.helpers.known_guilds import KnownGuild
+
 from .base import BaseModel, EnumField, EmojiField
 from .human import Human
 import src.config as config
@@ -131,7 +133,7 @@ class TemporaryChannel(BaseModel):
         self.expiry_date = self.expiry_date + delta
 
     def get_category(self):
-        category_id = {742146159711092757:764486536783462442, 842154624869859368:842154624869859369, 729843647347949638:729908592911843338}[self.guild.id]
+        category_id = {KnownGuild.intergalactica:764486536783462442, KnownGuild.cerberus:842154624869859369, KnownGuild.mouse:729908592911843338}[self.guild.id]
         for category in self.guild.categories:
             if category.id == category_id:
                 return category
@@ -149,16 +151,13 @@ class Reminder(BaseModel):
     channel_id          = peewee.BigIntegerField (null = True)
     user_id             = peewee.BigIntegerField (null = False)
     due_date            = peewee.DateTimeField   (null = False)
-    text                = peewee.TextField       (null = False)
-    finished            = peewee.BooleanField    (null = False, default = False)
-    dm                  = peewee.BooleanField    (null = False, default = False)
+    message             = peewee.TextField    (null = False)
 
-    @property
-    def sendable(self):
-        return self.channel if not self.dm else self.user
+    # `reminder`.`user_id`,
+    # `reminder`.`channel_id`,
+    # `reminder`.`message`,
+    # `reminder`.`due_date`
 
-    class Meta:
-        table_name = "legacy_reminder"
 
 class Earthling(BaseModel):
     user_id              = peewee.BigIntegerField  (null = False)
@@ -176,7 +175,7 @@ class Earthling(BaseModel):
     @property
     def inactive(self):
         delta = config.inactive_delta
-        if self.guild_id == 729843647347949638:
+        if self.guild_id == KnownGuild.cerberus:
             delta = datetime.timedelta(weeks = 8)
 
         last_active = self.last_active or self.member.joined_at

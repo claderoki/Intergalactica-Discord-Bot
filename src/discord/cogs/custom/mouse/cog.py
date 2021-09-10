@@ -6,13 +6,14 @@ import peewee
 from discord.ext import commands, tasks
 import praw
 
+from src.discord.helpers.known_guilds import KnownGuild
 from src.discord.cogs.custom.shared.cog import CustomCog
 import src.config as config
 from src.utils.string_formatters.uwu import Uwu
 from src.models import DailyActivity
 
 class Mouse(CustomCog):
-    guild_id = 729843647347949638
+    guild_id = KnownGuild.mouse
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -102,8 +103,7 @@ class DailyActivityRepository:
             .where(DailyActivity.user_id == user_id)
             .where(DailyActivity.date <= before)
             .where(DailyActivity.date >= after)
-            .first()
-        )
+            .first())
 
         if activity is None or activity.total_message_count is None:
             return 0

@@ -3,12 +3,19 @@ import datetime
 import discord
 from discord.ext import commands, tasks
 
+from src.discord.helpers.known_guilds import KnownGuild
 from src.discord.helpers.converters import EnumConverter
 from src.models import Ticket, Reply, database
 import src.config as config
 from src.discord.cogs.core import BaseCog
 
+
+
 class TicketCog(BaseCog, name = "Ticket"):
+    channels = {
+        KnownGuild.intergalactica: 863775516998107186,
+        KnownGuild.mouse: 729924627140444271
+    }
 
     def __init__(self, bot):
         super().__init__(bot)
@@ -20,13 +27,14 @@ class TicketCog(BaseCog, name = "Ticket"):
     @commands.command()
     @commands.dm_only()
     async def concern(self, ctx, *, concern):
-        guild = self.bot.get_guild(742146159711092757)
+        # TODO: add some kinda guild selector, grab all mutual guilds and then have the user choose which to send it in.
+        guild = self.bot.get_guild(KnownGuild.intergalactica)
         member = guild.get_member(ctx.author.id)
 
         if member is None:
             return
-        #TODO: hardcoded channel.
-        channel = guild.get_channel(863775516998107186)
+
+        channel = guild.get_channel(self.channels[guild.id])
 
         anonymous = True
         ticket = Ticket.create(

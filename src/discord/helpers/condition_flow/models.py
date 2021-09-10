@@ -16,7 +16,8 @@ class ConditionMultipleValue(ConditionValue):
 
 class Condition:
     class Type:
-        contains = 1
+        contains = "contains"
+        is_       = "is"
 
     class Source:
         pass
@@ -34,14 +35,24 @@ class MemberCondition(Condition):
         pass
 
     class Source(Condition.Source):
-        role = 1
+        role          = "role"
+        nitro_booster = "nitro_booster"
+        bot           = "bot"
 
     @classmethod
     def has_any_role(cls, *role_ids) -> "MemberCondition":
         return cls(
-            source = cls.Source.role,
-            type   = cls.Type.contains,
-            value  = ConditionMultipleValue(role_ids)
+            source   = cls.Source.role,
+            type     = cls.Type.contains,
+            value    = ConditionMultipleValue(role_ids),
+        )
+
+    @classmethod
+    def is_nitro_booster(cls) -> "MemberCondition":
+        return cls(
+            source   = cls.Source.nitro_booster,
+            type     = cls.Type.is_,
+            value    = None,
         )
 
 class ConditionBlock:
@@ -60,8 +71,3 @@ class ConditionFlow:
 
     def __init__(self, blocks: list):
         self.blocks = blocks
-
-# flow = ConditionFlow([
-#     ConditionBlock.single(MemberCondition.has_any_role(778744417322139689), 0),
-#     ConditionBlock.single(MemberCondition.has_any_role(778744417322139689), 1)
-# ])

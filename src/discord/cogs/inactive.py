@@ -4,6 +4,7 @@ import datetime
 import discord
 from discord.ext import commands, tasks
 
+from src.discord.helpers.known_guilds import KnownGuild
 from src.models import Earthling, database
 import src.config as config
 from src.discord.helpers.waiters import BoolWaiter
@@ -62,9 +63,9 @@ class Inactive(BaseCog):
             if earthling.guild is None or earthling.member is None:
                 continue
             if earthling.inactive:
-                if earthling.guild_id == 742146159711092757:
+                if earthling.guild_id == KnownGuild.intergalactica:
                     yield earthling
-                if earthling.guild_id == 729843647347949638 and 852955124967276556 not in [x.id for x in earthling.member.roles]:
+                if earthling.guild_id == KnownGuild.mouse and 852955124967276556 not in [x.id for x in earthling.member.roles]:
                     yield earthling
 
     @commands.has_guild_permissions(administrator = True)

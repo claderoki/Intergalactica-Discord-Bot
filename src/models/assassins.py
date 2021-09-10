@@ -7,6 +7,7 @@ from dateutil import relativedelta
 import discord
 import peewee
 
+from src.discord.helpers.known_guilds import KnownGuild
 import src.config as config
 from .base import BaseModel
 
@@ -60,7 +61,7 @@ class Game(BaseModel):
 
     async def log(self, *args, **kwargs):
         #TODO: setup a non hardcoded way for logs.
-        if self.guild_id == 742146159711092757:
+        if self.guild_id == KnownGuild.intergalactica:
             log_channel_id = 754056523277271170
         elif self.guild_id == 761624318291476482:
             log_channel_id = 763180468061077524

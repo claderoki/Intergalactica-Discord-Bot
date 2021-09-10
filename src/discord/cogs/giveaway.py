@@ -5,6 +5,7 @@ import peewee
 import discord
 from discord.ext import commands, tasks
 
+from src.discord.helpers.known_guilds import KnownGuild
 from src.discord.helpers.waiters import *
 from src.models import Giveaway, Settings, database
 import src.config as config
@@ -33,7 +34,7 @@ class GiveawayCog(BaseCog, name = "Giveaway"):
         giveaway = Giveaway(user_id = ctx.author.id, guild_id = ctx.guild.id, channel_id = channel.id)
         #TODO: make this non server specific.
         waiter = BoolWaiter(ctx, prompt = "Restrict to 5k+ role?")
-        if ctx.guild.id == 742146159711092757 and await waiter.wait():
+        if ctx.guild.id == KnownGuild.intergalactica and await waiter.wait():
             giveaway.role_id_needed = 778744417322139689
 
         await ctx.send(ctx.translate("check_dms"))

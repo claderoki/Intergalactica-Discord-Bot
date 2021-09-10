@@ -4,6 +4,7 @@ import datetime
 import discord
 from discord.ext.commands.errors import MissingPermissions
 
+from src.discord.helpers.known_guilds import KnownGuild
 import src.discord.helpers.pretty as pretty
 import src.config as config
 from discord.ext import commands, tasks
@@ -35,8 +36,8 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
     @commands.max_concurrency(1, per = commands.BucketType.user)
     @commands.group(aliases = ["milkyway", "orion"])
     async def temporary_channel(self, ctx):
-        ctx.admins = ctx.guild.id in (842154624869859368, 729843647347949638)
-        if not ctx.admins and ctx.guild.id != 742146159711092757:
+        ctx.admins = ctx.guild.id in (KnownGuild.mouse, KnownGuild.cerberus)
+        if not ctx.admins and ctx.guild.id != KnownGuild.intergalactica:
             raise SendableException("no")
 
         mini = ctx.invoked_with != "milkyway"

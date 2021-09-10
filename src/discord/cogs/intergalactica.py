@@ -6,19 +6,18 @@ from enum import Enum
 
 import discord
 from discord.ext import commands, tasks
-
 from dateutil.relativedelta import relativedelta
+
+from src.discord.cogs.custom.shared.helpers.helpers import ChannelHelper
+from src.discord.helpers.known_guilds import KnownGuild
 import src.config as config
 from src.discord.cogs.core import BaseCog
 from src.discord.errors.base import SendableException
 from src.discord.helpers.checks import specific_guild_only
-from src.discord.helpers.embed import Embed
 from src.discord.helpers.utility import get_context_embed
-from src.discord.helpers.waiters import MemberWaiter
 from src.models import (Earthling, Human, Item, Reminder,
                         TemporaryVoiceChannel, TemporaryTextChannel, database)
-
-
+from src.discord.cogs.custom.shared.helpers.simple_poll import SimplePoll
 
 class MaliciousAction(Enum):
     blacklisted_word = 1
@@ -63,18 +62,12 @@ async def on_malicious_action(action : MaliciousAction, member : discord.Member,
         pass
 
     if ban_if_new:
-        if Intergalactica.member_is_new(member):
+        if MemberHelper.is_new(member):
             await member.ban(reason = action.ban_reason)
-
-guild_id       = 742146159711092757
-mouse_guild_id = 729843647347949638
 
 class Intergalactica(BaseCog):
     last_member_join = None
 
-    vote_emojis = ("✅", "❎", "❓")
-    guild_id = guild_id
-    mouse_guild_id = mouse_guild_id
     _role_ids = {
         "selfies"   : 748566253534445568,
         "admin"     : 742243945693708381,
@@ -137,9 +130,11 @@ class Intergalactica(BaseCog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.guild = self.bot.get_guild(self.guild_id)
+        SimplePoll.add_guild_data(KnownGuild.intergalactica, self._channel_ids["staff_votes"], self._channel_ids["staff_chat"])
+
+        guild = self.bot.get_guild(KnownGuild.intergalactica)
         self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = 120)
-        self.role_needed_for_selfie_vote = self.guild.get_role(self._role_ids["ranks"]["nova"])
+        self.role_needed_for_selfie_vote = guild.get_role(self._role_ids["ranks"]["nova"])
 
         self.start_task(self.illegal_member_purger,             check = self.bot.production)
         self.start_task(self.introduction_purger,               check = self.bot.production)
@@ -162,7 +157,7 @@ class Intergalactica(BaseCog):
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild, user):
-        if guild.id != self.guild_id:
+        if guild.id != KnownGuild.intergalactica:
             return
         if not self.bot.production:
             return
@@ -189,83 +184,15 @@ class Intergalactica(BaseCog):
         embed.description = "\n".join(lines)
         await channel.send(embed = embed)
 
-    @classmethod
-    def member_is_new(cls, member):
-        for role in member.roles:
-            if role.id == cls._role_ids["vc_access"]:
-                return False
-            if role.id == cls._role_ids["5k+"]:
-                return False
-        return True
-
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        if not self.bot.production:
-            return
-        if payload.guild_id != self.guild_id:
-            return
-        if payload.member is None or payload.member.bot:
-            return
-        if payload.channel_id != self._channel_ids["staff_votes"]:
-            return
-
-        is_skip_vote = lambda x : x == self.vote_emojis[-1]
-
-        if str(payload.emoji) in self.vote_emojis:
-            def clean_value(value):
-                return int(value) if value % 1 == 0 else round(value, 2)
-            channel = self.bot.get_channel(payload.channel_id)
-            staff_members = [x for x in channel.members if not x.bot]
-            message = await channel.fetch_message(payload.message_id)
-
-            reactions = [x for x in message.reactions if str(x.emoji) in self.vote_emojis]
-            all_user_ids = set()
-            votes = {}
-            skipped_member_count = 0
-
-            for reaction in reactions:
-                users = await reaction.users().flatten()
-                valid_users = [x for x in users if not x.bot and not x.id in all_user_ids]
-                if is_skip_vote(str(reaction.emoji)):
-                    skipped_member_count = len(valid_users)
-
-                votes[str(reaction.emoji)] = len(valid_users)
-
-                for user in users:
-                    if not user.bot:
-                        all_user_ids.add(user.id)
-
-            if len(all_user_ids) == len(staff_members):
-                embed = discord.Embed(color = self.bot.get_dominant_color(None))
-                lines = []
-                lines.append("*(all staff members finished voting)*")
-                lines.append(message.content)
-                lines.append("")
-
-                for vote, vote_count in votes.items():
-                    if not is_skip_vote(vote):
-                        total_votes = (len(staff_members)-skipped_member_count)
-                        try:
-                            percentage = (vote_count/total_votes)*100
-                        except ZeroDivisionError:
-                            percentage = 0
-
-                        cleaned_value = clean_value(percentage)
-                        lines.append(f"{vote}: {vote_count} **{cleaned_value}%**")
-                        if vote == self.vote_emojis[0] and vote_count == len(staff_members):
-                            if "selfie access" in message.content.lower() or "selfie perm" in message.content.lower():
-                                user_id = MemberWaiter.get_id(message.content)
-                                member = message.guild.get_member(user_id)
-                                if member is not None:
-                                    selfie_role = message.guild.get_role(self._role_ids["selfies"])
-                                    await member.add_roles(selfie_role)
-                                    embed.set_footer(text = "Selfie role assigned.")
-
-                embed.description = "\n".join(lines)
-                asyncio.gather(self.get_channel("staff_chat").send(embed = embed))
+        if SimplePoll.is_eligible(payload):
+            poll = await SimplePoll.from_payload(payload)
+            if poll.should_finish():
+                poll.finish()
 
     def blacklisted_words_used(self, text):
-        blacklisted_words = ["retard", "nigger"]
+        blacklisted_words = ["retard", "nigger", "fag"]
 
         words_used = []
         for word in blacklisted_words:
@@ -278,7 +205,14 @@ class Intergalactica(BaseCog):
     async def on_message(self, message):
         if not self.bot.production:
             return
-        if message.guild is not None and message.guild.id != self.guild_id:
+
+        guild_data = SimplePoll.guild_data.get(message.guild.id)
+        if guild_data is not None and guild_data["vote_channel"] == message.channel.id:
+            coros = [message.add_reaction(x) for x in SimplePoll.options]
+            asyncio.gather(*coros)
+            return
+
+        if message.guild is not None and message.guild.id != KnownGuild.intergalactica:
             return
 
         words = self.blacklisted_words_used(message.content.lower())
@@ -300,10 +234,6 @@ class Intergalactica(BaseCog):
                     asyncio.gather(message.add_reaction(emoji))
             elif random.randint(0, 1000) == 1:
                 asyncio.gather(message.add_reaction("🤏"))
-
-        if message.channel.id == self._channel_ids["staff_votes"]:
-            coros = [message.add_reaction(x) for x in self.vote_emojis]
-            asyncio.gather(*coros)
 
         if message.author.id == 172002275412279296: # tatsu
             if len(message.embeds) > 0:
@@ -341,7 +271,7 @@ class Intergalactica(BaseCog):
         await channel.send(content = content, **kwargs)
 
     @commands.command(name = "vcchannel")
-    @specific_guild_only(guild_id)
+    @specific_guild_only(KnownGuild.intergalactica)
     @commands.has_role(_role_ids["5k+"])
     async def vc_channel(self, ctx, *args):
         name = " ".join(args) if len(args) > 0 else None
@@ -355,7 +285,7 @@ class Intergalactica(BaseCog):
         await ctx.success()
 
     @commands.command(name = "textchannel")
-    @specific_guild_only(guild_id)
+    @specific_guild_only(KnownGuild.intergalactica)
     @commands.has_role(_role_ids["5k+"])
     async def text_channel(self, ctx, *args):
 
@@ -381,14 +311,13 @@ class Intergalactica(BaseCog):
             raise SendableException(ctx.translate("already_exists"))
 
         channel = await category.create_text_channel(voice.channel.name, reason = f"Requested by {ctx.author}")
-        # await channel.edit(position = vc.channel.position)
 
         TemporaryTextChannel.create(temp_vc = vc, channel_id = channel.id, guild_id = ctx.guild.id)
 
         await ctx.success()
 
     @commands.has_guild_permissions(administrator = True)
-    @specific_guild_only(guild_id)
+    @specific_guild_only(KnownGuild.intergalactica)
     @commands.command()
     async def warn(self, ctx, member : discord.Member, *, reason):
         await member.send(f"Hello {member}, this is an official warning. Reason: **{reason}**. Please be more careful in the future.")
@@ -396,7 +325,7 @@ class Intergalactica(BaseCog):
         await channel.send(f"Warned {member} for {reason}")
 
     @commands.has_guild_permissions(administrator = True)
-    @specific_guild_only(guild_id)
+    @specific_guild_only(KnownGuild.intergalactica)
     @commands.command()
     async def selfies(self, ctx):
         members = []
@@ -421,12 +350,12 @@ class Intergalactica(BaseCog):
         if not self.bot.production:
             return
 
-        if member.guild.id == mouse_guild_id:
+        if member.guild.id == KnownGuild.mouse:
             role    = member.guild.get_role(841072184953012275)
             general = member.guild.get_channel(729909438378541116)
             message = await general.send(f"Welcome to the server {member.mention}, {role.mention} say hello!")
             self.welcome_messages[member.id] = message
-        elif member.guild.id == self.guild_id:
+        elif member.guild.id == KnownGuild.intergalactica:
             welcome_channel = self.get_channel("welcome")
             text = self.bot.translate("member_join")
 
@@ -453,7 +382,7 @@ class Intergalactica(BaseCog):
         except:
             pass
 
-        if member.guild.id != self.guild_id:
+        if member.guild.id != KnownGuild.intergalactica:
             return
 
         welcome_channel = self.get_channel("welcome")
@@ -465,7 +394,7 @@ class Intergalactica(BaseCog):
         asyncio.gather(welcome_channel.send(embed = embed))
 
     async def on_rank(self, member, role):
-        role_to_add = self.guild.get_role(self._role_ids["5k+"])
+        role_to_add = member.guild.get_role(self._role_ids["5k+"])
         asyncio.gather(member.add_roles(role_to_add))
 
         if role == self.role_needed_for_selfie_vote:
@@ -477,7 +406,7 @@ class Intergalactica(BaseCog):
     async def on_member_update(self, before, after):
         if not self.bot.production:
             return
-        if after.guild.id != self.guild_id:
+        if after.guild.id != KnownGuild.intergalactica:
             return
         if len(after.roles) <= len(before.roles):
             return
@@ -528,7 +457,7 @@ class Intergalactica(BaseCog):
 
     @tasks.loop(hours = 5)
     async def mouse_role_cleanup(self):
-        guild = self.bot.get_guild(mouse_guild_id)
+        guild = self.bot.get_guild(KnownGuild.mouse)
         new_role = guild.get_role(764586989466943549)
 
         for member in guild.members:
@@ -537,27 +466,27 @@ class Intergalactica(BaseCog):
             if more_than_week and new_role in member.roles:
                 await member.remove_roles(new_role)
 
-    @tasks.loop(seconds = 30)
-    async def reminder_notifier(self):
-        query = Reminder.select()
-        query = query.where(Reminder.finished == False)
-        query = query.where(Reminder.due_date <= datetime.datetime.utcnow())
+    # @tasks.loop(seconds = 30)
+    # async def reminder_notifier(self):
+    #     query = Reminder.select()
+    #     query = query.where(Reminder.finished == False)
+    #     query = query.where(Reminder.due_date <= datetime.datetime.utcnow())
 
-        for reminder in query:
-            sendable = reminder.sendable
-            if sendable is not None:
-                embed = discord.Embed(color = self.bot.get_dominant_color(None))
-                embed.set_author(name = "Reminder", icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/804862458070040616/1.webp")
-                embed.description = reminder.text
-                asyncio.gather(sendable.send(content = f"<@{reminder.user_id}>", embed = embed))
+    #     for reminder in query:
+    #         sendable = reminder.sendable
+    #         if sendable is not None:
+    #             embed = discord.Embed(color = self.bot.get_dominant_color(None))
+    #             embed.set_author(name = "Reminder", icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/804862458070040616/1.webp")
+    #             embed.description = reminder.text
+    #             asyncio.gather(sendable.send(content = f"<@{reminder.user_id}>", embed = embed))
 
-            reminder.finished = True
-            reminder.save()
+    #         reminder.finished = True
+    #         reminder.save()
 
     @tasks.loop(hours = 1)
     async def illegal_member_purger(self):
         for guild in self.bot.guilds:
-            if guild.id not in (self.mouse_guild_id, self.guild_id):
+            if guild.id not in (KnownGuild.mouse, KnownGuild.intergalactica):
                 continue
 
             for member in guild.members:
@@ -575,7 +504,7 @@ class Intergalactica(BaseCog):
 
         query = Human.select()
         query = query.join(Earthling, on = (Human.id == Earthling.human))
-        query = query.where(Earthling.guild_id == self.guild.id)
+        query = query.where(Earthling.guild_id == KnownGuild.intergalactica)
         query = query.where(Human.date_of_birth != None)
         query = query.where(Human.date_of_birth.month == now.month)
         query = query.where(Human.date_of_birth.day == now.day)
@@ -584,37 +513,6 @@ class Intergalactica(BaseCog):
         with database.connection_context():
             for human in query:
                 await self.log("c3po-log", f"**{human.user}** {human.mention} Should be celebrating their birthday today.")
-
-class ChannelHelper:
-    __slots__ = ()
-
-    @classmethod
-    async def cleanup_channel(cls, channel: discord.TextChannel, log_channel: discord.TextChannel = None):
-        """Clears messages from users no longer in the guild."""
-        if channel is None:
-            return
-
-        tasks = []
-        total_messages = 0
-        messages_to_remove = []
-        async for introduction in channel.history(limit=200):
-            if isinstance(introduction.author, discord.User):
-                messages_to_remove.append(introduction)
-            total_messages += 1
-
-        if len(messages_to_remove) >= (total_messages//2):
-            return
-        for introduction in messages_to_remove:
-            if log_channel is not None:
-                embed = discord.Embed(
-                    color = config.bot.get_dominant_color(),
-                    title = f"Purged: Introduction by {introduction.author}",
-                    description = introduction.content
-                )
-                tasks.append(log_channel.send(embed = embed))
-            tasks.append(introduction.delete())
-
-        asyncio.gather(*tasks)
 
 class MemberHelper:
     __slots__ = ()
@@ -644,16 +542,16 @@ class MemberHelper:
 
     @classmethod
     def has_mandatory_roles(cls, member) -> bool:
-        if member.guild.id == Intergalactica.guild_id:
+        if member.guild.id == KnownGuild.intergalactica:
             return cls._has_mandatory_roles_intergalactica(member)
-        elif member.guild.id == Intergalactica.mouse_guild_id:
+        elif member.guild.id == KnownGuild.mouse:
             return cls._has_mandatory_roles_mouse(member)
         else:
             return True
 
     @classmethod
     def is_new(cls, member) -> bool:
-        if member.guild.id == guild_id:
+        if member.guild.id == KnownGuild.intergalactica:
             for role in member.roles:
                 if role.id == cls._role_ids["vc_access"]:
                     return False

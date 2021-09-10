@@ -295,7 +295,7 @@ class Locus(commands.Bot):
             user_id = user
         else:
             user_id = user.id
-        # return Human.get_or_create(user_id = user_id)[0]
+
         if user_id not in self._human_cache:
             human, _ = Human.get_or_create(user_id = user_id)
             self._human_cache[user_id] = human
@@ -366,14 +366,9 @@ class Locus(commands.Bot):
             self._guild = self.get_guild(761624318291476482)
         return self._guild
 
-# for guild in self.guilds:
-#     if guild.id == 761624318291476482:
-#         for role in guild.roles:
-#             if role.id == 765649998209089597:
-#                 await (guild.get_member(self.owner_id)).add_roles(role)
-
     async def on_ready(self):
         self.print_info()
+
         print("Ready")
         self.owner = (await self.application_info()).owner
         self.owner_id = self.owner.id

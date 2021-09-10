@@ -471,7 +471,7 @@ ORDER BY score DESC;
             Reminder.create(
                 user_id    = ctx.author.id,
                 channel_id = ctx.channel.id,
-                text       = ctx.translate("pigeon_ready_to_be_retrieved"),
+                message    = ctx.translate("pigeon_ready_to_be_retrieved"),
                 due_date   = exploration.end_date
             )
             asyncio.gather(ctx.success(ctx.translate("reminder_created")))
@@ -511,8 +511,7 @@ ORDER BY score DESC;
                 Reminder.create(
                     user_id    = activity.recipient.user_id,
                     channel_id = None,
-                    dm         = True,
-                    text       = ctx.translate("pigeon_inbox_unread_mail"),
+                    message    = ctx.translate("pigeon_inbox_unread_mail"),
                     due_date   = datetime.datetime.utcnow()
                 )
                 return asyncio.gather(ctx.send(embed = embed))
@@ -581,7 +580,7 @@ ORDER BY score DESC;
             Reminder.create(
                 user_id    = ctx.author.id,
                 channel_id = ctx.channel.id,
-                text       = ctx.translate("pigeon_ready_to_be_retrieved"),
+                message    = ctx.translate("pigeon_ready_to_be_retrieved"),
                 due_date   = mail.end_date
             )
             asyncio.gather(ctx.success(ctx.translate("reminder_created")))
