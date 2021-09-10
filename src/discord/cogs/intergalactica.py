@@ -141,7 +141,6 @@ class Intergalactica(BaseCog):
         self.start_task(self.temp_vc_poller,                    check = self.bot.production)
         self.start_task(self.disboard_bump_available_notifier,  check = self.bot.production)
         self.start_task(self.mouse_role_cleanup,                check = self.bot.production)
-        self.start_task(self.reminder_notifier,                 check = self.bot.production)
         await asyncio.sleep( (60 * 60) * 3 )
         self.start_task(self.birthday_poller,                   check = self.bot.production)
 
