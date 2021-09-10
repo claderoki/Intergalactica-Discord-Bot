@@ -351,7 +351,6 @@ class PigeonCog(BaseCog, name = "Pigeon"):
 
         if len(paginator._pages) > 0:
             profile = await paginator.wait()
-            print(profile)
 
     @pigeon.command(name = "accept")
     async def pigeon_accept(self, ctx):

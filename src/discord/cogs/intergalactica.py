@@ -15,7 +15,7 @@ from src.discord.cogs.core import BaseCog
 from src.discord.errors.base import SendableException
 from src.discord.helpers.checks import specific_guild_only
 from src.discord.helpers.utility import get_context_embed
-from src.models import (Earthling, Human, Item, Reminder,
+from src.models import (Earthling, Human, Item,
                         TemporaryVoiceChannel, TemporaryTextChannel, database)
 from src.discord.cogs.custom.shared.helpers.simple_poll import SimplePoll
 

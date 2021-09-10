@@ -35,17 +35,25 @@ class Mouse(CustomCog):
     @tasks.loop(hours = 24)
     async def synchronise_members(self):
         guild = self.bot.get_guild(self.guild_id)
+        lurker_role = guild.get_role(DailyActivityHelper.lurkers_role_id)
+        user_ids = []
         for member in guild.members:
-            if member.bot:
+            if member.bot or lurker_role in member.roles:
                 continue
-            weekly_message_count = DailyActivityHelper.get_weekly_message_count(member.id, guild.id)
-            role = DailyActivityHelper.role_should_have(guild, weekly_message_count)
-            await DailyActivityHelper.synchronise_roles(member, role)
+            user_ids.append(member.id)
+
+        lurkers = DailyActivityRepository.find_lurkers(user_ids, guild.id, 7)
+        tasks = []
+        if len(lurkers) > 0:
+            for user_id in lurkers:
+                member = guild.get_member(user_id)
+                tasks.append(DailyActivityHelper.synchronise_roles(member, lurker_role))
+        asyncio.gather(*tasks)
 
     @commands.Cog.listener()
     async def on_ready(self):
         await asyncio.sleep(1)
-        # self.start_task(self.synchronise_members, check = True)
+        self.start_task(self.synchronise_members, check = self.bot.production)
         await super().on_ready()
         self.praw_instances[self.guild_id] = praw.Reddit(
             client_id       = config.environ["mouse_reddit_client_id"],
@@ -110,6 +118,25 @@ class DailyActivityRepository:
         else:
             return activity.total_message_count
 
+    @classmethod
+    def find_lurkers(cls, user_ids: list, guild_id: int, day_threshhold: int) -> list:
+        before = datetime.datetime.today()
+        after  = datetime.datetime.today() - datetime.timedelta(days = day_threshhold)
+
+        activities = (DailyActivity
+            .select(DailyActivity.user_id, peewee.fn.SUM(DailyActivity.message_count).alias("total_message_count"))
+            .where(DailyActivity.guild_id == guild_id)
+            .where(DailyActivity.user_id.in_(user_ids))
+            .where(DailyActivity.date <= before)
+            .where(DailyActivity.date >= after)
+            .group_by(DailyActivity.user_id))
+
+        ids = [x for x in user_ids]
+        for activity in activities:
+            if activity.total_message_count > 0:
+                ids.remove(activity.user_id)
+        return ids
+
 class DailyActivityHelper:
     __slots__ = ()
 
@@ -119,8 +146,8 @@ class DailyActivityHelper:
 
     @classmethod
     def get_weekly_message_count(cls, user_id: int, guild_id: int):
-        before               = datetime.date.today()
-        after                = datetime.date.today() - datetime.timedelta(days = before.isoweekday())
+        before = datetime.date.today()
+        after  = datetime.date.today() - datetime.timedelta(days = before.isoweekday())
         return DailyActivityRepository.get_message_count(user_id, guild_id, before, after)
 
     @classmethod
@@ -132,8 +159,6 @@ class DailyActivityHelper:
             return guild.get_role(cls.talkative_role_id)
         if weekly_message_count >= 20:
             return guild.get_role(cls.active_role_id)
-        if weekly_message_count >= 0:
-            return guild.get_role(cls.lurkers_role_id)
 
     @classmethod
     async def synchronise_roles(cls, member: discord.Member, role_to_assign: discord.Role):

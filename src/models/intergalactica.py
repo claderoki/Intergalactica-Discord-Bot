@@ -1,7 +1,6 @@
 import datetime
 from enum import Enum
 import asyncio
-import random
 
 import peewee
 import discord

@@ -9,8 +9,6 @@ from src.models import Ticket, Reply, database
 import src.config as config
 from src.discord.cogs.core import BaseCog
 
-
-
 class TicketCog(BaseCog, name = "Ticket"):
     channels = {
         KnownGuild.intergalactica: 863775516998107186,

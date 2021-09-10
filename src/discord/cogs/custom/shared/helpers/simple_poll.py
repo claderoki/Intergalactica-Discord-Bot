@@ -57,9 +57,7 @@ class SimplePoll:
         if str(payload.emoji) not in cls.options:
             return False
 
-
         channel_data = cls.guild_data.get(payload.guild_id)
-        print(channel_data)
         if channel_data is None:
             return False
         if payload.channel_id != channel_data["vote_channel"]:
@@ -98,7 +96,7 @@ class SimplePoll:
         member = self.message.guild.get_member(user_id)
         if member is None:
             return False
-        selfie_role = self.message.guild.get_role(Intergalactica._role_ids["selfies"])
+        selfie_role = self.message.guild.get_role(744703465086779393)
         asyncio.gather(member.add_roles(selfie_role))
         return True
 
