@@ -56,6 +56,8 @@ class SimplePoll:
             return False
         if str(payload.emoji) not in cls.options:
             return False
+        if payload.guild_id is None:
+            return False
 
         channel_data = cls.guild_data.get(payload.guild_id)
         if channel_data is None:

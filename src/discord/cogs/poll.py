@@ -70,11 +70,9 @@ class PollCog(BaseCog, name = "Poll"):
             if poll.role_id_needed_to_vote is not None:
                 role = member.guild.get_role(poll.role_id_needed_to_vote)
                 if role not in member.roles:
-                    #TODO: translate!
                     return asyncio.gather(member.send(embed = Embed.error(f"To vote for this poll you need the **{role}** role.")))
 
-            new_vote, created = Vote.get_or_create(option = option, user_id = member.id)
-            print(new_vote)
+            new_vote, _ = Vote.get_or_create(option = option, user_id = member.id)
             votes = [new_vote]
             for option in poll.options:
                 vote = option.votes.where(Vote.user_id == member.id).first()
