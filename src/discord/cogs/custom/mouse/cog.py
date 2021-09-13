@@ -30,7 +30,7 @@ class Mouse(CustomCog):
 
         weekly_message_count = DailyActivityHelper.get_weekly_message_count(message.author.id, message.guild.id)
         role = DailyActivityHelper.role_should_have(message.guild, weekly_message_count)
-        await DailyActivityHelper.synchronise_roles(message.author, role)
+        await DailyActivityHelper.synchronise_roles(message.author, role, False)
 
     @tasks.loop(hours = 24)
     async def synchronise_members(self):
@@ -140,14 +140,16 @@ class DailyActivityRepository:
 class DailyActivityHelper:
     __slots__ = ()
 
+    lurkers_role_id   = 730025383189151744
     active_role_id    = 761260319820873809
     talkative_role_id = 761358543998681150
-    lurkers_role_id   = 730025383189151744
+
+    role_hierarchy = (lurkers_role_id, active_role_id, talkative_role_id)
 
     @classmethod
     def get_weekly_message_count(cls, user_id: int, guild_id: int):
         before = datetime.date.today()
-        after  = datetime.date.today() - datetime.timedelta(days = before.isoweekday())
+        after  = datetime.date.today() - datetime.timedelta(days = 7)
         return DailyActivityRepository.get_message_count(user_id, guild_id, before, after)
 
     @classmethod
@@ -161,9 +163,10 @@ class DailyActivityHelper:
             return guild.get_role(cls.active_role_id)
 
     @classmethod
-    async def synchronise_roles(cls, member: discord.Member, role_to_assign: discord.Role):
-        all_roles = (cls.active_role_id, cls.talkative_role_id, cls.lurkers_role_id)
-
+    async def synchronise_roles(cls, member: discord.Member, role_to_assign: discord.Role, decay: bool = True):
+        """Removes all other 'rank' roles, and adds the one that needs assigning.
+        If 'decay' is False, don't lose ranks, only increase.
+        """
         if role_to_assign is None:
             return
 
@@ -172,7 +175,12 @@ class DailyActivityHelper:
 
         roles_to_remove = []
         for member_role in member.roles:
-            if member_role.id != role_to_assign.id and member_role.id in all_roles:
+            if member_role.id != role_to_assign.id and member_role.id in cls.role_hierarchy:
+                if not decay:
+                    index = cls.role_hierarchy.index(member_role.id)
+                    if index >= cls.role_hierarchy.index(role_to_assign.id):
+                        return
+
                 roles_to_remove.append(member_role)
 
         if len(roles_to_remove) > 0:
