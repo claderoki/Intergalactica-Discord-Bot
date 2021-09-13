@@ -3,3 +3,4 @@ envs.json
 env
 tmp
 .vscode
+data/
