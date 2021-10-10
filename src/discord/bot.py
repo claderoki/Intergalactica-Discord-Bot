@@ -5,7 +5,6 @@ import datetime
 import os
 import cProfile
 import pstats
-from discord.ext.commands.errors import CheckFailure
 
 import requests
 import praw
@@ -196,6 +195,7 @@ class Locus(commands.Bot):
             "pigeon.cog",
             "switch.cog",
             "custom.mouse.cog",
+            "custom.shared.cog",
             "custom.intergalactica.cog",
             "covid",
             "conversations",

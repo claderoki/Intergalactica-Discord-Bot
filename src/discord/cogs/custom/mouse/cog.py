@@ -6,6 +6,7 @@ import peewee
 from discord.ext import commands, tasks
 import praw
 
+from src.discord.cogs.custom.shared.helpers.bump_reminder import DisboardBumpReminder
 from src.discord.helpers.known_guilds import KnownGuild
 from src.discord.cogs.custom.shared.cog import CustomCog
 import src.config as config
@@ -52,9 +53,9 @@ class Mouse(CustomCog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        await asyncio.sleep(1)
+        DisboardBumpReminder.cache(self.guild_id, 884021230498373662)
+
         self.start_task(self.synchronise_members, check = self.bot.production)
-        await super().on_ready()
         self.praw_instances[self.guild_id] = praw.Reddit(
             client_id       = config.environ["mouse_reddit_client_id"],
             client_secret   = config.environ["mouse_reddit_client_secret"],
@@ -63,14 +64,11 @@ class Mouse(CustomCog):
             password        = config.environ["mouse_reddit_password"],
             check_for_async = False
         )
- 
+
     @commands.command()
     async def uwu(self, ctx, *, text):
         asyncio.gather(ctx.message.delete(), return_exceptions = False)
         await ctx.send(Uwu.format(text))
-
-def setup(bot):
-    bot.add_cog(Mouse(bot))
 
 class AnimalCrossingBotHelper:
     bot_id = 701038771776520222
@@ -187,3 +185,6 @@ class DailyActivityHelper:
             await member.remove_roles(*roles_to_remove)
 
         await member.add_roles(role_to_assign)
+
+def setup(bot):
+    bot.add_cog(Mouse(bot))
