@@ -25,6 +25,8 @@ class CustomCog(BaseCog):
     async def bump_poller(self):
         for bump_context in DisboardBumpReminder.get_available_bumps():
             content = f"A bump is available! `{DisboardBumpReminder._cmd}` to bump."
+            if bump_context.role_id is not None:
+                content = f"<@&{bump_context.role_id}>, {content}"
             channel = self.bot.get_channel(bump_context.channel_id)
             last_message = channel.last_message
 

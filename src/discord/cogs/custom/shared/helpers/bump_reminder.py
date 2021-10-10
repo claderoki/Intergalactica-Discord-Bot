@@ -3,15 +3,17 @@ import asyncio
 
 import discord
 
+from src.discord.helpers.known_guilds import KnownGuild
 import src.config as config
 
 class DisboardBumpReminderContext:
-    __slots__ = ("guild_id", "channel_id", "available_at")
+    __slots__ = ("guild_id", "channel_id", "available_at", "role_id")
 
-    def __init__(self, guild_id: int, channel_id: int, available_at: datetime):
+    def __init__(self, guild_id: int, channel_id: int, available_at: datetime, role_id: int = None):
         self.guild_id     = guild_id
         self.channel_id   = channel_id
         self.available_at = available_at
+        self.role_id      = role_id
 
     def __str__(self):
         return ", ".join(f"{x} => {getattr(self, x)}" for x in self.__slots__)
@@ -52,7 +54,13 @@ class DisboardBumpReminder:
     @classmethod
     def cache(cls, guild_id: int, channel_id: int, minutes_left: int = _default_minutes):
         available_at = datetime.datetime.utcnow() + datetime.timedelta(minutes = minutes_left)
-        cls._bump_cache[guild_id] = DisboardBumpReminderContext(guild_id, channel_id, available_at)
+
+        role_id = None
+        if guild_id == KnownGuild.mouse:
+            #TODO: hard coded id
+            role_id = 810864493642907669
+
+        cls._bump_cache[guild_id] = DisboardBumpReminderContext(guild_id, channel_id, available_at, role_id)
 
     @classmethod
     def get_available_bumps(cls) -> iter:
