@@ -133,13 +133,11 @@ class Intergalactica(BaseCog):
         SimplePoll.add_guild_data(KnownGuild.intergalactica, self._channel_ids["staff_votes"], self._channel_ids["staff_chat"])
 
         guild = self.bot.get_guild(KnownGuild.intergalactica)
-        self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = 120)
         self.role_needed_for_selfie_vote = guild.get_role(self._role_ids["ranks"]["nova"])
 
         self.start_task(self.illegal_member_purger,             check = self.bot.production)
         self.start_task(self.introduction_purger,               check = self.bot.production)
         self.start_task(self.temp_vc_poller,                    check = self.bot.production)
-        self.start_task(self.disboard_bump_available_notifier,  check = self.bot.production)
         self.start_task(self.mouse_role_cleanup,                check = self.bot.production)
         await asyncio.sleep( (60 * 60) * 3 )
         self.start_task(self.birthday_poller,                   check = self.bot.production)
@@ -253,19 +251,6 @@ class Intergalactica(BaseCog):
                         amount = int(field.value.split("`")[1])
                         self.on_milkyway_purchased(message.channel, member, amount)
                         return await message.delete()
-
-        if message.content and message.content.lower() == "!d bump":
-            disboard_response = await self.bot.wait_for("message", check = lambda x : x.author.id == 302050872383242240 and x.channel.id == message.channel.id)
-            embed = disboard_response.embeds[0]
-            text = embed.description
-            minutes = None
-            if "minutes until the server can be bumped" in text:
-                minutes = int([x for x in text.split() if x.isdigit()][0])
-            else:
-                minutes = 120
-
-            if minutes is  not None:
-                self.bump_available = datetime.datetime.utcnow() + datetime.timedelta(minutes = minutes)
 
     async def log(self, channel_name, content = None, **kwargs):
         channel = self.get_channel(channel_name)
@@ -423,16 +408,6 @@ class Intergalactica(BaseCog):
             if added_role.id == rank_id:
                 await self.on_rank(after, added_role)
 
-    @tasks.loop(minutes = 1)
-    async def disboard_bump_available_notifier(self):
-        if self.bump_available <= datetime.datetime.utcnow():
-            bot_spam = self.get_channel("bot_spam")
-            last_message = bot_spam.last_message
-            content = "A bump is available! `!d bump` to bump."
-
-            if last_message is None or last_message.content != content:
-                await bot_spam.send(content)
-
     @tasks.loop(minutes = 5)
     async def temp_vc_poller(self):
         with database.connection_context():
@@ -466,23 +441,6 @@ class Intergalactica(BaseCog):
             more_than_week = time_here.weeks >= 1 or time_here.months > 1 or time_here.years >= 1
             if more_than_week and new_role in member.roles:
                 await member.remove_roles(new_role)
-
-    # @tasks.loop(seconds = 30)
-    # async def reminder_notifier(self):
-    #     query = Reminder.select()
-    #     query = query.where(Reminder.finished == False)
-    #     query = query.where(Reminder.due_date <= datetime.datetime.utcnow())
-
-    #     for reminder in query:
-    #         sendable = reminder.sendable
-    #         if sendable is not None:
-    #             embed = discord.Embed(color = self.bot.get_dominant_color(None))
-    #             embed.set_author(name = "Reminder", icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/804862458070040616/1.webp")
-    #             embed.description = reminder.text
-    #             asyncio.gather(sendable.send(content = f"<@{reminder.user_id}>", embed = embed))
-
-    #         reminder.finished = True
-    #         reminder.save()
 
     @tasks.loop(hours = 1)
     async def illegal_member_purger(self):
