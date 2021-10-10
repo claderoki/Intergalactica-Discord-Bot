@@ -5,7 +5,6 @@ import discord
 from discord.ext import commands
 import requests
 
-from src.models import Word, Human
 import src.config as config
 import src.games.blackjack as blackjack
 import src.games.slotmachine as slotmachine
@@ -14,6 +13,7 @@ import src.games.hangman as hangman
 from src.games.game.base import AiIdentity, DiscordIdentity
 from src.discord.cogs.core import BaseCog
 from src.utils.general import html_to_discord
+from src.games.grille.game import GrilleBoardBuilder
 
 class Games(BaseCog):
 
@@ -87,6 +87,26 @@ class Games(BaseCog):
         ctx.raise_if_not_enough_gold(3)
         game = slotmachine.game.Game(slotmachine.ui.DiscordUI(ctx))
         await game.start()
+
+    @commands.command()
+    async def grille(self, ctx):
+        word_definition = await get_word_details()
+        board = GrilleBoardBuilder(word_definition["word"]).build()
+
+        embed = discord.Embed()
+        embed.add_field(name = "Arguments", value = "```\n"+("\n".join([" ".join(x) for x in board.argument_grid])) + "```")
+        embed.add_field(name = "Characters", value = "```\n"+("\n".join([" ".join(x) for x in board.character_grid])) + "```")
+
+        await ctx.send(embed = embed)
+        def check(message) -> bool:
+            return message.channel.id == ctx.message.channel.id and message.content.lower().replace(" ", "") == word_definition["word"].replace(" ", "")
+
+        try:
+            message = await self.bot.wait_for("message", check = check, timeout = 120)
+        except asyncio.TimeoutError:
+            await ctx.send(f"No one got it in time, word was: {word_definition['word']}")
+            return
+        await ctx.send(f"Good job, {message.author.mention} got it")
 
     @commands.command()
     @commands.max_concurrency(1, commands.BucketType.guild)
