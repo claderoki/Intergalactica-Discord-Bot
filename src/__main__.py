@@ -1,4 +1,3 @@
-from operator import rshift
 import os
 import argparse
 import sys

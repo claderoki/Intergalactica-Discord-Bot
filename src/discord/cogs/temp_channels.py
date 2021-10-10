@@ -111,12 +111,12 @@ class TempChannelsCog(BaseCog, name = "Milkyway"):
 
         TEMP_CHANNEL_LIMIT = 10
 
-        amount = TemporaryChannel\
-            .select()\
-            .where(TemporaryChannel.guild_id == ctx.guild.id)\
-            .where(TemporaryChannel.active == True)\
-            .where(TemporaryChannel.status == TemporaryChannel.Status.accepted)\
-            .count()
+        amount = (TemporaryChannel
+            .select()
+            .where(TemporaryChannel.guild_id == ctx.guild.id)
+            .where(TemporaryChannel.active == True)
+            .where(TemporaryChannel.status == TemporaryChannel.Status.accepted)
+            .count())
 
         if amount >= TEMP_CHANNEL_LIMIT:
             raise SendableException(ctx.translate("too_many_temporary_channels_active"))

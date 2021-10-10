@@ -46,7 +46,7 @@ class SimplePoll:
         channel      = config.bot.get_channel(payload.channel_id)
         message      = await channel.fetch_message(payload.message_id)
         votes        = await cls.get_votes(message)
-        member_count = len([x for x in message.channel.members if not x.bot and x.id not in (649407938745598004, 516136653627064320)])
+        member_count = len([x for x in message.channel.members if not x.bot])
 
         return cls(message, votes, member_count)
 
@@ -107,6 +107,7 @@ class SimplePoll:
         embed = discord.Embed(color = config.bot.get_dominant_color(None))
 
         lines = []
+        lines.append(self.question)
         lines.append("*(all members finished voting)*")
         lines.append("\n")
 

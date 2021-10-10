@@ -204,6 +204,8 @@ class Intergalactica(BaseCog):
     async def on_message(self, message):
         if not self.bot.production:
             return
+        if message.guild is None:
+            return
 
         guild_data = SimplePoll.guild_data.get(message.guild.id)
         if guild_data is not None and guild_data["vote_channel"] == message.channel.id:
@@ -211,7 +213,7 @@ class Intergalactica(BaseCog):
             asyncio.gather(*coros)
             return
 
-        if message.guild is not None and message.guild.id != KnownGuild.intergalactica:
+        if message.guild.id != KnownGuild.intergalactica:
             return
 
         words = self.blacklisted_words_used(message.content.lower())
