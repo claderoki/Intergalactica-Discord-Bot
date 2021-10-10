@@ -19,7 +19,7 @@ class CustomCog(BaseCog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.start_task(self.advertisement, check = self.bot.production)
-        self.start_task(self.bump_poller, check = not self.bot.production)
+        self.start_task(self.bump_poller, check = self.bot.production)
 
     @tasks.loop(minutes = 1)
     async def bump_poller(self):
