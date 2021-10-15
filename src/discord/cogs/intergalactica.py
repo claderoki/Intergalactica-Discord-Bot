@@ -257,15 +257,21 @@ class Intergalactica(BaseCog):
         await channel.send(content = content, **kwargs)
 
     @commands.command(name = "vcchannel")
-    @specific_guild_only(KnownGuild.intergalactica)
-    @commands.has_role(_role_ids["5k+"])
+    @commands.guild_only()
     async def vc_channel(self, ctx, *args):
         name = " ".join(args) if len(args) > 0 else None
 
-        category = None
-        for category in ctx.guild.categories:
-            if category.id == 742146159711092759:
-                break
+        if ctx.guild.id == KnownGuild.intergalactica:
+            role = ctx.guild.get_role(self._role_ids["5k+"])
+            if role not in ctx.author.roles:
+                raise SendableException(f"You need the {role} role to use this command.")
+            category_id = 742146159711092759
+        elif ctx.guild.id == KnownGuild.cam:
+            category_id = 695416318681415792
+        else:
+            raise SendableException("Command not available in this guild.")
+
+        category = get_category(ctx.guild, category_id)
         channel = await category.create_voice_channel(name or "Temporary voice channel", reason = f"Requested by {ctx.author}")
         TemporaryVoiceChannel.create(guild_id = ctx.guild.id, channel_id = channel.id)
         await ctx.success()
@@ -519,6 +525,11 @@ class MemberHelper:
                 return True
 
         return False
+
+def get_category(guild: discord.Guild, id):
+    for category in guild.categories:
+        if category.id == id:
+            return category
 
 def setup(bot):
     bot.add_cog(Intergalactica(bot))
