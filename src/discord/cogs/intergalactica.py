@@ -522,11 +522,11 @@ class MemberHelper:
                     return False
                 if role.id == cls._role_ids["5k+"]:
                     return False
-                return True
+            return True
 
         return False
 
-def get_category(guild: discord.Guild, id):
+def get_category(guild: discord.Guild, id: int) -> discord.CategoryChannel:
     for category in guild.categories:
         if category.id == id:
             return category
