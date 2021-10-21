@@ -2,6 +2,7 @@ import datetime
 
 from discord.ext import tasks, commands
 
+from src.discord.cogs.custom.shared.helpers.praw_cache import PrawInstanceCache
 from src.discord.cogs.custom.shared.helpers.bump_reminder import DisboardBumpReminder
 from src.discord.cogs.core import BaseCog
 from src.models import Advertisement
@@ -36,7 +37,7 @@ class CustomCog(BaseCog):
     @tasks.loop(hours = 1)
     async def advertisement(self):
         for advertisement in Advertisement:
-            praw = self.praw_instances.get(advertisement.guild_id)
+            praw = PrawInstanceCache.get(advertisement.guild_id)
             if praw is None:
                 continue
 

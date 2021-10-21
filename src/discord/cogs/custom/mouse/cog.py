@@ -6,6 +6,7 @@ import peewee
 from discord.ext import commands, tasks
 import praw
 
+from src.discord.cogs.custom.shared.helpers.praw_cache import PrawInstanceCache
 from src.discord.cogs.custom.shared.helpers.bump_reminder import DisboardBumpReminder
 from src.discord.helpers.known_guilds import KnownGuild
 from src.discord.cogs.custom.shared.cog import CustomCog
@@ -56,7 +57,7 @@ class Mouse(CustomCog):
         DisboardBumpReminder.cache(self.guild_id, 884021230498373662)
 
         self.start_task(self.synchronise_members, check = self.bot.production)
-        self.praw_instances[self.guild_id] = praw.Reddit(
+        praw_instance = praw.Reddit(
             client_id       = config.environ["mouse_reddit_client_id"],
             client_secret   = config.environ["mouse_reddit_client_secret"],
             user_agent      = config.environ["mouse_reddit_user_agent"],
@@ -64,6 +65,8 @@ class Mouse(CustomCog):
             password        = config.environ["mouse_reddit_password"],
             check_for_async = False
         )
+
+        PrawInstanceCache.cache(self.guild_id, praw_instance)
 
     @commands.command()
     async def uwu(self, ctx, *, text):
