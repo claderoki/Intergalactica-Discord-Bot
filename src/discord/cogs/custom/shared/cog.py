@@ -10,7 +10,6 @@ from src.discord.cogs.custom.shared.helpers import GuildHelper
 from src.discord.helpers.embed import Embed
 
 class CustomCog(BaseCog):
-    praw_instances = {}
 
     @commands.Cog.listener()
     async def on_message(self, message):
