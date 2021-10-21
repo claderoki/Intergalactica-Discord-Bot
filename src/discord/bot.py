@@ -14,6 +14,7 @@ from discord.ext import commands
 from dateutil.relativedelta import relativedelta
 
 import src.config as config
+from src.discord.helpers.waiters.base import Cancelled
 from src.wrappers.openweathermap import OpenWeatherMapApi
 from src.wrappers.color_thief import ColorThief
 from src.models import Settings, Translation, Human, database
@@ -61,7 +62,8 @@ class Locus(commands.Bot):
     )
 
     ignorables = (
-        commands.errors.CommandNotFound
+        commands.errors.CommandNotFound,
+        Cancelled,
     )
 
     def __init__(self, mode, prefix = None):
