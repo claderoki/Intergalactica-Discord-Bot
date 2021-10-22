@@ -28,6 +28,9 @@ class CustomCog(BaseCog):
             if bump_context.role_id is not None:
                 content = f"<@&{bump_context.role_id}>, {content}"
             channel = self.bot.get_channel(bump_context.channel_id)
+            if channel is None:
+                continue
+
             last_message = channel.last_message
 
             if last_message is None or last_message.content != content:
