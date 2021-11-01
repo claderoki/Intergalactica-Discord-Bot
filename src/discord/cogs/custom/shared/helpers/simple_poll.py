@@ -79,6 +79,8 @@ class SimplePoll:
             async for user in reaction.users():
                 if user.bot or user.id in all_user_ids:
                     continue
+                if message.guild.id == KnownGuild.intergalactica and user.id == 120566758091259906:
+                    continue
                 vote.increment_count()
                 all_user_ids.add(user.id)
 
@@ -99,6 +101,7 @@ class SimplePoll:
         if member is None:
             return False
         selfie_role = self.message.guild.get_role(744703465086779393)
+        print('Selfie role', selfie_role)
         asyncio.gather(member.add_roles(selfie_role))
         return True
 
