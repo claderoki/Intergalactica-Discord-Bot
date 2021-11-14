@@ -150,13 +150,7 @@ class Reminder(BaseModel):
     channel_id          = peewee.BigIntegerField (null = True)
     user_id             = peewee.BigIntegerField (null = False)
     due_date            = peewee.DateTimeField   (null = False)
-    message             = peewee.TextField    (null = False)
-
-    # `reminder`.`user_id`,
-    # `reminder`.`channel_id`,
-    # `reminder`.`message`,
-    # `reminder`.`due_date`
-
+    message             = peewee.TextField       (null = False)
 
 class Earthling(BaseModel):
     user_id              = peewee.BigIntegerField  (null = False)

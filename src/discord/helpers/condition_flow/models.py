@@ -30,14 +30,20 @@ class Condition:
         self.value = value
         self.positive = positive
 
-class MemberCondition(Condition):
+class UserCondition(Condition):
     class Type(Condition.Type):
         pass
 
     class Source(Condition.Source):
+        bot = "bot"
+
+class MemberCondition(UserCondition):
+    class Type(UserCondition.Type):
+        pass
+
+    class Source(UserCondition.Source):
         role          = "role"
         nitro_booster = "nitro_booster"
-        bot           = "bot"
 
     @classmethod
     def has_any_role(cls, *role_ids) -> "MemberCondition":
