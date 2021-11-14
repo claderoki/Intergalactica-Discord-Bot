@@ -37,6 +37,14 @@ class UserCondition(Condition):
     class Source(Condition.Source):
         bot = "bot"
 
+    @classmethod
+    def is_bot(cls) -> "UserCondition":
+        return cls(
+            source   = cls.Source.bot,
+            type     = cls.Type.is_,
+            value    = None,
+        )
+
 class MemberCondition(UserCondition):
     class Type(UserCondition.Type):
         pass
