@@ -1,6 +1,6 @@
 import discord
 
-from .models import ConditionFlow, MemberCondition, ConditionBlock, Condition
+from .models import ConditionFlow, MemberCondition, ConditionBlock, Condition, UserCondition
 
 class ValidationContext:
     __slots__ = ("member", "user", "message", "channel", "guild")
@@ -15,6 +15,7 @@ class ValidationContext:
             obj.user = message.author
         else:
             obj.member  = message.author
+            obj.user    = message.author
             obj.guild   = message.guild
             obj.message = message
         return obj
@@ -40,6 +41,8 @@ class ConditionValidator:
     def __init_subclass__(cls) -> None:
         if not hasattr(cls, "_validate_member"):
             raise Exception("You don't have the _validate_member method")
+        if not hasattr(cls, "_validate_user"):
+            raise Exception("You don't have the _validate_user method")
 
     @classmethod
     def validate(cls, context: ValidationContext, condition: Condition) -> bool:
@@ -47,30 +50,38 @@ class ConditionValidator:
             if not hasattr(context, "member") or not isinstance(context.member, discord.Member):
                 return False
             return cls._validate_member(context.member, condition)
-        return False
+        if isinstance(condition, UserCondition):
+            if not hasattr(context, "user") or not isinstance(context.user, discord.User):
+                return False
+            return cls._validate_user(context.user, condition)
 
 class ContainsValidator(ConditionValidator):
     __slots__ = ()
+
+    @classmethod
+    def _validate_user(cls, user: discord.User, condition: UserCondition) -> bool:
+        pass
 
     @classmethod
     def _validate_member(cls, member: discord.Member, condition: MemberCondition) -> bool:
         if condition.source == MemberCondition.Source.role:
             for role in member.roles:
                 if role.id in condition.value.values:
-                    return condition.positive
-            return not condition.positive
-
-        return False
+                    return True
+            return False
 
 class IsValidator(ConditionValidator):
     __slots__ = ()
 
     @classmethod
+    def _validate_user(cls, user: discord.User, condition: UserCondition) -> bool:
+        if condition.source == UserCondition.Source.bot:
+            return user.bot
+
+    @classmethod
     def _validate_member(cls, member: discord.Member, condition: MemberCondition) -> bool:
-        if condition.source == MemberCondition.Source.bot:
-            return (int(condition.positive)+int(member.bot) != 1)
-        elif condition.source == MemberCondition.Source.nitro_booster:
-            return (int(member.premium_since is not None)+int(condition.positive) != 1)
+        if condition.source == MemberCondition.Source.nitro_booster:
+            return member.premium_since is not None
 
 condition_validation_mappings = {"is": IsValidator, "contains": ContainsValidator}
 
@@ -89,7 +100,10 @@ class ConditionFlowValidator:
     def match_condition(cls, context: ValidationContext, condition: Condition) -> bool:
         validator = condition_validation_mappings.get(condition.type)
         if validator is not None:
-            return validator.validate(context, condition) == True
+            matched = validator.validate(context, condition)
+            if matched is None:
+                return False
+            return int(matched) + int(condition.positive) != 1
 
         return False
 
