@@ -1,5 +1,7 @@
 
 class KnownGuild:
+    __slots__ = ()
+
     intergalactica = 742146159711092757
     cam            = 695416318681415790
     cerberus       = 842154624869859368
