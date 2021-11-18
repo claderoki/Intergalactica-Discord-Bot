@@ -68,6 +68,18 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
         secret_santa.save()
         await ctx.success("Secret santa has been setup for this server.")
 
+    @secret_santa.command(name = "delete")
+    @commands.guild_only()
+    @commands.has_guild_permissions(administrator = True)
+    async def secret_santa_delete(self, ctx):
+        """Delete this servers secret santa this year (Admin only)."""
+        now = datetime.datetime.utcnow()
+
+        secret_santa = SecretSantaRepository.get(guild_id = ctx.guild.id, year = now.year)
+        if secret_santa is not None:
+            secret_santa.delete()
+        await ctx.success("Secret santa has been removed for this server.")
+
     @secret_santa.command(name = "profile")
     @commands.dm_only()
     async def secret_santa_profile(self, ctx):
