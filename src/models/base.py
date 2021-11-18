@@ -64,6 +64,10 @@ class BaseModel(peewee.Model):
     async def editor_for(self, ctx, attr, on_skip = "pass", waiter = None, **kwargs):
         if waiter is None:
             waiter = self.waiter_for(ctx, attr, **kwargs)
+
+        if waiter is None:
+            raise Exception(f"Waiter for type `{getattr(self.__class__, attr)}` was not found.")
+
         try:
             value = await waiter.wait()
             if attr == "due_date":

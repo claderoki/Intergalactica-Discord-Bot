@@ -119,7 +119,7 @@ class Paginator:
     def from_embed(cls, ctx, embed : discord.Embed, max_fields = 10):
         paginator = cls(ctx)
         if len(embed.fields) <= max_fields:
-            paginator.add_page(embed)
+            paginator.add_page(Page(embed))
             return paginator
 
         field_groups = split_list(embed.fields, max_fields)

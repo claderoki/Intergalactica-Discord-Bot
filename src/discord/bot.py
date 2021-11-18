@@ -201,6 +201,7 @@ class Locus(commands.Bot):
             "custom.intergalactica.cog",
             "covid",
             "conversations",
+            "secretsanta.cog",
             # "qotd",
             "giveaway",
             "temp_channels",
@@ -391,6 +392,12 @@ class Locus(commands.Bot):
         if locale not in self._cached_translations:
             self._cached_translations[locale] = {}
         return self._cached_translations[locale]
+
+    def log(self, message: str):
+        if self.owner is not None:
+            asyncio.gather(self.owner.send(message))
+        else:
+            print(f"Owner not initialized yet, logged: {message}")
 
     def translate(self, key, locale = "en_US"):
         missing_translations = self.get_missing_translations(locale)

@@ -325,10 +325,13 @@ class RangeWaiter(StrWaiter):
             raise ConversionFailed("Message needs to be a range.")
 
 class EnumWaiter(StrWaiter):
-    def __init__(self, ctx, enum, **kwargs):
+    def __init__(self, ctx, enum, properties_to_skip = None, **kwargs):
         super().__init__(ctx, **kwargs)
+        if properties_to_skip is None:
+            properties_to_skip = []
+
         self.enum = enum
-        self.allowed_words = [x.name for x in enum]
+        self.allowed_words = [x.name for x in enum if x not in properties_to_skip]
         self.case_sensitive = False
 
     def convert(self, argument):
@@ -413,6 +416,10 @@ class TimeWaiter(MessageWaiter):
         self.before = before
         self.after  = after
 
+    @property
+    def instructions(self):
+        return "HH:MM:SS"
+
     def convert(self, argument):
         missing_count = 8 - len(argument)
         if missing_count > 0:
@@ -433,7 +440,7 @@ class DateWaiter(StrWaiter):
     __slots__ = ("before", "after")
 
     def __init__(self, ctx, before = None, after =None, **kwargs):
-        super().__init__(ctx, min_length = len("1-1-1"), max_length = len("06-02-1994"), **kwargs)
+        super().__init__(ctx, min_length = len("1-1-1"), max_length = len("1994-02-06"), **kwargs)
 
         self.before = before
         self.after  = after
@@ -457,9 +464,13 @@ class DateWaiter(StrWaiter):
             return False
 
         if self.before is not None and self.converted >= self.before:
+            error_msg = f"Date can't be after {self.before}"
+            asyncio.gather(message.channel.send(embed = Embed.error(error_msg)))
             return False
 
         if self.after is not None and self.converted <= self.after:
+            error_msg = f"Date can't be before {self.after}"
+            asyncio.gather(message.channel.send(embed = Embed.error(error_msg)))
             return False
 
         return True

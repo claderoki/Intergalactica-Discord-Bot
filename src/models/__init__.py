@@ -15,6 +15,7 @@ from .intergalactica import Advertisement, AdvertisementSubreddit
 from .farming import Farm, Crop, FarmCrop
 from .conversation import Conversant, Conversation, Participant
 from .conversions import Currency, Measurement, StoredUnit
+from .secretsanta import SecretSanta, SecretSantaParticipant
 
 database = BaseModel._meta.database
 
@@ -22,6 +23,9 @@ def setup():
     with database.connection_context():
         # database.drop_tables([Conversant, Participant, Conversation])
         database.create_tables([Conversant, Participant, Conversation])
+
+        # database.drop_tables([SecretSanta, SecretSantaParticipant])
+        database.create_tables([SecretSanta, SecretSantaParticipant])
 
         # database.drop_tables([Advertisement, AdvertisementSubreddit])
         database.create_tables([Advertisement, AdvertisementSubreddit])
