@@ -60,8 +60,8 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
         if new:
             secret_santa = SecretSanta(guild_id = ctx.guild.id, active = True)
 
-        date = await DateWaiter(ctx, after = now.date(), prompt = "What date should this event start?").wait()
-        time = await TimeWaiter(ctx, after = now.time(), prompt = "What time should this event start?").wait()
+        date = await DateWaiter(ctx, prompt = "What date should this event start?").wait()
+        time = await TimeWaiter(ctx, prompt = "What time should this event start?").wait()
 
         secret_santa.start_date = datetime.datetime.combine(date = date, time = time)
 
