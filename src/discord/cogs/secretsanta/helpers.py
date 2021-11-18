@@ -11,15 +11,15 @@ class SecretSantaUI:
     __slots__ = ()
 
     @classmethod
-    def get_base_embed(cls, type: SecretSantaParticipant.Type) -> discord.Embed:
+    def get_base_embed(cls, info: str) -> discord.Embed:
         icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/911012466899689522/ss.png"
         embed = discord.Embed(color = config.bot.get_dominant_color())
-        embed.set_author(name = f"Secret Santa ({type.value})", icon_url = icon_url)
+        embed.set_author(name = f"Secret Santa ({info})", icon_url = icon_url)
         return embed
 
     @classmethod
     def get_giftee_info_embed(cls, participant: SecretSantaParticipant) -> discord.Embed:
-        embed = cls.get_base_embed(participant.type)
+        embed = cls.get_base_embed(participant.type.value)
         embed.description = f"You are <@{participant.user_id}>'s secret santa! ({participant.user})\n"
 
         if participant.type == SecretSantaParticipant.Type.monetary:
@@ -30,6 +30,28 @@ class SecretSantaUI:
         embed.add_field(name = field_name, value = participant.description, inline = False)
 
         return embed
+
+    @classmethod
+    def get_help_embed(cls) -> discord.Embed:
+        embed = cls.get_base_embed("Commands")
+
+        for command in config.bot.get_command("secretsanta").walk_commands():
+            embed.add_field(**command_to_field("/", command))
+
+        return embed
+
+def command_to_field(prefix, command, description = None):
+    desc = command.callback.__doc__
+
+    kwargs = {}
+    kwargs["value"] = f"`{prefix}{command.qualified_name}`"
+    if description is None:
+        kwargs["name"] = desc
+    else:
+        kwargs["value"] += f"\n{desc}{config.br}"
+    kwargs["inline"] = False
+    return kwargs
+
 
 class SecretSantaHelper:
     __slots__ = ()
@@ -45,10 +67,6 @@ class SecretSantaHelper:
             if user is None or member is None:
                 continue
             participants[type].append(participant)
-
-        total = sum(len(x) for x in participants.values())
-        if total % 2 == 1:
-            raise Exception(f"[FATAL] UNEVEN SECRET SANTA PARTICIPANTS, GUILD {secret_santa.guild_id}!")
 
         return participants
 
@@ -95,6 +113,13 @@ class SecretSantaRepository:
             .where(SecretSanta.start_date <= datetime.datetime.utcnow())
             .where(SecretSanta.active == True)
             .where(SecretSanta.started_at == None))
+
+    @classmethod
+    def get_participants(cls, secret_santa_id: int, type: SecretSantaParticipant.Type) -> list:
+        return (SecretSantaParticipant
+                .select(SecretSantaParticipant.user_id)
+                .where(SecretSantaParticipant.secret_santa == secret_santa_id)
+                .where(SecretSantaParticipant.type == type.name))
 
     @classmethod
     def get(cls, guild_id: int, year: int) -> SecretSanta:

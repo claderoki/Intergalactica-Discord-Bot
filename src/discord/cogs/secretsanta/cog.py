@@ -3,6 +3,7 @@ import asyncio
 
 from discord.ext import tasks, commands
 
+from src.discord.helpers.converters import EnumConverter
 from src.discord.cogs.intergalactica import Intergalactica
 from src.discord.helpers.paginating import Paginator
 from .helpers import SecretSantaHelper, SecretSantaRepository, SecretSantaUI
@@ -30,11 +31,25 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
         paginator = Paginator.from_embed(ctx, embed, max_fields = 10)
         await paginator.wait()
 
+    @secret_santa.command(name = "view")
+    @commands.guild_only()
+    @commands.has_guild_permissions(administrator = True)
+    async def secret_santa_view(self, ctx, type: EnumConverter(SecretSantaParticipant.Type)):
+        """View a list of participants (Admin only)."""
+        now          = datetime.datetime.utcnow()
+        secret_santa = SecretSantaRepository.get(guild_id = ctx.guild.id, year = now.year)
+        participants = SecretSantaRepository.get_participants(secret_santa.id, SecretSantaParticipant.Type[type])
+
+        lines = []
+        for participant in participants:
+            lines.append(str(participant.user))
+        await ctx.send("\n".join(lines))
+
     @secret_santa.command(name = "setup")
     @commands.guild_only()
     @commands.has_guild_permissions(administrator = True)
     async def secret_santa_setup(self, ctx):
-        """Manage this servers secret santa this year (admin only)."""
+        """Manage this servers secret santa this year (Admin only)."""
         if ctx.guild.id != KnownGuild.intergalactica:
             raise SendableException("Not supported yet for other guilds.")
         now = datetime.datetime.utcnow()
@@ -66,7 +81,7 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
         new = participant is None
         if new:
             participant = SecretSantaParticipant(user_id = ctx.author.id, secret_santa = secret_santa)
-        
+
         properties_to_skip = []
         if secret_santa.guild_id == KnownGuild.intergalactica:
             guild  = secret_santa.guild
@@ -105,10 +120,10 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
 
         self._secret_santa_in_progress = True
         for secret_santa in SecretSantaRepository.get_queue():
-            try:
-                participants = SecretSantaHelper.get_filtered_participants(secret_santa)
-            except Exception as e:
-                self.bot.log(e)
+            participants = SecretSantaHelper.get_filtered_participants(secret_santa)
+            total = sum(len(x) for x in participants.values())
+            if total % 2 == 1:
+                self.bot.log(f"[FATAL] UNEVEN SECRET SANTA PARTICIPANTS, GUILD {secret_santa.guild_id}!")
                 continue
 
             secret_santa.started_at = datetime.datetime.utcnow()
