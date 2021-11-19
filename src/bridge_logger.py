@@ -38,7 +38,7 @@ HueBridgeCall.set_ip("192.168.178.172")
 
 username = HueBridgeCache.get_username()
 if username is None:
-    call = AuthenticateCall("Clark API Client")
+    call = AuthenticateCall("API Client")
     username = call.call()
     HueBridgeCache.set_username(username)
 
