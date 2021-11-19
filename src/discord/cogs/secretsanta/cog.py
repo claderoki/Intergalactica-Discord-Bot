@@ -12,14 +12,13 @@ from src.discord.errors.base import SendableException
 from src.discord.helpers.known_guilds import KnownGuild
 from src.models import SecretSantaParticipant, SecretSanta, database
 from src.discord.cogs.core import BaseCog
-import src.config as config
 
 class SecretSantaCog(BaseCog, name = "Secret Santa"):
     _secret_santa_in_progress = False
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.start_task(self.poller, check = not self.bot.production)
+        self.start_task(self.poller, check = self.bot.production)
 
     @commands.group(name = "secretsanta")
     async def secret_santa(self, _):
@@ -28,7 +27,7 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
     @secret_santa.command(name = "help")
     async def secret_santa_help(self, ctx):
         """Shows this embed."""
-        embed = SecretSantaUI.get_help_embed(ctx.prefix)
+        embed     = SecretSantaUI.get_help_embed(ctx.prefix)
         paginator = Paginator.from_embed(ctx, embed, max_fields = 10)
         await paginator.wait()
 
@@ -53,10 +52,10 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
         """Manage this servers secret santa this year (Admin only)."""
         if ctx.guild.id != KnownGuild.intergalactica:
             raise SendableException("Not supported yet for other guilds.")
-        now = datetime.datetime.utcnow()
 
+        now          = datetime.datetime.utcnow()
         secret_santa = SecretSantaRepository.get(guild_id = ctx.guild.id, year = now.year)
-        new = secret_santa is None
+        new          = secret_santa is None
 
         if new:
             secret_santa = SecretSanta(guild_id = ctx.guild.id, active = True)
@@ -74,11 +73,12 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
     @commands.has_guild_permissions(administrator = True)
     async def secret_santa_delete(self, ctx):
         """Delete this servers secret santa this year (Admin only)."""
-        now = datetime.datetime.utcnow()
-
+        now          = datetime.datetime.utcnow()
         secret_santa = SecretSantaRepository.get(guild_id = ctx.guild.id, year = now.year)
+
         if secret_santa is not None:
             secret_santa.delete_instance()
+
         await ctx.success("Secret santa has been removed for this server.")
 
     @secret_santa.command(name = "create")
@@ -150,13 +150,8 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
 
     @tasks.loop(seconds = 120)
     async def poller(self):
-        if self.bot.owner is None:
-            return
-
         if self._secret_santa_in_progress:
             return
-
-        print("----Secret Santa Assignments----")
 
         self._secret_santa_in_progress = True
         for secret_santa in SecretSantaRepository.get_queue():
@@ -166,13 +161,12 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
 
 async def process_secret_santa_queue(secret_santa: SecretSanta):
     participants = SecretSantaHelper.get_filtered_participants(secret_santa)
-    log = []
     with database.atomic() as transaction:
-        tasks = []
         secret_santa.started_at = datetime.datetime.utcnow()
         secret_santa.save()
 
         secret_santas = {}
+        tasks = []
 
         for type in participants:
             available_participants = [x for x in participants[type]]
