@@ -32,11 +32,11 @@ class SecretSantaUI:
         return embed
 
     @classmethod
-    def get_help_embed(cls) -> discord.Embed:
+    def get_help_embed(cls, prefix: str) -> discord.Embed:
         embed = cls.get_base_embed("Commands")
 
         for command in config.bot.get_command("secretsanta").walk_commands():
-            embed.add_field(**command_to_field("/", command))
+            embed.add_field(**command_to_field(prefix, command))
 
         return embed
 
@@ -58,26 +58,26 @@ class SecretSantaHelper:
 
     @classmethod
     def get_filtered_participants(cls, secret_santa: SecretSanta) -> dict:
-        participants = {x.name: [] for x in SecretSantaParticipant.Type}
+        """Returns a dict of participants mapped by type. Skips members no longer in the server."""
+        participants = {x: [] for x in SecretSantaParticipant.Type}
 
         for participant in secret_santa.participants:
-            type = participant.type.name
-            user = participant.user
             member = secret_santa.guild.get_member(participant.user_id)
-            if user is None or member is None:
+            if participant.user is None or member is None:
                 continue
-            participants[type].append(participant)
+            participants[participant.type].append(participant)
 
         return participants
 
     @classmethod
-    def get_random_giftee(cls, available_participants: list, participant: SecretSantaParticipant) -> SecretSantaParticipant:
+    def get_random_giftee(cls, participant: SecretSantaParticipant, available_participants: list) -> SecretSantaParticipant:
+        """Gets a random giftee from a selection of available participants."""
         giftee = random.choice(available_participants)
         if giftee.id == participant.id:
             if len(available_participants) == 1:
                 raise Exception("No available participants left.")
+            return cls.get_random_giftee(participant, available_participants)
 
-            return cls.get_random_giftee(available_participants, participant)
         return giftee
 
     @classmethod
@@ -94,7 +94,7 @@ class SecretSantaHelper:
         member = guild.get_member(ctx.author.id)
         if member is None:
             raise SendableException("Did not find you in the server.")
-        
+
         return SecretSantaRepository.get(guild_id = guild.id, year = datetime.datetime.utcnow().year)
 
 
@@ -119,7 +119,7 @@ class SecretSantaRepository:
         return (SecretSantaParticipant
                 .select(SecretSantaParticipant.user_id)
                 .where(SecretSantaParticipant.secret_santa == secret_santa_id)
-                .where(SecretSantaParticipant.type == type.name))
+                .where(SecretSantaParticipant.type == type))
 
     @classmethod
     def get(cls, guild_id: int, year: int) -> SecretSanta:
@@ -130,9 +130,10 @@ class SecretSantaRepository:
             .first())
 
     @classmethod
-    def get_participant(cls, secret_santa_id: int, user_id: int) -> SecretSantaParticipant:
+    def get_participant(cls, secret_santa_id: int, user_id: int, type: SecretSantaParticipant.Type) -> SecretSantaParticipant:
         return (SecretSantaParticipant
             .select()
             .where(SecretSantaParticipant.user_id == user_id)
             .where(SecretSantaParticipant.secret_santa == secret_santa_id)
+            .where(SecretSantaParticipant.type == type)
             .first())
