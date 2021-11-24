@@ -84,6 +84,7 @@ class SimplePoll:
 
         return votes
 
+    @classmethod
     def should_skip_member(cls, member: discord.Member) -> bool:
         should_skip = member.bot
 
