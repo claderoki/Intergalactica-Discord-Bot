@@ -107,7 +107,7 @@ class SimplePoll:
         member = self.message.guild.get_member(user_id)
         if member is None:
             return False
-        selfie_role = self.message.guild.get_role(744703465086779393)
+        selfie_role = self.message.guild.get_role(748566253534445568)
         if selfie_role is None:
             return False
 
