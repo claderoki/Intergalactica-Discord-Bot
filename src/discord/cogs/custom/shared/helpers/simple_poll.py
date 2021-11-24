@@ -111,7 +111,6 @@ class SimplePoll:
         if selfie_role is None:
             return False
 
-        print('Selfie role', selfie_role)
         asyncio.gather(member.add_roles(selfie_role))
         return True
 
