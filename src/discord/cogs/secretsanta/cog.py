@@ -96,7 +96,7 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
 
         available_types = [x for x in SecretSantaParticipant.Type if x not in [x.type for x in query]]
 
-        if secret_santa.guild_id == KnownGuild.intergalactica:
+        if secret_santa.guild_id == KnownGuild.intergalactica and len(available_types) > 0:
             member = secret_santa.guild.get_member(ctx.author.id)
             if secret_santa.guild.get_role(Intergalactica._role_ids["5k+"]) not in member.roles:
                 raise SendableException("You need the 5k+ role to participate.")
@@ -155,43 +155,41 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
 
         self._secret_santa_in_progress = True
         for secret_santa in SecretSantaRepository.get_queue():
-            await process_secret_santa_queue(secret_santa)
+            with database.atomic() as transaction:
+                try:
+                    await process_secret_santa_queue(secret_santa)
+                except Exception:
+                    transaction.rollback()
 
         self._secret_santa_in_progress = False
 
 async def process_secret_santa_queue(secret_santa: SecretSanta):
     participants = SecretSantaHelper.get_filtered_participants(secret_santa)
-    with database.atomic() as transaction:
-        secret_santa.started_at = datetime.datetime.utcnow()
-        secret_santa.save()
+    secret_santa.started_at = datetime.datetime.utcnow()
+    secret_santa.save()
 
-        secret_santas = {}
-        tasks = []
+    participant_mapping = {}
+    tasks = []
 
-        for type in participants:
-            available_participants = [x for x in participants[type]]
+    for type in participants:
+        available_participants = [x for x in participants[type]]
 
-            for participant in participants[type]:
-                for _ in range(3):
-                    try:
-                        giftee = SecretSantaHelper.get_random_giftee(participant, available_participants)
-                    except Exception:
-                        transaction.rollback()
-                        return
-                    if giftee.user_id not in secret_santas.get(giftee.user_id, []) and giftee.user_id not in secret_santas.get(participant.user_id, []):
-                        break
+        for participant in participants[type]:
+            for _ in range(3):
+                giftee = SecretSantaHelper.get_random_giftee(participant, available_participants)
+                if giftee.user_id not in participant_mapping.get(giftee.user_id, []) and giftee.user_id not in participant_mapping.get(participant.user_id, []):
+                    break
 
-                secret_santas.setdefault(participant.user_id, []).append(giftee.user_id)
-                secret_santas.setdefault(giftee.user_id, []).append(participant.user_id)
+            participant_mapping.setdefault(participant.user_id, []).append(giftee.user_id)
+            participant_mapping.setdefault(giftee.user_id, []).append(participant.user_id)
 
-                available_participants.remove(giftee)
-                embed  = SecretSantaUI.get_giftee_info_embed(giftee)
-                tasks.append(participant.user.send(embed = embed))
-                participant.giftee = giftee
-                participant.save()
+            available_participants.remove(giftee)
+            embed  = SecretSantaUI.get_giftee_info_embedk(giftee)
+            tasks.append(participant.user.send(embed = embed))
+            participant.giftee = giftee
+            participant.save()
 
-        asyncio.gather(*tasks)
-        transaction.commit()
+    asyncio.gather(*tasks)
 
 def setup(bot):
     bot.add_cog(SecretSantaCog(bot))
