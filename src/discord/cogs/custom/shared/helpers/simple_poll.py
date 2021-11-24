@@ -46,7 +46,7 @@ class SimplePoll:
         channel      = config.bot.get_channel(payload.channel_id)
         message      = await channel.fetch_message(payload.message_id)
         votes        = await cls.get_votes(message)
-        member_count = len([x for x in message.channel.members if not x.bot])
+        member_count = len([x for x in message.channel.members if not cls.should_skip_member(x)])
 
         return cls(message, votes, member_count)
 
@@ -77,14 +77,20 @@ class SimplePoll:
             votes.append(vote)
 
             async for user in reaction.users():
-                if user.bot or user.id in all_user_ids:
-                    continue
-                if message.guild.id == KnownGuild.intergalactica and user.id == 120566758091259906:
+                if cls.should_skip_member(user) or user.id in all_user_ids:
                     continue
                 vote.increment_count()
                 all_user_ids.add(user.id)
 
         return votes
+
+    def should_skip_member(cls, member: discord.Member) -> bool:
+        should_skip = member.bot
+
+        if member.guild.id == KnownGuild.intergalactica and member.id == 120566758091259906:
+            should_skip = True
+
+        return should_skip
 
     def should_finish(self) -> bool:
         total_votes = sum(x.count for x in self.votes)
