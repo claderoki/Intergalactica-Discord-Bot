@@ -32,7 +32,6 @@ class ContainsValidator(ConditionValidator):
     @classmethod
     def _validate_member(cls, member: discord.Member, condition: MemberCondition) -> bool:
         if condition.source == MemberCondition.Source.role:
-            print(member.roles, condition.value.values)
             for role in member.roles:
                 if role.id in condition.value.values:
                     return True
