@@ -13,14 +13,14 @@ class ConditionValidator:
 
     @classmethod
     def validate(cls, context: ValidationContext, condition: Condition) -> bool:
-        if isinstance(condition, UserCondition):
-            if not hasattr(context, "user") or not isinstance(context.user, (discord.User, discord.Member)):
-                return False
-            return cls._validate_user(context.user, condition)
         if isinstance(condition, MemberCondition):
             if not hasattr(context, "member") or not isinstance(context.member, discord.Member):
                 return False
             return cls._validate_member(context.member, condition)
+        if isinstance(condition, UserCondition):
+            if not hasattr(context, "user") or not isinstance(context.user, (discord.User, discord.Member)):
+                return False
+            return cls._validate_user(context.user, condition)
 
 class ContainsValidator(ConditionValidator):
     __slots__ = ()
@@ -32,6 +32,7 @@ class ContainsValidator(ConditionValidator):
     @classmethod
     def _validate_member(cls, member: discord.Member, condition: MemberCondition) -> bool:
         if condition.source == MemberCondition.Source.role:
+            print(member.roles, condition.value.values)
             for role in member.roles:
                 if role.id in condition.value.values:
                     return True
