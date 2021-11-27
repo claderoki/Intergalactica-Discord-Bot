@@ -30,6 +30,9 @@ class Condition:
         self.value = value
         self.positive = positive
 
+    def reverse(self):
+        self.positive = not self.positive
+
 class UserCondition(Condition):
     class Type(Condition.Type):
         pass
