@@ -86,6 +86,10 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
     async def secret_santa_create(self, ctx):
         """Create your secret santa profile."""
         secret_santa = await SecretSantaHelper.get_secret_santa(ctx)
+
+        if secret_santa is None:
+            raise SendableException("Secret santa not setup yet.")
+
         if secret_santa.started_at is not None:
             raise SendableException("Unfortunately this event has already started.")
 
@@ -120,8 +124,12 @@ class SecretSantaCog(BaseCog, name = "Secret Santa"):
     async def secret_santa_edit(self, ctx, type: EnumConverter(SecretSantaParticipant.Type)):
         """Edit your secret santa profile."""
         secret_santa = await SecretSantaHelper.get_secret_santa(ctx)
+
         if secret_santa.started_at is not None:
             raise SendableException("Unfortunately this event has already started.")
+
+        if secret_santa is None:
+            raise SendableException("Secret santa not setup yet.")
 
         participant = SecretSantaRepository.get_participant(secret_santa.id, ctx.author.id, type)
 
