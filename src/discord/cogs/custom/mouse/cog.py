@@ -1,5 +1,6 @@
 import datetime
 import asyncio
+import random
 import discord
 
 import peewee
@@ -14,6 +15,9 @@ import src.config as config
 from src.utils.string_formatters.uwu import Uwu
 from src.models import DailyActivity
 
+class KnownChannel:
+    general = 729909438378541116
+
 class Mouse(CustomCog):
     guild_id = KnownGuild.mouse
 
@@ -22,11 +26,15 @@ class Mouse(CustomCog):
         if message.guild is None or message.guild.id != self.guild_id:
             return
 
+        if message.author.bot:
+            return
+
         if not self.bot.production:
             return
 
-        if message.author.bot:
-            return
+        if message.channel.id == KnownChannel.general:
+            if random.randint(0, 1000) == 1:
+                asyncio.gather(message.add_reaction("🤏"))
 
         DailyActivityRepository.increment_message(message.author.id, message.guild.id)
 
