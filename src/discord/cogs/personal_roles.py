@@ -1,4 +1,5 @@
-
+import random
+import typing
 
 import discord
 from discord.ext import commands
@@ -91,9 +92,14 @@ class PersonalRoleCog(BaseCog, name = "Personal role"):
                 raise SendableException("You are not allowed to run this command yet.")
 
     @role.command(name = "color", aliases = ["colour"])
-    async def role_color(self, ctx, color : discord.Color = None):
+    async def role_color(self, ctx, color = None):
+        if color == "christmas":
+            color = random.choice(('#165B33', '#146B3A', '#F8B229', '#EA4630', '#BB2528'))
+
         if color is None:
             color = self.bot.calculate_dominant_color(self.bot._get_icon_url(ctx.author))
+        else:
+            color = await commands.ColorConverter().convert(ctx, color)
 
         await self.edit_personal_role(ctx, color = color)
 
