@@ -192,7 +192,7 @@ async def process_secret_santa_queue(secret_santa: SecretSanta):
             participant_mapping.setdefault(giftee.user_id, []).append(participant.user_id)
 
             available_participants.remove(giftee)
-            embed  = SecretSantaUI.get_giftee_info_embedk(giftee)
+            embed  = SecretSantaUI.get_giftee_info_embed(giftee)
             tasks.append(participant.user.send(embed = embed))
             participant.giftee = giftee
             participant.save()
