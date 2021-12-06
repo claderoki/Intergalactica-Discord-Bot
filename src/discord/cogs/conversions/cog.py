@@ -2,14 +2,13 @@ import re
 
 import discord
 from discord.ext import tasks, commands
-from discord.shard import EventItem
 
 import src.config as config
-from src.models import Human, Earthling, Currency, Measurement, StoredUnit, database
+from src.models import Currency, Measurement, StoredUnit
 from src.discord.cogs.core import BaseCog
 from src.wrappers.fixerio import Api as FixerioApi
-from .models import Unit, UnitSubType, UnitType, Conversion, ConversionResult
-from .helper import RegexHelper, RegexType, UnitMapping, should_exclude, get_other_measurements, get_context_currency_codes
+from .models import Unit, UnitType, Conversion, ConversionResult
+from .helper import RegexHelper, RegexType, UnitMapping, get_other_measurements, get_context_currency_codes
 
 other_measurements = get_other_measurements()
 unit_mapping = UnitMapping()
@@ -22,6 +21,8 @@ def add_stored_unit_to_regexes(stored_unit: StoredUnit):
         symbol = stored_unit.symbol.lower()
         if not stored_unit.should_exclude_symbol:
             currency_regex.add_value(symbol)
+    elif isinstance(stored_unit, Measurement) and stored_unit.squareable:
+        measurement_regex.add_value(f"sq{stored_unit.code.lower()}")
 
 def add_all_to_mapping():
     for cls in (Currency, Measurement):
@@ -59,8 +60,8 @@ async def get_linked_codes(base: Conversion, message: discord.Message):
     else:
         return await get_context_currency_codes(message)
 
-async def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, message: discord.Message) -> ConversionResult:
-    base = Conversion(Unit.from_stored_unit(base_stored_unit), value)
+async def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, message: discord.Message, squared: bool = False) -> ConversionResult:
+    base = Conversion(Unit.from_stored_unit(base_stored_unit), value, squared = squared)
     to   = []
     for code in await get_linked_codes(base, message):
         code = code.lower()
@@ -71,8 +72,11 @@ async def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, 
         if stored_unit is None:
             continue
 
-        converted = base_stored_unit.to(stored_unit, value)
-        to.append(Conversion(Unit.from_stored_unit(stored_unit), converted))
+        if squared and isinstance(stored_unit, Measurement) and not stored_unit.squareable:
+            continue
+
+        converted = base_stored_unit.to(stored_unit, value, squared)
+        to.append(Conversion(Unit.from_stored_unit(stored_unit), converted, squared = squared))
     return ConversionResult(base, to)
 
 def add_conversion_result_to_embed(embed: discord.Embed, conversion_result: ConversionResult):
@@ -101,11 +105,6 @@ class ConversionCog(BaseCog, name = "Conversion"):
     @commands.command()
     async def conversions(self, ctx):
         embed = discord.Embed(color = self.bot.get_dominant_color())
-        # embed.add_field(
-        #     name = "Measurements",
-        #     value = "EXPLANATION",
-        #     inline = False
-        # )
         embed.add_field(
             name = "Currencies",
             value = """Currencies can be converted the following ways:
@@ -131,9 +130,14 @@ All the users that wrote something for the last 20 messages are collected and th
         conversion_results = []
         for regex in (measurement_regex, currency_regex):
             for unit_value, value in regex.match(message.content.lower()):
+                squared = False
+                if "sq" in unit_value:
+                    unit_value = unit_value.replace("sq", "")
+                    squared = True
+
                 units = unit_mapping.get_units(unit_value)
                 for unit in units:
-                    conversion_result = await base_to_conversion_result(unit, value, message)
+                    conversion_result = await base_to_conversion_result(unit, value, message, squared = squared)
                     conversion_results.append(conversion_result)
 
         embed = discord.Embed(color = self.bot.get_dominant_color())

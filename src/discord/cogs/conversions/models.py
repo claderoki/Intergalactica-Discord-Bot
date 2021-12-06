@@ -1,6 +1,6 @@
 from enum import Enum
 
-from src.models.conversions import Currency, Measurement, StoredUnit
+from src.models.conversions import Currency, StoredUnit
 
 class UnitType(Enum):
     measurement = 1
@@ -29,11 +29,12 @@ class Unit:
             return cls(stored_unit.name, stored_unit.code, stored_unit.symbol, UnitType.measurement, stored_unit.subtype)
 
 class Conversion:
-    __slots__ = ("unit", "value")
+    __slots__ = ("unit", "value", "squared")
 
-    def __init__(self, unit: Unit, value: float):
-        self.unit = unit
-        self.value = value
+    def __init__(self, unit: Unit, value: float, squared: bool = False):
+        self.unit    = unit
+        self.value   = value
+        self.squared = squared
 
     def __str__(self):
         if self.unit.type == UnitType.measurement:
@@ -50,13 +51,17 @@ class Conversion:
 
     def get_clean_string(self):
         if self.unit.type == UnitType.measurement:
-            text = f"{self.get_value_string()}{self.unit.symbol}"
-            if self.unit.name == "feet":
-                value = self.value
-                remaining = self.value % 1
-                value -= remaining
-                inches = self._normalize_value(remaining * 12)
-                text += f"\n{self._normalize_value(value)}'{inches}\""
+            if self.squared:
+                text = f"{self.get_value_string()}sq{self.unit.code}"
+            else:
+                text = f"{self.get_value_string()}{self.unit.symbol}"
+                if self.unit.name == "feet" and not self.squared:
+                    value = self.value
+                    remaining = self.value % 1
+                    value -= remaining
+                    inches = self._normalize_value(remaining * 12)
+                    text += f"\n{self._normalize_value(value)}'{inches}\""
+
             return text
         else:
             return f"{self.unit.symbol}{self.get_value_string()} ({self.unit.name})"

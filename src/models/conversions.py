@@ -1,4 +1,5 @@
 from enum import Enum
+import math
 
 import peewee
 
@@ -11,11 +12,13 @@ class StoredUnit(BaseModel):
     code    = peewee.TextField(null = False)
     symbol  = peewee.TextField(null = False)
 
-    def to(self, to, value: float) -> float:
+    def to(self, to, value: float, squared: bool = False) -> float:
         if self.code == "c" and to.code == "f":
             return (value * 1.8) + 32
         elif self.code == "f" and to.code == "c":
             return (value - 32) / 1.8
+        elif squared:
+            return ((to.rate * (math.sqrt(value))) / self.rate) ** 2
         else:
             return (to.rate * value) / self.rate
 
@@ -40,5 +43,6 @@ class MeasurementSubType(Enum):
     mass        = 3
 
 class Measurement(StoredUnit):
-    subtype = EnumField(MeasurementSubType, null = False)
+    subtype    = EnumField           (MeasurementSubType, null = False)
+    squareable = peewee.BooleanField (null = False, default = False)
 
