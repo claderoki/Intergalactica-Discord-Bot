@@ -50,7 +50,10 @@ class Subreddit(BaseModel):
         return self.channel if not self.dm else self.user
 
     async def send(self):
-        post = self.latest_post
+        try:
+            post = self.latest_post
+        except Exception as e:
+            print("Failed to send reddit", e)
 
         if post is None:
             return
