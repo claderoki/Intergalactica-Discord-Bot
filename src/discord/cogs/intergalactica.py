@@ -357,6 +357,7 @@ class Intergalactica(BaseCog):
             asyncio.gather(welcome_channel.send(embed = embed))
 
             self.last_member_join = datetime.datetime.utcnow()
+            if True:
                 text = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
             message = await self.get_channel("general").send(text)
             self.welcome_messages[member.id] = message
