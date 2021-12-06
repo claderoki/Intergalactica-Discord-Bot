@@ -54,6 +54,7 @@ class Subreddit(BaseModel):
             post = self.latest_post
         except Exception as e:
             print("Failed to send reddit", e)
+            return
 
         if post is None:
             return
