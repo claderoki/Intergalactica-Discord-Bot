@@ -10,8 +10,7 @@ class Intergalactica(CustomCog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        DisboardBumpReminder.cache(self.guild_id, 742146159711092757)
-        PrawInstanceCache.cache(self.guild_id, self.bot.reddit)
+        pass
 
 def setup(bot):
     bot.add_cog(Intergalactica(bot))

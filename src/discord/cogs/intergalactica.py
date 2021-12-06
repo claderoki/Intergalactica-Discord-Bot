@@ -357,9 +357,6 @@ class Intergalactica(BaseCog):
             asyncio.gather(welcome_channel.send(embed = embed))
 
             self.last_member_join = datetime.datetime.utcnow()
-            if random.randint(0, 250) == 0:
-                text = f"Hello and Welcome {member.mention}! My name is C-3PO and I’ll be around to assist you with anything you may need during your stay. I have prepared a fresh pigeon for you and can share many interesting facts about our server. I hope you enjoy your stay and I hope you have a wonderful evening."
-            else:
                 text = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
             message = await self.get_channel("general").send(text)
             self.welcome_messages[member.id] = message
@@ -430,7 +427,6 @@ class Intergalactica(BaseCog):
     @tasks.loop(minutes = 20)
     async def introduction_purger(self):
         channels = []
-        channels.append(self.get_channel("introductions"))
         channels.append(self.bot.get_channel(729909501578182747))
         channels.append(self.bot.get_channel(841049839466053693))
 
@@ -465,6 +461,7 @@ class Intergalactica(BaseCog):
 
     @tasks.loop(hours = 12)
     async def birthday_poller(self):
+        return
         now = datetime.datetime.utcnow()
 
         query = Human.select()

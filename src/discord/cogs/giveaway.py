@@ -32,11 +32,6 @@ class GiveawayCog(BaseCog, name = "Giveaway"):
         channel = settings.get_channel("giveaway")
 
         giveaway = Giveaway(user_id = ctx.author.id, guild_id = ctx.guild.id, channel_id = channel.id)
-        #TODO: make this non server specific.
-        waiter = BoolWaiter(ctx, prompt = "Restrict to 5k+ role?")
-        if ctx.guild.id == KnownGuild.intergalactica and await waiter.wait():
-            giveaway.role_id_needed = 778744417322139689
-
         await ctx.send(ctx.translate("check_dms"))
 
         ctx.channel = ctx.author.dm_channel
