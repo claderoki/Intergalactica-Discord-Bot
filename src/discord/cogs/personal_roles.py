@@ -92,7 +92,7 @@ class PersonalRoleCog(BaseCog, name = "Personal role"):
                 raise SendableException("You are not allowed to run this command yet.")
 
     @role.command(name = "color", aliases = ["colour"])
-    async def role_color(self, ctx, color = None):
+    async def role_color(self, ctx, color: str.lower = None):
         if color == "christmas":
             color = random.choice(('#165B33', '#146B3A', '#F8B229', '#EA4630', '#BB2528'))
 
