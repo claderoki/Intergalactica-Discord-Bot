@@ -72,14 +72,14 @@ class Inactive(BaseCog):
     @commands.command()
     @commands.guild_only()
     async def inactives(self, ctx):
-        embed = discord.Embed(title = "Inactives", color = ctx.guild_color )
+        embed = discord.Embed(title = "Inactives", color = ctx.guild_color)
         lines = []
 
         inactive_members = []
         for earthling in self.iter_inactives(ctx.guild):
-            if earthling.member.premium_since is None:
+            if earthling.member.premium_since is None or ctx.guild.id == KnownGuild.intergalactica:
                 inactive_members.append(earthling.member)
-                lines.append( str(earthling.member) )
+                lines.append(str(earthling.member))
 
         if len(inactive_members) == 0:
             return await ctx.error("NO INACTIVES TO BE DESTROYED")
