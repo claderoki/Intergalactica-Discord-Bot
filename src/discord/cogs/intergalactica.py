@@ -153,35 +153,6 @@ class Intergalactica(BaseCog):
         asyncio.gather(channel.send(embed = embed))
 
     @commands.Cog.listener()
-    async def on_member_ban(self, guild, user):
-        if guild.id != KnownGuild.intergalactica:
-            return
-        if not self.bot.production:
-            return
-
-        await asyncio.sleep(5)
-
-        found = False
-        async for entry in guild.audit_logs(action=discord.AuditLogAction.ban):
-            if entry.target.id == user.id:
-                found = True
-                break
-        if not found:
-            entry = None
-
-        channel = guild.get_channel(744668640309280840)
-        embed = discord.Embed(color = discord.Color.red())
-        embed.title = "ban"
-        lines = []
-        lines.append(f"**Offender:** {user} {user.mention}")
-        if found:
-            lines.append(f"**Reason:** {entry.reason}")
-            lines.append(f"**Responsible moderator:** {entry.user}")
-
-        embed.description = "\n".join(lines)
-        await channel.send(embed = embed)
-
-    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         if SimplePoll.is_eligible(payload):
             poll = await SimplePoll.from_payload(payload)
@@ -307,35 +278,6 @@ class Intergalactica(BaseCog):
         TemporaryTextChannel.create(temp_vc = vc, channel_id = channel.id, guild_id = ctx.guild.id)
 
         await ctx.success()
-
-    @commands.has_guild_permissions(administrator = True)
-    @specific_guild_only(KnownGuild.intergalactica)
-    @commands.command()
-    async def warn(self, ctx, member : discord.Member, *, reason):
-        await member.send(f"Hello {member}, this is an official warning. Reason: **{reason}**. Please be more careful in the future.")
-        channel = self.get_channel("warns")
-        await channel.send(f"Warned {member} for {reason}")
-
-    @commands.has_guild_permissions(administrator = True)
-    @specific_guild_only(KnownGuild.intergalactica)
-    @commands.command()
-    async def selfies(self, ctx):
-        members = []
-
-        rank_ids = [x for x in self._role_ids["ranks"].values() if x != self._role_ids["ranks"]["luna"]]
-
-        for member in ctx.guild.members:
-            has_selfie_role = False
-            has_more_than_10k_role = False
-            for role in member.roles:
-                if role.id == self._role_ids["selfies"]:
-                    has_selfie_role = True
-                if role.id in rank_ids:
-                    has_more_than_10k_role = True
-            if not has_selfie_role and has_more_than_10k_role:
-                members.append(member)
-
-        await ctx.send("\n".join([str(x) for x in members]))
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
