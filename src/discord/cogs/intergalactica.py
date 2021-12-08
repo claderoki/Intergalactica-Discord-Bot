@@ -61,10 +61,6 @@ async def on_malicious_action(action : MaliciousAction, member : discord.Member,
     elif action == MaliciousAction.spam:
         pass
 
-    if ban_if_new:
-        if MemberHelper.is_new(member):
-            await member.ban(reason = action.ban_reason)
-
 class Intergalactica(BaseCog):
     last_member_join = None
 
@@ -338,23 +334,6 @@ class Intergalactica(BaseCog):
                     if time_here.hours >= 6:
                         asyncio.gather(member.kick(reason = "Missing mandatory role(s)"))
 
-    @tasks.loop(hours = 12)
-    async def birthday_poller(self):
-        return
-        now = datetime.datetime.utcnow()
-
-        query = Human.select()
-        query = query.join(Earthling, on = (Human.id == Earthling.human))
-        query = query.where(Earthling.guild_id == KnownGuild.intergalactica)
-        query = query.where(Human.date_of_birth != None)
-        query = query.where(Human.date_of_birth.month == now.month)
-        query = query.where(Human.date_of_birth.day == now.day)
-        query = query.order_by(Human.date_of_birth.asc())
-
-        with database.connection_context():
-            for human in query:
-                await self.log("c3po-log", f"**{human.user}** {human.mention} Should be celebrating their birthday today.")
-
 class MemberHelper:
     __slots__ = ()
 
@@ -367,19 +346,7 @@ class MemberHelper:
 
     @classmethod
     def _has_mandatory_roles_intergalactica(cls, member) -> bool:
-        age_roles = [member.guild.get_role(x).id for x in Intergalactica._role_ids["age"].values()]
-        gender_roles = [member.guild.get_role(x).id for x in Intergalactica._role_ids["gender"].values()]
-
-        has_age_role = False
-        has_gender_role = False
-
-        for role in member.roles:
-            if role.id in age_roles:
-                has_age_role = True
-            elif role.id in gender_roles:
-                has_gender_role = True
-
-        return has_age_role and has_gender_role
+        return True
 
     @classmethod
     def has_mandatory_roles(cls, member) -> bool:
@@ -389,18 +356,6 @@ class MemberHelper:
             return cls._has_mandatory_roles_mouse(member)
         else:
             return True
-
-    @classmethod
-    def is_new(cls, member) -> bool:
-        if member.guild.id == KnownGuild.intergalactica:
-            for role in member.roles:
-                if role.id == cls._role_ids["vc_access"]:
-                    return False
-                if role.id == cls._role_ids["5k+"]:
-                    return False
-            return True
-
-        return False
 
 def get_category(guild: discord.Guild, id: int) -> discord.CategoryChannel:
     for category in guild.categories:
