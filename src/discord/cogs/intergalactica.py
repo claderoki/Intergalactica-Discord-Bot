@@ -133,14 +133,11 @@ class Intergalactica(BaseCog):
         SimplePoll.add_guild_data(KnownGuild.intergalactica, self._channel_ids["staff_votes"], self._channel_ids["staff_chat"])
 
         guild = self.bot.get_guild(KnownGuild.intergalactica)
-        self.role_needed_for_selfie_vote = guild.get_role(self._role_ids["ranks"]["nova"])
 
         self.start_task(self.illegal_member_purger,             check = self.bot.production)
         self.start_task(self.introduction_purger,               check = self.bot.production)
         self.start_task(self.temp_vc_poller,                    check = self.bot.production)
         self.start_task(self.mouse_role_cleanup,                check = self.bot.production)
-        await asyncio.sleep( (60 * 60) * 3 )
-        self.start_task(self.birthday_poller,                   check = self.bot.production)
 
     def on_milkyway_purchased(self, channel, member, amount):
         with database.connection_context():
@@ -247,38 +244,6 @@ class Intergalactica(BaseCog):
         TemporaryVoiceChannel.create(guild_id = ctx.guild.id, channel_id = channel.id)
         await ctx.success()
 
-    @commands.command(name = "textchannel")
-    @specific_guild_only(KnownGuild.intergalactica)
-    @commands.has_role(_role_ids["5k+"])
-    async def text_channel(self, ctx, *args):
-
-        category = None
-        for category in ctx.guild.categories:
-            if category.id == 742146159711092759:
-                break
-        if category is None:
-            raise SendableException(ctx.translate("wtf_wrong_with_category"))
-
-        voice = ctx.author.voice
-        if voice is None:
-            raise SendableException(ctx.translate("not_in_voice_channel"))
-
-        vc = TemporaryVoiceChannel.select(TemporaryVoiceChannel.id)\
-            .where(TemporaryVoiceChannel.channel_id == voice.channel.id)\
-            .first()
-
-        if vc is None:
-            raise SendableException(ctx.translate("not_in_a_temp_vc"))
-
-        if TemporaryTextChannel.select().where(TemporaryTextChannel.temp_vc == vc.id).count() > 0:
-            raise SendableException(ctx.translate("already_exists"))
-
-        channel = await category.create_text_channel(voice.channel.name, reason = f"Requested by {ctx.author}")
-
-        TemporaryTextChannel.create(temp_vc = vc, channel_id = channel.id, guild_id = ctx.guild.id)
-
-        await ctx.success()
-
     @commands.Cog.listener()
     async def on_member_join(self, member):
         if not self.bot.production:
@@ -325,36 +290,7 @@ class Intergalactica(BaseCog):
 
         asyncio.gather(welcome_channel.send(embed = embed))
 
-    async def on_rank(self, member, role):
-        role_to_add = member.guild.get_role(self._role_ids["5k+"])
-        asyncio.gather(member.add_roles(role_to_add))
-
-        if role == self.role_needed_for_selfie_vote:
-            if member.guild.get_role(self._role_ids["selfies"]) not in member.roles:
-                channel = self.get_channel("staff_votes")
-                asyncio.gather(channel.send(f"Should {member.mention} (**{member}**) get selfie access?"))
-
-    @commands.Cog.listener()
-    async def on_member_update(self, before, after):
-        if not self.bot.production:
-            return
-        if after.guild.id != KnownGuild.intergalactica:
-            return
-        if len(after.roles) <= len(before.roles):
-            return
-
-        added_role = None
-
-        for role in after.roles:
-            if role not in before.roles:
-                added_role = role
-                break
-
-        for _, rank_id in self._role_ids["ranks"].items():
-            if added_role.id == rank_id:
-                await self.on_rank(after, added_role)
-
-    @tasks.loop(minutes = 5)
+    @tasks.loop(hours = 1)
     async def temp_vc_poller(self):
         with database.connection_context():
             for temporary_voice_channel in TemporaryVoiceChannel:
