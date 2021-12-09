@@ -34,7 +34,7 @@ class MaliciousAction(Enum):
             return "Spam"
 
 async def on_malicious_action(action : MaliciousAction, member : discord.Member, **kwargs):
-    ban_if_new = False
+    return
 
     if action == MaliciousAction.blacklisted_word:
         message = kwargs["message"]
@@ -49,10 +49,6 @@ async def on_malicious_action(action : MaliciousAction, member : discord.Member,
         lines.append(", ".join([f"**{x}**" for x in words]))
         embed.description = "{}\n{}".format("\n".join(lines), embed.description)
 
-        sendable = member.guild.get_channel(Intergalactica._channel_ids["c3po-log"])
-        asyncio.gather(sendable.send(embed = embed))
-
-        ban_if_new = True
     elif action == MaliciousAction.invite_url:
         try:
             await kwargs["message"].delete()
@@ -66,35 +62,19 @@ class Intergalactica(BaseCog):
 
     _role_ids = {
         "selfies"   : 748566253534445568,
-        "admin"     : 742243945693708381,
         "vc_access" : 761599311967420418,
         "5k+"       : 778744417322139689,
-        "bumper"    : 780001849335742476,
-        "age"       : {"18-20": 748606669902053387, "21-24": 748606823229030500, "25-29": 748606893387153448, "30+": 748606902363095206},
-        "gender"    : {"male": 742301620062388226, "female": 742301646004027472, "other" : 742301672918745141},
-        "ranks"     : {
-            "luna"      : 748494880229163021,
-            "nova"      : 748494888844132442,
-            "aurora"    : 748494890127851521,
-            "aquila"    : 748494890169794621,
-            "orion"     : 748494891419697152,
-            "andromeda" : 748494891751047183
-        },
+
     }
 
     _channel_ids = {
         "general"        : 744650481682481233,
         "roles"          : 742303560988885044,
         "welcome"        : 742187165659693076,
-        "warns"          : 777888951523606548,
         "selfies"        : 744703465086779393,
-        "concerns"       : 863775516998107186,
         "staff_votes"    : 863775839945621534,
         "staff_chat"     : 863774968848449546,
-        "bot_spam"       : 742163352712642600,
-        "bot_commands"   : 863775558977323008,
         "introductions"  : 742567349613232249,
-        "logs"           : 863775748400349214,
         "c3po-log"       : 863775783940390912,
     }
 
@@ -134,16 +114,6 @@ class Intergalactica(BaseCog):
         self.start_task(self.introduction_purger,               check = self.bot.production)
         self.start_task(self.temp_vc_poller,                    check = self.bot.production)
         self.start_task(self.mouse_role_cleanup,                check = self.bot.production)
-
-    def on_milkyway_purchased(self, channel, member, amount):
-        with database.connection_context():
-            item = Item.get(code = "milky_way")
-            human = self.bot.get_human(user = member)
-            human.add_item(item, amount)
-
-        embed = discord.Embed(color = self.bot.get_dominant_color(None))
-        embed.description = f"Good job in purchasing {amount} milky way(s).\nInstructions:\n`/milkyway create` or `/milkyway extend #channel`"
-        asyncio.gather(channel.send(embed = embed))
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -195,26 +165,6 @@ class Intergalactica(BaseCog):
                 if time_here.minutes <= 5:
                     emoji = random.choice(("💛", "🧡", "🤍", "💙", "🖤", "💜", "💚", "❤️"))
                     asyncio.gather(message.add_reaction(emoji))
-            elif random.randint(0, 1000) == 1:
-                asyncio.gather(message.add_reaction("🤏"))
-
-        if message.author.id == 172002275412279296: # tatsu
-            if len(message.embeds) > 0:
-                embed = message.embeds[0]
-                if embed.title == "Purchase Successful!":
-                    field = embed.fields[0]
-                    if field.name == "You Bought" and "milky way" in field.value.lower():
-                        member_name = embed.footer.text.replace(" bought an item!", "")
-                        class FakeCtx:
-                            pass
-                        ctx = FakeCtx()
-                        ctx.bot = self.bot
-                        ctx.guild = message.guild
-                        member = await commands.MemberConverter().convert(ctx, member_name)
-
-                        amount = int(field.value.split("`")[1])
-                        self.on_milkyway_purchased(message.channel, member, amount)
-                        return await message.delete()
 
     async def log(self, channel_name, content = None, **kwargs):
         channel = self.get_channel(channel_name)
@@ -345,14 +295,8 @@ class MemberHelper:
         return role in member.roles
 
     @classmethod
-    def _has_mandatory_roles_intergalactica(cls, member) -> bool:
-        return True
-
-    @classmethod
     def has_mandatory_roles(cls, member) -> bool:
-        if member.guild.id == KnownGuild.intergalactica:
-            return cls._has_mandatory_roles_intergalactica(member)
-        elif member.guild.id == KnownGuild.mouse:
+        if member.guild.id == KnownGuild.mouse:
             return cls._has_mandatory_roles_mouse(member)
         else:
             return True
