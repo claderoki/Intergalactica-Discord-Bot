@@ -202,7 +202,7 @@ class Locus(commands.Bot):
             "covid",
             "conversations",
             "secretsanta.cog",
-            # "qotd",
+            "welcoming.cog",
             "giveaway",
             "temp_channels",
             "groups",
