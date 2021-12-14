@@ -24,8 +24,12 @@ class WelcomeMessage:
         self._cache[guild_id] = WelcomeMessageCache()
 
     async def send(self, member):
-        text    = self.message.format(member = member)
-        message = await self.channel.send(text)
+        text = self.message.format(member = member)
+
+        try:
+            message = await self.channel.send(text)
+        except:
+            return
 
         cache = self._cache[member.guild.id]
         cache.messages[member.id] = message
