@@ -1,8 +1,8 @@
 from ..models import ConditionFlow, ConditionBlock, Condition
 from .result import ValidationContext
-from .conditions import IsValidator, ContainsValidator
+from .conditions import IsValidator, ContainsValidator, RegexValidator
 
-condition_validation_mappings = {"is": IsValidator, "contains": ContainsValidator}
+condition_validation_mappings = {"is": IsValidator, "contains": ContainsValidator, "regex": RegexValidator}
 
 class ConditionFlowValidator:
     __slots__ = ()

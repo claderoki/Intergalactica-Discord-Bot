@@ -72,6 +72,29 @@ class MemberCondition(UserCondition):
             value    = None,
         )
 
+class MessageCondition(Condition):
+    class Type(Condition.Type):
+        regex  = "regex"
+
+    class Source(Condition.Source):
+        content = "content"
+
+    @classmethod
+    def content_contains(cls, *queries) -> "MessageCondition":
+        return cls(
+            source   = cls.Source.content,
+            type     = cls.Type.contains,
+            value    = ConditionMultipleValue(queries),
+        )
+
+    @classmethod
+    def content_regex(cls, regex) -> "MessageCondition":
+        return cls(
+            source   = cls.Source.content,
+            type     = cls.Type.regex,
+            value    = ConditionSingleValue(regex),
+        )
+
 class ConditionBlock:
     __slots__ = ("conditions", "position" )
 
