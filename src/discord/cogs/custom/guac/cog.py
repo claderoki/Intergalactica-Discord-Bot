@@ -1,13 +1,7 @@
-import discord
-
 from discord.ext import commands
 
 from src.discord.helpers.known_guilds import KnownGuild
 from src.discord.cogs.custom.shared.cog import CustomCog
-import src.config as config
-
-class KnownChannel:
-    pass
 
 class KnownRole:
     underage = 919621466016862218
