@@ -39,7 +39,7 @@ class CustomCog(BaseCog):
                     print('Sending because last message is none.')
                 else:
                     if last_message.content != content:
-                        print('sending because last message does not equal content, {last_message.content} -> {content}')
+                        print(f'sending because last message does not equal content, {last_message.content} -> {content}')
 
             if last_message is None or last_message.content != content:
                 await channel.send(content)
@@ -73,7 +73,7 @@ class CustomCog(BaseCog):
                     submission = subreddit.submit(
                       advertisement.description,
                       url = invite_url,
-                      flair_id = flair_id
+                      flair_id = flair_id   
                     )
                 except Exception as e:
                     print('Failed to submit: ', e)
