@@ -1,6 +1,5 @@
 from discord.ext import tasks, commands
 
-from src.discord.cogs.custom.shared.helpers.bump_reminder import DisboardBumpReminder
 from src.discord.helpers.known_guilds import KnownGuild
 from src.discord.cogs.custom.shared.cog import CustomCog
 from src.discord.cogs.custom.shared.helpers.praw_cache import PrawInstanceCache

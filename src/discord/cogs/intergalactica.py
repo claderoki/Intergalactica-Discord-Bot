@@ -25,7 +25,6 @@ class Intergalactica(BaseCog):
         "selfies"   : 748566253534445568,
         "vc_access" : 761599311967420418,
         "5k+"       : 778744417322139689,
-
     }
 
     _channel_ids = {

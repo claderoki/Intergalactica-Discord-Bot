@@ -20,6 +20,7 @@ from src.wrappers.color_thief import ColorThief
 from src.models import Settings, Translation, Human, database
 from src.discord.errors.base import SendableException
 from src.discord.helpers.embed import Embed
+from src.discord.helpers.known_guilds import KnownGuild
 
 def seconds_readable(seconds):
     delta = relativedelta(seconds = seconds)
@@ -200,6 +201,7 @@ class Locus(commands.Bot):
             "custom.guac.cog",
             "custom.shared.cog",
             "custom.intergalactica.cog",
+            "bumpreminders.cog",
             "covid",
             "conversations",
             "secretsanta.cog",
@@ -372,7 +374,6 @@ class Locus(commands.Bot):
 
     async def on_ready(self):
         self.print_info()
-
         print("Ready")
         self.owner = (await self.application_info()).owner
         self.owner_id = self.owner.id

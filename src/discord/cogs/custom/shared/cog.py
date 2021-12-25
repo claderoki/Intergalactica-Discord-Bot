@@ -3,46 +3,12 @@ import datetime
 from discord.ext import tasks, commands
 
 from src.discord.cogs.custom.shared.helpers.praw_cache import PrawInstanceCache
-from src.discord.cogs.custom.shared.helpers.bump_reminder import DisboardBumpReminder
 from src.discord.cogs.core import BaseCog
 from src.models import Advertisement
 from src.discord.cogs.custom.shared.helpers import GuildHelper
 from src.discord.helpers.embed import Embed
-from src.discord.helpers.known_guilds import KnownGuild
 
 class CustomCog(BaseCog):
-
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if DisboardBumpReminder.is_eligible(message):
-            await DisboardBumpReminder.recheck_minutes(message)
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        self.start_task(self.advertisement, check = self.bot.production)
-        self.start_task(self.bump_poller, check = self.bot.production)
-
-    @tasks.loop(minutes = 1)
-    async def bump_poller(self):
-        for bump_context in DisboardBumpReminder.get_available_bumps():
-            content = f"A bump is available! `{DisboardBumpReminder._cmd}` to bump."
-            if bump_context.role_id is not None:
-                content = f"<@&{bump_context.role_id}>, {content}"
-            channel = self.bot.get_channel(bump_context.channel_id)
-            if channel is None:
-                continue
-
-            last_message = channel.last_message
-
-            if bump_context.guild_id == KnownGuild.mouse:
-                if last_message is None:
-                    print('Sending because last message is none.')
-                else:
-                    if last_message.content != content:
-                        print(f'sending because last message does not equal content, {last_message.content} -> {content}')
-
-            if last_message is None or last_message.content != content:
-                await channel.send(content)
 
     @tasks.loop(hours = 1)
     async def advertisement(self):

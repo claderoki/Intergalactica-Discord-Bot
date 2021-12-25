@@ -8,7 +8,7 @@ from discord.ext import commands, tasks
 import praw
 
 from src.discord.cogs.custom.shared.helpers.praw_cache import PrawInstanceCache
-from src.discord.cogs.custom.shared.helpers.bump_reminder import DisboardBumpReminder
+from src.discord.cogs.bumpreminders.helpers import DisboardBumpReminder
 from src.discord.helpers.known_guilds import KnownGuild
 from src.discord.cogs.custom.shared.cog import CustomCog
 import src.config as config
@@ -64,7 +64,6 @@ class Mouse(CustomCog):
     async def on_ready(self):
         DisboardBumpReminder.cache(self.guild_id, 884021230498373662)
 
-        self.start_task(self.synchronise_members, check = self.bot.production)
         praw_instance = praw.Reddit(
             client_id       = config.environ["mouse_reddit_client_id"],
             client_secret   = config.environ["mouse_reddit_client_secret"],
@@ -73,8 +72,10 @@ class Mouse(CustomCog):
             password        = config.environ["mouse_reddit_password"],
             check_for_async = False
         )
-
         PrawInstanceCache.cache(self.guild_id, praw_instance)
+
+        self.start_task(self.synchronise_members, check = self.bot.production)
+        self.start_task(self.advertisement, check = self.bot.production)
 
     @commands.command()
     async def uwu(self, ctx, *, text):

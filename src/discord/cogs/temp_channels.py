@@ -11,7 +11,6 @@ from discord.ext import commands, tasks
 from src.discord.cogs.core import BaseCog
 from src.discord.errors.base import SendableException
 from src.discord.helpers.waiters import IntWaiter, TimeDeltaWaiter
-from src.discord.helpers.checks import specific_guild_only
 from src.models import (TemporaryChannel, HumanItem, Item, database)
 
 
