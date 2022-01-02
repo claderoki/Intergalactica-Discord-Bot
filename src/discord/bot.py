@@ -201,6 +201,7 @@ class Locus(commands.Bot):
             "custom.guac.cog",
             "custom.shared.cog",
             "custom.intergalactica.cog",
+            "birthdayreminders.cog",
             "bumpreminders.cog",
             "covid",
             "conversations",

@@ -10,7 +10,7 @@ from src.discord.helpers.pretty import prettify_value
 from src.utils.country import Country
 import src.config as config
 
-class BaseModel(peewee.Model):
+class UnititializedModel(peewee.Model):
 
     @classmethod
     def pluck(cls, attr):
@@ -100,6 +100,8 @@ class BaseModel(peewee.Model):
     @classmethod
     async def convert(cls, ctx, argument):
         return cls.get(id = int(argument))
+
+class BaseModel(UnititializedModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
