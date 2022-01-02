@@ -27,14 +27,6 @@ class BumpReminders(BaseCog):
                 continue
 
             last_message = channel.last_message
-
-            if bump_context.guild_id == KnownGuild.mouse:
-                if last_message is None:
-                    print('Sending because last message is none.')
-                else:
-                    if last_message.content != content:
-                        print(f'sending because last message does not equal content, {last_message.content} -> {content}')
-
             if last_message is None or last_message.content != content:
                 await channel.send(content)
 
