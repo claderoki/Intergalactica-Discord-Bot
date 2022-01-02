@@ -12,7 +12,7 @@ class BirthdayReminderCog(BaseCog):
     @commands.Cog.listener()
     async def on_ready(self):
         await asyncio.sleep(5)
-        self.start_task(self.poller, check = True)
+        self.start_task(self.poller, check = self.bot.production)
 
     @tasks.loop(hours = 3)
     async def poller(self):
