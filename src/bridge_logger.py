@@ -11,7 +11,7 @@ class SqliteBaseModel(peewee.Model):
         database = peewee.SqliteDatabase("data/data.sqlite")
 
 class LightStateLog(SqliteBaseModel):
-    created_at = peewee.DateTimeField (null = False, default = lambda : datetime.datetime.utcnow())
+    created_at = peewee.DateTimeField (null = False, default = lambda: datetime.datetime.utcnow())
     on         = peewee.BooleanField  (null = False)
     light_id   = peewee.IntegerField  (null = False)
     brightness = peewee.IntegerField  (null = False)
@@ -21,7 +21,6 @@ database = SqliteBaseModel._meta.database
 with database.connection_context():
     # database.drop_tables([LightStateLog])
     database.create_tables([LightStateLog])
-
 
 class LightStateLogger:
     __slots__ = ()
@@ -48,11 +47,8 @@ def get_light_id(name: str) -> int:
         if light.name == name:
             return light.id
 
-id = get_light_id("Clark")
+id   = get_light_id("Clark")
 call = GetLightCall(username, id)
-
-def log():
-    pass
 
 def log_loop():
     last_state = HueBridgeCache.get_last_known_state()
@@ -63,7 +59,7 @@ def log_loop():
         except:
             failures += 1
             sleep_time = failures * 5
-            print(f"Call failed for the {failures}th time... Trying again in {sleep_time } seconds")
+            print(f"Call failed for the {failures}th time... Trying again in {sleep_time} seconds")
             time.sleep(sleep_time)
             continue
         if last_state is None or last_state["on"] != light.state.on:
