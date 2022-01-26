@@ -31,6 +31,7 @@ class PersonalRoleCog(BaseCog, name = "Personal role"):
         KnownGuild.cerberus: True,
         KnownGuild.guac: True,
         KnownGuild.kail: True,
+        KnownGuild.catnip: True,
         KnownGuild.mouse: ConditionFlow([
             ConditionBlock.single(MemberCondition.has_any_role(761260319820873809), 0),
             ConditionBlock.single(MemberCondition.has_any_role(761358543998681150), 0),
