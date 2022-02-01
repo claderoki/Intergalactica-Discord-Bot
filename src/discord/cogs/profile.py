@@ -237,17 +237,21 @@ class Profile(BaseCog):
     @currency.command(name = "add")
     async def currency_add(self, ctx, currency : lambda x : pycountry.currencies.get(alpha_3 = x.upper()) ):
         human = ctx.get_human()
-        if human.currencies is None:
-            human.currencies = set()
         human.currencies.add(currency)
-        human.save()
+        human.save(only = [Human.currencies])
         await ctx.success()
+
+
+    @currency.command(name = "list")
+    async def currency_list(self, ctx):
+        human = ctx.get_human()
+        await ctx.send(str(human.currencies))
 
     @currency.command(name = "remove")
     async def currency_remove(self, ctx, currency : lambda x : pycountry.currencies.get(alpha_3 = x.upper()) ):
         human = ctx.get_human()
         human.currencies.remove(currency)
-        human.save()
+        human.save(only = [Human.currencies])
         await ctx.success()
 
     @commands.command()
