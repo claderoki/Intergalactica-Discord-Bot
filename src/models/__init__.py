@@ -6,7 +6,7 @@ from .ticket import Ticket, Reply
 from .poll import Change, Parameter, Poll, PollTemplate, Vote, Option
 from .scene import Scene, Scenario
 from .pigeon import Pigeon, PigeonRelationship, PigeonDatingParticipant, PigeonDatingAvatar, PigeonDatingRelationship, Buff, PigeonBuff, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date, PigeonDatingProfile
-from .admin import SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word, DailyActivity
+from .admin import SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word, DailyActivity, GameRole, GameRoleSettings
 from .prank import NicknamePrank, Prankster, EmojiPrank, RolePrank
 from .reddit import Subreddit
 from .qotd import Category, Question, CategoryChannel, QuestionConfig
@@ -45,8 +45,8 @@ def setup():
         # database.drop_tables([Pigeon, PigeonDatingParticipant, PigeonDatingAvatar, PigeonDatingRelationship, PigeonRelationship, Buff, PigeonBuff, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date, PigeonDatingProfile])
         database.create_tables([Pigeon, PigeonDatingParticipant, PigeonDatingAvatar, PigeonDatingRelationship, PigeonRelationship, Buff, PigeonBuff, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date, PigeonDatingProfile])
 
-        # database.drop_tables([SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word, DailyActivity])
-        database.create_tables([SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word, DailyActivity])
+        # database.drop_tables([SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word, DailyActivity, GameRole, GameRoleSettings])
+        database.create_tables([SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word, DailyActivity, GameRole, GameRoleSettings])
 
         # database.drop_tables([Subreddit])
         database.create_tables([Subreddit])

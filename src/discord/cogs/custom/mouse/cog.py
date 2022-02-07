@@ -22,12 +22,17 @@ class KnownChannel:
 class KnownRole:
     underage = 938460208861151262
 
-
 class Mouse(CustomCog):
     guild_id = KnownGuild.mouse
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        if not self.bot.production:
+            return
+
+        if after.bot:
+            return
+
         if before.guild.id == self.guild_id:
             for role in after.roles:
                 if role.id == KnownRole.underage:

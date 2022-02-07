@@ -81,8 +81,7 @@ class Locus(commands.Bot):
         else:
             prefix = [";", "/"]
 
-        intents = discord.Intents.default()
-        intents.members = True
+        intents = discord.Intents.all()
         super().__init__(intents = intents, command_prefix = prefix)
 
         self.owm_api = OpenWeatherMapApi(config.environ["owm_key"])
@@ -196,6 +195,7 @@ class Locus(commands.Bot):
             "misc",
             "prank",
             "pigeon.cog",
+            "gameroles.cog",
             "switch.cog",
             "custom.mouse.cog",
             "custom.guac.cog",
