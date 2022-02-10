@@ -1,4 +1,4 @@
-import os
+from enum import Enum
 import json
 
 import peewee
@@ -9,6 +9,12 @@ from src.discord.helpers.waiters import *
 from src.discord.helpers.pretty import prettify_value
 from src.utils.country import Country
 import src.config as config
+
+class OnSkipAction(Enum):
+    ignore    = 1
+    null      = 2
+    default   = 3
+    exception = 4
 
 class UnititializedModel(peewee.Model):
 
@@ -62,7 +68,7 @@ class UnititializedModel(peewee.Model):
         if isinstance(field, peewee.TimeField):
             return TimeWaiter(ctx, **kwargs)
 
-    async def editor_for(self, ctx, attr, on_skip = "pass", waiter = None, **kwargs):
+    async def editor_for(self, ctx, attr, on_skip = OnSkipAction.ignore, waiter = None, **kwargs):
         if waiter is None:
             waiter = self.waiter_for(ctx, attr, **kwargs)
 
@@ -77,11 +83,11 @@ class UnititializedModel(peewee.Model):
                 value = value.id
             setattr(self, attr, value)
         except Skipped:
-            if on_skip in ("null", "none"):
+            if on_skip == OnSkipAction.null:
                 setattr(self, None, await waiter.wait())
-            elif on_skip == "default":
+            elif on_skip == OnSkipAction.default:
                 setattr(self, getattr(self.__class__, attr).default, await waiter.wait())
-            elif on_skip == "raise":
+            elif on_skip == OnSkipAction.exception:
                 raise
 
     @property

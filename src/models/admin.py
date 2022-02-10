@@ -111,6 +111,7 @@ class DailyActivity(BaseModel):
     date          = peewee.DateField       (null = False, default = lambda : datetime.date.today())
 
     class Meta:
+        primary_key = False
         indexes = (
             (("user_id", "guild_id", "date"), True),
         )

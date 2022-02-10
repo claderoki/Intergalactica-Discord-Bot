@@ -4,6 +4,7 @@ import peewee
 import discord
 from discord.ext import commands, tasks
 
+from src.models.base import OnSkipAction
 from src.discord.helpers.waiters import *
 from src.models import Category, Question, CategoryChannel, QuestionConfig, database
 import src.config as config
@@ -48,7 +49,7 @@ class QotdCog(BaseCog, name = "Question of the day"):
         while not skipped:
             question = Question(category = category)
             try:
-                await question.editor_for(ctx, "value", on_skip = "raise", skippable = True)
+                await question.editor_for(ctx, "value", on_skip = OnSkipAction.exception, skippable = True)
             except Skipped:
                 skipped = True
             else:

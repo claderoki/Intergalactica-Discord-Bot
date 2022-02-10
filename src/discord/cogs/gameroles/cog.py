@@ -1,3 +1,5 @@
+from typing import Dict
+
 import discord
 from discord.ext import tasks, commands
 
@@ -8,7 +10,7 @@ from src.discord.helpers import pretty
 from .helpers import GameRoleProcessor, GameRoleRepository
 
 class GameRoleCog(BaseCog, name = "Game role"):
-    processors = {}
+    processors: Dict[int, GameRoleProcessor] = {}
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -25,21 +27,26 @@ class GameRoleCog(BaseCog, name = "Game role"):
         if after.bot:
             return
 
-        if before.guild.id in self.processors:
-            processor = self.processors[before.guild.id]
-            if len(after.activities) > len(before.activities):
-                for activity in after.activities:
-                    if activity.type == discord.ActivityType.playing:
-                        await processor.process(after, activity)
+        processor = self.processors.get(before.guild.id)
+        if processor is None:
+            return
+
+        if after.activities != before.activities:
+            for activity in after.activities:
+                if activity.type == discord.ActivityType.playing:
+                    await processor.process(after, activity)
 
     @commands.command()
     @commands.guild_only()
     async def games(self, ctx):
         data = []
-        data.append(("name",))
         for game_role in GameRoleRepository.get_all_for_guild(ctx.guild.id):
-            data.append((game_role.game_name, ))
+            role = ctx.guild.get_role(game_role.role_id)
+            if role is not None:
+                data.append((game_role.game_name, len(role.members)))
+        data.sort(key = lambda x : x[1], reverse = True)
 
+        data.insert(0, ("name","members"))
         table = pretty.Table.from_list(data, first_header = True)
         await table.to_paginator(ctx, 10).wait()
 
@@ -96,7 +103,7 @@ class GameRoleCog(BaseCog, name = "Game role"):
             settings = GameRoleSettings(guild_id = ctx.guild.id)
 
         await settings.editor_for(ctx, "threshhold", min = 1, max = 10)
-        await settings.editor_for(ctx, "log_channel_id", skippable = True, on_skip = "pass")
+        await settings.editor_for(ctx, "log_channel_id", skippable = True)
         settings.save()
         await ctx.success("Setup.")
 
@@ -106,7 +113,7 @@ class GameRoleCog(BaseCog, name = "Game role"):
     @tasks.loop(minutes = 60)
     async def clean_all(self):
         for processor in self.processors.values():
-            processor.cleanup()
+            await processor.cleanup()
 
 def setup(bot):
     bot.add_cog(GameRoleCog(bot))

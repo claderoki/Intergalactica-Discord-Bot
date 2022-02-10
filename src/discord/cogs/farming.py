@@ -13,6 +13,7 @@ from src.discord.cogs.core import BaseCog
 from src.models import Farm, Crop, FarmCrop, Human, HumanItem
 from src.discord.helpers.converters import StringConverter
 from src.discord.errors.base import SendableException
+from src.discord.helpers.files import FileHelper
 
 class FarmingCog(BaseCog, name = "Farming"):
     def __init__(self, bot):
@@ -55,7 +56,7 @@ class FarmingCog(BaseCog, name = "Farming"):
             image.paste(crop,(0,0), crop.convert('RGBA'))
             image.save(path, "PNG")
 
-        file = await self.bot.store_file(path, filename = "file.png")
+        file = await FileHelper.store(path, filename = "file.png")
         embed.set_image(url = file)
         embed.set_footer(text = f"Stage {stage} / {Crop.max_stages}")
 

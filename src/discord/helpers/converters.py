@@ -1,6 +1,7 @@
 import datetime
 from discord.ext import commands
 
+from src.discord.helpers.waiters.base import ConversionFailed
 from src.utils.country import Country, CountryNotFound
 from src.discord.errors.base import SendableException
 

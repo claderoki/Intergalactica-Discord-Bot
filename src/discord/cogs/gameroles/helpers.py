@@ -1,4 +1,5 @@
 import random
+import asyncio
 
 import discord
 
@@ -50,6 +51,9 @@ class GameRoleProcessor:
         role_ids = list(self.mapping.values())
 
         for _ in range(5):
+            if len(role_ids) == 0:
+                return None
+
             role_id = random.choice(role_ids)
             role_ids.remove(role_id)
             role = self.guild.get_role(role_id)
@@ -68,17 +72,25 @@ class GameRoleProcessor:
         for game_role in GameRoleRepository.get_all_for_guild(self.guild.id):
             self.mapping[game_role.game_name] = game_role.role_id
 
+    def log(self, message: str):
+        if self.settings.log_channel_id is not None:
+            asyncio.gather(self.guild.get_channel(self.settings.log_channel_id).send(message))
+
     def __cleanup_role(self, role_id: int, game_name: str):
         """Cleans up a specific role from the db & cache."""
         GameRoleRepository.remove(self.guild.id, role_id, game_name)
         del self.mapping[game_name]
 
-    def cleanup(self):
+    async def cleanup(self):
         """Removes roles in the db & cache that no longer exist."""
         for game_name in list(self.mapping.keys()):
             role_id = self.mapping[game_name]
             role = self.guild.get_role(role_id)
             if role is None:
+                self.__cleanup_role(role_id, game_name)
+            elif len(role.members) < self.settings.threshhold:
+                await role.delete()
+                self.log("Cleaned up " + game_name)
                 self.__cleanup_role(role_id, game_name)
 
     async def __process_new(self, member: discord.Member, game: discord.Game):
@@ -90,8 +102,7 @@ class GameRoleProcessor:
             GameRoleRepository.save(self.guild.id, role.id, game.name)
             del self.data[game.name]
             await member.add_roles(role)
-            if self.settings.log_channel_id is not None:
-                await member.guild.get_channel(self.settings.log_channel_id).send(f"`{game.name}` role created.")
+            self.log(f"`{game.name}` role created.")
 
     async def __process_existing(self, member: discord.Member, game: discord.Game):
         role_id = self.mapping[game.name]

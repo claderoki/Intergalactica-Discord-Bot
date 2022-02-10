@@ -1,11 +1,9 @@
-import re
-import json
 import asyncio
-import datetime
 
 import discord
 from discord.ext import commands
 
+from src.discord.helpers.general import Translator
 import src.config as config
 from src.models import Settings, NamedChannel, Translation, Locale, database
 from src.discord.helpers.waiters import *
@@ -61,7 +59,7 @@ class Management(BaseCog):
 
     @translation.command(name = "remove")
     async def translation_remove(self, ctx, key, locale = "en_US"):
-        missing_translations = self.bot.get_missing_translations(locale)
+        missing_translations = Translator.get_missing(locale)
         try:
             translation = Translation.get(message_key = key)
         except Translation.DoesNotExist:
@@ -73,7 +71,7 @@ class Management(BaseCog):
 
     @translation.command()
     async def keys(self, ctx, locale = "en_US"):
-        missing_translations = self.bot.get_missing_translations(locale)
+        missing_translations = Translator.get_missing(locale)
         for key in [x for x in missing_translations]:
             waiter = StrWaiter(ctx, prompt = f"Translate: {key}", max_words = None, skippable = True)
             try:
@@ -100,7 +98,6 @@ class Management(BaseCog):
 
         for translation in [x for x in translations if x.locale.name == "en_US"]:
             if translation.message_key not in locale_translations:
-
                 waiter = StrWaiter(ctx, prompt = f"Translate: `{translation.value}`", max_words = None, skippable = True)
                 try:
                     value = await waiter.wait()
