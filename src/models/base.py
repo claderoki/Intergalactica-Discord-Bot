@@ -53,6 +53,8 @@ class UnititializedModel(peewee.Model):
         if attr == "image_url":
             AttachmentWaiter(ctx, **kwargs)
 
+        if isinstance(field, TimeDeltaField):
+            return TimeDeltaWaiter(ctx, **kwargs)
         if isinstance(field, CountryField):
             return CountryWaiter(ctx, **kwargs)
         if isinstance(field, peewee.BooleanField):
@@ -211,9 +213,9 @@ class TimeDeltaField(peewee.TextField):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def db_value(self, value):
+    def db_value(self, value: datetime.timedelta):
         if value is not None:
-            return f"{value.seconds} seconds"
+            return f"{int(value.total_seconds())} seconds"
 
     def python_value(self, value):
         if value is not None:

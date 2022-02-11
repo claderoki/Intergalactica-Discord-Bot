@@ -43,7 +43,7 @@ class Translator:
             cache[key]  = translation.value
             return translation.value
         except Translation.DoesNotExist:
-            cls.get_missing().add(key)
+            cls.get_missing(locale).add(key)
             return key
 
     @classmethod

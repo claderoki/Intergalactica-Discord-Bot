@@ -16,11 +16,15 @@ from .farming import Farm, Crop, FarmCrop
 from .conversation import Conversant, Conversation, Participant
 from .conversions import Currency, Measurement, StoredUnit
 from .secretsanta import SecretSanta, SecretSantaParticipant
+from .inactivechannels import InactiveChannelsSettings
 
 database = BaseModel._meta.database
 
 def setup():
     with database.connection_context():
+        # database.drop_tables([InactiveChannelsSettings])
+        database.create_tables([InactiveChannelsSettings])
+
         # database.drop_tables([Conversant, Participant, Conversation])
         database.create_tables([Conversant, Participant, Conversation])
 
