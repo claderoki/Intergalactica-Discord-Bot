@@ -207,6 +207,9 @@ class Locus(commands.Bot):
             return human
         return self._human_cache[user_id]
 
+    def translate(self, key, locale = "en_US"):
+        return Translator.translate(key, locale)
+
     async def before_any_command(self, ctx):
         ctx.db  = database.connection_context()
         ctx.db.__enter__()
