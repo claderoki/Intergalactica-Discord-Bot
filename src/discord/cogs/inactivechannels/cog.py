@@ -8,7 +8,7 @@ from src.discord import SendableException
 
 class InactiveChannelsCog(BaseCog, name = "Inactive channels"):
 
-    @commands.group()
+    @commands.group(aliases = ["ic"])
     async def inactivechannels(self, ctx):
         pass
 
@@ -27,11 +27,12 @@ class InactiveChannelsCog(BaseCog, name = "Inactive channels"):
 
     @inactivechannels.command(name = "check")
     @commands.guild_only()
-    async def inactivechannels_check(self, ctx):
+    async def inactivechannels_check(self, ctx: commands.Context):
         settings = InactiveChannelsRepository.get_settings(ctx.guild.id)
         if settings is None:
             raise SendableException("Not setup yet.")
 
+        await ctx.trigger_typing()
         inactive_channels = []
         for channel in ctx.guild.text_channels:
             inactive = await InactiveChannelsHelper.is_inactive(channel, settings)
