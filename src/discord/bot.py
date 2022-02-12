@@ -137,6 +137,8 @@ class Locus(commands.Bot):
             "custom.guac.cog",
             "custom.shared.cog",
             "custom.intergalactica.cog",
+            "guildrewards.cog",
+            "guildmigration.cog",
             "birthdayreminders.cog",
             "inactivechannels.cog",
             "bumpreminders.cog",

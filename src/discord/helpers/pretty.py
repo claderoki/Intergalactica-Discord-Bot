@@ -1,3 +1,5 @@
+import datetime
+
 from enum import Enum
 
 import discord
@@ -5,11 +7,44 @@ import discord
 from src.utils.general import split_list
 from src.discord.helpers.paginating import Page, Paginator
 
+class TimeDeltaHelper:
+    @classmethod
+    def _append_single_unit(cls, value: int, name: str, messages: list) -> str:
+        if len(messages) < 2 and value > 0:
+            name = name if value == 1 else name + "s"
+            messages.append(f"{value} {name}")
+
+    @classmethod
+    def prettify(cls, value: datetime.timedelta) -> str:
+        seconds  = value.total_seconds()
+
+        if seconds < 60:
+            # just a little override to make it a bit more efficient in the case of really small deltas.
+            return f"{int(seconds)} seconds"
+
+        years   = int((seconds / 2592000) / 12)
+        months  = int((seconds / 2592000) % 30)
+        days    = int((seconds / 86400) % 30)
+        hours   = int((seconds / 3600) % 24)
+        minutes = int((seconds % 3600) / 60)
+        seconds = int(seconds % 60)
+
+        messages = []
+        cls._append_single_unit(years, "year", messages)
+        cls._append_single_unit(months, "month", messages)
+        cls._append_single_unit(days, "day", messages)
+        cls._append_single_unit(hours, "hour", messages)
+        cls._append_single_unit(minutes, "minute", messages)
+        cls._append_single_unit(seconds, "second", messages)
+        return " and ".join(messages)
+
 def prettify_value(value):
     if isinstance(value, bool):
         return "Yes" if value else "No"
     if isinstance(value, Enum):
         return value.name
+    if isinstance(value, datetime.timedelta):
+        return TimeDeltaHelper.prettify(value)
     if value is None:
         return "N/A"
     return value
