@@ -4,6 +4,7 @@ import typing
 import discord
 from discord.ext import commands
 
+from src.discord.helpers.colors import ColorHelper
 from src.discord.helpers.known_guilds import KnownGuild
 import src.discord.helpers.pretty as pretty
 from src.discord.cogs.core import BaseCog
@@ -99,7 +100,7 @@ class PersonalRoleCog(BaseCog, name = "Personal role"):
             color = random.choice(('#165B33', '#146B3A', '#F8B229', '#EA4630', '#BB2528'))
 
         if color is None:
-            color = self.bot.calculate_dominant_color(self.bot._get_icon_url(ctx.author))
+            color = ColorHelper.__get_dominant_color(self.bot._get_icon_url(ctx.author))
         else:
             color = await commands.ColorConverter().convert(ctx, color)
 
