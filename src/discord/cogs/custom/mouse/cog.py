@@ -17,9 +17,27 @@ from src.models import DailyActivity
 
 class KnownChannel:
     general = 729909438378541116
+    staff   = 729924484156620860
+
+class KnownRole:
+    underage = 938460208861151262
 
 class Mouse(CustomCog):
     guild_id = KnownGuild.mouse
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        if not self.bot.production:
+            return
+
+        if after.bot:
+            return
+
+        if before.guild.id == self.guild_id:
+            for role in after.roles:
+                if role.id == KnownRole.underage:
+                    await after.ban(reason = "Underage role")
+                    await after.guild.get_channel(KnownChannel.staff).send(f"Banned {before} for having the underage role.")
 
     @commands.Cog.listener()
     async def on_message(self, message):

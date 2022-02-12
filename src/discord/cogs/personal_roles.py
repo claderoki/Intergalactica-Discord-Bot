@@ -29,6 +29,7 @@ class PersonalRoleCog(BaseCog, name = "Personal role"):
             ConditionBlock.single(MemberCondition.is_nitro_booster(), 1)
         ]),
         KnownGuild.cerberus: True,
+        KnownGuild.guac: True,
         KnownGuild.kail: True,
         KnownGuild.catnip: True,
         KnownGuild.mouse: ConditionFlow([

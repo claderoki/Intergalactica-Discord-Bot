@@ -9,6 +9,7 @@ from src.discord.helpers.converters import CountryConverter
 import src.discord.helpers.pretty as pretty
 from src.models import Human, database
 from src.discord.errors.base import SendableException
+from src.discord.helpers import ColorHelper
 from src.discord.cogs.core import BaseCog
 
 class CovidCog(BaseCog, name = "Covid"):
@@ -21,7 +22,7 @@ class CovidCog(BaseCog, name = "Covid"):
         pass
 
     def get_base_embed(self, guild) -> discord.Embed:
-        embed = discord.Embed(color = self.bot.get_dominant_color(guild))
+        embed = discord.Embed(color = ColorHelper.get_dominant_color())
         return embed
 
     @commands.command()

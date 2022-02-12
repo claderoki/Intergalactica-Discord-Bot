@@ -111,6 +111,29 @@ class DailyActivity(BaseModel):
     date          = peewee.DateField       (null = False, default = lambda : datetime.date.today())
 
     class Meta:
+        primary_key = False
         indexes = (
             (("user_id", "guild_id", "date"), True),
+        )
+
+class GameRole(BaseModel):
+    guild_id      = peewee.BigIntegerField (null = False)
+    role_id       = peewee.BigIntegerField (null = False)
+    game_name     = peewee.CharField       (null = False)
+
+    class Meta:
+        primary_key = False
+        indexes = (
+            (("role_id", "guild_id"), True),
+        )
+
+class GameRoleSettings(BaseModel):
+    guild_id       = peewee.BigIntegerField (null = False)
+    threshhold     = peewee.IntegerField    (null = False, default = 2)
+    log_channel_id = peewee.BigIntegerField (null = True)
+    enabled        = peewee.BooleanField    (null = False, default = True)
+
+    class Meta:
+        indexes = (
+            (("guild_id",), True),
         )

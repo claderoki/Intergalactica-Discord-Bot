@@ -11,9 +11,10 @@ class Guac(CustomCog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        for role in after.roles:
-            if role.id == KnownRole.underage:
-                await after.ban(reason = "Underage role")
+        if before.guild.id == self.guild_id:
+            for role in after.roles:
+                if role.id == KnownRole.underage:
+                    await after.ban(reason = "Underage role")
 
 def setup(bot):
     bot.add_cog(Guac(bot))

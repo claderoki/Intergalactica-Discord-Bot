@@ -1,3 +1,5 @@
+
+from typing import Tuple
 import re
 from enum import Enum
 
@@ -36,7 +38,7 @@ class RegexHelper:
             self._regex = self._build()
         return self._regex
 
-    def match(self, content):
+    def match(self, content) -> Tuple[str, float]:
         matches = re.findall(self.regex, content)
         if matches:
             for match in matches:
@@ -164,3 +166,4 @@ def should_exclude(value):
 #             subtype = subtype
 #         )
 #         # measurement.save()
+

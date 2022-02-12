@@ -5,6 +5,7 @@ import re
 import pytz
 import discord
 
+from src.discord.helpers.files import FileHelper
 from src.utils.country import Country, CountryNotFound
 import src.config as config
 from src.discord.helpers.embed import Embed
@@ -277,7 +278,7 @@ class AttachmentWaiter(MessageWaiter):
         if not raw:
             attachment = message.attachments[0]
             if store:
-                return await self.bot.store_file(await attachment.read(), attachment.filename)
+                return await FileHelper.store(await attachment.read(), attachment.filename)
             else:
                 return attachment.url
 
