@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 
 import src.config as config
-from src.discord.errors.base import SendableException
+from src.discord import SendableException
 from src.discord.cogs.core import BaseCog
 from .validator import MilkywayValidator
 from src.models import Milkyway, MilkywaySettings
@@ -21,6 +21,10 @@ class MilkywayHelper:
 
         validator = MilkywayValidator(ctx.author, settings, godmode)
         result    = validator.validate()
+        if not result.is_success():
+            raise SendableException("You are unable to create a milkyway, reason(s): " + ("\n".join(result.errors)))
+
+        print(result)
 
 class MilkywayRepository:
     __slots__ = ()

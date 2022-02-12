@@ -14,6 +14,9 @@ class MilkywayValidationResult:
 
     def add_purchase_type(self, purchase_type: Milkyway.PurchaseType):
         self.available_purchase_types.append(purchase_type)
+    
+    def is_success(self) -> bool:
+        return len(self.errors) == 0
 
 class MilkywayValidator:
     __slots__ = ("member", "settings", "godmode")
