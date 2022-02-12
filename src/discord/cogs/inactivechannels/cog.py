@@ -9,11 +9,12 @@ from src.discord import SendableException
 class InactiveChannelsCog(BaseCog, name = "Inactive channels"):
 
     @commands.group(aliases = ["ic"])
+    @commands.guild_only()
+    @commands.has_guild_permissions(administrator = True)
     async def inactivechannels(self, ctx):
         pass
 
     @inactivechannels.command(name = "setup")
-    @commands.guild_only()
     async def inactivechannels_setup(self, ctx):
         settings = InactiveChannelsRepository.get_settings(ctx.guild.id)
         if settings is None:
@@ -26,7 +27,6 @@ class InactiveChannelsCog(BaseCog, name = "Inactive channels"):
         await ctx.success("Done setting up.")
 
     @inactivechannels.command(name = "check")
-    @commands.guild_only()
     async def inactivechannels_check(self, ctx: commands.Context):
         settings = InactiveChannelsRepository.get_settings(ctx.guild.id)
         if settings is None:
