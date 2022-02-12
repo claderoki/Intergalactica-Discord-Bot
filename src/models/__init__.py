@@ -16,6 +16,7 @@ from .farming import Farm, Crop, FarmCrop
 from .conversation import Conversant, Conversation, Participant
 from .conversions import Currency, Measurement, StoredUnit
 from .secretsanta import SecretSanta, SecretSantaParticipant
+from .milkyway import Milkyway, MilkywaySettings
 
 database = BaseModel._meta.database
 
