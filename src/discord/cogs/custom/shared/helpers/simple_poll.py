@@ -3,14 +3,15 @@ from enum import Enum
 
 import discord
 
-from src.discord.helpers.waiters import MemberWaiter
 import src.config as config
 from src.discord.helpers import KnownGuild
+from src.discord.helpers.waiters import MemberWaiter
+
 
 class SimpleVote:
     class Option(Enum):
-        yes  = "✅"
-        no   = "❎"
+        yes = "✅"
+        no = "❎"
         skip = "❓"
 
     __slots__ = ("option", "count")
@@ -21,6 +22,7 @@ class SimpleVote:
 
     def increment_count(self):
         self.count += 1
+
 
 class SimplePoll:
     """A simple event based vote, wont be 'finished' until every member in the channel reacted."""
@@ -36,16 +38,16 @@ class SimplePoll:
     __slots__ = ("message", "question", "votes", "member_count")
 
     def __init__(self, message: discord.Message, votes: list, member_count: int):
-        self.message      = message
-        self.question     = message.content
-        self.votes        = votes
+        self.message = message
+        self.question = message.content
+        self.votes = votes
         self.member_count = member_count
 
     @classmethod
     async def from_payload(cls, payload) -> "SimplePoll":
-        channel      = config.bot.get_channel(payload.channel_id)
-        message      = await channel.fetch_message(payload.message_id)
-        votes        = await cls.get_votes(message)
+        channel = config.bot.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        votes = await cls.get_votes(message)
         member_count = len([x for x in message.channel.members if not cls.should_skip_member(x)])
 
         return cls(message, votes, member_count)
@@ -116,14 +118,14 @@ class SimplePoll:
 
     def finish(self):
         channel = self.message.guild.get_channel(self.guild_data[self.message.guild.id]["result_channel"])
-        embed = discord.Embed(color = config.bot.get_dominant_color(None))
+        embed = discord.Embed(color=config.bot.get_dominant_color(None))
 
         lines = []
         lines.append(self.question)
         lines.append("*(all members finished voting)*")
         lines.append("\n")
 
-        skip_count       = sum(x.count for x in self.votes if x.option == SimpleVote.Option.skip)
+        skip_count = sum(x.count for x in self.votes if x.option == SimpleVote.Option.skip)
         valid_vote_count = self.member_count - skip_count
 
         for vote in self.votes:
@@ -141,8 +143,7 @@ class SimplePoll:
             if vote.option == SimpleVote.Option.yes and percentage == 100:
                 if self.is_selfie_vote():
                     if self.assign_selfie_role():
-                        embed.set_footer(text = "Selfie role assigned.")
+                        embed.set_footer(text="Selfie role assigned.")
 
         embed.description = "\n".join(lines)
-        asyncio.gather(channel.send(embed = embed))
-
+        asyncio.gather(channel.send(embed=embed))

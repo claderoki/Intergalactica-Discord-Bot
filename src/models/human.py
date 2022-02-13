@@ -1,16 +1,17 @@
 import datetime
-from dateutil.relativedelta import relativedelta
 from enum import Enum
 
-import peewee
 import discord
+import peewee
 import pycountry
+from dateutil.relativedelta import relativedelta
 
-from .base import BaseModel, EnumField, CountryField
-from src.utils.timezone import Timezone
-from src.utils.zodiac import ZodiacSign
 import src.config as config
 import src.discord.cogs.switch as switch
+from src.utils.timezone import Timezone
+from src.utils.zodiac import ZodiacSign
+from .base import BaseModel, EnumField, CountryField
+
 
 class CurrenciesField(peewee.TextField):
     def db_value(self, value):
@@ -19,19 +20,20 @@ class CurrenciesField(peewee.TextField):
 
     def python_value(self, value):
         if value:
-            return set(pycountry.currencies.get(alpha_3 = x) for x in value.split(";"))
+            return set(pycountry.currencies.get(alpha_3=x) for x in value.split(";"))
         else:
             return set()
 
+
 class Human(BaseModel):
-    user_id               = peewee.BigIntegerField  (null = False, unique = True)
-    gold                  = peewee.BigIntegerField  (null = False, default = 250)
-    timezone              = peewee.TextField        (null = True)
-    date_of_birth         = peewee.DateField        (null = True)
-    city                  = peewee.TextField        (null = True)
-    country               = CountryField            (null = True, column_name = "country_code")
-    tester                = peewee.BooleanField     (null = False, default = False)
-    currencies            = CurrenciesField         (null = False, default = lambda : set())
+    user_id = peewee.BigIntegerField(null=False, unique=True)
+    gold = peewee.BigIntegerField(null=False, default=250)
+    timezone = peewee.TextField(null=True)
+    date_of_birth = peewee.DateField(null=True)
+    city = peewee.TextField(null=True)
+    country = CountryField(null=True, column_name="country_code")
+    tester = peewee.BooleanField(null=False, default=False)
+    currencies = CurrenciesField(null=False, default=lambda: set())
 
     class Meta:
         indexes = (
@@ -95,8 +97,8 @@ class Human(BaseModel):
                 if timezone is not None:
                     return timezone.name
 
-    def add_item(self, item, amount = 1, found = False):
-        human_item, created = HumanItem.get_or_create(item = item, human = self)
+    def add_item(self, item, amount=1, found=False):
+        human_item, created = HumanItem.get_or_create(item=item, human=self)
         if created:
             human_item.amount = amount
         else:
@@ -132,11 +134,11 @@ class Human(BaseModel):
         if self.date_of_birth is not None:
             return ZodiacSign.from_date(self.date_of_birth)
 
-    def get_embed_field(self, show_all = False):
-        #TODO: clean up.
+    def get_embed_field(self, show_all=False):
+        # TODO: clean up.
         name = self.user.name
         # if show_all and self.country:
-            # name += f" {self.country.flag_emoji}"
+        # name += f" {self.country.flag_emoji}"
         values = []
 
         if self.date_of_birth is not None:
@@ -189,10 +191,10 @@ class Human(BaseModel):
             values.append("N/A")
 
         if not show_all:
-            classes = (switch.settings.FriendCodeSetting, )
+            classes = (switch.settings.FriendCodeSetting,)
 
             for cls in classes:
-                model = cls.get_or_none(human = self)
+                model = cls.get_or_none(human=self)
                 if model is not None:
                     values.append(f"{cls.symbol} {model.value}")
 
@@ -200,19 +202,21 @@ class Human(BaseModel):
         if not show_all:
             sep += "\n"
 
-        return {"name" : name, "value" : sep.join(values), "inline" : True}
+        return {"name": name, "value": sep.join(values), "inline": True}
+
 
 class ItemCategory(BaseModel):
-    name   = peewee.CharField       (null = False)
-    code   = peewee.CharField       (max_length = 45)
-    parent = peewee.ForeignKeyField ("self", null = True)
+    name = peewee.CharField(null=False)
+    code = peewee.CharField(max_length=45)
+    parent = peewee.ForeignKeyField("self", null=True)
+
 
 class Item(BaseModel):
     class Rarity(Enum):
-        junk      = 1
-        common    = 2
-        uncommon  = 3
-        rare      = 4
+        junk = 1
+        common = 2
+        uncommon = 3
+        rare = 4
         legendary = 5
 
         @property
@@ -241,15 +245,15 @@ class Item(BaseModel):
             elif self == self.legendary:
                 return 6
 
-    name         = peewee.CharField       (null = False)
-    code         = peewee.CharField       (max_length = 45)
-    description  = peewee.TextField       (null = False)
-    image_url    = peewee.TextField       (null = False)
-    rarity       = EnumField              (Rarity, null = False, default = Rarity.common)
-    explorable   = peewee.BooleanField    (null = False, default = False)
-    usable       = peewee.BooleanField    (null = False, default = False)
-    category     = peewee.ForeignKeyField (ItemCategory, null = True)
-    chance       = peewee.IntegerField    (null = False)
+    name = peewee.CharField(null=False)
+    code = peewee.CharField(max_length=45)
+    description = peewee.TextField(null=False)
+    image_url = peewee.TextField(null=False)
+    rarity = EnumField(Rarity, null=False, default=Rarity.common)
+    explorable = peewee.BooleanField(null=False, default=False)
+    usable = peewee.BooleanField(null=False, default=False)
+    category = peewee.ForeignKeyField(ItemCategory, null=True)
+    chance = peewee.IntegerField(null=False)
 
     @classmethod
     def get_random(cls):
@@ -268,9 +272,9 @@ class Item(BaseModel):
         """
 
         query = query.format(
-            table_name = cls._meta.table_name,
-            where = "WHERE (category_id != 1 OR category_id IS NULL) AND explorable = 1",
-            chance_column_name = "chance"
+            table_name=cls._meta.table_name,
+            where="WHERE (category_id != 1 OR category_id IS NULL) AND explorable = 1",
+            chance_column_name="chance"
         )
 
         for item in cls.raw(query):
@@ -278,17 +282,18 @@ class Item(BaseModel):
 
     @property
     def embed(self):
-        embed = discord.Embed(color = self.rarity.color)
-        embed.set_thumbnail(url = self.image_url)
+        embed = discord.Embed(color=self.rarity.color)
+        embed.set_thumbnail(url=self.image_url)
         embed.title = self.name
         embed.description = self.description
         return embed
 
+
 class HumanItem(BaseModel):
-    human  = peewee.ForeignKeyField (Human, null = False, backref = "human_items")
-    item   = peewee.ForeignKeyField (Item, null = False)
-    amount = peewee.IntegerField    (null = False, default = 1)
-    found  = peewee.BooleanField    (null = False, default = False)
+    human = peewee.ForeignKeyField(Human, null=False, backref="human_items")
+    item = peewee.ForeignKeyField(Item, null=False)
+    amount = peewee.IntegerField(null=False, default=1)
+    found = peewee.BooleanField(null=False, default=False)
 
     class Meta:
         indexes = (

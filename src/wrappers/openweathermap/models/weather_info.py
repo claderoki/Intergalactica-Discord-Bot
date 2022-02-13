@@ -1,4 +1,3 @@
-
 class WeatherInfo:
     __slots__ = ("id", "main", "description", "icon", "icon_url", "city")
 
@@ -17,15 +16,15 @@ class WeatherInfo:
     @property
     def emoji(self):
         return \
-        {
-            "Rain"         : "🌧",
-            "Snow"         : "🌨",
-            "Clear"        : "☀",
-            "Clouds"       : "☁",
-            "Thunderstorm" : "⛈",
-            "Fog"          : "🌫️",
-            "Smoke"        : "💨",
-            "Drizzle"      : "🌧",
-            "Mist"         : "🌫️",
-            "Haze"         : "🌫️"
-        }.get(self.main, self.main)
+            {
+                "Rain": "🌧",
+                "Snow": "🌨",
+                "Clear": "☀",
+                "Clouds": "☁",
+                "Thunderstorm": "⛈",
+                "Fog": "🌫️",
+                "Smoke": "💨",
+                "Drizzle": "🌧",
+                "Mist": "🌫️",
+                "Haze": "🌫️"
+            }.get(self.main, self.main)

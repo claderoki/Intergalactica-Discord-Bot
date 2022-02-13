@@ -1,20 +1,18 @@
 import asyncio
 import datetime
 import random
-import re
-from enum import Enum
 
 import discord
-from discord.ext import commands, tasks
 from dateutil.relativedelta import relativedelta
+from discord.ext import commands, tasks
 
-from src.discord.cogs.custom.shared.helpers.helpers import ChannelHelper
-from src.discord.helpers.known_guilds import KnownGuild
 from src.discord.cogs.core import BaseCog
-from src.discord.errors.base import SendableException
-from src.discord.helpers.utility import get_context_embed
-from src.models import (TemporaryVoiceChannel, TemporaryTextChannel, database)
+from src.discord.cogs.custom.shared.helpers.helpers import ChannelHelper
 from src.discord.cogs.custom.shared.helpers.simple_poll import SimplePoll
+from src.discord.errors.base import SendableException
+from src.discord.helpers.known_guilds import KnownGuild
+from src.models import (TemporaryVoiceChannel, TemporaryTextChannel, database)
+
 
 class Intergalactica(BaseCog):
     _welcome_message_configs = {}
@@ -22,20 +20,20 @@ class Intergalactica(BaseCog):
     last_member_join = None
 
     _role_ids = {
-        "selfies"   : 748566253534445568,
-        "vc_access" : 761599311967420418,
-        "5k+"       : 778744417322139689,
+        "selfies": 748566253534445568,
+        "vc_access": 761599311967420418,
+        "5k+": 778744417322139689,
     }
 
     _channel_ids = {
-        "general"        : 744650481682481233,
-        "roles"          : 742303560988885044,
-        "welcome"        : 742187165659693076,
-        "selfies"        : 744703465086779393,
-        "staff_votes"    : 863775839945621534,
-        "staff_chat"     : 863774968848449546,
-        "introductions"  : 742567349613232249,
-        "c3po-log"       : 863775783940390912,
+        "general": 744650481682481233,
+        "roles": 742303560988885044,
+        "welcome": 742187165659693076,
+        "selfies": 744703465086779393,
+        "staff_votes": 863775839945621534,
+        "staff_chat": 863774968848449546,
+        "introductions": 742567349613232249,
+        "c3po-log": 863775783940390912,
     }
 
     def get_channel(self, name):
@@ -47,12 +45,13 @@ class Intergalactica(BaseCog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        SimplePoll.add_guild_data(KnownGuild.intergalactica, self._channel_ids["staff_votes"], self._channel_ids["staff_chat"])
+        SimplePoll.add_guild_data(KnownGuild.intergalactica, self._channel_ids["staff_votes"],
+                                  self._channel_ids["staff_chat"])
 
-        self.start_task(self.illegal_member_purger,             check = self.bot.production)
-        self.start_task(self.introduction_purger,               check = self.bot.production)
-        self.start_task(self.temp_vc_poller,                    check = self.bot.production)
-        self.start_task(self.mouse_role_cleanup,                check = self.bot.production)
+        self.start_task(self.illegal_member_purger, check=self.bot.production)
+        self.start_task(self.introduction_purger, check=self.bot.production)
+        self.start_task(self.temp_vc_poller, check=self.bot.production)
+        self.start_task(self.mouse_role_cleanup, check=self.bot.production)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -85,11 +84,11 @@ class Intergalactica(BaseCog):
                     emoji = random.choice(("💛", "🧡", "🤍", "💙", "🖤", "💜", "💚", "❤️"))
                     asyncio.gather(message.add_reaction(emoji))
 
-    async def log(self, channel_name, content = None, **kwargs):
+    async def log(self, channel_name, content=None, **kwargs):
         channel = self.get_channel(channel_name)
-        await channel.send(content = content, **kwargs)
+        await channel.send(content=content, **kwargs)
 
-    @commands.command(name = "vcchannel")
+    @commands.command(name="vcchannel")
     @commands.guild_only()
     async def vc_channel(self, ctx, *args):
         name = " ".join(args) if len(args) > 0 else None
@@ -105,8 +104,9 @@ class Intergalactica(BaseCog):
             raise SendableException("Command not available in this guild.")
 
         category = get_category(ctx.guild, category_id)
-        channel = await category.create_voice_channel(name or "Temporary voice channel", reason = f"Requested by {ctx.author}")
-        TemporaryVoiceChannel.create(guild_id = ctx.guild.id, channel_id = channel.id)
+        channel = await category.create_voice_channel(name or "Temporary voice channel",
+                                                      reason=f"Requested by {ctx.author}")
+        TemporaryVoiceChannel.create(guild_id=ctx.guild.id, channel_id=channel.id)
         await ctx.success()
 
     @commands.Cog.listener()
@@ -115,7 +115,7 @@ class Intergalactica(BaseCog):
             return
 
         if member.guild.id == KnownGuild.mouse:
-            role    = member.guild.get_role(841072184953012275)
+            role = member.guild.get_role(841072184953012275)
             general = member.guild.get_channel(729909438378541116)
             message = await general.send(f"Welcome to the server {member.mention}, {role.mention} say hello!")
             self.welcome_messages[member.id] = message
@@ -123,10 +123,10 @@ class Intergalactica(BaseCog):
             welcome_channel = self.get_channel("welcome")
             text = self.bot.translate("member_join")
 
-            embed = discord.Embed(color = self.bot.get_dominant_color(member.guild))
-            embed.description = text.format(member = member)
+            embed = discord.Embed(color=self.bot.get_dominant_color(member.guild))
+            embed.description = text.format(member=member)
 
-            asyncio.gather(welcome_channel.send(embed = embed))
+            asyncio.gather(welcome_channel.send(embed=embed))
 
             self.last_member_join = datetime.datetime.utcnow()
             text = f"Welcome {member.mention}! Make sure to pick some <#{self._channel_ids['roles']}> and make an <#{self._channel_ids['introductions']}>"
@@ -149,12 +149,12 @@ class Intergalactica(BaseCog):
         welcome_channel = self.get_channel("welcome")
         text = self.bot.translate("member_leave")
 
-        embed = discord.Embed(color = self.bot.get_dominant_color(member.guild))
-        embed.description = text.format(member = member)
+        embed = discord.Embed(color=self.bot.get_dominant_color(member.guild))
+        embed.description = text.format(member=member)
 
-        asyncio.gather(welcome_channel.send(embed = embed))
+        asyncio.gather(welcome_channel.send(embed=embed))
 
-    @tasks.loop(hours = 1)
+    @tasks.loop(hours=1)
     async def temp_vc_poller(self):
         with database.connection_context():
             for temporary_voice_channel in TemporaryVoiceChannel:
@@ -167,7 +167,7 @@ class Intergalactica(BaseCog):
                         temporary_text_channel.delete_instance()
                     temporary_voice_channel.delete_instance()
 
-    @tasks.loop(minutes = 20)
+    @tasks.loop(minutes=20)
     async def introduction_purger(self):
         channels = []
         channels.append(self.bot.get_channel(729909501578182747))
@@ -176,7 +176,7 @@ class Intergalactica(BaseCog):
         for channel in channels:
             await ChannelHelper.cleanup_channel(channel)
 
-    @tasks.loop(hours = 5)
+    @tasks.loop(hours=5)
     async def mouse_role_cleanup(self):
         guild = self.bot.get_guild(KnownGuild.mouse)
         new_role = guild.get_role(764586989466943549)
@@ -187,10 +187,10 @@ class Intergalactica(BaseCog):
             if more_than_week and new_role in member.roles:
                 await member.remove_roles(new_role)
 
-    @tasks.loop(hours = 1)
+    @tasks.loop(hours=1)
     async def illegal_member_purger(self):
         for guild in self.bot.guilds:
-            if guild.id not in (KnownGuild.mouse, ):
+            if guild.id not in (KnownGuild.mouse,):
                 continue
 
             for member in guild.members:
@@ -200,7 +200,8 @@ class Intergalactica(BaseCog):
                 if not MemberHelper.has_mandatory_roles(member):
                     time_here = relativedelta(datetime.datetime.utcnow(), member.joined_at)
                     if time_here.hours >= 6:
-                        asyncio.gather(member.kick(reason = "Missing mandatory role(s)"))
+                        asyncio.gather(member.kick(reason="Missing mandatory role(s)"))
+
 
 class MemberHelper:
     __slots__ = ()
@@ -219,10 +220,12 @@ class MemberHelper:
         else:
             return True
 
+
 def get_category(guild: discord.Guild, id: int) -> discord.CategoryChannel:
     for category in guild.categories:
         if category.id == id:
             return category
+
 
 def setup(bot):
     bot.add_cog(Intergalactica(bot))

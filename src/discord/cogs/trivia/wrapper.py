@@ -1,27 +1,30 @@
-from enum import Enum
 import random
+from enum import Enum
 from html import unescape
 
 import requests
 
+
 class QuestionDifficulty(Enum):
-    easy   = 1
+    easy = 1
     medium = 2
-    hard   = 3
+    hard = 3
+
 
 class QuestionType(Enum):
     multiple = 1
-    boolean  = 2
+    boolean = 2
+
 
 class Question:
     __slots__ = ("type", "category", "difficulty", "question", "answers")
 
     def __init__(self, type, category, difficulty, question, answers):
-        self.type       = type
-        self.category   = category
+        self.type = type
+        self.category = category
         self.difficulty = difficulty
-        self.question   = question
-        self.answers    = answers
+        self.question = question
+        self.answers = answers
 
     def get_answer(self, value):
         for answer in self.answers:
@@ -31,15 +34,17 @@ class Question:
     def __str__(self):
         return f"question = {self.question}, type = {self.type}, category = {self.category}"
 
+
 class Answer:
     __slots__ = ("value", "is_correct")
 
-    def __init__(self, value, is_correct = False):
-        self.value      = value
+    def __init__(self, value, is_correct=False):
+        self.value = value
         self.is_correct = is_correct
 
+
 class Category(Enum):
-    id_9  = "General Knowledge"
+    id_9 = "General Knowledge"
     id_10 = "Entertainment: Books"
     id_11 = "Entertainment: Film"
     id_12 = "Entertainment: Music"
@@ -64,11 +69,13 @@ class Category(Enum):
     id_31 = "Entertainment: Japanese Anime & Manga"
     id_32 = "Entertainment: Cartoon & Animations"
 
+
 class TriviaApi:
     base_url = "https://opentdb.com"
 
     @classmethod
-    def get_questions(cls, amount: int = 10, category: Category = None, difficulty: QuestionDifficulty = None, type: QuestionType = None):
+    def get_questions(cls, amount: int = 10, category: Category = None, difficulty: QuestionDifficulty = None,
+                      type: QuestionType = None):
         url = cls.base_url + "/" + "api.php"
         kwargs = {"amount": amount}
 
@@ -91,17 +98,17 @@ class TriviaApi:
             value = value.replace("&quot;", "'")
 
             answers = []
-            answers.append(Answer(unescape(question["correct_answer"]), is_correct = True))
+            answers.append(Answer(unescape(question["correct_answer"]), is_correct=True))
             for answer in question["incorrect_answers"]:
-                answers.append(Answer(unescape(answer), is_correct = False))
+                answers.append(Answer(unescape(answer), is_correct=False))
             random.shuffle(answers)
 
             yield Question(
-                type = type,
-                category = category,
-                difficulty = difficulty,
-                question = value,
-                answers = answers
+                type=type,
+                category=category,
+                difficulty=difficulty,
+                question=value,
+                answers=answers
             )
 
     def get_categories(self):
@@ -113,12 +120,13 @@ class TriviaApi:
             id = category["id"]
             print(f'{id}')
 
+
 if __name__ == "__main__":
     api = TriviaApi()
     for question in api.get_questions(
-        amount = 10,
-        difficulty = QuestionDifficulty.easy,
-        category = Category.id_27,
-        type = QuestionType.boolean
+            amount=10,
+            difficulty=QuestionDifficulty.easy,
+            category=Category.id_27,
+            type=QuestionType.boolean
     ):
         print(question)

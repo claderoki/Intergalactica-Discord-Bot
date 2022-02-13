@@ -3,11 +3,12 @@ from enum import Enum
 
 import discord
 
-from src.models import UserSetting
 from src.discord.helpers.waiters.base import StrWaiter
+from src.models import UserSetting
+
 
 class ValidationResult:
-    __slots__ = ("errors", )
+    __slots__ = ("errors",)
 
     def __init__(self):
         self.errors = []
@@ -18,12 +19,13 @@ class ValidationResult:
     def is_ok(self) -> bool:
         return len(self.errors) == 0
 
+
 class UserSettingModel:
     example = None
-    symbol  = None
+    symbol = None
 
     class BaseType(Enum):
-        string  = 1
+        string = 1
         integer = 2
 
     __slots__ = ("human_id", "value")
@@ -36,25 +38,25 @@ class UserSettingModel:
 
     @classmethod
     def get_or_none(cls, human):
-        db_setting = UserSetting.get_or_none(human = human, code = cls.code)
+        db_setting = UserSetting.get_or_none(human=human, code=cls.code)
         if db_setting is None:
             return None
-        return cls(human_id = human.id, value = db_setting.value)
+        return cls(human_id=human.id, value=db_setting.value)
 
     def save(self):
         value = self.db_value(self.value)
         (UserSetting
-            .insert(human = self.human_id, code = self.code, value = value)
-            .on_conflict(update = {UserSetting.value: value})
-            .execute())
+         .insert(human=self.human_id, code=self.code, value=value)
+         .on_conflict(update={UserSetting.value: value})
+         .execute())
 
     def get_waiter_kwargs() -> dict:
         return None
 
     @classmethod
     async def wait(cls, ctx, **kwargs) -> "UserSettingModel":
-        human = ctx.bot.get_human(user = ctx.message.author)
-        waiter = UserSettingModelWaiter(ctx, cls, human.id, prompt = ctx.translate(cls.code + "_prompt"), **kwargs)
+        human = ctx.bot.get_human(user=ctx.message.author)
+        waiter = UserSettingModelWaiter(ctx, cls, human.id, prompt=ctx.translate(cls.code + "_prompt"), **kwargs)
         model = await waiter.wait()
         return model
 
@@ -76,7 +78,8 @@ class UserSettingModel:
 
     def __init__(self, human_id: int, value):
         self.human_id = human_id
-        self.value    = self.python_value(value)
+        self.value = self.python_value(value)
+
 
 class UserSettingModelWaiter(StrWaiter):
     def __init__(self, ctx, setting_class, human_id, **kwargs):
@@ -87,7 +90,7 @@ class UserSettingModelWaiter(StrWaiter):
             super().__init__(ctx, **kwargs)
 
         self.setting_class = setting_class
-        self.human_id      = human_id
+        self.human_id = human_id
 
     @property
     def instructions(self):
@@ -104,11 +107,11 @@ class UserSettingModelWaiter(StrWaiter):
 
         result = self.converted.validate()
         if not result.is_ok():
-            embed = discord.Embed(color = discord.Color.red())
+            embed = discord.Embed(color=discord.Color.red())
             embed.title = "Invalid value"
-            embed.add_field(name = "Errors", value = "\n".join(result.errors), inline = False)
-            embed.set_footer(text = "Try again.")
-            asyncio.gather(message.channel.send(embed = embed))
+            embed.add_field(name="Errors", value="\n".join(result.errors), inline=False)
+            embed.set_footer(text="Try again.")
+            asyncio.gather(message.channel.send(embed=embed))
             return False
         else:
             return True

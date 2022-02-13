@@ -1,8 +1,9 @@
 from discord.ext import commands
 
-from src.discord.helpers.known_guilds import KnownGuild
 from src.discord.cogs.core import BaseCog
+from src.discord.helpers.known_guilds import KnownGuild
 from .helpers import WelcomeMessage
+
 
 class WelcomeCog(BaseCog):
     _welcome_message_configs = {}
@@ -15,8 +16,9 @@ class WelcomeCog(BaseCog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.add_guild(KnownGuild.kail, 884843718534901864, "Welcome {member.mention}! make sure to get <#884851898346254356> and <#884851962212929547>!")
-        self.add_guild(KnownGuild.mio,  902296733588029534, "Hello {member.mention}, welcome to the server....")
+        self.add_guild(KnownGuild.kail, 884843718534901864,
+                       "Welcome {member.mention}! make sure to get <#884851898346254356> and <#884851962212929547>!")
+        self.add_guild(KnownGuild.mio, 902296733588029534, "Hello {member.mention}, welcome to the server....")
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -36,13 +38,13 @@ class WelcomeCog(BaseCog):
         if member.bot:
             return
 
-
         if not self.bot.production:
             return
 
         welcome_config = self._welcome_message_configs.get(member.guild.id)
         if welcome_config is not None:
             await welcome_config.send(member)
+
 
 def setup(bot):
     bot.add_cog(WelcomeCog(bot))

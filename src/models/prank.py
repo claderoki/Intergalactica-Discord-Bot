@@ -1,23 +1,24 @@
-from enum import Enum
 import datetime
+from enum import Enum
 
 import emoji
 import peewee
 
 from .base import BaseModel, EnumField, EmojiField
 
+
 class Prankster(BaseModel):
     class PrankType(Enum):
         nickname = 1
-        role     = 2
-        emoji    = 3
+        role = 2
+        emoji = 3
 
-    user_id      = peewee.BigIntegerField  (null = False)
-    guild_id     = peewee.BigIntegerField  (null = False)
-    last_pranked = peewee.DateTimeField    (null = True)
-    enabled      = peewee.BooleanField     (null = False, default = False)
-    pranked      = peewee.BooleanField     (null = False, default = False)
-    prank_type   = EnumField               (PrankType, null = True)
+    user_id = peewee.BigIntegerField(null=False)
+    guild_id = peewee.BigIntegerField(null=False)
+    last_pranked = peewee.DateTimeField(null=True)
+    enabled = peewee.BooleanField(null=False, default=False)
+    pranked = peewee.BooleanField(null=False, default=False)
+    prank_type = EnumField(PrankType, null=True)
 
     @property
     def days_ago_last_pranked(self):
@@ -30,9 +31,9 @@ class Prankster(BaseModel):
             return None
 
         classes = {
-            self.PrankType.nickname : NicknamePrank,
-            self.PrankType.emoji    : EmojiPrank,
-            self.PrankType.role     : RolePrank,
+            self.PrankType.nickname: NicknamePrank,
+            self.PrankType.emoji: EmojiPrank,
+            self.PrankType.role: RolePrank,
         }
         cls = classes.get(self.prank_type)
 
@@ -42,9 +43,10 @@ class Prankster(BaseModel):
             query = query.where(cls.finished == False)
             return query.first()
 
+
 class Prank(BaseModel):
-    duration  = datetime.timedelta(days = 1)
-    cost      = None
+    duration = datetime.timedelta(days=1)
+    cost = None
     item_code = None
 
     class PurchaseType(Enum):
@@ -52,12 +54,12 @@ class Prank(BaseModel):
         item = 2
         free = 3
 
-    start_date    = peewee.DateTimeField    (null = False)
-    end_date      = peewee.DateTimeField    (null = False)
-    victim        = peewee.ForeignKeyField  (Prankster, null = False)
-    pranked_by    = peewee.ForeignKeyField  (Prankster, null = False)
-    finished      = peewee.BooleanField     (null = False, default = False)
-    purchase_type = EnumField               (PurchaseType, null = False, default = PurchaseType.free)
+    start_date = peewee.DateTimeField(null=False)
+    end_date = peewee.DateTimeField(null=False)
+    victim = peewee.ForeignKeyField(Prankster, null=False)
+    pranked_by = peewee.ForeignKeyField(Prankster, null=False)
+    finished = peewee.BooleanField(null=False, default=False)
+    purchase_type = EnumField(PurchaseType, null=False, default=PurchaseType.free)
 
     @property
     def guild(self):
@@ -71,14 +73,15 @@ class Prank(BaseModel):
     def end_date_passed(self):
         return datetime.datetime.utcnow() >= self.end_date
 
-class NicknamePrank(Prank):
-    duration  = datetime.timedelta(days = 1)
-    prank_type = Prankster.PrankType.nickname
-    cost       = 500
-    item_code  = "jester_hat"
 
-    new_nickname     = EmojiField (null = False)
-    old_nickname     = EmojiField (null = False)
+class NicknamePrank(Prank):
+    duration = datetime.timedelta(days=1)
+    prank_type = Prankster.PrankType.nickname
+    cost = 500
+    item_code = "jester_hat"
+
+    new_nickname = EmojiField(null=False)
+    old_nickname = EmojiField(null=False)
 
     @property
     def should_reapply(self):
@@ -87,21 +90,22 @@ class NicknamePrank(Prank):
     async def apply(self):
         member = self.victim.member
         try:
-            await member.edit(nick = self.new_nickname)
+            await member.edit(nick=self.new_nickname)
         except Exception as e:
             pass
 
     async def revert(self):
         member = self.victim.member
-        await member.edit(nick = self.old_nickname)
+        await member.edit(nick=self.old_nickname)
+
 
 class RolePrank(Prank):
-    duration   = datetime.timedelta(hours = 12)
+    duration = datetime.timedelta(hours=12)
     prank_type = Prankster.PrankType.role
-    cost       = 1500
+    cost = 1500
 
-    role_id   = peewee.BigIntegerField (null = True)
-    role_name = peewee.TextField       (null = False)
+    role_id = peewee.BigIntegerField(null=True)
+    role_name = peewee.TextField(null=False)
 
     @property
     def role(self):
@@ -110,15 +114,15 @@ class RolePrank(Prank):
     async def apply(self):
         if self.role_id is None:
             role = await self.guild.create_role(
-                name  = self.role_name,
-                hoist = True
+                name=self.role_name,
+                hoist=True
             )
             for _role in list(self.guild.roles)[::-1]:
                 if (not _role.permissions.kick_members and not _role.permissions.administrator):
                     try:
-                        await role.edit(name = self.role_name, position = max(0, _role.position - 1))
-                        await role.edit(name = self.role_name, position = max(0, _role.position - 1))
-                        await role.edit(name = self.role_name, position = max(0, _role.position - 1))
+                        await role.edit(name=self.role_name, position=max(0, _role.position - 1))
+                        await role.edit(name=self.role_name, position=max(0, _role.position - 1))
+                        await role.edit(name=self.role_name, position=max(0, _role.position - 1))
                         break
                     except:
                         pass
@@ -131,16 +135,17 @@ class RolePrank(Prank):
 
     async def revert(self):
         try:
-            await self.role.delete(reason = "Prank expired")
+            await self.role.delete(reason="Prank expired")
         except:
             pass
 
-class EmojiPrank(Prank):
-    duration  = datetime.timedelta(minutes = 10)
-    prank_type = Prankster.PrankType.emoji
-    cost       = 150
 
-    emoji = EmojiField(null = False, default = emoji.emojize(":pinching_hand:"))
+class EmojiPrank(Prank):
+    duration = datetime.timedelta(minutes=10)
+    prank_type = Prankster.PrankType.emoji
+    cost = 150
+
+    emoji = EmojiField(null=False, default=emoji.emojize(":pinching_hand:"))
 
     async def apply(self):
         pass

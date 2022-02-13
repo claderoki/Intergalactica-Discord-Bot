@@ -1,8 +1,8 @@
-from discord.ext import tasks, commands
+from discord.ext import commands
 
-from src.discord.helpers.known_guilds import KnownGuild
 from src.discord.cogs.custom.shared.cog import CustomCog
-from src.discord.cogs.custom.shared.helpers.praw_cache import PrawInstanceCache
+from src.discord.helpers.known_guilds import KnownGuild
+
 
 class Intergalactica(CustomCog):
     guild_id = KnownGuild.intergalactica
@@ -10,6 +10,7 @@ class Intergalactica(CustomCog):
     @commands.Cog.listener()
     async def on_ready(self):
         pass
+
 
 def setup(bot):
     bot.add_cog(Intergalactica(bot))

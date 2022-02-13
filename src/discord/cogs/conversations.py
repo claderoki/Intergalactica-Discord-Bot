@@ -1,20 +1,21 @@
 import asyncio
 import datetime
 import random
-from src.discord.cogs.personal import Personal
 
 import discord
 from discord.ext import commands
 
 import src.config as config
-import src.discord.helpers.pretty as pretty
-from src.models import Conversant, Participant, Conversation, database
-from src.discord.errors.base import SendableException
 from src.discord.cogs.core import BaseCog
+from src.discord.errors.base import SendableException
+from src.models import Conversant, Participant, Conversation
+
 
 class NotAvailable(Exception): pass
 
+
 user_ids_currently_being_checked = []
+
 
 async def check_if_available(user):
     if user.id in user_ids_currently_being_checked:
@@ -36,13 +37,13 @@ async def check_if_available(user):
     timeout = 60
 
     try:
-        await user.send("Are you available to talk? (yes | no)", delete_after = timeout)
+        await user.send("Are you available to talk? (yes | no)", delete_after=timeout)
     except discord.errors.Forbidden:
         return False
 
     available = False
     try:
-        await config.bot.wait_for("message", check = check, timeout = timeout)
+        await config.bot.wait_for("message", check=check, timeout=timeout)
         available = True
     except asyncio.TimeoutError:
         pass
@@ -51,6 +52,7 @@ async def check_if_available(user):
 
     user_ids_currently_being_checked.remove(user.id)
     return available
+
 
 def is_command(message):
     bot = config.bot
@@ -66,7 +68,8 @@ def is_command(message):
             return True
     return False
 
-class ConversationsCog(BaseCog, name = "Conversations"):
+
+class ConversationsCog(BaseCog, name="Conversations"):
     cached_conversations = {}
 
     def __init__(self, bot):
@@ -109,7 +112,7 @@ class ConversationsCog(BaseCog, name = "Conversations"):
         if not self.bot.production:
             raise SendableException(ctx.translate("wrong_prefix"))
 
-    @conversation.command(name = "reveal")
+    @conversation.command(name="reveal")
     async def conversation_reveal(self, ctx):
         """Invite the other person to reveal eachother.
            You'll need to have been in a conversation for at least 30 minutes to be able to do this.
@@ -133,15 +136,15 @@ class ConversationsCog(BaseCog, name = "Conversations"):
                     await other.send("\n".join(lines))
                 break
 
-    @conversation.command(name = "toggle", aliases = ["enable", "disable"])
+    @conversation.command(name="toggle", aliases=["enable", "disable"])
     async def conversation_toggle(self, ctx):
-        conversant, _ = Conversant.get_or_create(user_id = ctx.author.id)
+        conversant, _ = Conversant.get_or_create(user_id=ctx.author.id)
         values = {"enable": True, "disable": False, "toggle": not conversant.enabled}
         conversant.enabled = values[ctx.invoked_with]
         conversant.save()
         await ctx.success(ctx.translate("conversations_toggled_" + ("on" if conversant.enabled else "off")))
 
-    @conversation.command(name = "end")
+    @conversation.command(name="end")
     async def conversation_end(self, ctx):
         """Ends the currently active conversation."""
         conversation = self.get_conversation(ctx.author)
@@ -159,12 +162,12 @@ class ConversationsCog(BaseCog, name = "Conversations"):
             finally:
                 await user.send(ctx.translate("conversation_ended"))
 
-    @conversation.command(name = "start")
+    @conversation.command(name="start")
     async def conversation_start(self, ctx):
         if ctx.author.id in self.cached_conversations:
             raise SendableException(ctx.translate("already_running_conversation"))
 
-        conversant, _ = Conversant.get_or_create(user_id = ctx.author.id)
+        conversant, _ = Conversant.get_or_create(user_id=ctx.author.id)
         if not conversant.enabled:
             conversant.enabled = True
             conversant.save()
@@ -197,16 +200,17 @@ class ConversationsCog(BaseCog, name = "Conversations"):
             raise SendableException(ctx.translate("no_conversants_available"))
 
         conversation = Conversation()
-        conversation.participant1 = Participant.create(conversant = conversant)
-        conversation.participant2 = Participant.create(conversant = Conversant.get(user_id = user_to_speak_to.id))
+        conversation.participant1 = Participant.create(conversant=conversant)
+        conversation.participant2 = Participant.create(conversant=Conversant.get(user_id=user_to_speak_to.id))
         conversation.save()
 
         embed = get_conversation_tutorial_embed(ctx)
         for participant in conversation.get_participants():
             other = conversation.get_other(participant)
-            embed.set_footer(text = f"Speaking to conversant with id '{other.key}'")
-            await participant.send(embed = embed)
+            embed.set_footer(text=f"Speaking to conversant with id '{other.key}'")
+            await participant.send(embed=embed)
             self.cached_conversations[participant.conversant.user_id] = conversation
+
 
 def command_to_field(ctx, command, description):
     kwargs = {}
@@ -215,8 +219,9 @@ def command_to_field(ctx, command, description):
     kwargs["inline"] = False
     return kwargs
 
+
 def get_conversation_tutorial_embed(ctx):
-    embed = discord.Embed(color = ctx.guild_color)
+    embed = discord.Embed(color=ctx.guild_color)
     lines = []
     lines.append("Conversation has been started with an anonymous person.")
     lines.append("Chat by chatting in DMs (commands will not work)")
@@ -230,6 +235,7 @@ def get_conversation_tutorial_embed(ctx):
 
     embed.description = "\n".join(lines)
     return embed
+
 
 def setup(bot):
     bot.add_cog(ConversationsCog(bot))

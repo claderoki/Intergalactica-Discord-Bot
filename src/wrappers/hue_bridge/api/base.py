@@ -1,10 +1,13 @@
 from enum import Enum
+
 import requests
 
+
 class HttpMethod(Enum):
-    get  = 1
+    get = 1
     post = 2
-    put  = 3
+    put = 3
+
 
 class ApiCall:
     __slots__ = ()
@@ -23,8 +26,8 @@ class ApiCall:
         return None
 
     def call(self):
-        uri     = self.get_full_uri()
-        params  = self.get_params()
+        uri = self.get_full_uri()
+        params = self.get_params()
         payload = self.get_payload()
 
         kwargs = {}

@@ -1,15 +1,16 @@
 import datetime
+
 from discord.ext import commands
 
 from src.discord.helpers.waiters.base import ConversionFailed
-from src.utils.country import Country, CountryNotFound
-from src.discord.errors.base import SendableException
+from src.utils.country import Country
+
 
 def convert_to_time(argument):
     argument = argument.lower()
 
     pm = "pm" in argument
-    argument = argument.replace("pm","").replace("am", "")
+    argument = argument.replace("pm", "").replace("am", "")
 
     if ":" in argument:
         try:
@@ -29,7 +30,8 @@ def convert_to_time(argument):
         if hour >= 24:
             hour = 0
 
-    return datetime.time(hour = hour, minute = minute)
+    return datetime.time(hour=hour, minute=minute)
+
 
 def convert_to_date(argument):
     if argument.count("-") == 2:
@@ -45,11 +47,15 @@ def convert_to_date(argument):
 
     return date
 
+
 class ArgumentNotInEnum(commands.errors.BadArgument): pass
+
+
 class ArgumentNotAvailable(commands.errors.BadArgument): pass
 
+
 class StringConverter(commands.Converter):
-    def __init__(self, available_words = None, lowercase = True):
+    def __init__(self, available_words=None, lowercase=True):
         self.available_words = []
         self.lowercase = lowercase
 
@@ -62,16 +68,19 @@ class StringConverter(commands.Converter):
         argument = argument.lower() if self.lowercase else argument
         if argument in self.available_words:
             return argument
-        raise ArgumentNotAvailable(f"**{argument}** is not a valid argument. Valid arguments are:\n`{self.available_words}`") from None
+        raise ArgumentNotAvailable(
+            f"**{argument}** is not a valid argument. Valid arguments are:\n`{self.available_words}`") from None
+
 
 class EnumConverter(StringConverter):
     def __init__(self, enum):
         self.enum = enum
-        super().__init__(available_words = [x.name for x in enum])
+        super().__init__(available_words=[x.name for x in enum])
 
     async def convert(self, ctx, argument):
         converted = await super().convert(ctx, argument)
         return self.enum[converted]
+
 
 class CountryConverter(commands.Converter):
     @classmethod

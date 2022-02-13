@@ -1,15 +1,12 @@
-import datetime
-
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 
-from src.discord.helpers.known_guilds import KnownGuild
-from src.discord.helpers.converters import EnumConverter
-from src.models import Ticket, Reply, database
-import src.config as config
 from src.discord.cogs.core import BaseCog
+from src.discord.helpers.known_guilds import KnownGuild
+from src.models import Ticket, Reply
 
-class TicketCog(BaseCog, name = "Ticket"):
+
+class TicketCog(BaseCog, name="Ticket"):
     channels = {
         KnownGuild.intergalactica: 863775516998107186,
         KnownGuild.mouse: 729924627140444271
@@ -36,17 +33,17 @@ class TicketCog(BaseCog, name = "Ticket"):
 
         anonymous = True
         ticket = Ticket.create(
-            text       = concern,
-            user_id    = member.id,
-            channel_id = channel.id,
-            anonymous  = anonymous,
-            type       = Ticket.Type.concern,
-            guild_id   = guild.id
+            text=concern,
+            user_id=member.id,
+            channel_id=channel.id,
+            anonymous=anonymous,
+            type=Ticket.Type.concern,
+            guild_id=guild.id
         )
         await ticket.sync_message(channel)
 
     @commands.command()
-    async def reply(self, ctx, ticket : Ticket, *, response):
+    async def reply(self, ctx, ticket: Ticket, *, response):
 
         if ctx.channel.type == discord.ChannelType.private:
             if ticket.user_id == ctx.author.id:
@@ -68,17 +65,17 @@ class TicketCog(BaseCog, name = "Ticket"):
                 response += f"\n{attachment.url}"
 
         Reply.create(
-            anonymous = ticket.anonymous,
-            user_id   = ctx.author.id,
-            text      = response,
-            ticket    = ticket,
-            type      = type
+            anonymous=ticket.anonymous,
+            user_id=ctx.author.id,
+            text=response,
+            ticket=ticket,
+            type=type
         )
         await ticket.sync_message()
 
-    @commands.has_guild_permissions(administrator = True)
+    @commands.has_guild_permissions(administrator=True)
     @commands.command()
-    async def close(self, ctx, ticket : Ticket, *, response = None):
+    async def close(self, ctx, ticket: Ticket, *, response=None):
         attachments = ctx.message.attachments
         if len(attachments) > 0:
             response = ""
@@ -87,16 +84,17 @@ class TicketCog(BaseCog, name = "Ticket"):
 
         if response:
             Reply.create(
-                anonymous = ticket.anonymous,
-                user_id   = ctx.author.id,
-                text      = response,
-                ticket    = ticket,
-                type      = Reply.Type.staff
+                anonymous=ticket.anonymous,
+                user_id=ctx.author.id,
+                text=response,
+                ticket=ticket,
+                type=Reply.Type.staff
             )
 
         ticket.status = Ticket.Status.closed
         ticket.close_reason = Ticket.CloseReason.resolved
         await ticket.sync_message()
+
 
 def setup(bot):
     bot.add_cog(TicketCog(bot))

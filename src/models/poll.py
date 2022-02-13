@@ -1,24 +1,23 @@
-import datetime
-import discord
-from enum import Enum
-import io
 import asyncio
+import datetime
+from enum import Enum
 
+import discord
 # import matplotlib.pyplot as plt
 # import matplotlib.ticker as ticker
 # import numpy as np
 import peewee
 from emoji import emojize
 
-from src.utils.general import text_to_emojis
-import src.config as config
 import src.discord.helpers.pretty as pretty
-from .base import BaseModel, EnumField, EmojiField
 from src.discord.helpers.waiters import TimeDeltaWaiter
+from src.utils.general import text_to_emojis
+from .base import BaseModel, EnumField, EmojiField
+
 
 def calculate_percentage(part, total):
     if total > 0:
-        percentage = round( (part / total ) * 100, 2)
+        percentage = round((part / total) * 100, 2)
     else:
         percentage = 0
 
@@ -27,28 +26,29 @@ def calculate_percentage(part, total):
     else:
         return percentage
 
+
 class Poll(BaseModel):
     class Type(Enum):
         custom = 1
-        bool   = 2
+        bool = 2
 
-    question                = peewee.TextField       (null = False)
-    due_date                = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow() + datetime.timedelta(days = 2))
-    guild_id                = peewee.BigIntegerField (null = False)
-    author_id               = peewee.BigIntegerField (null = False)
-    message_id              = peewee.BigIntegerField (null = True)
-    channel_id              = peewee.BigIntegerField (null = True)
-    result_channel_id       = peewee.BigIntegerField (null = True)
-    created_at              = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow())
-    ended                   = peewee.BooleanField    (default = False)
-    anonymous               = peewee.BooleanField    (null = False, default = False)
-    max_votes_per_user      = peewee.IntegerField    (null = False, default = 1)
-    type                    = EnumField              (Type, default = Type.custom)
-    role_id_needed_to_vote  = peewee.BigIntegerField (null = True)
-    vote_percentage_to_pass = peewee.IntegerField    (null = True)
-    mention_role            = peewee.BooleanField    (null = False, default = False)
-    pin                     = peewee.BooleanField    (null = False, default = False)
-    delete_after_results    = peewee.BooleanField    (null = False, default = False)
+    question = peewee.TextField(null=False)
+    due_date = peewee.DateTimeField(null=False, default=lambda: datetime.datetime.utcnow() + datetime.timedelta(days=2))
+    guild_id = peewee.BigIntegerField(null=False)
+    author_id = peewee.BigIntegerField(null=False)
+    message_id = peewee.BigIntegerField(null=True)
+    channel_id = peewee.BigIntegerField(null=True)
+    result_channel_id = peewee.BigIntegerField(null=True)
+    created_at = peewee.DateTimeField(null=False, default=lambda: datetime.datetime.utcnow())
+    ended = peewee.BooleanField(default=False)
+    anonymous = peewee.BooleanField(null=False, default=False)
+    max_votes_per_user = peewee.IntegerField(null=False, default=1)
+    type = EnumField(Type, default=Type.custom)
+    role_id_needed_to_vote = peewee.BigIntegerField(null=True)
+    vote_percentage_to_pass = peewee.IntegerField(null=True)
+    mention_role = peewee.BooleanField(null=False, default=False)
+    pin = peewee.BooleanField(null=False, default=False)
+    delete_after_results = peewee.BooleanField(null=False, default=False)
 
     @classmethod
     def from_template(cls, template):
@@ -58,12 +58,12 @@ class Poll(BaseModel):
         return poll
 
     def create_bool_options(self):
-        Option.create(value = "yes", reaction = emojize(":white_heavy_check_mark:"), poll = self)
-        Option.create(value = "no",  reaction = emojize(":prohibited:"),             poll = self)
+        Option.create(value="yes", reaction=emojize(":white_heavy_check_mark:"), poll=self)
+        Option.create(value="no", reaction=emojize(":prohibited:"), poll=self)
 
     def create_options(self, options):
         for i, option in enumerate(options):
-            Option.create(value = option, reaction = emojize(f":keycap_{i+1}:"), poll = self)
+            Option.create(value=option, reaction=emojize(f":keycap_{i + 1}:"), poll=self)
 
     @property
     def author(self):
@@ -71,15 +71,16 @@ class Poll(BaseModel):
 
     @property
     def embed(self):
-        embed = discord.Embed(description = self.question, color = self.bot.get_dominant_color(self.guild) )
+        embed = discord.Embed(description=self.question, color=self.bot.get_dominant_color(self.guild))
 
         if self.type == self.Type.custom:
             values = []
             for i, option in enumerate(self.options):
-                emoji = text_to_emojis(i+1)[0]
+                emoji = text_to_emojis(i + 1)[0]
                 values.append(f"{emoji}: {option.value}")
-            embed.description +=  "\n\n" + ( "\n".join(values) )
-        embed.set_footer(text = "Due date", icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/761134294277029888/c.gif")
+            embed.description += "\n\n" + ("\n".join(values))
+        embed.set_footer(text="Due date",
+                         icon_url="https://cdn.discordapp.com/attachments/744172199770062899/761134294277029888/c.gif")
         embed.timestamp = self.due_date
 
         return embed
@@ -95,11 +96,11 @@ class Poll(BaseModel):
 
     async def send_results(self):
         channel = self.guild.get_channel(self.result_channel_id or self.channel_id)
-        await channel.send(embed = await self.get_results_embed() )
+        await channel.send(embed=await self.get_results_embed())
 
     async def send(self):
         content = f"<@&{self.role_id_needed_to_vote}>" if self.mention_role else None
-        msg = await self.channel.send(content, embed = self.embed)
+        msg = await self.channel.send(content, embed=self.embed)
         for option in self.options:
             await msg.add_reaction(option.reaction)
         if self.pin:
@@ -107,14 +108,14 @@ class Poll(BaseModel):
         self.message_id = msg.id
         return msg
 
-    def generate_question(self, mention = False):
+    def generate_question(self, mention=False):
         changes = list(self.changes)
 
         lines = []
         lines.append("Would you like to ")
 
         for change in changes:
-            lines.append(change.to_string(mention = mention))
+            lines.append(change.to_string(mention=mention))
 
         sep = " " if len(changes) == 1 else "\n"
         return sep.join(lines) + "?"
@@ -126,12 +127,13 @@ class Poll(BaseModel):
 
     @property
     def votes(self):
-        votes = {x:len(x.votes) for x in self.options}
+        votes = {x: len(x.votes) for x in self.options}
 
         total = sum(votes.values())
 
-        data = [ {"percentage": calculate_percentage(count, total), "text": option.value, "count": count} for option, count in votes.items() ]
-        data.sort(key = lambda x : x["count"], reverse = True)
+        data = [{"percentage": calculate_percentage(count, total), "text": option.value, "count": count} for
+                option, count in votes.items()]
+        data.sort(key=lambda x: x["count"], reverse=True)
         return data
 
     # def get_result_image_url(self):
@@ -176,46 +178,47 @@ class Poll(BaseModel):
     async def get_results_embed(self):
         votes = [list(x.values()) for x in self.votes]
         votes.insert(0, ("%", "choice", "votes"))
-        table = pretty.Table.from_list(votes, first_header = True)
+        table = pretty.Table.from_list(votes, first_header=True)
 
         changes = list(self.changes)
         passed = self.passed
 
-        embed = discord.Embed(description = f"Poll #{self.id} results\n\n**{self.question}?**\n{table.generate()}", color = self.bot.get_dominant_color(self.guild))
+        embed = discord.Embed(description=f"Poll #{self.id} results\n\n**{self.question}?**\n{table.generate()}",
+                              color=self.bot.get_dominant_color(self.guild))
 
         if self.type == self.Type.bool:
             if passed:
-                #TODO: translate!
+                # TODO: translate!
                 embed.color = discord.Color.green()
-                embed.set_footer(text = "Vote passed!")
+                embed.set_footer(text="Vote passed!")
             else:
                 embed.color = discord.Color.red()
-                embed.set_footer(text = "Vote did not pass.")
+                embed.set_footer(text="Vote did not pass.")
 
             if len(changes) > 0 and passed:
-                embed.set_footer(text = "Changes have been implemented.")
+                embed.set_footer(text="Changes have been implemented.")
 
         return embed
 
+
 class Change(BaseModel):
     class Type(Enum):
-        textchannel  = 1
+        textchannel = 1
         voicechannel = 2
-        role         = 3
+        role = 3
 
     class Action(Enum):
         create = 1
         delete = 2
-        edit   = 3
+        edit = 3
 
-
-    action      = peewee.TextField       (null = False)
-    implemented = peewee.BooleanField    (null = False, default = False)
-    type        = EnumField              (Type, null = False)
-    poll        = peewee.ForeignKeyField (Poll, null = False, backref = "changes", on_delete = "CASCADE")
+    action = peewee.TextField(null=False)
+    implemented = peewee.BooleanField(null=False, default=False)
+    type = EnumField(Type, null=False)
+    poll = peewee.ForeignKeyField(Poll, null=False, backref="changes", on_delete="CASCADE")
 
     def create_param(self, key, value):
-        return Parameter.create(change = self, key = key, value = value)
+        return Parameter.create(change=self, key=key, value=value)
 
     async def _delete_action(self):
         subject = self.subject
@@ -234,7 +237,7 @@ class Change(BaseModel):
             return f"{action} {self.subject if not mention else self.subject.mention}"
         elif action == "create":
             parameters = self.parameters
-            return f"{action} {self.type.name} " + (", ".join([x +"="+ parameters[x] for x in parameters]))
+            return f"{action} {self.type.name} " + (", ".join([x + "=" + parameters[x] for x in parameters]))
 
     async def implement(self):
         if self.action == "delete":
@@ -247,7 +250,7 @@ class Change(BaseModel):
 
     @property
     def parameters(self):
-        return {parameter.key:parameter.value for parameter in self.parameters_select}
+        return {parameter.key: parameter.value for parameter in self.parameters_select}
 
     @property
     def subject(self):
@@ -259,41 +262,45 @@ class Change(BaseModel):
         if self.type == self.Type.textchannel:
             return self.poll.guild.get_channel(int(parameters["id"]))
 
+
 class Parameter(BaseModel):
-    key    = peewee.TextField(null = False)
-    value  = peewee.TextField(null = False)
-    change = peewee.ForeignKeyField(Change, backref = "parameters_select", null = False, on_delete = "CASCADE")
+    key = peewee.TextField(null=False)
+    value = peewee.TextField(null=False)
+    change = peewee.ForeignKeyField(Change, backref="parameters_select", null=False, on_delete="CASCADE")
+
 
 class Option(BaseModel):
-    poll     = peewee.ForeignKeyField (Poll, backref = "options", on_delete = "CASCADE")
-    value    = peewee.TextField       ()
-    reaction = EmojiField             ()
+    poll = peewee.ForeignKeyField(Poll, backref="options", on_delete="CASCADE")
+    value = peewee.TextField()
+    reaction = EmojiField()
+
 
 class Vote(BaseModel):
-    user_id  = peewee.BigIntegerField ()
-    option   = peewee.ForeignKeyField (Option, backref = "votes", on_delete = "CASCADE")
-    voted_on = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow())
+    user_id = peewee.BigIntegerField()
+    option = peewee.ForeignKeyField(Option, backref="votes", on_delete="CASCADE")
+    voted_on = peewee.DateTimeField(null=False, default=lambda: datetime.datetime.utcnow())
 
     class Meta:
         indexes = (
             (('user_id', 'option'), True),
         )
 
-class PollTemplate(BaseModel):
-    name                    = peewee.CharField       (null = False, max_length = 100)
-    guild_id                = peewee.BigIntegerField (null = False)
 
-    channel_id              = peewee.BigIntegerField (null = True)
-    result_channel_id       = peewee.BigIntegerField (null = True)
-    anonymous               = peewee.BooleanField    (null = True)
-    max_votes_per_user      = peewee.IntegerField    (null = True)
-    type                    = EnumField              (Poll.Type, null = True)
-    role_id_needed_to_vote  = peewee.BigIntegerField (null = True)
-    delta                   = peewee.CharField       (null = True)
-    vote_percentage_to_pass = peewee.IntegerField    (null = True)
-    mention_role            = peewee.BooleanField    (null = True, default = False)
-    pin                     = peewee.BooleanField    (null = True, default = False)
-    delete_after_results    = peewee.BooleanField    (null = True, default = False)
+class PollTemplate(BaseModel):
+    name = peewee.CharField(null=False, max_length=100)
+    guild_id = peewee.BigIntegerField(null=False)
+
+    channel_id = peewee.BigIntegerField(null=True)
+    result_channel_id = peewee.BigIntegerField(null=True)
+    anonymous = peewee.BooleanField(null=True)
+    max_votes_per_user = peewee.IntegerField(null=True)
+    type = EnumField(Poll.Type, null=True)
+    role_id_needed_to_vote = peewee.BigIntegerField(null=True)
+    delta = peewee.CharField(null=True)
+    vote_percentage_to_pass = peewee.IntegerField(null=True)
+    mention_role = peewee.BooleanField(null=True, default=False)
+    pin = peewee.BooleanField(null=True, default=False)
+    delete_after_results = peewee.BooleanField(null=True, default=False)
 
     class Meta:
         indexes = (
@@ -303,16 +310,16 @@ class PollTemplate(BaseModel):
     @property
     def shared_columns(self):
         return \
-        {
-            "guild_id"                  : self.guild_id,
-            "channel_id"                : self.channel_id,
-            "result_channel_id"         : self.result_channel_id,
-            "anonymous"                 : self.anonymous,
-            "max_votes_per_user"        : self.max_votes_per_user,
-            "type"                      : self.type,
-            "role_id_needed_to_vote"    : self.role_id_needed_to_vote,
-            "vote_percentage_to_pass"   : self.vote_percentage_to_pass,
-            "pin"                       : self.pin,
-            "delete_after_results"      : self.delete_after_results,
-            "mention_role"              : self.mention_role,
-        }
+            {
+                "guild_id": self.guild_id,
+                "channel_id": self.channel_id,
+                "result_channel_id": self.result_channel_id,
+                "anonymous": self.anonymous,
+                "max_votes_per_user": self.max_votes_per_user,
+                "type": self.type,
+                "role_id_needed_to_vote": self.role_id_needed_to_vote,
+                "vote_percentage_to_pass": self.vote_percentage_to_pass,
+                "pin": self.pin,
+                "delete_after_results": self.delete_after_results,
+                "mention_role": self.mention_role,
+            }

@@ -1,10 +1,10 @@
-import typing
 import random
 
-import requests
 import discord
+import requests
 
 from src.wrappers.color_thief import ColorThief
+
 
 class ColorHelper:
     @classmethod
@@ -14,7 +14,7 @@ class ColorHelper:
         return discord.Color.from_rgb(*dominant_color)
 
     @classmethod
-    def get_dominant_color(cls, guild = None) -> discord.Colour:
+    def get_dominant_color(cls, guild=None) -> discord.Colour:
         return discord.Color.from_rgb(242, 180, 37)
 
     @classmethod

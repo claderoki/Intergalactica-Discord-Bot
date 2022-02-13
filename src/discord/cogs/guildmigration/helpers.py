@@ -1,6 +1,6 @@
+import discord
 import requests
 
-import discord
 
 class GuildMigration:
     __slots__ = ("role_mapping", "channel_mapping", "template", "to", "log_channel")
@@ -22,11 +22,11 @@ class GuildMigration:
                 continue
 
             new = await self.to.create_role(
-                name = role.name,
-                permissions = role.permissions,
-                colour = role.colour,
-                hoist = role.hoist,
-                mentionable = role.mentionable,
+                name=role.name,
+                permissions=role.permissions,
+                colour=role.colour,
+                hoist=role.hoist,
+                mentionable=role.mentionable,
             )
             self.role_mapping[role.id] = new
 
@@ -43,9 +43,9 @@ class GuildMigration:
         for category in self.template.categories:
             overwrites = self.__copy_overwrites(category.overwrites)
             new = await self.to.create_category(
-                name = category.name,
-                overwrites = overwrites,
-                position = category.position,
+                name=category.name,
+                overwrites=overwrites,
+                position=category.position,
             )
             self.channel_mapping[category.id] = new
 
@@ -60,9 +60,9 @@ class GuildMigration:
             raw = requests.get(emoji.url, stream=True).raw.read()
 
             await self.to.create_custom_emoji(
-                name = emoji.name,
-                roles = roles,
-                image = raw
+                name=emoji.name,
+                roles=roles,
+                image=raw
             )
 
     async def __migrate_channels(self):

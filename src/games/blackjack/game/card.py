@@ -1,17 +1,18 @@
 from enum import Enum
 
+
 class Card:
     class Suits(Enum):
-        spades   = "♠"
-        clubs    = "♣"
-        hearts   = "♥"
+        spades = "♠"
+        clubs = "♣"
+        hearts = "♥"
         diamonds = "♦"
 
-    _ranks = {1:"A", 11:"J",12:"Q",13:"K"}
+    _ranks = {1: "A", 11: "J", 12: "Q", 13: "K"}
 
-    def __init__(self, value, suit, hidden = False):
-        self.value  = value
-        self.suit   = suit
+    def __init__(self, value, suit, hidden=False):
+        self.value = value
+        self.suit = suit
         self.hidden = hidden
 
         self._unicode = None

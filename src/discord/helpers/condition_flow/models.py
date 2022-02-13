@@ -1,23 +1,25 @@
-
 class ConditionValue:
     __slots__ = ()
 
+
 class ConditionSingleValue:
-    __slots__ = ("value", )
+    __slots__ = ("value",)
 
     def __init__(self, value):
         self.value = value
 
+
 class ConditionMultipleValue(ConditionValue):
-    __slots__ = ("values", )
+    __slots__ = ("values",)
 
     def __init__(self, values):
         self.values = values
 
+
 class Condition:
     class Type:
         contains = "contains"
-        is_       = "is"
+        is_ = "is"
 
     class Source:
         pass
@@ -33,6 +35,7 @@ class Condition:
     def reverse(self):
         self.positive = not self.positive
 
+
 class UserCondition(Condition):
     class Type(Condition.Type):
         pass
@@ -43,38 +46,40 @@ class UserCondition(Condition):
     @classmethod
     def is_bot(cls) -> "UserCondition":
         return cls(
-            source   = cls.Source.bot,
-            type     = cls.Type.is_,
-            value    = None,
+            source=cls.Source.bot,
+            type=cls.Type.is_,
+            value=None,
         )
+
 
 class MemberCondition(UserCondition):
     class Type(UserCondition.Type):
         pass
 
     class Source(UserCondition.Source):
-        role          = "role"
+        role = "role"
         nitro_booster = "nitro_booster"
 
     @classmethod
     def has_any_role(cls, *role_ids) -> "MemberCondition":
         return cls(
-            source   = cls.Source.role,
-            type     = cls.Type.contains,
-            value    = ConditionMultipleValue(role_ids),
+            source=cls.Source.role,
+            type=cls.Type.contains,
+            value=ConditionMultipleValue(role_ids),
         )
 
     @classmethod
     def is_nitro_booster(cls) -> "MemberCondition":
         return cls(
-            source   = cls.Source.nitro_booster,
-            type     = cls.Type.is_,
-            value    = None,
+            source=cls.Source.nitro_booster,
+            type=cls.Type.is_,
+            value=None,
         )
+
 
 class MessageCondition(Condition):
     class Type(Condition.Type):
-        regex  = "regex"
+        regex = "regex"
 
     class Source(Condition.Source):
         content = "content"
@@ -82,32 +87,34 @@ class MessageCondition(Condition):
     @classmethod
     def content_contains(cls, *queries) -> "MessageCondition":
         return cls(
-            source   = cls.Source.content,
-            type     = cls.Type.contains,
-            value    = ConditionMultipleValue(queries),
+            source=cls.Source.content,
+            type=cls.Type.contains,
+            value=ConditionMultipleValue(queries),
         )
 
     @classmethod
     def content_regex(cls, regex) -> "MessageCondition":
         return cls(
-            source   = cls.Source.content,
-            type     = cls.Type.regex,
-            value    = ConditionSingleValue(regex),
+            source=cls.Source.content,
+            type=cls.Type.regex,
+            value=ConditionSingleValue(regex),
         )
 
+
 class ConditionBlock:
-    __slots__ = ("conditions", "position" )
+    __slots__ = ("conditions", "position")
 
     def __init__(self, conditions: list, position: int):
         self.conditions = conditions
-        self.position   = position
+        self.position = position
 
     @classmethod
     def single(cls, condition: Condition, position: int):
         return cls([condition], position)
 
+
 class ConditionFlow:
-    __slots__ = ("blocks", )
+    __slots__ = ("blocks",)
 
     def __init__(self, blocks: list):
         self.blocks = blocks

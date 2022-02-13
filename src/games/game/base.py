@@ -1,5 +1,5 @@
-from src.models import Human, database
 import src.config as config
+from src.models import database
 
 
 class BaseGame:

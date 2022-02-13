@@ -1,29 +1,30 @@
 import datetime
-import asyncio
 import secrets
 
-from dateutil.relativedelta import relativedelta
-import peewee
 import discord
+import peewee
+from dateutil.relativedelta import relativedelta
 
 from . import BaseModel
 
+
 class Conversant(BaseModel):
-    user_id = peewee.BigIntegerField (null = False)
-    enabled = peewee.BooleanField    (null = False, default = True)
+    user_id = peewee.BigIntegerField(null=False)
+    enabled = peewee.BooleanField(null=False, default=True)
 
     @classmethod
-    def get_available(cls, exclusion_list = None):
+    def get_available(cls, exclusion_list=None):
         query = cls.select()
         query = query.where(cls.enabled == True)
         if exclusion_list:
             query = query.where(cls.user_id.not_in(exclusion_list))
         return query
 
+
 class Participant(BaseModel):
-    key          = peewee.TextField       (null = False, default = lambda : secrets.token_urlsafe(10))
-    reveal       = peewee.BooleanField    (null = False, default = False)
-    conversant   = peewee.ForeignKeyField (Conversant, null = False)
+    key = peewee.TextField(null=False, default=lambda: secrets.token_urlsafe(10))
+    reveal = peewee.BooleanField(null=False, default=False)
+    conversant = peewee.ForeignKeyField(Conversant, null=False)
 
     @property
     def user_id(self):
@@ -32,12 +33,13 @@ class Participant(BaseModel):
     async def send(self, *args, **kwargs):
         return await self.conversant.user.send(*args, **kwargs)
 
+
 class Conversation(BaseModel):
-    participant1    = peewee.ForeignKeyField (Participant, null = False)
-    participant2    = peewee.ForeignKeyField (Participant, null = False)
-    start_time      = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow())
-    end_time        = peewee.DateTimeField   (null = True)
-    finished        = peewee.BooleanField    (null = False, default = False)
+    participant1 = peewee.ForeignKeyField(Participant, null=False)
+    participant2 = peewee.ForeignKeyField(Participant, null=False)
+    start_time = peewee.DateTimeField(null=False, default=lambda: datetime.datetime.utcnow())
+    end_time = peewee.DateTimeField(null=True)
+    finished = peewee.BooleanField(null=False, default=False)
 
     @property
     def duration(self):
@@ -69,17 +71,17 @@ class Conversation(BaseModel):
         for participant in self.get_participants():
             other_user = self.get_other(participant).conversant.user
             embed.description = f"The person you have been speaking to is {other_user}, id: {other_user.id}"
-            embed.set_author(name = str(other_user), icon_url = other_user.avatar_url)
-            await participant.send(embed = embed)
+            embed.set_author(name=str(other_user), icon_url=other_user.avatar_url)
+            await participant.send(embed=embed)
 
     @classmethod
-    def select_for(cls, conversant, finished = None):
+    def select_for(cls, conversant, finished=None):
         query = cls.select()
         c1 = Conversant.alias("c1")
         c2 = Conversant.alias("c2")
-        query = query.join(c1, on = cls.participant1)
+        query = query.join(c1, on=cls.participant1)
         query = query.switch(cls)
-        query = query.join(c2, on = cls.participant2)
+        query = query.join(c2, on=cls.participant2)
         query = query.where((cls.participant1 == conversant) | (cls.participant2 == conversant))
         if finished is not None:
             query = query.where(cls.finished == finished)

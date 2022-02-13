@@ -2,6 +2,7 @@ import abc
 
 from src.games.game.base import BaseUi
 
+
 class UI(BaseUi):
     cards_hidden_unicode = "┌─────┐\n│░░░░░│\n│░░░░░│\n│░░░░░│\n└─────┘"
 
@@ -11,7 +12,7 @@ class UI(BaseUi):
 
     def card_unicode(self, card):
         if card.hidden:
-            return self.cards_hidden_unicode.replace("┌","╭").replace("┐","╮").replace("┘","╯").replace("└","╰")
+            return self.cards_hidden_unicode.replace("┌", "╭").replace("┐", "╮").replace("┘", "╯").replace("└", "╰")
         else:
             spaces = " " if len(card.rank) == 1 else ""
             lines = []
@@ -21,7 +22,7 @@ class UI(BaseUi):
             lines.append(f"│   {spaces}{card.rank}│")
             lines.append("└─────┘")
             unicode = "\n".join(lines)
-            return unicode.replace("┌","╭").replace("┐","╮").replace("┘","╯").replace("└","╰")
+            return unicode.replace("┌", "╭").replace("┐", "╮").replace("┘", "╯").replace("└", "╰")
 
     def display_cards(self, player, hidden):
         pass

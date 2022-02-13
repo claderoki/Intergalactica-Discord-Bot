@@ -3,18 +3,20 @@ import random
 
 from src.models import GuildRewardsSettings, GuildRewardsProfile
 
+
 class GuildRewardsRepository:
     @classmethod
     def get_settings(cls, guild_id: int) -> GuildRewardsSettings:
-        return GuildRewardsSettings.get_or_none(guild_id = guild_id)
+        return GuildRewardsSettings.get_or_none(guild_id=guild_id)
 
     @classmethod
     def get_profile(cls, guild_id: int, user_id: int) -> GuildRewardsProfile:
-        return GuildRewardsProfile.get_or_none(guild_id = guild_id, user_id = user_id)
+        return GuildRewardsProfile.get_or_none(guild_id=guild_id, user_id=user_id)
 
     @classmethod
     def create_profile(cls, guild_id: int, user_id: int) -> GuildRewardsProfile:
-        return GuildRewardsProfile.create(guild_id = guild_id, user_id = user_id)
+        return GuildRewardsProfile.create(guild_id=guild_id, user_id=user_id)
+
 
 class GuildRewardsHelper:
     _last_payouts = {}
@@ -46,6 +48,7 @@ class GuildRewardsHelper:
         now = datetime.datetime.utcnow()
         return now >= available_at
 
+
 class GuildRewardsCache:
     _settings = {}
     _profiles = {}
@@ -56,7 +59,7 @@ class GuildRewardsCache:
         if cached is not None:
             return cached
 
-        uncached = GuildRewardsRepository.get_settings(guild_id = guild_id)
+        uncached = GuildRewardsRepository.get_settings(guild_id=guild_id)
         if uncached is not None:
             cls._settings[guild_id] = uncached
         return uncached

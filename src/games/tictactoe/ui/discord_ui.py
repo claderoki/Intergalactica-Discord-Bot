@@ -1,12 +1,13 @@
 import asyncio
 
-import emoji
 import discord
+import emoji
 
 from .ui import UI
 
+
 class DiscordUI(UI):
-    numbers = [emoji.emojize(f":keycap_{i}:") for i in range(1,10)]
+    numbers = [emoji.emojize(f":keycap_{i}:") for i in range(1, 10)]
 
     def __init__(self, ctx):
         self.ctx = ctx
@@ -20,19 +21,20 @@ class DiscordUI(UI):
             if emoji not in self.numbers:
                 return False
             index = self.numbers.index(emoji)
-            if board[index+1] != " ":
+            if board[index + 1] != " ":
                 return False
 
             return True
+
         return __check2
 
     async def get_move(self, board, player):
         try:
-            emoji, user = await self.ctx.bot.wait_for("reaction_add", timeout = 60, check = self.__check(player, board))
+            emoji, user = await self.ctx.bot.wait_for("reaction_add", timeout=60, check=self.__check(player, board))
         except asyncio.TimeoutError:
             return None
         else:
-            return self.numbers.index(str(emoji))+1
+            return self.numbers.index(str(emoji)) + 1
 
     async def show_board(self, game, player):
         board = game.board
@@ -44,14 +46,13 @@ class DiscordUI(UI):
  {} ┃ {} ┃ {}
         """.format(*board[1:])
 
+        embed = discord.Embed(title="Tictactoe",
+                              description="\n".join([f"{x.symbol}: {x}" for x in game.players]),
+                              color=discord.Color.red())
 
-        embed = discord.Embed(title = "Tictactoe",
-            description = "\n".join([f"{x.symbol}: {x}" for x in game.players]),
-            color=discord.Color.red())
+        embed.add_field(name="Board", value=f"```\n{view}```")
 
-        embed.add_field(name = "Board", value = f"```\n{view}```")
-
-        embed.set_footer(text = f"{player}s turn")
+        embed.set_footer(text=f"{player}s turn")
 
         if self.message is None:
             self.message = await self.ctx.send(embed=embed)
@@ -64,7 +65,8 @@ class DiscordUI(UI):
     async def game_over(self, winner):
         try:
             await self.message.clear_reactions()
-        except: pass
+        except:
+            pass
 
         if winner is None:
             await self.ctx.send("Game is a draw!")

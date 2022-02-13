@@ -1,22 +1,24 @@
-import string
 import random
+import string
+
 
 class GrilleBoard:
     __slots__ = ("argument_grid", "character_grid")
 
     def __init__(self, argument_grid: list, character_grid: list):
-        self.argument_grid  = argument_grid
+        self.argument_grid = argument_grid
         self.character_grid = character_grid
 
+
 class GrilleBoardBuilder:
-    __slots__ = ("message", )
+    __slots__ = ("message",)
 
     def __init__(self, message):
         self.message = message.lower().replace(" ", "")
 
     def build(self) -> GrilleBoard:
         max_characters_per_line = 2
-        argument_grid  = []
+        argument_grid = []
         character_grid = []
         alphabet = string.ascii_lowercase
         current_char_index = 0
@@ -30,8 +32,8 @@ class GrilleBoardBuilder:
             character_grid.append([])
             argument_grid.append([])
 
-            amount            = random.randint(0, max_characters_per_line)
-            total_indexes     = [x for x in range(width)]
+            amount = random.randint(0, max_characters_per_line)
+            total_indexes = [x for x in range(width)]
             random.shuffle(total_indexes)
             character_indexes = [total_indexes[x] for x in range(amount)]
 
@@ -46,6 +48,6 @@ class GrilleBoardBuilder:
                     argument_grid[i].append("#")
 
             i += 1
-            done = current_char_index > len(self.message)-1
+            done = current_char_index > len(self.message) - 1
 
         return GrilleBoard(argument_grid, character_grid)

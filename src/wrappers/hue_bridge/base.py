@@ -2,10 +2,11 @@ import json
 
 from .api.base import ApiCall
 
-class HueBridgeCall(ApiCall):
-    __slots__ = ("username", )
 
-    ip            = None
+class HueBridgeCall(ApiCall):
+    __slots__ = ("username",)
+
+    ip = None
     last_username = None
 
     def raise_on_error(self, response: dict):
@@ -19,11 +20,12 @@ class HueBridgeCall(ApiCall):
     def set_ip(cls, ip):
         cls.ip = ip
 
-    def __init__(self, username = None):
+    def __init__(self, username=None):
         self.username = username
 
     def get_base_uri(self) -> str:
         return f"http://{self.ip}/api"
+
 
 class Cache:
     __slots__ = ()
@@ -65,5 +67,3 @@ class HueBridgeCache(Cache):
     @classmethod
     def set_last_known_state(cls, last_known_state):
         return cls.set("hue_bridge_last_known_state", json.dumps(last_known_state.to_dict()))
-
-

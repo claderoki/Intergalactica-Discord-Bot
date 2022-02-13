@@ -1,11 +1,10 @@
-import random
 import asyncio
 
 import discord
-import emoji
 
-from .ui import UI
 from src.discord.helpers.waiters import ReactionWaiter
+from .ui import UI
+
 
 class DiscordUI(UI):
     draw_emoji = "▶️"
@@ -20,17 +19,16 @@ class DiscordUI(UI):
             await asyncio.sleep(0.5)
             return player.Action.draw
 
-
         waiter = ReactionWaiter(
             self.ctx,
             self.message,
-            emojis = (self.draw_emoji, self.stand_emoji),
-            channels = [self.ctx.channel],
-            members = [self.ctx.author],
+            emojis=(self.draw_emoji, self.stand_emoji),
+            channels=[self.ctx.channel],
+            members=[self.ctx.author],
         )
         await waiter.add_reactions()
         try:
-            emoji = await waiter.wait(timeout = 120, remove = True)
+            emoji = await waiter.wait(timeout=120, remove=True)
         except asyncio.TimeoutError:
             emoji = self.draw_emoji
 
@@ -49,18 +47,18 @@ class DiscordUI(UI):
         value.append(f"{self.ctx.translate('card_value')} = **{player.score}**")
         return "".join(value)
 
-    async def display_board(self, game, current_player = None):
+    async def display_board(self, game, current_player=None):
         embed = discord.Embed(
-            title = self.get_player_name(game.dealer),
-            description = self.get_player_value(game.dealer),
+            title=self.get_player_name(game.dealer),
+            description=self.get_player_value(game.dealer),
             color=self.ctx.guild_color
         )
 
         player = game.player
         embed.add_field(
-            name = self.get_player_name(player),
-            value = self.get_player_value(player),
-            inline = True
+            name=self.get_player_name(player),
+            value=self.get_player_value(player),
+            inline=True
         )
 
         footer = []
@@ -71,26 +69,26 @@ class DiscordUI(UI):
                 abc = "+" if amount_won > 0 else "-"
                 footer.append(f"{abc} {abs(amount_won)}")
         else:
-            footer.append(f"{self.draw_emoji} to draw, {self.stand_emoji} to stand." )
-        embed.set_footer(text = "\n".join(footer))
+            footer.append(f"{self.draw_emoji} to draw, {self.stand_emoji} to stand.")
+        embed.set_footer(text="\n".join(footer))
 
         if self.message is None:
-            self.message = await self.ctx.channel.send(embed = embed)
+            self.message = await self.ctx.channel.send(embed=embed)
         else:
-            await self.message.edit(embed = embed)
+            await self.message.edit(embed=embed)
 
-    def get_players_cards_emoji(self, player, hidden = False):
+    def get_players_cards_emoji(self, player, hidden=False):
         emojis = []
         for card in player.cards:
             if card.hidden or hidden:
                 emoji = str(self.ctx.bot._emoji_mapping["hidden_card"])
             else:
                 value = card.value if card.value != 13 else 12
-                emoji = str(self.ctx.bot._emoji_mapping[f"{card.suit.name}_{value}" ])
+                emoji = str(self.ctx.bot._emoji_mapping[f"{card.suit.name}_{value}"])
             emojis.append(emoji)
         return "".join(emojis)
 
-    def get_player_cards_unicode(self, player, hidden = False):
+    def get_player_cards_unicode(self, player, hidden=False):
         cards_as_str = ">>> ```\n"
         ascii_lines = 5
         for i in range(ascii_lines):

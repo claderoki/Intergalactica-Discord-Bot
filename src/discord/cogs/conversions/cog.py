@@ -1,19 +1,18 @@
-import re
-
 import discord
 from discord.ext import tasks, commands
 
 import src.config as config
-from src.models import Currency, Measurement, StoredUnit
 from src.discord.cogs.core import BaseCog
+from src.models import Currency, Measurement, StoredUnit
 from src.wrappers.fixerio import Api as FixerioApi
-from .models import Unit, UnitType, Conversion, ConversionResult
 from .helper import RegexHelper, RegexType, UnitMapping, get_other_measurements, get_context_currency_codes
+from .models import Unit, UnitType, Conversion, ConversionResult
 
 other_measurements = get_other_measurements()
 unit_mapping = UnitMapping()
 measurement_regex = RegexHelper(RegexType.measurement)
 currency_regex = RegexHelper(RegexType.currency)
+
 
 def add_stored_unit_to_regexes(stored_unit: StoredUnit):
     measurement_regex.add_value(stored_unit.code.lower())
@@ -24,22 +23,25 @@ def add_stored_unit_to_regexes(stored_unit: StoredUnit):
     elif isinstance(stored_unit, Measurement) and stored_unit.squareable:
         measurement_regex.add_value(f"sq{stored_unit.code.lower()}")
 
+
 def add_all_to_mapping():
     for cls in (Currency, Measurement):
         for stored_unit in cls:
             unit_mapping.add(stored_unit)
             add_stored_unit_to_regexes(stored_unit)
 
+
 add_all_to_mapping()
+
 
 def base_measurement_to_conversion_result(base_stored_unit: StoredUnit, value: float) -> ConversionResult:
     base = Conversion(Unit.from_stored_unit(base_stored_unit), value)
-    to   = []
+    to = []
     for code in get_linked_measurements(base):
         code = code.lower()
         if code == base_stored_unit.code.lower():
             continue
-        stored_unit = unit_mapping.get_unit(code, type = base.unit.type)
+        stored_unit = unit_mapping.get_unit(code, type=base.unit.type)
 
         if stored_unit is None:
             continue
@@ -48,11 +50,13 @@ def base_measurement_to_conversion_result(base_stored_unit: StoredUnit, value: f
         to.append(Conversion(Unit.from_stored_unit(stored_unit), converted))
     return ConversionResult(base, to)
 
+
 def get_linked_measurements(base: Conversion):
     try:
         return other_measurements[base.unit.code]
     except KeyError:
         return ()
+
 
 async def get_linked_codes(base: Conversion, message: discord.Message):
     if base.unit.type == UnitType.measurement:
@@ -60,14 +64,16 @@ async def get_linked_codes(base: Conversion, message: discord.Message):
     else:
         return await get_context_currency_codes(message)
 
-async def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, message: discord.Message, squared: bool = False) -> ConversionResult:
-    base = Conversion(Unit.from_stored_unit(base_stored_unit), value, squared = squared)
-    to   = []
+
+async def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, message: discord.Message,
+                                    squared: bool = False) -> ConversionResult:
+    base = Conversion(Unit.from_stored_unit(base_stored_unit), value, squared=squared)
+    to = []
     for code in await get_linked_codes(base, message):
         code = code.lower()
         if code == base_stored_unit.code.lower():
             continue
-        stored_unit = unit_mapping.get_unit(code, type = base.unit.type)
+        stored_unit = unit_mapping.get_unit(code, type=base.unit.type)
 
         if stored_unit is None:
             continue
@@ -76,8 +82,9 @@ async def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, 
             continue
 
         converted = base_stored_unit.to(stored_unit, value, squared)
-        to.append(Conversion(Unit.from_stored_unit(stored_unit), converted, squared = squared))
+        to.append(Conversion(Unit.from_stored_unit(stored_unit), converted, squared=squared))
     return ConversionResult(base, to)
+
 
 def add_conversion_result_to_embed(embed: discord.Embed, conversion_result: ConversionResult):
     kwargs = {}
@@ -91,23 +98,24 @@ def add_conversion_result_to_embed(embed: discord.Embed, conversion_result: Conv
     kwargs["value"] = "\n".join(lines)
     embed.add_field(**kwargs)
 
-class ConversionCog(BaseCog, name = "Conversion"):
+
+class ConversionCog(BaseCog, name="Conversion"):
     unit_mapping = unit_mapping
 
     @classmethod
     def base_measurement_to_conversion_result(cls, base_stored_unit: StoredUnit, value: float) -> ConversionResult:
-        return base_measurement_to_conversion_result(base_stored_unit = base_stored_unit, value = value)
+        return base_measurement_to_conversion_result(base_stored_unit=base_stored_unit, value=value)
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.start_task(self.currency_rate_updater, check = self.bot.production)
+        self.start_task(self.currency_rate_updater, check=self.bot.production)
 
     @commands.command()
     async def conversions(self, ctx):
-        embed = discord.Embed(color = self.bot.get_dominant_color())
+        embed = discord.Embed(color=self.bot.get_dominant_color())
         embed.add_field(
-            name = "Currencies",
-            value = """Currencies can be converted the following ways:
+            name="Currencies",
+            value="""Currencies can be converted the following ways:
 by writing either **€50** or **50EUR** in the chat.
 (*note: some symbols that are used for too many currencies are excluded, like the dollar symbol*)
 
@@ -115,9 +123,9 @@ Whatever you write in chat will be converted to currencies based on the conversa
 All the users that wrote something for the last 20 messages are collected and their currencies are used to convert to.
 (note: you will have to have a country set `/profile setup country` or have some currencies added `currency add usd`)
 """,
-            inline = False
+            inline=False
         )
-        await ctx.send(embed = embed)
+        await ctx.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -137,17 +145,17 @@ All the users that wrote something for the last 20 messages are collected and th
 
                 units = unit_mapping.get_units(unit_value)
                 for unit in units:
-                    conversion_result = await base_to_conversion_result(unit, value, message, squared = squared)
+                    conversion_result = await base_to_conversion_result(unit, value, message, squared=squared)
                     conversion_results.append(conversion_result)
 
-        embed = discord.Embed(color = self.bot.get_dominant_color())
+        embed = discord.Embed(color=self.bot.get_dominant_color())
         if len(conversion_results) > 0:
             for result in conversion_results:
                 add_conversion_result_to_embed(embed, result)
         if len(embed.fields) > 0:
-            await message.channel.send(embed = embed)
+            await message.channel.send(embed=embed)
 
-    @tasks.loop(hours = 8)
+    @tasks.loop(hours=8)
     async def currency_rate_updater(self):
         api = FixerioApi(config.environ["fixerio_access_key"])
         rates = api.latest()["rates"]
@@ -158,6 +166,7 @@ All the users that wrote something for the last 20 messages are collected and th
                 if isinstance(currency, Currency):
                     currency.rate = rate
                     currency.save()
+
 
 def setup(bot):
     bot.add_cog(ConversionCog(bot))

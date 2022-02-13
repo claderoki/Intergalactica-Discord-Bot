@@ -1,12 +1,14 @@
 import random
 
-from emoji import emojize
 import pycountry
 from countryinfo import CountryInfo
 from covid import Covid
+from emoji import emojize
+
 
 class CountryNotFound(Exception):
     pass
+
 
 class Country(CountryInfo):
     def __init__(self, argument):
@@ -18,7 +20,7 @@ class Country(CountryInfo):
         except KeyError:
             raise CountryNotFound("Not found.")
 
-        self._country = pycountry.countries.get(alpha_2 = iso["alpha2"])
+        self._country = pycountry.countries.get(alpha_2=iso["alpha2"])
 
         self._covid_status = None
 
@@ -26,10 +28,10 @@ class Country(CountryInfo):
         return self._country.name
 
     def languages(self):
-        return [pycountry.languages.get(alpha_2 = x) for x in super().languages()]
+        return [pycountry.languages.get(alpha_2=x) for x in super().languages()]
 
     def currencies(self):
-        return [pycountry.currencies.get(alpha_3 = x) for x in super().currencies()]
+        return [pycountry.currencies.get(alpha_3=x) for x in super().currencies()]
 
     @property
     def covid_status(self):
@@ -77,6 +79,7 @@ class Country(CountryInfo):
                 alpha_2 = None
 
         return cls.from_alpha_2(alpha_2)
+
 
 if __name__ == "__main__":
     country = Country.from_alpha_2("nl")

@@ -1,16 +1,19 @@
 import datetime
 
-from discord.ext import tasks, commands
+from discord.ext import tasks
 
-from src.discord.cogs.custom.shared.helpers.praw_cache import PrawInstanceCache
+from src.discord.bot import Locus
 from src.discord.cogs.core import BaseCog
-from src.models import Advertisement
 from src.discord.cogs.custom.shared.helpers import GuildHelper
+from src.discord.cogs.custom.shared.helpers.praw_cache import PrawInstanceCache
 from src.discord.helpers.embed import Embed
+from src.models import Advertisement
+
 
 class CustomCog(BaseCog):
+    bot: Locus = None
 
-    @tasks.loop(hours = 1)
+    @tasks.loop(hours=1)
     async def advertisement(self):
         for advertisement in Advertisement:
             praw = PrawInstanceCache.get(advertisement.guild_id)
@@ -37,9 +40,9 @@ class CustomCog(BaseCog):
 
                 try:
                     submission = subreddit.submit(
-                      advertisement.description,
-                      url = invite_url,
-                      flair_id = flair_id   
+                        advertisement.description,
+                        url=invite_url,
+                        flair_id=flair_id
                     )
                 except Exception as e:
                     print('Failed to submit: ', e)
@@ -50,12 +53,13 @@ class CustomCog(BaseCog):
 
                 if channel:
                     embed = Embed.success(None)
-                    embed.set_author(name = f"Successfully bumped to `{subreddit_model.name}`", url = submission.shortlink)
+                    embed.set_author(name=f"Successfully bumped to `{subreddit_model.name}`", url=submission.shortlink)
                     try:
-                        await channel.send(embed = embed)
+                        await channel.send(embed=embed)
                     except Exception as e:
                         print(e)
                         continue
+
 
 def setup(bot):
     bot.add_cog(CustomCog(bot))

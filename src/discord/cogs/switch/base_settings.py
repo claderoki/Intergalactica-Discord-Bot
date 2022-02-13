@@ -1,8 +1,10 @@
 from src.discord.helpers.settings.base import UserSettingModel, ValidationResult
 
+
 class classproperty(property):
     def __get__(self, cls, owner):
         return classmethod(self.fget).__get__(None, owner)()
+
 
 class SwitchCode(UserSettingModel):
     type = UserSettingModel.BaseType.string

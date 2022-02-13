@@ -1,20 +1,22 @@
-from enum import Enum
 import json
+from enum import Enum
 
+import emoji
 import peewee
 import pycountry
-import emoji
 
-from src.discord.helpers.waiters import *
-from src.discord.helpers.pretty import prettify_value
-from src.utils.country import Country
 import src.config as config
+from src.discord.helpers.pretty import prettify_value
+from src.discord.helpers.waiters import *
+from src.utils.country import Country
+
 
 class OnSkipAction(Enum):
-    ignore    = 1
-    null      = 2
-    default   = 3
+    ignore = 1
+    null = 2
+    default = 3
     exception = 4
+
 
 class UnititializedModel(peewee.Model):
 
@@ -62,7 +64,7 @@ class UnititializedModel(peewee.Model):
         if isinstance(field, EnumField):
             return EnumWaiter(ctx, field.enum, **kwargs)
         if isinstance(field, (peewee.TextField, peewee.CharField)):
-            return StrWaiter(ctx, max_words = None, **kwargs)
+            return StrWaiter(ctx, max_words=None, **kwargs)
         if isinstance(field, (peewee.IntegerField, peewee.BigIntegerField)):
             return IntWaiter(ctx, **kwargs)
         if isinstance(field, peewee.DateField):
@@ -70,7 +72,7 @@ class UnititializedModel(peewee.Model):
         if isinstance(field, peewee.TimeField):
             return TimeWaiter(ctx, **kwargs)
 
-    async def editor_for(self, ctx, attr, on_skip = OnSkipAction.ignore, waiter = None, **kwargs):
+    async def editor_for(self, ctx, attr, on_skip=OnSkipAction.ignore, waiter=None, **kwargs):
         if waiter is None:
             waiter = self.waiter_for(ctx, attr, **kwargs)
 
@@ -107,7 +109,8 @@ class UnititializedModel(peewee.Model):
 
     @classmethod
     async def convert(cls, ctx, argument):
-        return cls.get(id = int(argument))
+        return cls.get(id=int(argument))
+
 
 class BaseModel(UnititializedModel):
 
@@ -144,15 +147,16 @@ class BaseModel(UnititializedModel):
 
     class Meta:
         legacy_table_names = False
-        only_save_dirty    = True
-        table_settings     = ["DEFAULT CHARSET=utf8"]
-        database           = peewee.MySQLDatabase(
+        only_save_dirty = True
+        table_settings = ["DEFAULT CHARSET=utf8"]
+        database = peewee.MySQLDatabase(
             config.environ["mysql_db_name"],
-            user     = config.environ["mysql_user"],
-            password = config.environ["mysql_password"],
-            host     = config.environ["mysql_host"],
-            port     = int(config.environ["mysql_port"])
+            user=config.environ["mysql_user"],
+            password=config.environ["mysql_password"],
+            host=config.environ["mysql_host"],
+            port=int(config.environ["mysql_port"])
         )
+
 
 class JsonField(peewee.TextField):
     def db_value(self, value):
@@ -161,12 +165,13 @@ class JsonField(peewee.TextField):
     def python_value(self, value):
         return json.loads(value)
 
+
 class RangeField(peewee.TextField):
     def __init__(self, start, stop, step, **kwargs):
-        range_     = range(start, stop, step)
+        range_ = range(start, stop, step)
         self.start = range_.start
-        self.stop  = range_.stop
-        self.step  = range_.step
+        self.stop = range_.stop
+        self.step = range_.step
         super().__init__(**kwargs)
 
     def db_value(self, value):
@@ -176,6 +181,7 @@ class RangeField(peewee.TextField):
     def python_value(self, value):
         if value:
             return range(*value.split(","))
+
 
 class ArrayField(peewee.TextField):
     def __init__(self, **kwargs):
@@ -191,6 +197,7 @@ class ArrayField(peewee.TextField):
         else:
             return []
 
+
 class LanguageField(peewee.TextField):
     def db_value(self, value):
         if value is not None:
@@ -198,7 +205,8 @@ class LanguageField(peewee.TextField):
 
     def python_value(self, value):
         if value is not None:
-            return pycountry.languages.get(alpha_2 = value)
+            return pycountry.languages.get(alpha_2=value)
+
 
 class CountryField(peewee.TextField):
     def db_value(self, value):
@@ -208,6 +216,7 @@ class CountryField(peewee.TextField):
     def python_value(self, value):
         if value is not None:
             return Country.from_alpha_2(value)
+
 
 class TimeDeltaField(peewee.TextField):
     def __init__(self, **kwargs):
@@ -220,6 +229,7 @@ class TimeDeltaField(peewee.TextField):
     def python_value(self, value):
         if value is not None:
             return TimeDeltaWaiter._convert(value)
+
 
 class EnumField(peewee.TextField):
     def __init__(self, enum, **kwargs):
@@ -234,6 +244,7 @@ class EnumField(peewee.TextField):
         if value is not None:
             return self.enum[value]
 
+
 class UnicodeField(peewee.CharField):
     def db_value(self, value):
         if value is not None:
@@ -243,6 +254,7 @@ class UnicodeField(peewee.CharField):
         if value is not None:
             return value.decode()
 
+
 class EmojiField(peewee.TextField):
     def db_value(self, value):
         if value is not None:
@@ -251,6 +263,7 @@ class EmojiField(peewee.TextField):
     def python_value(self, value):
         if value is not None:
             return emoji.emojize(value)
+
 
 class PercentageField(peewee.IntegerField):
     def db_value(self, value):

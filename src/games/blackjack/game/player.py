@@ -5,34 +5,33 @@ from src.games.game.base import DiscordIdentity, AiIdentity
 
 
 class Player(BasePlayer):
-
     class Type(Enum):
-        human  = "🧑"
-        ai     = "🤖"
+        human = "🧑"
+        ai = "🤖"
 
     class State(Enum):
-        bust      = 1
-        draw      = 2
+        bust = 1
+        draw = 2
         blackjack = "🎆"
-        stand     = 4
-        drawing   = 5
-        win       = "👍"
-        lose      = "👎"
+        stand = 4
+        drawing = 5
+        win = "👍"
+        lose = "👎"
 
     class Action(Enum):
         stand = 1
-        draw  = 2
+        draw = 2
 
-    def __init__(self, bet, member = None, name = None):
+    def __init__(self, bet, member=None, name=None):
         if member is None:
-            identity = AiIdentity(name = name or "AI")
+            identity = AiIdentity(name=name or "AI")
             self.type = self.Type.ai
 
         else:
             identity = DiscordIdentity(member)
             self.type = self.Type.human
 
-        super().__init__(identity = identity)
+        super().__init__(identity=identity)
 
         self.bet = bet
 
@@ -45,11 +44,11 @@ class Player(BasePlayer):
             return
 
         return {
-            self.State.bust:       -self.bet,
-            self.State.draw:       0,
-            self.State.blackjack:  self.bet * 4,
-            self.State.win:        self.bet * 2,
-            self.State.lose:       -self.bet
+            self.State.bust: -self.bet,
+            self.State.draw: 0,
+            self.State.blackjack: self.bet * 4,
+            self.State.win: self.bet * 2,
+            self.State.lose: -self.bet
         }[self.state]
 
     @property
@@ -58,7 +57,7 @@ class Player(BasePlayer):
 
     @property
     def score(self):
-        total_score = 0 
+        total_score = 0
 
         aces = 0
 
@@ -72,7 +71,7 @@ class Player(BasePlayer):
             if (total_score + 11) > 21:
                 total_score += 1
             else:
-                total_score += 11 
+                total_score += 11
 
         if total_score == 21:
             self.state == self.State.blackjack
@@ -81,6 +80,5 @@ class Player(BasePlayer):
 
         return total_score
 
-
-    def draw(self, deck, hidden = False):
+    def draw(self, deck, hidden=False):
         self.cards.append(deck.take_card(hidden))

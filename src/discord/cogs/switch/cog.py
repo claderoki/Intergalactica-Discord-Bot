@@ -1,21 +1,21 @@
-import discord
 from discord.ext import commands
-from src.discord.helpers.waiters.base import Skipped
 
 from src.discord.cogs.core import BaseCog
+from src.discord.helpers.waiters.base import Skipped
 from .settings import FriendCodeSetting, DreamAddressSetting, CreatorCodeSetting
 
-class SwitchCog(BaseCog, name = "Switch"):
+
+class SwitchCog(BaseCog, name="Switch"):
 
     @commands.group()
     async def switch(self, ctx):
         pass
 
-    @switch.command(name = "setup")
+    @switch.command(name="setup")
     async def switch_setup(self, ctx):
         for cls in (FriendCodeSetting, DreamAddressSetting, CreatorCodeSetting):
             try:
-                setting = await cls.wait(ctx, skippable = True)
+                setting = await cls.wait(ctx, skippable=True)
             except Skipped:
                 setting = None
             if setting is not None:
@@ -23,6 +23,7 @@ class SwitchCog(BaseCog, name = "Switch"):
                 await ctx.send(f"{setting.code.replace('_', ' ').capitalize()} has been saved.")
 
         await ctx.success("Done setting up your switch profile")
+
 
 def setup(bot):
     bot.add_cog(SwitchCog(bot))

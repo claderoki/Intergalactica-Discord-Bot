@@ -1,5 +1,6 @@
 import os
 
+
 class EnvironmentalVariables(dict):
     required = (
         "mysql_db_name",

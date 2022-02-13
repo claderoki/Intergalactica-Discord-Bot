@@ -1,17 +1,13 @@
-import datetime
 import random
 
-import peewee
-import discord
 from discord.ext import commands, tasks
 
-from src.discord.helpers.known_guilds import KnownGuild
+from src.discord.cogs.core import BaseCog
 from src.discord.helpers.waiters import *
 from src.models import Giveaway, Settings, database
-import src.config as config
-from src.discord.cogs.core import BaseCog
 
-class GiveawayCog(BaseCog, name = "Giveaway"):
+
+class GiveawayCog(BaseCog, name="Giveaway"):
     participate_emoji = "✅"
 
     def __init__(self, bot):
@@ -19,19 +15,19 @@ class GiveawayCog(BaseCog, name = "Giveaway"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.start_task(self.poller, check = self.bot.production)
+        self.start_task(self.poller, check=self.bot.production)
 
     @commands.guild_only()
-    @commands.group(name = "giveaway")
+    @commands.group(name="giveaway")
     async def giveaway_group(self, ctx):
         pass
 
-    @giveaway_group.command(name = "create")
+    @giveaway_group.command(name="create")
     async def giveaway_create(self, ctx):
-        settings, _ = Settings.get_or_create(guild_id = ctx.guild.id)
+        settings, _ = Settings.get_or_create(guild_id=ctx.guild.id)
         channel = settings.get_channel("giveaway")
 
-        giveaway = Giveaway(user_id = ctx.author.id, guild_id = ctx.guild.id, channel_id = channel.id)
+        giveaway = Giveaway(user_id=ctx.author.id, guild_id=ctx.guild.id, channel_id=channel.id)
         await ctx.send(ctx.translate("check_dms"))
 
         ctx.channel = ctx.author.dm_channel
@@ -46,14 +42,14 @@ class GiveawayCog(BaseCog, name = "Giveaway"):
 
         giveaway.save()
 
-        message = await channel.send(embed = giveaway.get_embed())
+        message = await channel.send(embed=giveaway.get_embed())
         asyncio.gather(message.add_reaction(self.participate_emoji))
         giveaway.message_id = message.id
         giveaway.save()
 
         await ctx.success(ctx.translate("giveaway_created"))
 
-    @tasks.loop(seconds = 30)
+    @tasks.loop(seconds=30)
     async def poller(self):
         with database.connection_context():
             query = Giveaway.select()
@@ -98,22 +94,26 @@ class GiveawayCog(BaseCog, name = "Giveaway"):
                 embed.description = "\n".join(notes)
 
                 embed.timestamp = discord.Embed.Empty
-                embed.set_footer(text = discord.Embed.Empty)
-                await message.edit(embed = embed)
+                embed.set_footer(text=discord.Embed.Empty)
+                await message.edit(embed=embed)
                 for winner in winners:
                     dm_owner = giveaway.key is None
 
                     if not dm_owner:
                         try:
-                            await winner.send(f"Congratulations, you won giveaway **{giveaway.id}**\n`{giveaway.title}`\nHere are your rewards:\n`{giveaway.key}`")
+                            await winner.send(
+                                f"Congratulations, you won giveaway **{giveaway.id}**\n`{giveaway.title}`\nHere are your rewards:\n`{giveaway.key}`")
                         except discord.errors.Forbidden:
                             dm_owner = True
 
                     if dm_owner:
-                        await giveaway.user.send(f"Giveaway **{giveaway.id}** has been won by **{winner}**. They will have to be informed and their rewards sent by you.")
+                        await giveaway.user.send(
+                            f"Giveaway **{giveaway.id}** has been won by **{winner}**. They will have to be informed and their rewards sent by you.")
 
                 asyncio.gather(message.clear_reactions())
                 giveaway.finished = True
                 giveaway.save()
+
+
 def setup(bot):
     bot.add_cog(GiveawayCog(bot))

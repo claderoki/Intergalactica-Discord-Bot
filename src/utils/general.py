@@ -1,15 +1,17 @@
-import emoji
-
 import re
 
+import emoji
+
+
 def split_list(arr, size):
-     arrs = []
-     while len(arr) > size:
-         pice = arr[:size]
-         arrs.append(pice)
-         arr   = arr[size:]
-     arrs.append(arr)
-     return arrs
+    arrs = []
+    while len(arr) > size:
+        pice = arr[:size]
+        arrs.append(pice)
+        arr = arr[size:]
+    arrs.append(arr)
+    return arrs
+
 
 def text_to_emojis(text):
     text = str(text)
@@ -25,14 +27,15 @@ def text_to_emojis(text):
         else:
             emoji_format = ":regional_indicator_symbol_letter_{char}:"
 
-        emojis.append(emoji.emojize(emoji_format.format(char = char), use_aliases=True))
+        emojis.append(emoji.emojize(emoji_format.format(char=char), use_aliases=True))
 
     return emojis
 
+
 def html_to_discord(text):
     tags = {
-        "i"      : "*",
-        "strong" : "**",
+        "i": "*",
+        "strong": "**",
         # "em"     : "",
         # "sub"    : "",
         # "xref"   : "",
@@ -45,5 +48,3 @@ def html_to_discord(text):
     cleanr = re.compile('<.*?>')
     cleantext = re.sub(cleanr, '', text)
     return cleantext.strip()
-
-

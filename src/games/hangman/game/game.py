@@ -1,15 +1,12 @@
-import asyncio
-import random
 from enum import Enum
 
-import discord
-
 from src.wrappers.zalgo import Zalgo
+
 
 class Game:
     bet = 10
 
-    def __init__(self, players, word : str, ui):
+    def __init__(self, players, word: str, ui):
         self.ui = ui
         self.players = players
 
@@ -38,8 +35,8 @@ class Game:
             if not self.players[i].dead:
                 yield self.players[i]
 
-            i+=1
-            if i > len(self.players)-1:
+            i += 1
+            if i > len(self.players) - 1:
                 i = 0
 
     def increment_incorrect(self, player):
@@ -101,4 +98,4 @@ class Game:
 
     class Reasons(Enum):
         all_players_dead = "everybody lost"
-        word_guessed     = "word has been guessed"
+        word_guessed = "word has been guessed"

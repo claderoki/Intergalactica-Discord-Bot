@@ -2,23 +2,26 @@ from enum import Enum
 
 from src.models.conversions import Currency, StoredUnit
 
+
 class UnitType(Enum):
     measurement = 1
-    currency    = 2
+    currency = 2
+
 
 class UnitSubType(Enum):
-    length      = 1
+    length = 1
     temperature = 2
-    mass        = 3
+    mass = 3
+
 
 class Unit:
     __slots__ = ("name", "code", "symbol", "type", "subtype")
 
     def __init__(self, name, code, symbol, type: UnitType, subtype: UnitSubType):
-        self.name    = name
-        self.code    = code
-        self.symbol  = symbol
-        self.type    = type
+        self.name = name
+        self.code = code
+        self.symbol = symbol
+        self.type = type
         self.subtype = subtype
 
     @classmethod
@@ -26,14 +29,16 @@ class Unit:
         if isinstance(stored_unit, Currency):
             return cls(stored_unit.name, stored_unit.code, stored_unit.symbol, UnitType.currency, None)
         else:
-            return cls(stored_unit.name, stored_unit.code, stored_unit.symbol, UnitType.measurement, stored_unit.subtype)
+            return cls(stored_unit.name, stored_unit.code, stored_unit.symbol, UnitType.measurement,
+                       stored_unit.subtype)
+
 
 class Conversion:
     __slots__ = ("unit", "value", "squared")
 
     def __init__(self, unit: Unit, value: float, squared: bool = False):
-        self.unit    = unit
-        self.value   = value
+        self.unit = unit
+        self.value = value
         self.squared = squared
 
     def __str__(self):
@@ -66,12 +71,13 @@ class Conversion:
         else:
             return f"{self.unit.symbol}{self.get_value_string()} ({self.unit.name})"
 
+
 class ConversionResult:
     __slots__ = ("base", "to")
 
     def __init__(self, base: Conversion, to: list):
         self.base = base
-        self.to   = to
+        self.to = to
 
     def __repr__(self):
         return str(self)

@@ -1,18 +1,16 @@
 import asyncio
-import datetime
 
 import discord
 from discord.ext import commands
 
-import src.config as config
-from src.discord.helpers.converters import CountryConverter
 import src.discord.helpers.pretty as pretty
-from src.models import Human, database
+from src.discord.cogs.core import BaseCog
 from src.discord.errors.base import SendableException
 from src.discord.helpers import ColorHelper
-from src.discord.cogs.core import BaseCog
+from src.discord.helpers.converters import CountryConverter
 
-class CovidCog(BaseCog, name = "Covid"):
+
+class CovidCog(BaseCog, name="Covid"):
 
     def __init__(self, bot):
         super().__init__(bot)
@@ -22,11 +20,11 @@ class CovidCog(BaseCog, name = "Covid"):
         pass
 
     def get_base_embed(self, guild) -> discord.Embed:
-        embed = discord.Embed(color = ColorHelper.get_dominant_color())
+        embed = discord.Embed(color=ColorHelper.get_dominant_color())
         return embed
 
     @commands.command()
-    async def covid(self, ctx, country : CountryConverter = None):
+    async def covid(self, ctx, country: CountryConverter = None):
         human = ctx.get_human()
         country = country or human.country
         if country is None:
@@ -44,8 +42,7 @@ class CovidCog(BaseCog, name = "Covid"):
 
         # embed.set_footer(text = "Last update")
         # embed.timestamp = datetime.datetime.utcfromtimestamp(status["last_update"])
-        asyncio.gather(ctx.send(embed = embed))
-
+        asyncio.gather(ctx.send(embed=embed))
 
 
 def setup(bot):

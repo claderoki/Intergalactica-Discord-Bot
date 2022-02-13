@@ -1,5 +1,6 @@
-import random
 import asyncio
+import random
+
 
 class Game:
     bet = 5
@@ -21,7 +22,7 @@ class Game:
                 return True
 
     def has_free_space(self, move):
-        return self.board[move] ==  " "
+        return self.board[move] == " "
 
     def get_winner(self):
         for player in self.players:
@@ -42,7 +43,7 @@ class Game:
                 return False
         return True
 
-    def player_generator(self, check = lambda player : True ):
+    def player_generator(self, check=lambda player: True):
         """check is a lambda that takes one parameter: player."""
         while True:
             for player in self.players:
@@ -56,11 +57,11 @@ class Game:
             player = next(players)
             await self.ui.show_board(self, player)
             if player.ai:
-                await asyncio.sleep(random.uniform(0.3,2.1))
+                await asyncio.sleep(random.uniform(0.3, 2.1))
                 move = player.get_best_move(self)
             else:
                 move = await self.ui.get_move(self.board, player)
-            
+
             player.move(self.board, move)
 
         await self.ui.show_board(self, player)

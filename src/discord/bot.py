@@ -2,36 +2,38 @@ import asyncio
 import datetime
 import os
 
-import praw
-import emoji
 import discord
-from discord.ext import commands
+import emoji
+import praw
 from dateutil.relativedelta import relativedelta
+from discord.ext import commands
 
 import src.config as config
+from src.discord.errors.base import SendableException
+from src.discord.helpers import ColorHelper
+from src.discord.helpers.embed import Embed
 from src.discord.helpers.general import Translator
 from src.discord.helpers.waiters.base import Cancelled
-from src.wrappers.openweathermap import OpenWeatherMapApi
 from src.models import Human, database
-from src.discord.errors.base import SendableException
-from src.discord.helpers.embed import Embed
-from src.discord.helpers import ColorHelper
+from src.wrappers.openweathermap import OpenWeatherMapApi
+
 
 def seconds_readable(seconds):
-    delta = relativedelta(seconds = seconds)
-    normalize = lambda x : int(x) if x % 1 == 0 else round(x, 2)
+    delta = relativedelta(seconds=seconds)
+    normalize = lambda x: int(x) if x % 1 == 0 else round(x, 2)
     text = []
-    for attr in ("days","hours","minutes", "seconds"):
+    for attr in ("days", "hours", "minutes", "seconds"):
         value = getattr(delta, attr)
         if value:
             text.append(f"{normalize(value)}{attr[0]}")
     return "".join(text)
 
+
 class Locus(commands.Bot):
-    _guild               = None
-    cooldowns            = {}
-    cooldowned_users     = []
-    owner                = None
+    _guild = None
+    cooldowns = {}
+    cooldowned_users = []
+    owner = None
 
     sendables = (
         commands.errors.BotMissingPermissions,
@@ -58,14 +60,14 @@ class Locus(commands.Bot):
         Cancelled,
     )
 
-    def __init__(self, mode, prefix = None):
+    def __init__(self, mode, prefix=None):
         self._human_cache = {}
         self.mode = mode
         self.production = mode == config.Mode.production
         self.heroku = False
         self.restarting = False
 
-        os.makedirs(f"{config.path}/tmp", exist_ok = True)
+        os.makedirs(f"{config.path}/tmp", exist_ok=True)
 
         if not self.production:
             prefix = "."
@@ -73,17 +75,17 @@ class Locus(commands.Bot):
             prefix = [";", "/"]
 
         intents = discord.Intents.all()
-        super().__init__(intents = intents, command_prefix = prefix)
+        super().__init__(intents=intents, command_prefix=prefix)
 
         self.owm_api = OpenWeatherMapApi(config.environ["owm_key"])
 
         self.reddit = praw.Reddit(
-            client_id       = config.environ["reddit_client_id"],
-            client_secret   = config.environ["reddit_client_secret"],
-            user_agent      = config.environ["reddit_user_agent"],
-            username        = config.environ["reddit_username"],
-            password        = config.environ["reddit_password"],
-            check_for_async = False
+            client_id=config.environ["reddit_client_id"],
+            client_secret=config.environ["reddit_client_secret"],
+            user_agent=config.environ["reddit_user_agent"],
+            username=config.environ["reddit_username"],
+            password=config.environ["reddit_password"],
+            check_for_async=False
         )
 
         self.before_invoke(self.before_any_command)
@@ -103,8 +105,8 @@ class Locus(commands.Bot):
 
     def get_base_embed(self, **kwargs) -> discord.Embed:
         user = self.user
-        embed = discord.Embed(color = ColorHelper.get_dominant_color(), **kwargs)
-        return embed.set_author(name = user.name, icon_url = user.avatar_url)
+        embed = discord.Embed(color=ColorHelper.get_dominant_color(), **kwargs)
+        return embed.set_author(name=user.name, icon_url=user.avatar_url)
 
     def get_dominant_color(self, *args, **kwargs):
         return ColorHelper.get_dominant_color(*args, **kwargs)
@@ -135,6 +137,7 @@ class Locus(commands.Bot):
             "switch.cog",
             "custom.mouse.cog",
             "custom.guac.cog",
+            "custom.c3po.cog",
             "custom.shared.cog",
             "custom.intergalactica.cog",
             "guildrewards.cog",
@@ -168,40 +171,43 @@ class Locus(commands.Bot):
             return obj
 
     def success(self, ctx):
-        async def wrapper(content = None, delete_after = None):
+        async def wrapper(content=None, delete_after=None):
             if content is None:
                 await ctx.message.add_reaction("✅")
             else:
-                await ctx.send(embed = Embed.success(content), delete_after = delete_after)
+                await ctx.send(embed=Embed.success(content), delete_after=delete_after)
+
         return wrapper
 
     def error(self, ctx):
-        async def wrapper(content = None, delete_after = None):
+        async def wrapper(content=None, delete_after=None):
             if content is None:
                 await ctx.message.add_reaction("❌")
             else:
-                await ctx.send(embed = Embed.error(content), delete_after = delete_after)
+                await ctx.send(embed=Embed.error(content), delete_after=delete_after)
+
         return wrapper
 
-    def can_change_nick(self, member, other = None):
+    def can_change_nick(self, member, other=None):
         guild = member.guild
         other = other or guild.me
         return not (other.top_role.position <= member.top_role.position or member.id == guild.owner_id)
 
     def raise_if_not_enough_gold(self, ctx):
-        def wrapper(gold, human = None, name = "you"):
+        def wrapper(gold, human=None, name="you"):
             if human is None:
                 human = ctx.get_human()
             if human.gold < gold:
                 raise SendableException(ctx.translate(f"{name}_not_enough_gold"))
+
         return wrapper
 
-    def get_human(self, ctx = None, user = None):
+    def get_human(self, ctx=None, user=None):
         """Cached human, with updated gold."""
         user = user or ctx.author
         user_id = self.get_id(user)
         if user_id not in self._human_cache:
-            human, _ = Human.get_or_create(user_id = user_id)
+            human, _ = Human.get_or_create(user_id=user_id)
             self._human_cache[user_id] = human
         else:
             human = self._human_cache[user_id]
@@ -210,17 +216,17 @@ class Locus(commands.Bot):
             return human
         return self._human_cache[user_id]
 
-    def translate(self, key, locale = "en_US"):
+    def translate(self, key, locale="en_US"):
         return Translator.translate(key, locale)
 
     async def before_any_command(self, ctx):
-        ctx.db  = database.connection_context()
+        ctx.db = database.connection_context()
         ctx.db.__enter__()
 
         ctx.translate = lambda x: Translator.translate(x, "en_US")
 
         ctx.get_id = self.get_id
-        ctx.get_human = lambda user = None: self.get_human(ctx, user = user)
+        ctx.get_human = lambda user=None: self.get_human(ctx, user=user)
 
         ctx.success = self.success(ctx)
         ctx.error = self.error(ctx)
@@ -236,7 +242,7 @@ class Locus(commands.Bot):
             else:
                 difference_in_seconds = (datetime.datetime.utcnow() - self.cooldowns[ctx.author.id]).seconds
                 if difference_in_seconds != 0 and difference_in_seconds < timeout:
-                    raise commands.errors.CommandOnCooldown(None, retry_after = (timeout - difference_in_seconds))
+                    raise commands.errors.CommandOnCooldown(None, retry_after=(timeout - difference_in_seconds))
                 else:
                     self.cooldowns[ctx.author.id] = datetime.datetime.utcnow()
 
@@ -251,11 +257,11 @@ class Locus(commands.Bot):
 
         if isinstance(exception, commands.errors.CommandOnCooldown):
             embed = Embed.error(f"You are on cooldown. Try again in {seconds_readable(exception.retry_after)}")
-            embed.set_footer(text = self.translate("available_again_at"))
-            embed.timestamp = datetime.datetime.utcnow() + datetime.timedelta(seconds = exception.retry_after)
-            asyncio.gather(ctx.send(embed = embed))
+            embed.set_footer(text=self.translate("available_again_at"))
+            embed.timestamp = datetime.datetime.utcnow() + datetime.timedelta(seconds=exception.retry_after)
+            asyncio.gather(ctx.send(embed=embed))
         elif isinstance(exception, self.sendables):
-            asyncio.gather(ctx.send(embed = Embed.error(str(exception))))
+            asyncio.gather(ctx.send(embed=Embed.error(str(exception))))
         elif not isinstance(exception, self.ignorables):
             await self.owner.send(f"```\nCommand '{ctx.command}' Error: '{exception}'```")
             raise error
@@ -270,7 +276,7 @@ class Locus(commands.Bot):
         for emoji in self.get_guild(761624318291476482).emojis:
             self._emoji_mapping[emoji.name] = emoji
         if self.restarted:
-            await self.owner.send(embed = Embed.success("Successfully restarted"))
+            await self.owner.send(embed=Embed.success("Successfully restarted"))
             self.restarted = False
 
     def log(self, message: str):

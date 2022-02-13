@@ -1,5 +1,7 @@
-from src.games.tictactoe.game.player import Player
 import random
+
+from src.games.tictactoe.game.player import Player
+
 
 class AIPlayer(Player):
     def __init__(self, identity, number):

@@ -1,22 +1,23 @@
-
-from typing import Tuple
 import re
 from enum import Enum
+from typing import Tuple
 
 import discord
 
-from .models import StoredUnit, UnitType
 from src.models import Human, Currency, Measurement
+from .models import StoredUnit, UnitType
+
 
 class RegexType(Enum):
-    currency   = 1
+    currency = 1
     measurement = 2
+
 
 class RegexHelper:
     __slots__ = ("type", "values", "_regex")
 
     def __init__(self, type: RegexType):
-        self.type   = type
+        self.type = type
         self.values = set()
         self._regex = None
 
@@ -28,7 +29,7 @@ class RegexHelper:
             format = "({values})(\d+(\.\d+)*)(?!\w)"
         elif self.type == RegexType.measurement:
             format = "([+-]?\d+(\.\d+)*)({values})(?!\w)"
-        regex = format.format(values = "|".join(self.values))
+        regex = format.format(values="|".join(self.values))
         self.values = None
         return regex
 
@@ -49,6 +50,7 @@ class RegexHelper:
                     unit = match[0]
                     value = float(match[1])
                 yield unit, value
+
 
 class UnitMapping:
     __slots__ = ("values")
@@ -74,7 +76,7 @@ class UnitMapping:
             self.values[value] = stored_unit
 
     def get_unit(self, value, type: UnitType = None):
-        units = self.get_units(value, type = type)
+        units = self.get_units(value, type=type)
         if units is not None and len(units) > 0:
             return units[0]
 
@@ -102,6 +104,7 @@ class UnitMapping:
             self._add_value(symbol, stored_unit)
         self._add_value(stored_unit.code.lower(), stored_unit)
 
+
 def get_other_measurements():
     measurements = (
         ("c", "f"),
@@ -124,11 +127,12 @@ def get_other_measurements():
                         other_measurements[unit].append(other_unit)
     return other_measurements
 
+
 async def get_context_currency_codes(message):
     query = Human.select(Human.country, Human.currencies)
     query = query.where((Human.country != None) | (Human.currencies != None))
 
-    ids = set((message.author.id, ))
+    ids = set((message.author.id,))
     if not isinstance(message.channel, discord.DMChannel):
         if message.guild is not None:
             async for msg in message.channel.history(limit=20):
@@ -144,6 +148,7 @@ async def get_context_currency_codes(message):
                 currencies.add(currency.alpha_3)
 
     return currencies
+
 
 def should_exclude(value):
     return "." in value or "$" in value
@@ -166,4 +171,3 @@ def should_exclude(value):
 #             subtype = subtype
 #         )
 #         # measurement.save()
-

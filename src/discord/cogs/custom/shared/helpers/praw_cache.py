@@ -1,7 +1,8 @@
 import praw
 
+
 class PrawInstanceCache:
-    __slots__  = ()
+    __slots__ = ()
     _instances = {}
 
     @classmethod

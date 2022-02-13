@@ -1,13 +1,12 @@
 from src.games.blackjack.ui.ui import UI
-from src.games.blackjack.ui.discord_ui import DiscordUI
-
-from .player import Player
-from .deck import Deck
 from src.games.game.base import BaseGame
+from .deck import Deck
+from .player import Player
+
 
 class Game(BaseGame):
 
-    def __init__(self, player, ui : UI):
+    def __init__(self, player, ui: UI):
         assert isinstance(ui, UI)
 
         self.ui = ui
@@ -15,9 +14,9 @@ class Game(BaseGame):
         self.deck = Deck()
         self.deck.shuffle()
 
-        self.dealer = Player(None, name = "Dealer")
+        self.dealer = Player(None, name="Dealer")
         self.dealer.draw(self.deck)
-        self.dealer.draw(self.deck, hidden = True)
+        self.dealer.draw(self.deck, hidden=True)
 
         self.player = player
 
@@ -36,14 +35,14 @@ class Game(BaseGame):
         return True
 
     def calculate_state(self, player):
-        score        = player.score
+        score = player.score
         if score == 21 and len(player.cards) == 2:
             player.state = player.State.blackjack
         elif score > 21:
             player.state = player.State.bust
 
     def calculate_end_state(self, player):
-        score        = player.score
+        score = player.score
         dealer_score = self.dealer.score
 
         if dealer_score > 21 and score < 21:

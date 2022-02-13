@@ -1,5 +1,6 @@
 import discord
 
+
 class ValidationContext:
     __slots__ = ("member", "user", "message", "channel", "guild")
 
@@ -12,8 +13,8 @@ class ValidationContext:
         if isinstance(message.channel, discord.DMChannel):
             obj.user = message.author
         else:
-            obj.member  = message.author
-            obj.user    = message.author
-            obj.guild   = message.guild
+            obj.member = message.author
+            obj.user = message.author
+            obj.guild = message.guild
             obj.message = message
         return obj

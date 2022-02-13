@@ -1,9 +1,10 @@
 from enum import Enum
 
+
 class TemperatureUnit(Enum):
-    Celsius    = "metric"
+    Celsius = "metric"
     Fahrenheit = "imperial"
-    Kelvin     = ""
+    Kelvin = ""
 
     @property
     def symbol(self):

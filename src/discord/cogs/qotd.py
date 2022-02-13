@@ -1,31 +1,28 @@
-import datetime
-
 import peewee
-import discord
 from discord.ext import commands, tasks
 
-from src.models.base import OnSkipAction
+from src.discord.cogs.core import BaseCog
 from src.discord.helpers.waiters import *
 from src.models import Category, Question, CategoryChannel, QuestionConfig, database
-import src.config as config
-from src.discord.cogs.core import BaseCog
+from src.models.base import OnSkipAction
 
-class QotdCog(BaseCog, name = "Question of the day"):
+
+class QotdCog(BaseCog, name="Question of the day"):
 
     def __init__(self, bot):
         super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.start_task(self.poller, check = self.bot.production)
+        self.start_task(self.poller, check=self.bot.production)
 
-    @commands.group(name = "q")
-    @commands.has_guild_permissions(administrator = True)
+    @commands.group(name="q")
+    @commands.has_guild_permissions(administrator=True)
     async def question_group(self, ctx):
         pass
 
-    async def category_selection(self, ctx, skippable = False):
-        waiter = StrWaiter(ctx, allowed_words = [x.name for x in Category], case_sensitive = False, skippable = skippable)
+    async def category_selection(self, ctx, skippable=False):
+        waiter = StrWaiter(ctx, allowed_words=[x.name for x in Category], case_sensitive=False, skippable=skippable)
         try:
             category = await waiter.wait()
         except Skipped:
@@ -33,7 +30,7 @@ class QotdCog(BaseCog, name = "Question of the day"):
         else:
             return category
 
-    @question_group.command(name = "create")
+    @question_group.command(name="create")
     async def question_create(self, ctx):
         question = Question()
         await question.editor_for(ctx, "value")
@@ -41,15 +38,15 @@ class QotdCog(BaseCog, name = "Question of the day"):
         question.save()
         await ctx.success(ctx.translate("question_created"))
 
-    @question_group.command(name = "multi")
+    @question_group.command(name="multi")
     async def question_multi(self, ctx):
         category = await self.category_selection(ctx)
 
         skipped = False
         while not skipped:
-            question = Question(category = category)
+            question = Question(category=category)
             try:
-                await question.editor_for(ctx, "value", on_skip = OnSkipAction.exception, skippable = True)
+                await question.editor_for(ctx, "value", on_skip=OnSkipAction.exception, skippable=True)
             except Skipped:
                 skipped = True
             else:
@@ -69,50 +66,52 @@ class QotdCog(BaseCog, name = "Question of the day"):
 
     #     await ctx.success(ctx.translate("questions_created"))
 
-    @commands.group(name = "category")
-    @commands.has_guild_permissions(administrator = True)
+    @commands.group(name="category")
+    @commands.has_guild_permissions(administrator=True)
     async def category_group(self, ctx):
         pass
 
-    @category_group.command(name = "link")
+    @category_group.command(name="link")
     async def category_link(self, ctx):
-        category = await self.category_selection(ctx, skippable = True)
-        waiter = TextChannelWaiter(ctx, prompt = ctx.translate("category_channel_channel_prompt"))
+        category = await self.category_selection(ctx, skippable=True)
+        waiter = TextChannelWaiter(ctx, prompt=ctx.translate("category_channel_channel_prompt"))
         channel = await waiter.wait()
-        CategoryChannel.get_or_create(guild_id = ctx.guild.id, category = category, channel_id = channel.id)
+        CategoryChannel.get_or_create(guild_id=ctx.guild.id, category=category, channel_id=channel.id)
         await ctx.success(ctx.translate("success"))
 
-    @category_group.command(name = "create")
+    @category_group.command(name="create")
     async def category_create(self, ctx):
         category = Category()
         await category.editor_for(ctx, "name")
         await category.editor_for(ctx, "description")
-        category.save(force_insert = True)
+        category.save(force_insert=True)
         await ctx.success(ctx.translate("category_created"))
 
-    @tasks.loop(minutes = 5)
+    @tasks.loop(minutes=5)
     async def poller(self):
         with database.connection_context():
             query = CategoryChannel.select()
-            query = query.where( (CategoryChannel.last_day == None) | (CategoryChannel.last_day < datetime.datetime.utcnow().date()) )
+            query = query.where(
+                (CategoryChannel.last_day == None) | (CategoryChannel.last_day < datetime.datetime.utcnow().date()))
             for category_channel in query:
                 query = Question.select()
                 query = query.where(Question.category == category_channel.category)
                 query = query.join(QuestionConfig, peewee.JOIN.LEFT_OUTER)
-                query = query.where( (QuestionConfig.question == None) | (QuestionConfig.asked == False) )
+                query = query.where((QuestionConfig.question == None) | (QuestionConfig.asked == False))
                 query = query.order_by(peewee.fn.Rand())
                 query = query.limit(1)
                 question = query.first()
                 if question is None:
                     continue
 
-                question_config, _ = QuestionConfig.get_or_create(question = question, category_channel = category_channel)
+                question_config, _ = QuestionConfig.get_or_create(question=question, category_channel=category_channel)
                 question_config.asked = True
                 question_config.save()
                 category_channel.last_day = datetime.datetime.utcnow().date()
                 category_channel.save()
 
                 asyncio.gather(category_channel.channel.send(question.value))
+
 
 def setup(bot):
     bot.add_cog(QotdCog(bot))

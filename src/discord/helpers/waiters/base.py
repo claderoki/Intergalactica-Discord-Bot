@@ -2,29 +2,38 @@ import asyncio
 import datetime
 import re
 
-import pytz
 import discord
+import pytz
 
-from src.discord.helpers.files import FileHelper
-from src.utils.country import Country, CountryNotFound
 import src.config as config
 from src.discord.helpers.embed import Embed
+from src.discord.helpers.files import FileHelper
+from src.utils.country import Country, CountryNotFound
+
 
 class ConversionFailed(Exception): pass
+
+
 class Skipped(Exception): pass
+
+
 class Cancelled(Exception): pass
+
 
 def _get_id_match(argument):
     return re.compile(r'([0-9]{15,21})$').match(argument)
 
+
 class Waiter:
     __slots__ = ("verbose")
-    def __init__(self, verbose = True):
+
+    def __init__(self, verbose=True):
         self.verbose = verbose
 
     @property
     def bot(self):
         return config.bot
+
 
 class MessageWaiter(Waiter):
     __slots__ = (
@@ -46,20 +55,20 @@ class MessageWaiter(Waiter):
     )
 
     def __init__(self,
-    ctx,
-    only_author = True,
-    prompt = None,
-    end_prompt = None,
-    timeout = 360,
-    members = None,
-    channels = None,
-    show_instructions = True,
-    max_words = 1,
-    skippable = False,
-    skip_command = ">>skip",
-    cancellable = False,
-    cancel_command = ">>cancel",
-    **kwargs):
+                 ctx,
+                 only_author=True,
+                 prompt=None,
+                 end_prompt=None,
+                 timeout=360,
+                 members=None,
+                 channels=None,
+                 show_instructions=True,
+                 max_words=1,
+                 skippable=False,
+                 skip_command=">>skip",
+                 cancellable=False,
+                 cancel_command=">>cancel",
+                 **kwargs):
         super().__init__(**kwargs)
         self.ctx = ctx
         self.prompt = prompt
@@ -119,9 +128,9 @@ class MessageWaiter(Waiter):
             self.converted = self.convert(words)
         except ConversionFailed as e:
             if self.failures > self.failure_limit:
-                self._send(message.channel, embed = Embed.error(f"Cancelled due to failing {self.failure_limit} times."))
+                self._send(message.channel, embed=Embed.error(f"Cancelled due to failing {self.failure_limit} times."))
                 raise Cancelled()
-            self._send(message.channel, embed = Embed.error(f"{e} Try again."))
+            self._send(message.channel, embed=Embed.error(f"{e} Try again."))
             self.failures += 1
             return False
 
@@ -129,7 +138,7 @@ class MessageWaiter(Waiter):
 
     @property
     def embed(self):
-        embed = self.bot.get_base_embed(description = self.prompt)
+        embed = self.bot.get_base_embed(description=self.prompt)
 
         footer = []
         instructions = self.instructions
@@ -142,30 +151,30 @@ class MessageWaiter(Waiter):
             footer.append(f"'{self.cancel_command}' to cancel")
 
         if len(footer) > 0:
-            embed.set_footer( text = "\n".join(footer))
+            embed.set_footer(text="\n".join(footer))
 
         return embed
 
-    async def wait(self, raw = False):
-        await self.ctx.channel.send(embed = self.embed)
+    async def wait(self, raw=False):
+        await self.ctx.channel.send(embed=self.embed)
 
         try:
-            message = await self.bot.wait_for("message", timeout=self.timeout, check = self.check)
+            message = await self.bot.wait_for("message", timeout=self.timeout, check=self.check)
         except asyncio.TimeoutError:
             if self.verbose:
                 await self.ctx.send("Timed out.")
             return None
         else:
             if self.end_prompt is not None:
-                await message.channel.send(self.end_prompt.format(value = self.converted))
+                await message.channel.send(self.end_prompt.format(value=self.converted))
 
             if not raw:
                 return self.converted
             else:
                 return message
 
-class IntWaiter(MessageWaiter):
 
+class IntWaiter(MessageWaiter):
     __slots__ = ("range", "min", "max")
 
     @property
@@ -181,16 +190,16 @@ class IntWaiter(MessageWaiter):
 
         return ", ".join(instructions)
 
-    def __init__(self, ctx, range = None, min = None, max = None, **kwargs):
+    def __init__(self, ctx, range=None, min=None, max=None, **kwargs):
         super().__init__(ctx, **kwargs)
         self.range = range
 
         if self.range is not None:
             self.min = self.range.start
-            self.max = self.range.stop-1
+            self.max = self.range.stop - 1
         else:
-            self.min   = min
-            self.max   = max
+            self.min = min
+            self.max = max
 
     def check(self, message):
         if not super().check(message):
@@ -210,6 +219,7 @@ class IntWaiter(MessageWaiter):
         except ValueError:
             raise ConversionFailed("Message needs to be a number.")
 
+
 class FloatWaiter(IntWaiter):
     def convert(self, argument):
         try:
@@ -217,15 +227,16 @@ class FloatWaiter(IntWaiter):
         except ValueError:
             raise ConversionFailed("Message needs to be a number.")
 
+
 class StrWaiter(MessageWaiter):
     __slots__ = ("allowed_words", "case_sensitive", "min_length", "max_length")
 
-    def __init__(self, ctx, allowed_words = None, case_sensitive = True, min_length = 1, max_length = 2000, **kwargs):
+    def __init__(self, ctx, allowed_words=None, case_sensitive=True, min_length=1, max_length=2000, **kwargs):
         super().__init__(ctx, **kwargs)
-        self.allowed_words  = allowed_words or []
+        self.allowed_words = allowed_words or []
         self.case_sensitive = case_sensitive
-        self.min_length     = min_length
-        self.max_length     = max_length
+        self.min_length = min_length
+        self.max_length = max_length
 
     @property
     def instructions(self):
@@ -245,12 +256,12 @@ class StrWaiter(MessageWaiter):
 
         if len(content) > self.max_length:
             error_msg = f"Message is too long. Max length: {self.max_length}"
-            asyncio.gather(message.channel.send(embed = Embed.error(error_msg)))
+            asyncio.gather(message.channel.send(embed=Embed.error(error_msg)))
             return False
 
         if len(content) < self.min_length:
             error_msg = f"Message is too short. Min length: {self.min_length}"
-            asyncio.gather(message.channel.send(embed = Embed.error(error_msg)))
+            asyncio.gather(message.channel.send(embed=Embed.error(error_msg)))
             return False
 
         return True
@@ -258,9 +269,10 @@ class StrWaiter(MessageWaiter):
     def convert(self, argument):
         return argument
 
+
 class AttachmentWaiter(MessageWaiter):
     def __init__(self, ctx, **kwargs):
-        super().__init__(ctx, max_words = None, **kwargs)
+        super().__init__(ctx, max_words=None, **kwargs)
 
     def convert(self, argument):
         return argument
@@ -273,8 +285,8 @@ class AttachmentWaiter(MessageWaiter):
             return False
         return True
 
-    async def wait(self, store = True, raw = False):
-        message = await super().wait(raw = True)
+    async def wait(self, store=True, raw=False):
+        message = await super().wait(raw=True)
         if not raw:
             attachment = message.attachments[0]
             if store:
@@ -283,6 +295,7 @@ class AttachmentWaiter(MessageWaiter):
                 return attachment.url
 
         return message
+
 
 class TimezoneWaiter(StrWaiter):
     def __init__(self, ctx, **kwargs):
@@ -298,6 +311,7 @@ class TimezoneWaiter(StrWaiter):
         except pytz.exceptions.UnknownTimeZoneError:
             raise ConversionFailed("Timezone not found.")
 
+
 class CountryWaiter(StrWaiter):
     def __init__(self, ctx, **kwargs):
         super().__init__(ctx, **kwargs)
@@ -310,9 +324,10 @@ class CountryWaiter(StrWaiter):
 
         return country
 
+
 class RangeWaiter(StrWaiter):
     def __init__(self, ctx, **kwargs):
-        super().__init__(ctx, max_words = 2, **kwargs)
+        super().__init__(ctx, max_words=2, **kwargs)
 
     @property
     def instructions(self):
@@ -325,8 +340,9 @@ class RangeWaiter(StrWaiter):
         except:
             raise ConversionFailed("Message needs to be a range.")
 
+
 class EnumWaiter(StrWaiter):
-    def __init__(self, ctx, enum, properties_to_skip = None, **kwargs):
+    def __init__(self, ctx, enum, properties_to_skip=None, **kwargs):
         super().__init__(ctx, **kwargs)
         if properties_to_skip is None:
             properties_to_skip = []
@@ -341,6 +357,7 @@ class EnumWaiter(StrWaiter):
         except:
             raise ConversionFailed("Message not valid.")
 
+
 class BoolWaiter(StrWaiter):
 
     @property
@@ -348,12 +365,12 @@ class BoolWaiter(StrWaiter):
         return "yes / no"
 
     def __init__(self, ctx, **kwargs):
-        super().__init__(ctx, allowed_words = ('yes', 'y', 'n', 'no'), case_sensitive=False, **kwargs)
+        super().__init__(ctx, allowed_words=('yes', 'y', 'n', 'no'), case_sensitive=False, **kwargs)
 
     def convert(self, argument):
         lowered = argument.lower()
 
-        if lowered in ("yes","y"):
+        if lowered in ("yes", "y"):
             return True
         elif lowered in ("no", "n"):
             return False
@@ -379,6 +396,7 @@ class MemberWaiter(MessageWaiter):
 
         raise ConversionFailed("Message needs to be a @mention.")
 
+
 class TextChannelWaiter(MessageWaiter):
 
     @property
@@ -392,6 +410,7 @@ class TextChannelWaiter(MessageWaiter):
             return self.ctx.guild.get_channel(id)
 
         raise ConversionFailed("Message needs to be a #mention.")
+
 
 class RoleWaiter(MessageWaiter):
 
@@ -408,14 +427,15 @@ class RoleWaiter(MessageWaiter):
             raise ConversionFailed("Role not found.")
         return result
 
+
 class TimeWaiter(MessageWaiter):
     __slots__ = ("before", "after")
 
-    def __init__(self, ctx, before = None, after =None, **kwargs):
+    def __init__(self, ctx, before=None, after=None, **kwargs):
         super().__init__(ctx, **kwargs)
 
         self.before = before
-        self.after  = after
+        self.after = after
 
     @property
     def instructions(self):
@@ -424,7 +444,7 @@ class TimeWaiter(MessageWaiter):
     def convert(self, argument):
         missing_count = 8 - len(argument)
         if missing_count > 0:
-            for i in range(len(argument)+1, 9):
+            for i in range(len(argument) + 1, 9):
                 if i % 3 == 0:
                     argument += ":"
                 else:
@@ -436,15 +456,15 @@ class TimeWaiter(MessageWaiter):
 
         return datetime.time(hours, minutes, seconds)
 
-class DateWaiter(StrWaiter):
 
+class DateWaiter(StrWaiter):
     __slots__ = ("before", "after")
 
-    def __init__(self, ctx, before = None, after =None, **kwargs):
-        super().__init__(ctx, min_length = len("1-1-1"), max_length = len("1994-02-06"), **kwargs)
+    def __init__(self, ctx, before=None, after=None, **kwargs):
+        super().__init__(ctx, min_length=len("1-1-1"), max_length=len("1994-02-06"), **kwargs)
 
         self.before = before
-        self.after  = after
+        self.after = after
 
     @property
     def instructions(self):
@@ -452,11 +472,11 @@ class DateWaiter(StrWaiter):
 
     def convert(self, argument):
         try:
-            year,month,day = argument.split("-")
+            year, month, day = argument.split("-")
             year = year.zfill(4)
             month = month.zfill(2)
             day = day.zfill(2)
-            return datetime.datetime.strptime(year + month + day,"%Y%m%d").date()
+            return datetime.datetime.strptime(year + month + day, "%Y%m%d").date()
         except ValueError:
             raise ConversionFailed("Message needs to be a date: YYYY-MM-DD.")
 
@@ -466,19 +486,20 @@ class DateWaiter(StrWaiter):
 
         if self.before is not None and self.converted >= self.before:
             error_msg = f"Date can't be after {self.before}"
-            asyncio.gather(message.channel.send(embed = Embed.error(error_msg)))
+            asyncio.gather(message.channel.send(embed=Embed.error(error_msg)))
             return False
 
         if self.after is not None and self.converted <= self.after:
             error_msg = f"Date can't be before {self.after}"
-            asyncio.gather(message.channel.send(embed = Embed.error(error_msg)))
+            asyncio.gather(message.channel.send(embed=Embed.error(error_msg)))
             return False
 
         return True
 
+
 class TimeDeltaWaiter(MessageWaiter):
     def __init__(self, ctx, *args, **kwargs):
-        super().__init__(ctx, *args, max_words = 2, **kwargs)
+        super().__init__(ctx, *args, max_words=2, **kwargs)
 
     @property
     def instructions(self):
@@ -496,40 +517,42 @@ class TimeDeltaWaiter(MessageWaiter):
         if not time.endswith("s"):
             time = time + "s"
 
-        possible_values = ("days", "seconds", "microseconds", "milliseconds", "minutes", "hours", "weeks", "months", "years")
+        possible_values = (
+        "days", "seconds", "microseconds", "milliseconds", "minutes", "hours", "weeks", "months", "years")
 
-        conversions =\
-        {
-            "months" : lambda x : x * 4.348214155,
-            "years"  : lambda x : x * 52.17856986008
-        }
+        conversions = \
+            {
+                "months": lambda x: x * 4.348214155,
+                "years": lambda x: x * 52.17856986008
+            }
 
         if time in conversions:
             amount = conversions[time](amount)
             time = "weeks"
 
-
         if time not in possible_values:
             raise ConversionFailed("Time can only be: " + ", ".join(possible_values) + "\nExample: 2 **days**.")
 
-        return datetime.timedelta(**{time : amount })
+        return datetime.timedelta(**{time: amount})
 
     def convert(self, argument):
         return self._convert(argument)
 
+
 waiter_mapping = \
-{
-    str                 : StrWaiter,
-    int                 : IntWaiter,
-    bool                : BoolWaiter,
-    datetime.date       : DateWaiter,
-    discord.Member      : MemberWaiter,
-    discord.TextChannel : TextChannelWaiter,
-    discord.Role        : RoleWaiter,
-}
+    {
+        str: StrWaiter,
+        int: IntWaiter,
+        bool: BoolWaiter,
+        datetime.date: DateWaiter,
+        discord.Member: MemberWaiter,
+        discord.TextChannel: TextChannelWaiter,
+        discord.Role: RoleWaiter,
+    }
+
 
 class ReactionWaiter(Waiter):
-    def __init__(self, ctx, message, emojis, members = None, channels = None ):
+    def __init__(self, ctx, message, emojis, members=None, channels=None):
         self.ctx = ctx
         self.message = message
         self.emojis = emojis
@@ -543,27 +566,28 @@ class ReactionWaiter(Waiter):
     async def clear_reactions(self):
         try:
             await self.message.clear_reactions()
-        except: pass
+        except:
+            pass
 
-    async def wait(self, raw = False, timeout = 120, remove = False):
+    async def wait(self, raw=False, timeout=120, remove=False):
         try:
             reaction, user = await self.bot.wait_for(
                 'reaction_add',
-                timeout = timeout,
-                check   = self.check)
+                timeout=timeout,
+                check=self.check)
         except asyncio.TimeoutError:
             return None
 
         if remove:
             try:
                 await self.message.remove_reaction(reaction, user)
-            except: pass
+            except:
+                pass
 
         if raw:
             return reaction, user
         else:
             return str(reaction.emoji)
-
 
     def check(self, reaction, user):
         if reaction.message.id != self.message.id:

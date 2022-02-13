@@ -1,19 +1,20 @@
-import datetime
 import asyncio
+import datetime
 
 import discord
 
-from src.discord.helpers.known_guilds import KnownGuild
 import src.config as config
+from src.discord.helpers.known_guilds import KnownGuild
+
 
 class DisboardBumpReminderContext:
     __slots__ = ("guild_id", "channel_id", "available_at", "role_id")
 
     def __init__(self, guild_id: int, channel_id: int, available_at: datetime, role_id: int = None):
-        self.guild_id     = guild_id
-        self.channel_id   = channel_id
+        self.guild_id = guild_id
+        self.channel_id = channel_id
         self.available_at = available_at
-        self.role_id      = role_id
+        self.role_id = role_id
 
     def __str__(self):
         return ", ".join(f"{x} => {getattr(self, x)}" for x in self.__slots__)
@@ -21,13 +22,14 @@ class DisboardBumpReminderContext:
     def __repr__(self):
         return str(self)
 
+
 class DisboardBumpReminder:
-    _bump_cache      = {}
-    _bot_id          = 302050872383242240
-    _cmd             = "!d bump"
+    _bump_cache = {}
+    _bot_id = 302050872383242240
+    _cmd = "!d bump"
     _default_minutes = 120
 
-    __slots__ = ("message", )
+    __slots__ = ("message",)
 
     @classmethod
     def is_eligible(cls, message: discord.Message):
@@ -36,7 +38,8 @@ class DisboardBumpReminder:
     @classmethod
     async def __wait_for_minutes(cls, message) -> int:
         try:
-            disboard_response = await config.bot.wait_for("message", check = lambda x : x.author.id == cls._bot_id and x.channel.id == message.channel.id, timeout = 30)
+            disboard_response = await config.bot.wait_for("message", check=lambda
+                x: x.author.id == cls._bot_id and x.channel.id == message.channel.id, timeout=30)
         except asyncio.TimeoutError:
             return cls._default_minutes
         embed = disboard_response.embeds[0]
@@ -53,11 +56,11 @@ class DisboardBumpReminder:
 
     @classmethod
     def cache(cls, guild_id: int, channel_id: int, minutes_left: int = _default_minutes):
-        available_at = datetime.datetime.utcnow() + datetime.timedelta(minutes = minutes_left)
+        available_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=minutes_left)
 
         role_id = None
         if guild_id == KnownGuild.mouse:
-            #TODO: hard coded id
+            # TODO: hard coded id
             role_id = 810864493642907669
 
         cls._bump_cache[guild_id] = DisboardBumpReminderContext(guild_id, channel_id, available_at, role_id)

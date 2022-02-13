@@ -1,10 +1,12 @@
 from discord.ext import commands
 
-from src.discord.helpers.known_guilds import KnownGuild
 from src.discord.cogs.custom.shared.cog import CustomCog
+from src.discord.helpers.known_guilds import KnownGuild
+
 
 class KnownRole:
     underage = 919621466016862218
+
 
 class Guac(CustomCog):
     guild_id = KnownGuild.guac
@@ -14,7 +16,8 @@ class Guac(CustomCog):
         if before.guild.id == self.guild_id:
             for role in after.roles:
                 if role.id == KnownRole.underage:
-                    await after.ban(reason = "Underage role")
+                    await after.ban(reason="Underage role")
+
 
 def setup(bot):
     bot.add_cog(Guac(bot))

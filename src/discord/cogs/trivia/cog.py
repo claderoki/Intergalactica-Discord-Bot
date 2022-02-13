@@ -2,16 +2,13 @@ import asyncio
 
 import discord
 from discord.ext import commands
-
-import src.config as config
-from src.discord.errors.base import SendableException
-from src.discord.cogs.core import BaseCog
-from src.discord.helpers.waiters import EnumWaiter
-from .wrapper import TriviaApi, Category, QuestionType
-
 from emoji import emojize
 
-class TriviaCog(BaseCog, name = "Trivia"):
+from src.discord.cogs.core import BaseCog
+from .wrapper import TriviaApi, QuestionType
+
+
+class TriviaCog(BaseCog, name="Trivia"):
 
     def __init__(self, bot):
         super().__init__(bot)
@@ -20,29 +17,29 @@ class TriviaCog(BaseCog, name = "Trivia"):
     async def on_ready(self):
         pass
 
-    @commands.group(name = "trivia")
+    @commands.group(name="trivia")
     @commands.guild_only()
     async def trivia(self, ctx):
         pass
 
-    @trivia.command(name = "start")
+    @trivia.command(name="start")
     async def trivia_start(self, ctx, amount: int = 1):
         # waiter = EnumWaiter(ctx, Category, skippable = True, reverse = True)
         # category = await waiter.wait()
         amount = min(50, max(0, amount))
         scores = {}
         i = 0
-        for question in TriviaApi.get_questions(amount = amount):
-            last_round = i >= amount-1
-            embed = discord.Embed(color = discord.Color.green())
-            embed.title = f"Trivia, round {i+1}/{amount}"
+        for question in TriviaApi.get_questions(amount=amount):
+            last_round = i >= amount - 1
+            embed = discord.Embed(color=discord.Color.green())
+            embed.title = f"Trivia, round {i + 1}/{amount}"
             description = [question.question]
 
             choices = {}
 
             if question.type == QuestionType.multiple:
                 description.append("\n")
-                emojis = [emojize(f":keycap_{i}:") for i in range(1, len(question.answers)+1)]
+                emojis = [emojize(f":keycap_{i}:") for i in range(1, len(question.answers) + 1)]
                 j = 0
                 for answer in question.answers:
                     emoji = emojis[j]
@@ -54,8 +51,8 @@ class TriviaCog(BaseCog, name = "Trivia"):
                 choices["❎"] = "False"
 
             embed.description = "\n".join(description)
-            embed.set_footer(text = "Category: " + question.category.value)
-            message = await ctx.send(embed = embed)
+            embed.set_footer(text="Category: " + question.category.value)
+            message = await ctx.send(embed=embed)
 
             for emoji in choices.keys():
                 await message.add_reaction(emoji)
@@ -86,7 +83,7 @@ class TriviaCog(BaseCog, name = "Trivia"):
                 return False
 
             try:
-                await ctx.bot.wait_for("reaction_add", check = check, timeout = 30)
+                await ctx.bot.wait_for("reaction_add", check=check, timeout=30)
             except asyncio.TimeoutError:
                 pass
 
@@ -107,7 +104,7 @@ class TriviaCog(BaseCog, name = "Trivia"):
                     else:
                         scores[member] += int(answer.is_correct)
 
-            embed = discord.Embed(color = discord.Color.green())
+            embed = discord.Embed(color=discord.Color.green())
             embed.title = f"Answer: **{correct_answer.value}**"
 
             if len(description) > 0:
@@ -115,16 +112,16 @@ class TriviaCog(BaseCog, name = "Trivia"):
 
             embed.description = "\n".join(description)
             if not last_round:
-                embed.set_footer(text = "Next round will be starting soon...")
-            await ctx.send(embed = embed)
+                embed.set_footer(text="Next round will be starting soon...")
+            await ctx.send(embed=embed)
             if not last_round:
                 await asyncio.sleep(10)
 
             i += 1
 
-        scores = {key: value for key, value in sorted(scores.items(), key = lambda item: item[1], reverse = True)}
+        scores = {key: value for key, value in sorted(scores.items(), key=lambda item: item[1], reverse=True)}
 
-        embed = discord.Embed(color = discord.Color.green())
+        embed = discord.Embed(color=discord.Color.green())
         embed.title = "Total scores"
         description = []
         i = 0
@@ -136,7 +133,8 @@ class TriviaCog(BaseCog, name = "Trivia"):
             description.append(f"{member}:  {score} {star}")
             i += 1
         embed.description = "\n".join(description)
-        await ctx.send(embed = embed)
+        await ctx.send(embed=embed)
+
 
 def setup(bot):
     bot.add_cog(TriviaCog(bot))

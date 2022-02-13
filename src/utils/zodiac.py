@@ -1,13 +1,14 @@
-from enum import Enum
 import datetime
+from enum import Enum
 
 from emoji import emojize
 
+
 class DateRange:
-    def __init__(self, start, stop = None, step = datetime.timedelta(days = 1)):
-        self.start      = start
-        self.stop       = stop or datetime.datetime.utcnow()
-        self.step       = step
+    def __init__(self, start, stop=None, step=datetime.timedelta(days=1)):
+        self.start = start
+        self.stop = stop or datetime.datetime.utcnow()
+        self.step = step
 
         self.validate()
 
@@ -26,19 +27,20 @@ class DateRange:
     def __contains__(self, date):
         return date >= self.start and date <= self.stop
 
+
 class ZodiacSign(Enum):
     sagittarius = 0
-    capricorn   = 1
-    aquarius    = 2
-    pisces      = 3
-    aries       = 4
-    taurus      = 5
-    gemini      = 6
-    cancer      = 7
-    leo         = 8
-    virgo       = 9
-    libra       = 10
-    scorpio     = 11
+    capricorn = 1
+    aquarius = 2
+    pisces = 3
+    aries = 4
+    taurus = 5
+    gemini = 6
+    cancer = 7
+    leo = 8
+    virgo = 9
+    libra = 10
+    scorpio = 11
 
     @property
     def emoji(self):
@@ -70,6 +72,7 @@ class ZodiacSign(Enum):
             return cls.libra if (date.day < 23) else cls.scorpio
         elif date.month == 11:
             return cls.scorpio if (date.day < 22) else cls.sagittarius
+
 
 if __name__ == "__main__":
     dates = DateRange(datetime.datetime(2020, 11, 10))

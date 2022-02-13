@@ -1,11 +1,13 @@
-import random
-import discord
 import datetime
+import random
 
+import discord
+
+import src.config as config
 from src.discord.errors.base import SendableException
 from src.discord.helpers.known_guilds import KnownGuild
 from src.models.secretsanta import SecretSanta, SecretSantaParticipant
-import src.config as config
+
 
 class SecretSantaUI:
     __slots__ = ()
@@ -13,8 +15,8 @@ class SecretSantaUI:
     @classmethod
     def get_base_embed(cls, info: str) -> discord.Embed:
         icon_url = "https://cdn.discordapp.com/attachments/744172199770062899/911012466899689522/ss.png"
-        embed = discord.Embed(color = config.bot.get_dominant_color())
-        embed.set_author(name = f"Secret Santa ({info})", icon_url = icon_url)
+        embed = discord.Embed(color=config.bot.get_dominant_color())
+        embed.set_author(name=f"Secret Santa ({info})", icon_url=icon_url)
         return embed
 
     @classmethod
@@ -27,7 +29,7 @@ class SecretSantaUI:
         else:
             field_name = "Description"
 
-        embed.add_field(name = field_name, value = participant.description, inline = False)
+        embed.add_field(name=field_name, value=participant.description, inline=False)
 
         return embed
 
@@ -40,7 +42,8 @@ class SecretSantaUI:
 
         return embed
 
-def command_to_field(prefix, command, description = None):
+
+def command_to_field(prefix, command, description=None):
     desc = command.callback.__doc__
 
     kwargs = {}
@@ -70,7 +73,8 @@ class SecretSantaHelper:
         return participants
 
     @classmethod
-    def get_random_giftee(cls, participant: SecretSantaParticipant, available_participants: list) -> SecretSantaParticipant:
+    def get_random_giftee(cls, participant: SecretSantaParticipant,
+                          available_participants: list) -> SecretSantaParticipant:
         """Gets a random giftee from a selection of available participants."""
         giftee = random.choice(available_participants)
         if giftee.id == participant.id:
@@ -95,7 +99,7 @@ class SecretSantaHelper:
         if member is None:
             raise SendableException("Did not find you in the server.")
 
-        return SecretSantaRepository.get(guild_id = guild.id, year = datetime.datetime.utcnow().year)
+        return SecretSantaRepository.get(guild_id=guild.id, year=datetime.datetime.utcnow().year)
 
 
 class SecretSantaRepository:
@@ -103,16 +107,16 @@ class SecretSantaRepository:
 
     @classmethod
     def get_available_guilds(cls) -> list:
-        return (KnownGuild.intergalactica, )
+        return (KnownGuild.intergalactica,)
         # return tuple([x.guild_id for x in SecretSanta.select(SecretSanta.guild_id).where(SecretSanta.active == True)])
 
     @classmethod
     def get_queue(cls) -> list:
         return (SecretSanta
-            .select()
-            .where(SecretSanta.start_date <= datetime.datetime.utcnow())
-            .where(SecretSanta.active == True)
-            .where(SecretSanta.started_at == None))
+                .select()
+                .where(SecretSanta.start_date <= datetime.datetime.utcnow())
+                .where(SecretSanta.active == True)
+                .where(SecretSanta.started_at == None))
 
     @classmethod
     def get_participants(cls, secret_santa_id: int, type: SecretSantaParticipant.Type) -> list:
@@ -124,16 +128,17 @@ class SecretSantaRepository:
     @classmethod
     def get(cls, guild_id: int, year: int) -> SecretSanta:
         return (SecretSanta
-            .select()
-            .where(SecretSanta.guild_id == guild_id)
-            .where(SecretSanta.start_date.year == year)
-            .first())
+                .select()
+                .where(SecretSanta.guild_id == guild_id)
+                .where(SecretSanta.start_date.year == year)
+                .first())
 
     @classmethod
-    def get_participant(cls, secret_santa_id: int, user_id: int, type: SecretSantaParticipant.Type) -> SecretSantaParticipant:
+    def get_participant(cls, secret_santa_id: int, user_id: int,
+                        type: SecretSantaParticipant.Type) -> SecretSantaParticipant:
         return (SecretSantaParticipant
-            .select()
-            .where(SecretSantaParticipant.user_id == user_id)
-            .where(SecretSantaParticipant.secret_santa == secret_santa_id)
-            .where(SecretSantaParticipant.type == type)
-            .first())
+                .select()
+                .where(SecretSantaParticipant.user_id == user_id)
+                .where(SecretSantaParticipant.secret_santa == secret_santa_id)
+                .where(SecretSantaParticipant.type == type)
+                .first())

@@ -1,30 +1,32 @@
+import asyncio
 import datetime
 import random
-import asyncio
 
 from dateutil.relativedelta import relativedelta
+
 
 class WelcomeMessageCache:
     __slots__ = ("messages", "last_sent")
 
     def __init__(self):
-        self.messages  = {}
+        self.messages = {}
         self.last_sent = None
+
 
 class WelcomeMessage:
     _cache = {}
 
     __slots__ = ("guild_id", "channel", "message")
 
-    def __init__(self,  guild_id, channel, message):
+    def __init__(self, guild_id, channel, message):
         self.guild_id = guild_id
-        self.channel  = channel
-        self.message  = message
+        self.channel = channel
+        self.message = message
 
         self._cache[guild_id] = WelcomeMessageCache()
 
     async def send(self, member):
-        text = self.message.format(member = member)
+        text = self.message.format(member=member)
 
         try:
             message = await self.channel.send(text)

@@ -1,20 +1,21 @@
 import datetime
-from enum import Enum
 import math
 import random
+from enum import Enum
 
-from dateutil.relativedelta import relativedelta
 import discord
 import peewee
+from dateutil.relativedelta import relativedelta
 
-from .base import BaseModel, EnumField, EmojiField, PercentageField, TimeDeltaField, CountryField, LanguageField
-from .human import Human, Item, HumanItem
 from src.utils.enums import Gender
+from .base import BaseModel, EnumField, EmojiField, PercentageField, TimeDeltaField, CountryField, LanguageField
+from .human import Human, Item
+
 
 class Activity(BaseModel):
-    start_date = peewee.DateTimeField   (null = True, default = lambda : datetime.datetime.utcnow())
-    end_date   = peewee.DateTimeField   (null = True)
-    finished   = peewee.BooleanField    (null = False, default = False)
+    start_date = peewee.DateTimeField(null=True, default=lambda: datetime.datetime.utcnow())
+    end_date = peewee.DateTimeField(null=True)
+    finished = peewee.BooleanField(null=False, default=False)
 
     @property
     def end_date_passed(self):
@@ -24,9 +25,10 @@ class Activity(BaseModel):
     def duration_in_minutes(self):
         return int((self.end_date - self.start_date).total_seconds() / 60.0)
 
+
 class TravelActivity(Activity):
-    residence   = CountryField (null = True)
-    destination = CountryField (null = True)
+    residence = CountryField(null=True)
+    destination = CountryField(null=True)
 
     @property
     def distance_in_km(self):
@@ -41,7 +43,7 @@ class TravelActivity(Activity):
         dlon = lon2 - lon1
         dlat = lat2 - lat1
 
-        a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+        a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
         return R * c
@@ -51,7 +53,7 @@ class TravelActivity(Activity):
         max_time_in_minutes = 180
         km = self.distance_in_km
         if km is None:
-            return random.randint(min_time_in_minutes, max_time_in_minutes+1)
+            return random.randint(min_time_in_minutes, max_time_in_minutes + 1)
 
         duration = int(km / 40)
         if duration < min_time_in_minutes:
@@ -60,46 +62,47 @@ class TravelActivity(Activity):
             duration = max_time_in_minutes
         return duration
 
+
 class Pigeon(BaseModel):
     emojis = {
-        "name"        : "📛",
-        "gold"        : "",
-        "experience"  : "📊",
-        "cleanliness" : "💩",
-        "food"        : "🌾",
-        "happiness"   : "🌻",
-        "health"      : "❤️",
+        "name": "📛",
+        "gold": "",
+        "experience": "📊",
+        "cleanliness": "💩",
+        "food": "🌾",
+        "happiness": "🌻",
+        "health": "❤️",
     }
 
     class Status(Enum):
-        idle            = "💤"
-        mailing         = "📧"
-        exploring       = "🗺️"
-        fighting        = "⚔️"
-        dating          = "❤️"
+        idle = "💤"
+        mailing = "📧"
+        exploring = "🗺️"
+        fighting = "⚔️"
+        dating = "❤️"
         space_exploring = "🗺️"
-        jailed          = ""
+        jailed = ""
 
     class Condition(Enum):
-        active   = 1
+        active = 1
         ran_away = 2
-        dead     = 3
+        dead = 3
 
-    name                = peewee.TextField       (null = False)
-    human               = peewee.ForeignKeyField (Human, backref = "pigeons")
-    condition           = EnumField              (Condition, default = Condition.active)
-    experience          = peewee.IntegerField    (null = False, default = 0)
-    cleanliness         = PercentageField        (null = False, default = 100)
-    happiness           = PercentageField        (null = False, default = 100)
-    food                = PercentageField        (null = False, default = 100)
-    health              = PercentageField        (null = False, default = 100)
-    status              = EnumField              (Status, default = Status.idle)
-    gender              = EnumField              (Gender, default = Gender.other)
-    pvp                 = peewee.BooleanField    (null = False, default = False)
-    last_used_pvp       = peewee.DateTimeField   (null = True)
-    jailed_until        = peewee.DateTimeField   (null = True)
-    pooped_on_count     = peewee.IntegerField    (null = False, default = 0)
-    poop_victim_count   = peewee.IntegerField    (null = False, default = 0)
+    name = peewee.TextField(null=False)
+    human = peewee.ForeignKeyField(Human, backref="pigeons")
+    condition = EnumField(Condition, default=Condition.active)
+    experience = peewee.IntegerField(null=False, default=0)
+    cleanliness = PercentageField(null=False, default=100)
+    happiness = PercentageField(null=False, default=100)
+    food = PercentageField(null=False, default=100)
+    health = PercentageField(null=False, default=100)
+    status = EnumField(Status, default=Status.idle)
+    gender = EnumField(Gender, default=Gender.other)
+    pvp = peewee.BooleanField(null=False, default=False)
+    last_used_pvp = peewee.DateTimeField(null=True)
+    jailed_until = peewee.DateTimeField(null=True)
+    pooped_on_count = peewee.IntegerField(null=False, default=0)
+    poop_victim_count = peewee.IntegerField(null=False, default=0)
 
     @property
     def is_jailed(self):
@@ -124,24 +127,24 @@ class Pigeon(BaseModel):
 
         return difference.hours >= 3 or difference.days >= 1 or difference.weeks >= 1 or difference.months >= 1
 
-    def study_language(self, language, mastery = 1):
-        language, _ = LanguageMastery.get_or_create(pigeon = self, language = language)
+    def study_language(self, language, mastery=1):
+        language, _ = LanguageMastery.get_or_create(pigeon=self, language=language)
         language.mastery += mastery
         language.save()
 
-    def create_buff(self, code, create_system_message = True):
-        buff = Buff.get(code = code)
-        pigeon_buff, _ = PigeonBuff.get_or_create(pigeon = self, buff = buff)
+    def create_buff(self, code, create_system_message=True):
+        buff = Buff.get(code=code)
+        pigeon_buff, _ = PigeonBuff.get_or_create(pigeon=self, buff=buff)
         pigeon_buff.due_date = datetime.datetime.utcnow() + buff.duration
         pigeon_buff.save()
         if create_system_message:
             SystemMessage.create(
-                text = self.bot.translate("buff_assigned").format(buff = buff),
-                human = self.human
+                text=self.bot.translate("buff_assigned").format(buff=buff),
+                human=self.human
             )
 
-    def update_stats(self, data, increment = True, save = True):
-        human = self.bot.get_human(user = self.human.user_id)
+    def update_stats(self, data, increment=True, save=True):
+        human = self.bot.get_human(user=self.human.user_id)
         for key, value in data.items():
             if key == "gold":
                 human.gold += value
@@ -153,12 +156,12 @@ class Pigeon(BaseModel):
 
                 # new_value = getattr(self, key)
                 # if key == "food" and new_value >= 100:
-                    # self.create_buff("fully_fed")
+                # self.create_buff("fully_fed")
 
                 if key == "health":
                     if self.health <= 0:
                         self.condition = self.Condition.dead
-                        SystemMessage.create(text = self.bot.translate("pigeon_dead"), human = human)
+                        SystemMessage.create(text=self.bot.translate("pigeon_dead"), human=human)
         try:
             if save:
                 self.save()
@@ -193,11 +196,12 @@ class Pigeon(BaseModel):
         query = query.where((Fight.challenger == self) | (Fight.challengee == self))
         return query
 
+
 class Buff(BaseModel):
-    name        = peewee.TextField       (null = False)
-    description = peewee.TextField       (null = False)
-    code        = peewee.TextField       (null = False)
-    duration    = TimeDeltaField         (null = False)
+    name = peewee.TextField(null=False)
+    description = peewee.TextField(null=False)
+    code = peewee.TextField(null=False)
+    duration = TimeDeltaField(null=False)
 
     # stat        = peewee.TextField       (null = True)
     # type        = EnumField              (Type, default = Type.add)
@@ -207,15 +211,18 @@ class Buff(BaseModel):
     #     remove   = 2
     #     modifier = 3
 
+
 class PigeonBuff(BaseModel):
-    pigeon      = peewee.ForeignKeyField (Pigeon, null = False, backref = "_buffs", on_delete = "CASCADE")
-    buff        = peewee.ForeignKeyField (Buff, null = False, on_delete = "CASCADE")
-    due_date    = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow() + datetime.timedelta(hours = 24))
+    pigeon = peewee.ForeignKeyField(Pigeon, null=False, backref="_buffs", on_delete="CASCADE")
+    buff = peewee.ForeignKeyField(Buff, null=False, on_delete="CASCADE")
+    due_date = peewee.DateTimeField(null=False,
+                                    default=lambda: datetime.datetime.utcnow() + datetime.timedelta(hours=24))
+
 
 class PigeonRelationship(BaseModel):
-    pigeon1   = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
-    pigeon2   = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
-    score     = peewee.IntegerField    (null = False, default = 0)
+    pigeon1 = peewee.ForeignKeyField(Pigeon, null=False, on_delete="CASCADE")
+    pigeon2 = peewee.ForeignKeyField(Pigeon, null=False, on_delete="CASCADE")
+    score = peewee.IntegerField(null=False, default=0)
 
     @staticmethod
     def _get_title(score):
@@ -239,14 +246,14 @@ class PigeonRelationship(BaseModel):
         return self._get_title(self.score)
 
     @classmethod
-    def select_for(cls, pigeon, active = True):
+    def select_for(cls, pigeon, active=True):
         query = cls.select()
         if active:
             p1 = Pigeon.alias("p1")
             p2 = Pigeon.alias("p2")
-            query = query.join(p1, on = cls.pigeon1)
+            query = query.join(p1, on=cls.pigeon1)
             query = query.switch(cls)
-            query = query.join(p2, on = cls.pigeon2)
+            query = query.join(p2, on=cls.pigeon2)
         query = query.where((cls.pigeon1 == pigeon) | (cls.pigeon2 == pigeon))
         query = query.where(cls.score < -15)
         if active:
@@ -258,39 +265,44 @@ class PigeonRelationship(BaseModel):
     @classmethod
     def get_or_create_for(cls, pigeon1, pigeon2):
         query = cls.select()
-        query = query.where( (cls.pigeon1 == pigeon1) | (cls.pigeon1 == pigeon2))
-        query = query.where( (cls.pigeon2 == pigeon1) | (cls.pigeon2 == pigeon2))
+        query = query.where((cls.pigeon1 == pigeon1) | (cls.pigeon1 == pigeon2))
+        query = query.where((cls.pigeon2 == pigeon1) | (cls.pigeon2 == pigeon2))
         relationship = query.first()
         if relationship is not None:
             return relationship
         else:
-            return cls.create(pigeon1 = pigeon1, pigeon2 = pigeon2)
+            return cls.create(pigeon1=pigeon1, pigeon2=pigeon2)
+
 
 class PigeonDatingAvatar(BaseModel):
     description = peewee.TextField()
-    image_url   = peewee.TextField()
+    image_url = peewee.TextField()
+
 
 class PigeonDatingProfile(BaseModel):
-    pigeon      = peewee.ForeignKeyField(Pigeon)
+    pigeon = peewee.ForeignKeyField(Pigeon)
     description = peewee.TextField()
-    image_url   = peewee.TextField()
+    image_url = peewee.TextField()
+
 
 class PigeonDatingParticipant(BaseModel):
     class Status(Enum):
-        liked    = 1
+        liked = 1
         disliked = 2
 
-    status = EnumField(Status, null = False, default = False)
+    status = EnumField(Status, null=False, default=False)
     pigeon = peewee.ForeignKeyField(Pigeon)
 
+
 class PigeonDatingRelationship(BaseModel):
-    participant1      = peewee.ForeignKeyField(PigeonDatingParticipant)
-    participant2      = peewee.ForeignKeyField(PigeonDatingParticipant)
+    participant1 = peewee.ForeignKeyField(PigeonDatingParticipant)
+    participant2 = peewee.ForeignKeyField(PigeonDatingParticipant)
+
 
 class LanguageMastery(BaseModel):
     language = LanguageField()
-    mastery  = PercentageField(null = False, default = 0)
-    pigeon   = peewee.ForeignKeyField (Pigeon, null = False, backref = "language_masteries", on_delete = "CASCADE")
+    mastery = PercentageField(null=False, default=0)
+    pigeon = peewee.ForeignKeyField(Pigeon, null=False, backref="language_masteries", on_delete="CASCADE")
 
     @property
     def rank(self):
@@ -305,26 +317,29 @@ class LanguageMastery(BaseModel):
         else:
             return "native"
 
+
 class SystemMessage(BaseModel):
-    human = peewee.ForeignKeyField (Human, null = False, backref = "system_messages", on_delete = "CASCADE")
-    text  = peewee.TextField(null = False)
-    read  = peewee.BooleanField(null = False, default = False)
+    human = peewee.ForeignKeyField(Human, null=False, backref="system_messages", on_delete="CASCADE")
+    text = peewee.TextField(null=False)
+    read = peewee.BooleanField(null=False, default=False)
 
     @property
     def embed(self):
-        return discord.Embed(description = self.text)
+        return discord.Embed(description=self.text)
+
 
 class Mail(TravelActivity):
-    recipient   = peewee.ForeignKeyField (Human, null = False, backref = "inbox", on_delete = "CASCADE")
-    sender      = peewee.ForeignKeyField (Pigeon, null = False, backref = "outbox", on_delete = "CASCADE")
-    gold        = peewee.IntegerField    (null = False, default = 0)
-    item        = peewee.ForeignKeyField (Item, null = True)
-    message     = EmojiField             (null = True)
-    read        = peewee.BooleanField    (null = False, default = True)
+    recipient = peewee.ForeignKeyField(Human, null=False, backref="inbox", on_delete="CASCADE")
+    sender = peewee.ForeignKeyField(Pigeon, null=False, backref="outbox", on_delete="CASCADE")
+    gold = peewee.IntegerField(null=False, default=0)
+    item = peewee.ForeignKeyField(Item, null=True)
+    message = EmojiField(null=True)
+    read = peewee.BooleanField(null=False, default=True)
+
 
 class Exploration(TravelActivity):
-    name         = peewee.TextField       (null = True)
-    pigeon       = peewee.ForeignKeyField (Pigeon, null = False, backref = "explorations", on_delete = "CASCADE")
+    name = peewee.TextField(null=True)
+    pigeon = peewee.ForeignKeyField(Pigeon, null=False, backref="explorations", on_delete="CASCADE")
 
     class Meta:
         table_name = "legacy_exploration"
@@ -337,12 +352,13 @@ class Exploration(TravelActivity):
     def gold_worth(self):
         return math.ceil(self.duration_in_minutes * 0.6)
 
+
 class Challenge(Activity):
-    pigeon1    = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
-    pigeon2    = peewee.ForeignKeyField (Pigeon, null = False, on_delete = "CASCADE")
-    created_at = peewee.DateTimeField   (null = False, default = lambda : datetime.datetime.utcnow())
-    guild_id   = peewee.BigIntegerField (null = False)
-    accepted   = peewee.BooleanField    (null = True) # null is pending, true is accepted, false is declined.
+    pigeon1 = peewee.ForeignKeyField(Pigeon, null=False, on_delete="CASCADE")
+    pigeon2 = peewee.ForeignKeyField(Pigeon, null=False, on_delete="CASCADE")
+    created_at = peewee.DateTimeField(null=False, default=lambda: datetime.datetime.utcnow())
+    guild_id = peewee.BigIntegerField(null=False)
+    accepted = peewee.BooleanField(null=True)  # null is pending, true is accepted, false is declined.
 
     @property
     def pigeons(self):
@@ -351,7 +367,7 @@ class Challenge(Activity):
 
     @property
     def type(self):
-         return self.__class__.__name__
+        return self.__class__.__name__
 
     def validate(self, ctx):
         return None
@@ -363,9 +379,10 @@ class Challenge(Activity):
         self.pigeon2.save()
         return super().delete_instance(*args, **kwargs)
 
+
 class Fight(Challenge):
-    bet        = peewee.BigIntegerField (null = False, default = 50)
-    won        = peewee.BooleanField    (null = True) # null is not ended yet, true means challenger won, false means challengee won
+    bet = peewee.BigIntegerField(null=False, default=50)
+    won = peewee.BooleanField(null=True)  # null is not ended yet, true means challenger won, false means challengee won
 
     @property
     def icon_url(self):
@@ -375,9 +392,9 @@ class Fight(Challenge):
         error_messages = []
         i = 1
         for pigeon in self.pigeons:
-            human = self.bot.get_human(user = pigeon.human.user_id)
+            human = self.bot.get_human(user=pigeon.human.user_id)
             if human.gold < self.bet:
-                error_messages.append(ctx.translate(f"pigeon{i}_not_enough_gold").format(bet = self.bet))
+                error_messages.append(ctx.translate(f"pigeon{i}_not_enough_gold").format(bet=self.bet))
             i += 1
         return error_messages
 
@@ -397,9 +414,10 @@ class Fight(Challenge):
     def challenger(self, value):
         self.pigeon1 = value
 
+
 class Date(Challenge):
-    gift       = peewee.ForeignKeyField (Item, null = True)
-    score      = peewee.IntegerField    (null = False, default = 0) # max 100, min -100
+    gift = peewee.ForeignKeyField(Item, null=True)
+    score = peewee.IntegerField(null=False, default=0)  # max 100, min -100
 
     @property
     def icon_url(self):

@@ -1,10 +1,11 @@
 import datetime
-import requests
-from timezonefinder import TimezoneFinder
-from geopy.geocoders import Nominatim
+
 import pytz
+from geopy.geocoders import Nominatim
+from timezonefinder import TimezoneFinder
 
 user_agent = "timezone_locator"
+
 
 class Timezone:
     geolocator = Nominatim(user_agent=user_agent)
@@ -41,7 +42,7 @@ class Timezone:
 
     @classmethod
     def from_location(cls, long, lat):
-        return cls(TimezoneFinder().timezone_at(lng = long, lat = lat))
+        return cls(TimezoneFinder().timezone_at(lng=long, lat=lat))
 
     @property
     def current_time(self):
@@ -49,6 +50,7 @@ class Timezone:
 
     def __str__(self):
         return "Timezone object: name=" + self.name
+
 
 if __name__ == "__main__":
     timezone = Timezone.from_city("Warsaw")

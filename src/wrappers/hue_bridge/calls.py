@@ -2,8 +2,9 @@ from .api.base import HttpMethod
 from .base import HueBridgeCall
 from .responses import Light, LightState
 
+
 class AuthenticateCall(HueBridgeCall):
-    __slots__ = ("device_type", )
+    __slots__ = ("device_type",)
 
     def __init__(self, device_type: str):
         self.device_type = device_type
@@ -17,6 +18,7 @@ class AuthenticateCall(HueBridgeCall):
 
     def parse_response(self, response: dict) -> str:
         return response[0]["success"]["username"]
+
 
 class GetLightsCall(HueBridgeCall):
     __slots__ = ()
@@ -37,8 +39,9 @@ class GetLightsCall(HueBridgeCall):
             lights.append(Light(id, state, data["name"]))
         return lights
 
+
 class GetLightCall(HueBridgeCall):
-    __slots__ = ("id", )
+    __slots__ = ("id",)
 
     def __init__(self, username: str, id: int):
         super().__init__(username)
@@ -57,12 +60,13 @@ class GetLightCall(HueBridgeCall):
         )
         return Light(self.id, state, response["name"])
 
+
 class UpdateLightCall(HueBridgeCall):
     __slots__ = ("id", "state")
 
     def __init__(self, username: str, id: int, state: LightState):
         super().__init__(username)
-        self.id    = id
+        self.id = id
         self.state = state
 
     def get_method(self):

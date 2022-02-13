@@ -1,9 +1,10 @@
 from discord.ext import commands
 
-from src.discord.cogs.core import BaseCog
-from .helpers import *
 from src.discord import SendableException
+from src.discord.cogs.core import BaseCog
 from src.discord.helpers import BoolWaiter
+from .helpers import *
+
 
 async def delete_anything(obj):
     try:
@@ -11,13 +12,14 @@ async def delete_anything(obj):
     except Exception as e:
         print(e)
 
-class GuildMigrationCog(BaseCog, name = "Migration"):
+
+class GuildMigrationCog(BaseCog, name="Migration"):
     @commands.command()
     @commands.guild_only()
     @commands.is_owner()
     async def migrate(self, ctx: commands.Context, from_guild_id: int):
         from_guild = self.bot.get_guild(from_guild_id)
-        to_guild   = ctx.guild
+        to_guild = ctx.guild
 
         if from_guild is None:
             raise SendableException("Not in that one.")
@@ -25,7 +27,8 @@ class GuildMigrationCog(BaseCog, name = "Migration"):
         if from_guild == to_guild:
             raise SendableException("?")
 
-        waiter = BoolWaiter(ctx, prompt = "Are you should you want to do this? WARNING: THIS WILL COPY A SERVER OVER COMPLETELY")
+        waiter = BoolWaiter(ctx,
+                            prompt="Are you should you want to do this? WARNING: THIS WILL COPY A SERVER OVER COMPLETELY")
         if not await waiter.wait():
             raise SendableException("Cancelled.")
 
@@ -35,9 +38,9 @@ class GuildMigrationCog(BaseCog, name = "Migration"):
     @commands.command()
     @commands.guild_only()
     @commands.is_owner()
-    async def migrateemojis(self, ctx: commands.Context, from_guild_id: int):
+    async def migrate_emojis(self, ctx: commands.Context, from_guild_id: int):
         from_guild = self.bot.get_guild(from_guild_id)
-        to_guild   = ctx.guild
+        to_guild = ctx.guild
 
         if from_guild is None:
             raise SendableException("Not in that one.")
@@ -45,7 +48,8 @@ class GuildMigrationCog(BaseCog, name = "Migration"):
         if from_guild == to_guild:
             raise SendableException("?")
 
-        waiter = BoolWaiter(ctx, prompt = "Are you should you want to do this? WARNING: THIS WILL COPY EMOJIS OVER COMPLETELY")
+        waiter = BoolWaiter(ctx,
+                            prompt="Are you should you want to do this? WARNING: THIS WILL COPY EMOJIS OVER COMPLETELY")
         if not await waiter.wait():
             raise SendableException("Cancelled.")
 
@@ -62,18 +66,18 @@ class GuildMigrationCog(BaseCog, name = "Migration"):
                     break
 
                 raw = requests.get(emoji.url, stream=True).raw.read()
-                await to_guild.create_custom_emoji(name = emoji.name, image = raw)
+                await to_guild.create_custom_emoji(name=emoji.name, image=raw)
 
                 count += 1
 
         await ctx.success("OK")
 
-
     @commands.command()
     @commands.guild_only()
     @commands.is_owner()
     async def wipedown(self, ctx: commands.Context):
-        waiter = BoolWaiter(ctx, prompt = "Are you should you want to do this? WARNING: THIS WILL REMOVE WIPE YOUR SERVER ALMOST COMPLETELY")
+        waiter = BoolWaiter(ctx,
+                            prompt="Are you should you want to do this? WARNING: THIS WILL REMOVE WIPE YOUR SERVER ALMOST COMPLETELY")
         if not await waiter.wait():
             raise SendableException("Cancelled.")
 
@@ -90,6 +94,7 @@ class GuildMigrationCog(BaseCog, name = "Migration"):
             #     await self.delete_anything(emoji)
 
             await ctx.success("Done")
+
 
 def setup(bot):
     bot.add_cog(GuildMigrationCog(bot))

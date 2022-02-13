@@ -1,15 +1,10 @@
-from enum import Enum
 import random
 
-import discord
+from src.models import Pigeon
 
-from src.models import Item, Pigeon, PigeonRelationship
-from src.utils.country import Country
-import src.config as config
 
 def percentage_chance(chance):
-    return random.randint(0,100) < chance
-
+    return random.randint(0, 100) < chance
 
 
 class ActivityRetrieval:
@@ -26,11 +21,13 @@ class ActivityRetrieval:
     def get_winnings():
         pass
 
+
 class PigeonExplorationRetrieval:
     __slots__ = ("")
 
     def __init__(self, pigeon):
         super().__init__(pigeon)
+
 
 """
 

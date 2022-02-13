@@ -1,35 +1,36 @@
-import random
 import asyncio
+import random
 
 import discord
 
-from src.discord.cogs.custom.mouse.cog import KnownChannel
-from src.discord.helpers.known_guilds import KnownGuild
-from src.models import GameRole, GameRoleSettings
 import src.config as config
+from src.models import GameRole, GameRoleSettings
+
 
 class RoleHelper:
     @classmethod
     async def create(cls, guild: discord.Guild, *args, position: int = None, **kwargs) -> discord.Role:
-        """Creates a role and returns it; is basically the same as discord.Guild.create_role but also supports position."""
+        """Creates a role and returns it; is basically the same as discord.Guild.create_role but also supports
+        position. """
         role = await guild.create_role(*args, **kwargs)
         if position is not None:
             try:
                 # for some reason editing a role once doesn't always move it properly.
-                await role.edit(position = position)
-                await role.edit(position = position)
-                await role.edit(position = position)
+                await role.edit(position=position)
+                await role.edit(position=position)
+                await role.edit(position=position)
             except:
                 pass
         return role
+
 
 class GameRoleProcessor:
     __slots__ = ("guild", "mapping", "settings", "data")
 
     def __init__(self, settings: GameRoleSettings):
         self.settings = settings
-        self.data     = {}
-        self.guild    = config.bot.get_guild(settings.guild_id)
+        self.data = {}
+        self.guild = config.bot.get_guild(settings.guild_id)
         self.__load_mapping()
 
     def __get_role_id(self, game_name: str) -> int:
@@ -44,7 +45,7 @@ class GameRoleProcessor:
 
         return self.guild.get_role(role_id)
 
-    def __get_random_role(self) -> discord.Role:
+    def __get_random_role(self) -> discord.Role | None:
         if len(self.mapping) == 0:
             return None
 
@@ -97,7 +98,8 @@ class GameRoleProcessor:
         user_ids = self.data.setdefault(game.name, set())
         user_ids.add(member.id)
         if len(user_ids) >= self.settings.threshhold:
-            role = await RoleHelper.create(member.guild, name = game.name, position = self.__get_position(), mentionable = True)
+            role = await RoleHelper.create(member.guild, name=game.name, position=self.__get_position(),
+                                           mentionable=True)
             self.mapping[game.name] = role.id
             GameRoleRepository.save(self.guild.id, role.id, game.name)
             del self.data[game.name]
@@ -106,7 +108,7 @@ class GameRoleProcessor:
 
     async def __process_existing(self, member: discord.Member, game: discord.Game):
         role_id = self.mapping[game.name]
-        role    = member.guild.get_role(role_id)
+        role = member.guild.get_role(role_id)
         if role is None:
             self.__cleanup_role(role_id, game.name)
             return await self.__process_new(member, game)
@@ -127,7 +129,7 @@ class GameRoleRepository:
     @classmethod
     def save(cls, guild_id: int, role_id: int, game_name: str):
         try:
-            GameRole.create(guild_id = guild_id, role_id = role_id, game_name = game_name)
+            GameRole.create(guild_id=guild_id, role_id=role_id, game_name=game_name)
         except Exception as e:
             print("Exception GameRoleRepository::save", e)
             pass
@@ -135,7 +137,8 @@ class GameRoleRepository:
     @classmethod
     def remove(cls, guild_id: int, role_id: int, game_name: str):
         try:
-            GameRole.delete().where(GameRole.guild_id == guild_id).where(GameRole.role_id == role_id).where(GameRole.game_name == game_name).execute()
+            GameRole.delete().where(GameRole.guild_id == guild_id).where(GameRole.role_id == role_id).where(
+                GameRole.game_name == game_name).execute()
         except Exception as e:
             print("Exception GameRoleRepository::remove", e)
             pass
@@ -146,7 +149,7 @@ class GameRoleRepository:
 
     @classmethod
     def get_settings(cls, guild_id: int) -> GameRoleSettings:
-        return GameRoleSettings.get_or_none(guild_id = guild_id)
+        return GameRoleSettings.get_or_none(guild_id=guild_id)
 
     @classmethod
     def get_all_settings(cls) -> list:

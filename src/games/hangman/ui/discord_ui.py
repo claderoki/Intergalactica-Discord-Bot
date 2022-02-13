@@ -1,14 +1,10 @@
 import asyncio
-from enum import Enum
 import math
 
 import discord
-from discord.channel import DMChannel
-import requests
 
-import src.config as config
 from .ui import UI
-from src.utils.general import html_to_discord
+
 
 async def delete_message(message):
     try:
@@ -16,6 +12,7 @@ async def delete_message(message):
         return True
     except:
         return False
+
 
 class DiscordUI(UI):
     def __init__(self, ctx):
@@ -55,14 +52,16 @@ class DiscordUI(UI):
                 return False
 
             return False
+
         return __check2
 
-    def send_error(self, text, delete_after = 10):
-        asyncio.gather(self.ctx.error(text, delete_after = delete_after))
+    def send_error(self, text, delete_after=10):
+        asyncio.gather(self.ctx.error(text, delete_after=delete_after))
 
     async def get_guess(self, word, player, letters_used):
         try:
-            guess = await self.ctx.bot.wait_for("message", check = self.__check(word, letters_used, player), timeout = self.timeout)
+            guess = await self.ctx.bot.wait_for("message", check=self.__check(word, letters_used, player),
+                                                timeout=self.timeout)
         except asyncio.TimeoutError:
             guess = None
 
@@ -71,8 +70,8 @@ class DiscordUI(UI):
 
         return guess.content.lower() if guess is not None else None
 
-    async def refresh_board(self, game, current_player = None):
-        embed = discord.Embed(color = self.ctx.guild_color, title=" ".join(game.board))
+    async def refresh_board(self, game, current_player=None):
+        embed = discord.Embed(color=self.ctx.guild_color, title=" ".join(game.board))
 
         for player in game.players:
             if player.dead:
@@ -81,8 +80,8 @@ class DiscordUI(UI):
             length = len(str(player))
 
             embed.add_field(
-                name = str(player),
-                value = f">>> ```\n{self.game_states[player.incorrect_guesses]}```")
+                name=str(player),
+                value=f">>> ```\n{self.game_states[player.incorrect_guesses]}```")
 
         guess_info = []
         guess_info.append("letters used: " + ", ".join([f"**{x}**" for x in sorted(game.letters_used)]))
@@ -94,20 +93,21 @@ class DiscordUI(UI):
         if current_player is not None:
             content = current_player.identity.member.mention
 
-        embed.add_field(name = "\uFEFF", value = "\n".join(guess_info), inline = False)
+        embed.add_field(name="\uFEFF", value="\n".join(guess_info), inline=False)
         if self.message is None or self.invalid_messages > 3:
             if self.message is not None:
                 asyncio.gather(delete_message(self.message))
-            self.message = await self.ctx.send(content = content, embed = embed)
+            self.message = await self.ctx.send(content=content, embed=embed)
             self.invalid_messages = 0
         else:
-            asyncio.gather(self.message.edit(content = content, embed = embed))
+            asyncio.gather(self.message.edit(content=content, embed=embed))
 
         if current_player is not None and len(game.players) > 1:
-            self.mention_message = await self.ctx.send(f"{current_player.identity.member.mention}, your turn! {self.timeout}s...", delete_after = self.timeout)
+            self.mention_message = await self.ctx.send(
+                f"{current_player.identity.member.mention}, your turn! {self.timeout}s...", delete_after=self.timeout)
 
     async def stop(self, reason, game):
-        embed = discord.Embed(title = f"Game has ended: {reason.value}", color = self.ctx.guild_color)
+        embed = discord.Embed(title=f"Game has ended: {reason.value}", color=self.ctx.guild_color)
         lines = []
 
         bet_pool = sum([x.bet for x in game.players])
@@ -116,7 +116,7 @@ class DiscordUI(UI):
         bet_pool = int(bet_pool)
 
         total_letters = len(game.word)
-        players = sorted(game.players, key = lambda p: p.correct_guesses - (100 if p.dead else 0), reverse = True)
+        players = sorted(game.players, key=lambda p: p.correct_guesses - (100 if p.dead else 0), reverse=True)
         i = 0
         for player in players:
             name = player.identity.member.mention
@@ -131,7 +131,7 @@ class DiscordUI(UI):
             won = math.ceil(percentage_guessed / 100 * bet_pool)
 
             if len(players) > 1 and i == 0:
-                next_won = math.ceil(players[i+1].get_percentage_guessed(game.word) / 100 * bet_pool)
+                next_won = math.ceil(players[i + 1].get_percentage_guessed(game.word) / 100 * bet_pool)
                 if won > next_won:
                     name += " 🌟"
 
@@ -142,8 +142,8 @@ class DiscordUI(UI):
             i += 1
 
         definition = game.word_definition
-        embed.add_field(name = game.unedited_word, value = (definition or "no definition"), inline = False)
+        embed.add_field(name=game.unedited_word, value=(definition or "no definition"), inline=False)
 
         embed.description = "\n\n".join(lines)
 
-        await self.ctx.send(embed = embed)
+        await self.ctx.send(embed=embed)

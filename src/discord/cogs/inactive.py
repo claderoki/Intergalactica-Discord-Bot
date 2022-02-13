@@ -1,14 +1,14 @@
-import re
 import datetime
 
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 
-from src.discord.helpers.known_guilds import KnownGuild
-from src.models import Earthling, database
 import src.config as config
-from src.discord.helpers.waiters import BoolWaiter
 from src.discord.cogs.core import BaseCog
+from src.discord.helpers.known_guilds import KnownGuild
+from src.discord.helpers.waiters import BoolWaiter
+from src.models import Earthling, database
+
 
 class Inactive(BaseCog):
     def __init__(self, bot):
@@ -24,7 +24,7 @@ class Inactive(BaseCog):
 
         with database.connection_context():
             now = datetime.datetime.utcnow()
-            query = Earthling.update(last_active = now)
+            query = Earthling.update(last_active=now)
             query = query.where(Earthling.user_id == member.id)
             query = query.where(Earthling.guild_id == member.guild.id)
             rows_affected = query.execute()
@@ -32,9 +32,9 @@ class Inactive(BaseCog):
             if rows_affected == 0:
                 try:
                     Earthling.insert(
-                        guild_id = member.guild.id,
-                        user_id = member.id,
-                        human = config.bot.get_human(user = member)
+                        guild_id=member.guild.id,
+                        user_id=member.id,
+                        human=config.bot.get_human(user=member)
                     )
                 except Exception as e:
                     print(e)
@@ -65,14 +65,15 @@ class Inactive(BaseCog):
             if earthling.inactive:
                 if earthling.guild_id == KnownGuild.intergalactica:
                     yield earthling
-                if earthling.guild_id == KnownGuild.mouse and 852955124967276556 not in [x.id for x in earthling.member.roles]:
+                if earthling.guild_id == KnownGuild.mouse and 852955124967276556 not in [x.id for x in
+                                                                                         earthling.member.roles]:
                     yield earthling
 
-    @commands.has_guild_permissions(administrator = True)
+    @commands.has_guild_permissions(administrator=True)
     @commands.command()
     @commands.guild_only()
     async def inactives(self, ctx):
-        embed = discord.Embed(title = "Inactives", color = ctx.guild_color)
+        embed = discord.Embed(title="Inactives", color=ctx.guild_color)
         lines = []
 
         inactive_members = []
@@ -85,16 +86,17 @@ class Inactive(BaseCog):
             return await ctx.error("NO INACTIVES TO BE DESTROYED")
 
         embed.description = "\n".join(lines)
-        await ctx.send(embed = embed)
+        await ctx.send(embed=embed)
 
-        waiter = BoolWaiter(ctx, prompt = "Kick?")
+        waiter = BoolWaiter(ctx, prompt="Kick?")
         to_kick = await waiter.wait()
         if to_kick:
             for member in inactive_members:
-                await member.kick(reason = "Inactivity")
+                await member.kick(reason="Inactivity")
             await ctx.success("Done destroying inactives.")
         else:
             await ctx.success("Canceled the destruction of the inactives.")
+
 
 def setup(bot):
     bot.add_cog(Inactive(bot))

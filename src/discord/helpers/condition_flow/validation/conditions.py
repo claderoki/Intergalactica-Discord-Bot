@@ -2,8 +2,9 @@ import re
 
 import discord
 
-from ..models import MessageCondition, UserCondition, MemberCondition, Condition
 from .result import ValidationContext
+from ..models import MessageCondition, UserCondition, MemberCondition, Condition
+
 
 class ConditionValidator:
     __slots__ = ()
@@ -28,6 +29,7 @@ class ConditionValidator:
                 return False
             return cls._validate_user(context.user, condition)
 
+
 class ContainsValidator(ConditionValidator):
     __slots__ = ()
 
@@ -47,6 +49,7 @@ class ContainsValidator(ConditionValidator):
                     return True
             return False
 
+
 class IsValidator(ConditionValidator):
     __slots__ = ()
 
@@ -63,6 +66,7 @@ class IsValidator(ConditionValidator):
     def _validate_member(cls, member: discord.Member, condition: MemberCondition) -> bool:
         if condition.source == MemberCondition.Source.nitro_booster:
             return member.premium_since is not None
+
 
 class RegexValidator(ConditionValidator):
     __slots__ = ()
@@ -81,4 +85,3 @@ class RegexValidator(ConditionValidator):
             regex = re.compile(condition.value)
             matches = regex.findall(message.content)
             return len(matches) > 0
-

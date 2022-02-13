@@ -1,26 +1,29 @@
-import datetime
 import asyncio
+import datetime
 import random
+
 import discord
-
 import peewee
-from discord.ext import commands, tasks
 import praw
+from discord.ext import commands, tasks
 
-from src.discord.cogs.custom.shared.helpers.praw_cache import PrawInstanceCache
-from src.discord.cogs.bumpreminders.helpers import DisboardBumpReminder
-from src.discord.helpers.known_guilds import KnownGuild
-from src.discord.cogs.custom.shared.cog import CustomCog
 import src.config as config
-from src.utils.string_formatters.uwu import Uwu
+from src.discord.cogs.bumpreminders.helpers import DisboardBumpReminder
+from src.discord.cogs.custom.shared.cog import CustomCog
+from src.discord.cogs.custom.shared.helpers.praw_cache import PrawInstanceCache
+from src.discord.helpers.known_guilds import KnownGuild
 from src.models import DailyActivity
+from src.utils.string_formatters.uwu import Uwu
+
 
 class KnownChannel:
     general = 729909438378541116
-    staff   = 729924484156620860
+    staff = 729924484156620860
+
 
 class KnownRole:
     underage = 938460208861151262
+
 
 class Mouse(CustomCog):
     guild_id = KnownGuild.mouse
@@ -36,8 +39,9 @@ class Mouse(CustomCog):
         if before.guild.id == self.guild_id:
             for role in after.roles:
                 if role.id == KnownRole.underage:
-                    await after.ban(reason = "Underage role")
-                    await after.guild.get_channel(KnownChannel.staff).send(f"Banned {before} for having the underage role.")
+                    await after.ban(reason="Underage role")
+                    await after.guild.get_channel(KnownChannel.staff).send(
+                        f"Banned {before} for having the underage role.")
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -60,7 +64,7 @@ class Mouse(CustomCog):
         role = DailyActivityHelper.role_should_have(message.guild, weekly_message_count)
         await DailyActivityHelper.synchronise_roles(message.author, role, False)
 
-    @tasks.loop(hours = 24)
+    @tasks.loop(hours=24)
     async def synchronise_members(self):
         guild = self.bot.get_guild(self.guild_id)
         lurker_role = guild.get_role(DailyActivityHelper.lurkers_role_id)
@@ -83,22 +87,23 @@ class Mouse(CustomCog):
         DisboardBumpReminder.cache(self.guild_id, 884021230498373662)
 
         praw_instance = praw.Reddit(
-            client_id       = config.environ["mouse_reddit_client_id"],
-            client_secret   = config.environ["mouse_reddit_client_secret"],
-            user_agent      = config.environ["mouse_reddit_user_agent"],
-            username        = config.environ["mouse_reddit_username"],
-            password        = config.environ["mouse_reddit_password"],
-            check_for_async = False
+            client_id=config.environ["mouse_reddit_client_id"],
+            client_secret=config.environ["mouse_reddit_client_secret"],
+            user_agent=config.environ["mouse_reddit_user_agent"],
+            username=config.environ["mouse_reddit_username"],
+            password=config.environ["mouse_reddit_password"],
+            check_for_async=False
         )
         PrawInstanceCache.cache(self.guild_id, praw_instance)
 
-        self.start_task(self.synchronise_members, check = self.bot.production)
-        self.start_task(self.advertisement, check = self.bot.production)
+        self.start_task(self.synchronise_members, check=self.bot.production)
+        self.start_task(self.advertisement, check=self.bot.production)
 
     @commands.command()
     async def uwu(self, ctx, *, text):
-        asyncio.gather(ctx.message.delete(), return_exceptions = False)
+        asyncio.gather(ctx.message.delete(), return_exceptions=False)
         await ctx.send(Uwu.format(text))
+
 
 class AnimalCrossingBotHelper:
     bot_id = 701038771776520222
@@ -107,39 +112,42 @@ class AnimalCrossingBotHelper:
 
     @classmethod
     def is_not_allowed(cls, message):
-        return message.channel.id == 763146096766877697 and message.content and message.content.lower().startswith("ac!profile set")
+        return message.channel.id == 763146096766877697 and message.content and message.content.lower().startswith(
+            "ac!profile set")
 
     @classmethod
     async def warn(cls, message):
         try:
-            bot_response = await config.bot.wait_for("message", check = lambda x : x.author.id == cls.bot_id and x.channel.id == message.channel.id, timeout = 60)
+            bot_response = await config.bot.wait_for("message", check=lambda
+                x: x.author.id == cls.bot_id and x.channel.id == message.channel.id, timeout=60)
         except asyncio.TimeoutError:
             bot_response = None
         if bot_response is not None:
             await bot_response.delete()
-        await message.channel.send(f"{message.author.mention}, please use this command in <#768529385161752669>", delete_after = 30)
+        await message.channel.send(f"{message.author.mention}, please use this command in <#768529385161752669>",
+                                   delete_after=30)
         await message.delete()
 
-class DailyActivityRepository:
 
+class DailyActivityRepository:
     __slots__ = ()
 
     @classmethod
     def increment_message(cls, user_id: int, guild_id: int):
         (DailyActivity
-            .insert(user_id = user_id, guild_id = guild_id, date = datetime.date.today(), message_count = 1)
-            .on_conflict(update = {DailyActivity.message_count: DailyActivity.message_count + 1})
-            .execute())
+         .insert(user_id=user_id, guild_id=guild_id, date=datetime.date.today(), message_count=1)
+         .on_conflict(update={DailyActivity.message_count: DailyActivity.message_count + 1})
+         .execute())
 
     @classmethod
-    def get_message_count(cls, user_id: int, guild_id: int, before: datetime.datetime, after = datetime.datetime) -> int:
+    def get_message_count(cls, user_id: int, guild_id: int, before: datetime.datetime, after=datetime.datetime) -> int:
         activity = (DailyActivity
-            .select(peewee.fn.SUM(DailyActivity.message_count).alias("total_message_count"))
-            .where(DailyActivity.guild_id == guild_id)
-            .where(DailyActivity.user_id == user_id)
-            .where(DailyActivity.date <= before)
-            .where(DailyActivity.date >= after)
-            .first())
+                    .select(peewee.fn.SUM(DailyActivity.message_count).alias("total_message_count"))
+                    .where(DailyActivity.guild_id == guild_id)
+                    .where(DailyActivity.user_id == user_id)
+                    .where(DailyActivity.date <= before)
+                    .where(DailyActivity.date >= after)
+                    .first())
 
         if activity is None or activity.total_message_count is None:
             return 0
@@ -149,15 +157,16 @@ class DailyActivityRepository:
     @classmethod
     def find_lurkers(cls, user_ids: list, guild_id: int, day_threshhold: int) -> list:
         before = datetime.datetime.today()
-        after  = datetime.datetime.today() - datetime.timedelta(days = day_threshhold)
+        after = datetime.datetime.today() - datetime.timedelta(days=day_threshhold)
 
         activities = (DailyActivity
-            .select(DailyActivity.user_id, peewee.fn.SUM(DailyActivity.message_count).alias("total_message_count"))
-            .where(DailyActivity.guild_id == guild_id)
-            .where(DailyActivity.user_id.in_(user_ids))
-            .where(DailyActivity.date <= before)
-            .where(DailyActivity.date >= after)
-            .group_by(DailyActivity.user_id))
+                      .select(DailyActivity.user_id,
+                              peewee.fn.SUM(DailyActivity.message_count).alias("total_message_count"))
+                      .where(DailyActivity.guild_id == guild_id)
+                      .where(DailyActivity.user_id.in_(user_ids))
+                      .where(DailyActivity.date <= before)
+                      .where(DailyActivity.date >= after)
+                      .group_by(DailyActivity.user_id))
 
         ids = [x for x in user_ids]
         for activity in activities:
@@ -165,11 +174,12 @@ class DailyActivityRepository:
                 ids.remove(activity.user_id)
         return ids
 
+
 class DailyActivityHelper:
     __slots__ = ()
 
-    lurkers_role_id   = 730025383189151744
-    active_role_id    = 761260319820873809
+    lurkers_role_id = 730025383189151744
+    active_role_id = 761260319820873809
     talkative_role_id = 761358543998681150
 
     role_hierarchy = (lurkers_role_id, active_role_id, talkative_role_id)
@@ -177,7 +187,7 @@ class DailyActivityHelper:
     @classmethod
     def get_weekly_message_count(cls, user_id: int, guild_id: int):
         before = datetime.date.today()
-        after  = datetime.date.today() - datetime.timedelta(days = 7)
+        after = datetime.date.today() - datetime.timedelta(days=7)
         return DailyActivityRepository.get_message_count(user_id, guild_id, before, after)
 
     @classmethod
@@ -215,6 +225,7 @@ class DailyActivityHelper:
             await member.remove_roles(*roles_to_remove)
 
         await member.add_roles(role_to_assign)
+
 
 def setup(bot):
     bot.add_cog(Mouse(bot))

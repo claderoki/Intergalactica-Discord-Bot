@@ -2,7 +2,9 @@ import datetime
 import time
 
 import peewee
+
 from wrappers.hue_bridge import GetLightsCall, GetLightCall, HueBridgeCall, HueBridgeCache, AuthenticateCall, Light
+
 
 class SqliteBaseModel(peewee.Model):
     class Meta:
@@ -10,11 +12,13 @@ class SqliteBaseModel(peewee.Model):
         only_save_dirty = True
         database = peewee.SqliteDatabase("data/data.sqlite")
 
+
 class LightStateLog(SqliteBaseModel):
-    created_at = peewee.DateTimeField (null = False, default = lambda: datetime.datetime.utcnow())
-    on         = peewee.BooleanField  (null = False)
-    light_id   = peewee.IntegerField  (null = False)
-    brightness = peewee.IntegerField  (null = False)
+    created_at = peewee.DateTimeField(null=False, default=lambda: datetime.datetime.utcnow())
+    on = peewee.BooleanField(null=False)
+    light_id = peewee.IntegerField(null=False)
+    brightness = peewee.IntegerField(null=False)
+
 
 database = SqliteBaseModel._meta.database
 
@@ -22,16 +26,18 @@ with database.connection_context():
     # database.drop_tables([LightStateLog])
     database.create_tables([LightStateLog])
 
+
 class LightStateLogger:
     __slots__ = ()
 
     @classmethod
     def log(self, light: Light):
         LightStateLog.create(
-            on = light.state.on,
-            light_id = light.id,
-            brightness = light.state.brightness
+            on=light.state.on,
+            light_id=light.id,
+            brightness=light.state.brightness
         )
+
 
 HueBridgeCall.set_ip("192.168.178.172")
 
@@ -41,14 +47,17 @@ if username is None:
     username = call.call()
     HueBridgeCache.set_username(username)
 
+
 def get_light_id(name: str) -> int:
     call = GetLightsCall(username)
     for light in call.call():
         if light.name == name:
             return light.id
 
-id   = get_light_id("Clark")
+
+id = get_light_id("Clark")
 call = GetLightCall(username, id)
+
 
 def log_loop():
     last_state = HueBridgeCache.get_last_known_state()
@@ -68,6 +77,7 @@ def log_loop():
             HueBridgeCache.set_last_known_state(light.state)
             last_state = HueBridgeCache.get_last_known_state()
         time.sleep(60)
+
 
 if __name__ == "__main__":
     print("Started logging...")

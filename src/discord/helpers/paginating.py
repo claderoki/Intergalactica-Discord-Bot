@@ -5,22 +5,24 @@ import discord
 
 from src.utils.general import split_list
 
+
 class Paginator:
     class Action(Enum):
         previous = 1
-        next     = 2
-        stop     = 3
-        select   = 4
+        next = 2
+        stop = 3
+        select = 4
 
-    _actions = {"⬅️": Action.previous, "➡️" : Action.next, "⏹️": Action.stop, "✅": Action.select}
+    _actions = {"⬅️": Action.previous, "➡️": Action.next, "⏹️": Action.stop, "✅": Action.select}
 
     __slots__ = ("_pages", "_current_page", "_message", "_ctx", "_select_mode", "_selected_page")
-    def __init__(self, ctx, pages = None, select_mode = False):
-        self._pages         = pages or []
-        self._select_mode   = select_mode
-        self._current_page  = 0
-        self._message       = None
-        self._ctx           = ctx
+
+    def __init__(self, ctx, pages=None, select_mode=False):
+        self._pages = pages or []
+        self._select_mode = select_mode
+        self._current_page = 0
+        self._message = None
+        self._ctx = ctx
         self._selected_page = None
 
     def add_page(self, page):
@@ -33,20 +35,20 @@ class Paginator:
     async def reload(self):
         page = self.current_page
         if self._message is None:
-            self._message = await self._ctx.send(embed = page.embed)
+            self._message = await self._ctx.send(embed=page.embed)
         else:
-            await self._message.edit(embed = page.embed)
+            await self._message.edit(embed=page.embed)
 
     def previous(self):
         if self._current_page == 0:
-            self._current_page = len(self._pages)-1
+            self._current_page = len(self._pages) - 1
         else:
             self._current_page -= 1
 
         asyncio.gather(self.reload())
 
     def next(self):
-        if self._current_page == len(self._pages)-1:
+        if self._current_page == len(self._pages) - 1:
             self._current_page = 0
         else:
             self._current_page += 1
@@ -96,14 +98,14 @@ class Paginator:
             if action != self.Action.select or self._select_mode:
                 asyncio.gather(self._message.add_reaction(emoji))
 
-    async def wait(self, timeout = 360):
+    async def wait(self, timeout=360):
         self.__show_pages()
         await self.reload()
         if len(self._pages) == 1:
             return
         self.add_reactions()
         try:
-            await self._ctx.bot.wait_for("reaction_add", timeout = timeout, check = self.__check)
+            await self._ctx.bot.wait_for("reaction_add", timeout=timeout, check=self.__check)
         except asyncio.TimeoutError:
             pass
 
@@ -113,10 +115,10 @@ class Paginator:
 
     def __show_pages(self):
         for i, page in enumerate(self._pages):
-            page.set_page_number(i+1, len(self._pages))
+            page.set_page_number(i + 1, len(self._pages))
 
     @classmethod
-    def from_embed(cls, ctx, embed : discord.Embed, max_fields = 10):
+    def from_embed(cls, ctx, embed: discord.Embed, max_fields=10):
         paginator = cls(ctx)
         if len(embed.fields) <= max_fields:
             paginator.add_page(Page(embed))
@@ -126,19 +128,21 @@ class Paginator:
 
         for fields in field_groups:
             base_embed = discord.Embed(
-                color = embed.color,
-                description = embed.description
+                color=embed.color,
+                description=embed.description
             )
 
             for field in fields:
-                base_embed.add_field(name = field.name, value = field.value, inline = field.inline)
+                base_embed.add_field(name=field.name, value=field.value, inline=field.inline)
             paginator.add_page(Page(base_embed))
 
         return paginator
 
+
 class Page:
     __slots__ = ("embed", "identifier")
-    def __init__(self, embed, identifier = None):
+
+    def __init__(self, embed, identifier=None):
         self.embed = embed
         self.identifier = identifier
 
@@ -148,4 +152,4 @@ class Page:
         if self.embed.footer or self.embed.footer.text:
             text = self.embed.footer.text
 
-        self.embed.set_footer(text = text + f"\nPage {index}/{total}")
+        self.embed.set_footer(text=text + f"\nPage {index}/{total}")

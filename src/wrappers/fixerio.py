@@ -1,20 +1,23 @@
 import requests
 
+
 class FixerioException(Exception):
     def __init__(self, code, message):
-        self.code    = code
+        self.code = code
         self.message = message
+
 
 class BaseCurrencyAccessRestricted(FixerioException):
     code = 105
     type = "base_currency_access_restricted"
 
+
 class Currency:
     __slots__ = ("code", "name", "value")
 
-    def __init__(self, code, name, value = None):
-        self.code  = code
-        self.name  = name
+    def __init__(self, code, name, value=None):
+        self.code = code
+        self.name = name
         self.value = value
 
     def __str__(self):
@@ -22,6 +25,7 @@ class Currency:
 
     def __repr__(self):
         return str(self)
+
 
 class Api:
     __base_url = "http://data.fixer.io/api"
@@ -35,14 +39,14 @@ class Api:
         if "access_key" not in kwargs:
             kwargs["access_key"] = self.key
 
-        for key,value in dict(kwargs).items():
+        for key, value in dict(kwargs).items():
             if value is None:
                 del kwargs[key]
             if key == "_from":
                 kwargs["from"] = value
                 del kwargs[key]
 
-        request = requests.get(url, params = kwargs)
+        request = requests.get(url, params=kwargs)
         json = request.json()
         self.__raise_if_unsuccessful(json)
         return json
@@ -53,11 +57,11 @@ class Api:
 
     def symbols(self):
         json = self.__request("symbols")
-        symbols = [Currency(k, v) for k,v in json["symbols"].items()]
+        symbols = [Currency(k, v) for k, v in json["symbols"].items()]
         self._cache["supported_symbols"] = symbols
         return symbols
 
-    def latest(self, base = None, symbols = None, date = None):
+    def latest(self, base=None, symbols=None, date=None):
         if not isinstance(symbols, str) and symbols is not None:
             symbols = ",".join(symbols)
 
@@ -76,7 +80,7 @@ class Api:
                 kwargs["symbols"] = f"{symbols},{base}"
             json = self.__request("latest", **kwargs)
             base_value = json["rates"][base or base_default]
-            new_json = {k:v for k, v in json.items() if k in ("success", "timestamp", "date")}
+            new_json = {k: v for k, v in json.items() if k in ("success", "timestamp", "date")}
             new_json["base"] = base or base_default
 
             new_json["rates"] = {}
@@ -90,10 +94,10 @@ class Api:
             json = self.__request("latest", **kwargs)
             return json
 
-    def convert(self, base, to, amount = 1, date = None):
-        json = self.latest(base = base, symbols = to, date = date)
+    def convert(self, base, to, amount=1, date=None):
+        json = self.latest(base=base, symbols=to, date=date)
 
         currencies = []
         for key, value in json["rates"].items():
-            currencies.append(Currency(key, None, value*amount))
+            currencies.append(Currency(key, None, value * amount))
         return currencies

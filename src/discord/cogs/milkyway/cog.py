@@ -1,15 +1,13 @@
-from enum import Enum
-
-import discord
 from discord.ext import commands
 
-import src.config as config
-from src.discord.errors.base import SendableException
-from src.discord.cogs.core import BaseCog
-from .helpers import MilkywayHelper, MilkywayRepository
-from src.models import Milkyway, MilkywaySettings
+from discord.ext import commands
 
-class MilkywayCog(BaseCog, name = "Milkyway"):
+from src.discord.cogs.core import BaseCog
+from src.models import MilkywaySettings
+from .helpers import MilkywayHelper
+
+
+class MilkywayCog(BaseCog, name="Milkyway"):
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -19,15 +17,15 @@ class MilkywayCog(BaseCog, name = "Milkyway"):
     async def milkyway(self, ctx):
         pass
 
-    @milkyway.command(name = "setup")
+    @milkyway.command(name="setup")
     @commands.guild_only()
-    @commands.has_permissions(administrator = True)
+    @commands.has_permissions(administrator=True)
     async def milkyway_setup(self, ctx):
-        settings = MilkywaySettings.get_or_none(guild_id = ctx.guild.id)
-        new      = settings is None
+        settings = MilkywaySettings.get_or_none(guild_id=ctx.guild.id)
+        new = settings is None
 
         if new:
-            settings = MilkywaySettings(guild_id = ctx.guild.id)
+            settings = MilkywaySettings(guild_id=ctx.guild.id)
 
         await settings.editor_for(ctx, "cost_per_day")
         await settings.editor_for(ctx, "category_id")
@@ -36,16 +34,17 @@ class MilkywayCog(BaseCog, name = "Milkyway"):
 
         settings.save()
 
-    @milkyway.command(name = "create")
+    @milkyway.command(name="create")
     @commands.guild_only()
     async def milkyway_create(self, ctx):
         await MilkywayHelper.create_milkyway(ctx, False)
 
-    @milkyway.command(name = "godmode")
+    @milkyway.command(name="godmode")
     @commands.guild_only()
-    @commands.has_permissions(administrator = True)
+    @commands.has_permissions(administrator=True)
     async def milkyway_godmode(self, ctx):
         await MilkywayHelper.create_milkyway(ctx, True)
+
 
 def setup(bot):
     bot.add_cog(MilkywayCog(bot))

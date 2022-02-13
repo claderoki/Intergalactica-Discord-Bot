@@ -1,18 +1,20 @@
-import re
 import random
+import re
+
 
 class StringFormatter:
     __slots__ = ()
 
+
 class Uwu(StringFormatter):
     expressions = (
-        (r"(?:r|l)",    r"w"),
-        (r"(?:R|L)",    r"W"),
+        (r"(?:r|l)", r"w"),
+        (r"(?:R|L)", r"W"),
         (r"n([aeiou])", r"ny\1"),
         (r"N([aeiou])", r"Ny\1"),
         (r"N([AEIOU])", r"Ny\1"),
-        (r"ove",        r"uv"),
-        (r"!+",         lambda: " " + random.choice(("(・`ω´・)", ";;w;;", "owo", "UwU", ">w<", "^w^")))
+        (r"ove", r"uv"),
+        (r"!+", lambda: " " + random.choice(("(・`ω´・)", ";;w;;", "owo", "UwU", ">w<", "^w^")))
     )
 
     @classmethod

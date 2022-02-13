@@ -1,26 +1,29 @@
+from .admin import SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word, DailyActivity, GameRole, \
+    GameRoleSettings
 from .base import BaseModel
-from .human import Human, Item, HumanItem, ItemCategory
-from .intergalactica import Earthling, Reminder, TemporaryVoiceChannel, TemporaryTextChannel, TemporaryChannel
-from .settings import Settings, NamedChannel, Translation, Locale, UserSetting
-from .ticket import Ticket, Reply
-from .poll import Change, Parameter, Poll, PollTemplate, Vote, Option
-from .scene import Scene, Scenario
-from .pigeon import Pigeon, PigeonRelationship, PigeonDatingParticipant, PigeonDatingAvatar, PigeonDatingRelationship, Buff, PigeonBuff, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date, PigeonDatingProfile
-from .admin import SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word, DailyActivity, GameRole, GameRoleSettings
-from .prank import NicknamePrank, Prankster, EmojiPrank, RolePrank
-from .reddit import Subreddit
-from .qotd import Category, Question, CategoryChannel, QuestionConfig
-from .intergalactica import MentionGroup, MentionMember
-from .intergalactica import Advertisement, AdvertisementSubreddit
-from .farming import Farm, Crop, FarmCrop
 from .conversation import Conversant, Conversation, Participant
 from .conversions import Currency, Measurement, StoredUnit
-from .secretsanta import SecretSanta, SecretSantaParticipant
-from .inactivechannels import InactiveChannelsSettings
-from .milkyway import Milkyway, MilkywaySettings
+from .farming import Farm, Crop, FarmCrop
 from .guildrewards import GuildRewardsProfile, GuildRewardsSettings
+from .human import Human, Item, HumanItem, ItemCategory
+from .inactivechannels import InactiveChannelsSettings
+from .intergalactica import Advertisement, AdvertisementSubreddit
+from .intergalactica import Earthling, Reminder, TemporaryVoiceChannel, TemporaryTextChannel, TemporaryChannel
+from .intergalactica import MentionGroup, MentionMember
+from .milkyway import Milkyway, MilkywaySettings
+from .pigeon import Pigeon, PigeonRelationship, PigeonDatingParticipant, PigeonDatingAvatar, PigeonDatingRelationship, \
+    Buff, PigeonBuff, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date, PigeonDatingProfile
+from .poll import Change, Parameter, Poll, PollTemplate, Vote, Option
+from .prank import NicknamePrank, Prankster, EmojiPrank, RolePrank
+from .qotd import Category, Question, CategoryChannel, QuestionConfig
+from .reddit import Subreddit
+from .scene import Scene, Scenario
+from .secretsanta import SecretSanta, SecretSantaParticipant
+from .settings import Settings, NamedChannel, Translation, Locale, UserSetting
+from .ticket import Ticket, Reply
 
 database = BaseModel._meta.database
+
 
 def setup():
     with database.connection_context():
@@ -52,10 +55,14 @@ def setup():
         database.create_tables([Category, Question, CategoryChannel, QuestionConfig])
 
         # database.drop_tables([Pigeon, PigeonDatingParticipant, PigeonDatingAvatar, PigeonDatingRelationship, PigeonRelationship, Buff, PigeonBuff, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date, PigeonDatingProfile])
-        database.create_tables([Pigeon, PigeonDatingParticipant, PigeonDatingAvatar, PigeonDatingRelationship, PigeonRelationship, Buff, PigeonBuff, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date, PigeonDatingProfile])
+        database.create_tables(
+            [Pigeon, PigeonDatingParticipant, PigeonDatingAvatar, PigeonDatingRelationship, PigeonRelationship, Buff,
+             PigeonBuff, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date, PigeonDatingProfile])
 
         # database.drop_tables([SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word, DailyActivity, GameRole, GameRoleSettings])
-        database.create_tables([SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word, DailyActivity, GameRole, GameRoleSettings])
+        database.create_tables(
+            [SavedEmoji, Location, Giveaway, DailyReminder, PersonalQuestion, Word, DailyActivity, GameRole,
+             GameRoleSettings])
 
         # database.drop_tables([Subreddit])
         database.create_tables([Subreddit])
@@ -80,5 +87,6 @@ def setup():
 
         # database.drop_tables([Change, Parameter, Poll, PollTemplate, Option, Vote])
         database.create_tables([Change, Parameter, Poll, PollTemplate, Option, Vote])
+
 
 setup()

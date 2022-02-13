@@ -1,2 +1,2 @@
-from . import ui
 from . import game
+from . import ui
