@@ -22,6 +22,11 @@ class GuildRewardsHelper:
     _last_payouts = {}
 
     @classmethod
+    def is_enabled_for(cls, guild_id: int) -> bool:
+        settings = GuildRewardsCache.get_settings(guild_id)
+        return settings is not None and settings.enabled
+
+    @classmethod
     def __calculate_points(cls, settings: GuildRewardsSettings) -> int:
         if settings.min_points_per_message == settings.max_points_per_message:
             return settings.min_points_per_message

@@ -139,6 +139,7 @@ class Locus(commands.Bot):
             "guildmigration.cog",
             "birthdayreminders.cog",
             "inactivechannels.cog",
+            "milkyway.cog",
             "bumpreminders.cog",
             "covid",
             "conversations",

@@ -3,6 +3,7 @@ from discord.ext import commands
 from src.discord.cogs.core import BaseCog
 from src.models import MilkywaySettings
 from .helpers import MilkywayHelper
+from src.discord.helpers.human import HumanRepository
 
 
 class MilkywayCog(BaseCog, name="Milkyway"):
@@ -12,10 +13,10 @@ class MilkywayCog(BaseCog, name="Milkyway"):
         pass
 
     @commands.group()
-    async def milkyway(self, ctx):
+    async def milkyway2(self, ctx):
         pass
 
-    @milkyway.command(name="setup")
+    @milkyway2.command(name="setup")
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def milkyway_setup(self, ctx):
@@ -32,12 +33,12 @@ class MilkywayCog(BaseCog, name="Milkyway"):
 
         settings.save()
 
-    @milkyway.command(name="create")
+    @milkyway2.command(name="create")
     @commands.guild_only()
     async def milkyway_create(self, ctx):
         await MilkywayHelper.create_milkyway(ctx, False)
 
-    @milkyway.command(name="godmode")
+    @milkyway2.command(name="godmode")
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def milkyway_godmode(self, ctx):
