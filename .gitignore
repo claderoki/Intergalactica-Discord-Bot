@@ -1,6 +1,6 @@
 __pycache__/
 envs.json
-env
+.env
 tmp
 .vscode
 data/

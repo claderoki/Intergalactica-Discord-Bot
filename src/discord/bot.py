@@ -30,7 +30,6 @@ def seconds_readable(seconds):
 
 
 class Locus(commands.Bot):
-    _guild = None
     cooldowns = {}
     cooldowned_users = []
     owner = None
@@ -60,7 +59,7 @@ class Locus(commands.Bot):
         Cancelled,
     )
 
-    def __init__(self, mode, prefix=None):
+    def __init__(self, mode):
         self._human_cache = {}
         self.mode = mode
         self.production = mode == config.Mode.production
@@ -90,10 +89,6 @@ class Locus(commands.Bot):
 
         self.before_invoke(self.before_any_command)
         self.after_invoke(self.after_any_command)
-
-    async def create_invite_for(self, guild):
-        for channel in guild.text_channels:
-            return await channel.create_invite()
 
     def print_info(self):
         print("--------------------")
@@ -156,21 +151,21 @@ class Locus(commands.Bot):
             "trivia.cog",
         ]
 
-        if False:
-            cogs.append("personal")
         if True:
             cogs.append("intergalactica")
 
         for cog in cogs:
             self.load_cog(cog)
 
-    def get_id(self, obj):
+    @staticmethod
+    def get_id(obj):
         if hasattr(obj, "id"):
             return obj.id
         else:
             return obj
 
-    def success(self, ctx):
+    @staticmethod
+    def success(ctx):
         async def wrapper(content=None, delete_after=None):
             if content is None:
                 await ctx.message.add_reaction("✅")
@@ -179,7 +174,8 @@ class Locus(commands.Bot):
 
         return wrapper
 
-    def error(self, ctx):
+    @staticmethod
+    def error(ctx):
         async def wrapper(content=None, delete_after=None):
             if content is None:
                 await ctx.message.add_reaction("❌")
@@ -188,12 +184,14 @@ class Locus(commands.Bot):
 
         return wrapper
 
-    def can_change_nick(self, member, other=None):
+    @staticmethod
+    def can_change_nick(member, other=None):
         guild = member.guild
         other = other or guild.me
         return not (other.top_role.position <= member.top_role.position or member.id == guild.owner_id)
 
-    def raise_if_not_enough_gold(self, ctx):
+    @staticmethod
+    def raise_if_not_enough_gold(ctx):
         def wrapper(gold, human=None, name="you"):
             if human is None:
                 human = ctx.get_human()
@@ -216,7 +214,8 @@ class Locus(commands.Bot):
             return human
         return self._human_cache[user_id]
 
-    def translate(self, key, locale="en_US"):
+    @staticmethod
+    def translate(key, locale="en_US"):
         return Translator.translate(key, locale)
 
     async def before_any_command(self, ctx):

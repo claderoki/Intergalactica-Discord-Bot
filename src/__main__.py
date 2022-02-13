@@ -17,7 +17,7 @@ service = args.service
 if service == "heroku":
     config.environ = EnvironmentalVariables.from_environ()
 else:
-    path = config.path + "/env"
+    path = config.path + "/.env"
     try:
         config.environ = EnvironmentalVariables.from_path(path)
     except FileNotFoundError:
