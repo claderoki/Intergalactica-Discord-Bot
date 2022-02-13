@@ -7,8 +7,7 @@ from src.models import Translation
 
 class RedditHelper:
     @classmethod
-    def get_random_words(cls, nsfw: bool = False, max_words: int = 10, min_length: int = 4, max_length: int = 10) -> \
-    List[str]:
+    def get_random_words(cls, nsfw: bool = False, max_words: int = 10, min_length: int = 4, max_length: int = 10) -> List[str]:
         reddit = config.bot.reddit
 
         word_count = 0

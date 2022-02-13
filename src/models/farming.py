@@ -5,8 +5,8 @@ import peewee
 from dateutil.relativedelta import relativedelta
 
 import src.config as config
-from . import Human, Item
 from .base import BaseModel, TimeDeltaField
+from . import Human, Item
 
 
 class Farm(BaseModel):
