@@ -13,11 +13,11 @@ class GuildRewardsCog(BaseCog, name = "Server Rewards"):
             return
         if message.guild is None or message.author.bot:
             return
-        
+
         settings = GuildRewardsCache.get_settings(message.guild.id)
         if settings is None or not settings.enabled:
             return
-        
+
         profile = GuildRewardsCache.get_profile(message.guild.id, message.author.id)
         if GuildRewardsHelper.has_reward_available(profile, settings):
             GuildRewardsHelper.reward(profile, settings)
@@ -38,7 +38,6 @@ class GuildRewardsCog(BaseCog, name = "Server Rewards"):
         await settings.editor_for(ctx, "min_points_per_message")
         await settings.editor_for(ctx, "max_points_per_message")
         settings.save()
-
         await ctx.success("Done setting up.")
 
 def setup(bot):

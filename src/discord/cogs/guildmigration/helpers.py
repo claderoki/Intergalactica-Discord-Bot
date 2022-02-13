@@ -13,7 +13,7 @@ class GuildMigration:
         self.log_channel = log_channel
 
     async def __migrate_roles(self):
-        for role in self.template.roles:
+        for role in self.template.roles[::-1]:
             if role == self.template.default_role:
                 self.role_mapping[role.id] = self.to.default_role
                 continue
