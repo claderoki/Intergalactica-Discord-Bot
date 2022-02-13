@@ -45,7 +45,7 @@ class GameRoleProcessor:
 
         return self.guild.get_role(role_id)
 
-    def __get_random_role(self) -> discord.Role | None:
+    def __get_random_role(self) -> discord.Role:
         if len(self.mapping) == 0:
             return None
 

@@ -2,7 +2,6 @@ import datetime
 
 from discord.ext import tasks
 
-from src.discord.bot import Locus
 from src.discord.cogs.core import BaseCog
 from src.discord.cogs.custom.shared.helpers import GuildHelper
 from src.discord.cogs.custom.shared.helpers.praw_cache import PrawInstanceCache
@@ -11,7 +10,6 @@ from src.models import Advertisement
 
 
 class CustomCog(BaseCog):
-    bot: Locus = None
 
     @tasks.loop(hours=1)
     async def advertisement(self):

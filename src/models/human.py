@@ -11,7 +11,7 @@ import src.discord.cogs.switch as switch
 from src.utils.timezone import Timezone
 from src.utils.zodiac import ZodiacSign
 from .base import BaseModel, EnumField, CountryField
-
+import src.discord.cogs.guildrewards as guildrewards
 
 class CurrenciesField(peewee.TextField):
     def db_value(self, value):
@@ -134,7 +134,7 @@ class Human(BaseModel):
         if self.date_of_birth is not None:
             return ZodiacSign.from_date(self.date_of_birth)
 
-    def get_embed_field(self, show_all=False):
+    def get_embed_field(self, show_all=False, guild=None):
         # TODO: clean up.
         name = self.user.name
         # if show_all and self.country:
@@ -186,6 +186,12 @@ class Human(BaseModel):
             values.append(f"{self.bot.gold_emoji} {self.gold}")
         elif show_all:
             values.append(f"{self.bot.gold_emoji} N/A")
+
+        if guild is not None:
+            settings = guildrewards.helpers.GuildRewardsCache.get_settings(guild.id)
+            if settings is not None and settings.enabled:
+                profile = guildrewards.helpers.GuildRewardsCache.get_profile(guild.id, self.user_id)
+                values.append(f"🍀 {profile.points}")
 
         if len(values) == 0:
             values.append("N/A")

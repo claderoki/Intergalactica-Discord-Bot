@@ -143,7 +143,7 @@ class Profile(BaseCog):
 
         embed = discord.Embed(color=ctx.author.color)
         human = ctx.bot.get_human(user=member)
-        field = human.get_embed_field()
+        field = human.get_embed_field(False, ctx.guild)
         embed.title = field["name"]
         values = field["value"]
 
@@ -168,7 +168,7 @@ class Profile(BaseCog):
 
         humans = [ctx.get_human(user=x) for x in (ctx.author, member)]
         for human in humans:
-            embed.add_field(**human.get_embed_field(show_all=True))
+            embed.add_field(**human.get_embed_field(show_all=True, guild=ctx.guild))
 
         cities = [x.city for x in humans]
         if None not in cities:

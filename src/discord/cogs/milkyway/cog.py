@@ -1,7 +1,5 @@
 from discord.ext import commands
 
-from discord.ext import commands
-
 from src.discord.cogs.core import BaseCog
 from src.models import MilkywaySettings
 from .helpers import MilkywayHelper
