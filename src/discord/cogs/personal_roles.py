@@ -13,6 +13,13 @@ from src.discord.helpers.known_guilds import KnownGuild
 from src.models import Earthling
 
 
+def _get_icon_url(obj):
+    options = {"format": "png", "static_format": "png", "size": 16}
+    if isinstance(obj, (discord.User, discord.ClientUser, discord.Member)):
+        return obj.avatar_url_as(**options)
+    elif isinstance(obj, discord.Guild):
+        return obj.icon_url_as(**options)
+
 class PersonalRoleHelper:
     __slots__ = ()
 
@@ -103,7 +110,7 @@ class PersonalRoleCog(BaseCog, name="Personal role"):
             color = random.choice(('#165B33', '#146B3A', '#F8B229', '#EA4630', '#BB2528'))
 
         if color is None:
-            color = ColorHelper.__get_dominant_color(self.bot._get_icon_url(ctx.author))
+            color = ColorHelper.get_dominant_color(_get_icon_url(ctx.author))
         else:
             color = await commands.ColorConverter().convert(ctx, color)
 

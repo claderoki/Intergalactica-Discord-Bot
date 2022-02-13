@@ -8,7 +8,7 @@ from src.wrappers.color_thief import ColorThief
 
 class ColorHelper:
     @classmethod
-    def __get_dominant_color(cls, url):
+    def get_dominant_color(cls, url):
         color_thief = ColorThief(requests.get(url, stream=True).raw)
         dominant_color = color_thief.get_color(quality=1)
         return discord.Color.from_rgb(*dominant_color)
