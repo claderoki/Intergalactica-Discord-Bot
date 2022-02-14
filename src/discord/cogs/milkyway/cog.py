@@ -1,22 +1,22 @@
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from src.discord.cogs.core import BaseCog
 from src.models import MilkywaySettings, Milkyway
-from .helpers import MilkywayHelper, MilkywayProcessor, MilkywayUI, MilkywayCache
-from ...errors.base import SendableException
+from .helpers import MilkywayHelper, MilkywayProcessor, MilkywayUI, MilkywayCache, MilkywayRepository
+from ... import SendableException
 
 
 class MilkywayCog(BaseCog, name="Milkyway"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        pass
+        self.start_task(self.delete_expired_channels, check=self.bot.production)
 
     @commands.group()
-    async def milkyway2(self, ctx):
+    async def milkyway(self, ctx):
         pass
 
-    @milkyway2.command(name="setup")
+    @milkyway.command(name="setup")
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def milkyway_setup(self, ctx):
@@ -27,12 +27,13 @@ class MilkywayCog(BaseCog, name="Milkyway"):
         await settings.editor_for(ctx, "cost_per_day")
         await settings.editor_for(ctx, "category_id")
         await settings.editor_for(ctx, "log_channel_id")
+        await settings.editor_for(ctx, "active_limit")
         await settings.editor_for(ctx, "godmode")
 
         settings.save()
         await ctx.success("OK")
 
-    @milkyway2.command(name="create")
+    @milkyway.command(name="create")
     async def milkyway_create(self, ctx):
         processor = MilkywayProcessor(ctx, False)
         milkyway = await processor.create()
@@ -40,23 +41,65 @@ class MilkywayCog(BaseCog, name="Milkyway"):
         await request_channel.send(embed=MilkywayUI.get_pending_embed(milkyway))
         await ctx.success("Your milkyway has been requested.")
 
-    @milkyway2.command(name="accept")
-    @commands.has_guild_permissions(administrator=True)
-    async def milkyway_accept(self, ctx, id: int):
-        milkyway = Milkyway.get(identifier=id)
-        if milkyway.status != Milkyway.Status.pending:
-            raise SendableException(f"This milk is already {milkyway.status}")
-
-        await MilkywayHelper.accept(milkyway)
-        await ctx.success()
-        await milkyway.member.send("Your milkyway has been accepted.")
-
-    @milkyway2.command(name="godmode")
+    @milkyway.command(name="godmode")
     @commands.has_permissions(administrator=True)
     async def milkyway_godmode(self, ctx):
         processor = MilkywayProcessor(ctx, True)
         milkyway = await processor.create()
         await MilkywayHelper.accept(milkyway)
+
+    @milkyway.command(name="extend")
+    async def milkyway_extend(self, ctx, id: int):
+        milkyway = Milkyway.get(identifier=id)
+        if milkyway.status != Milkyway.Status.accepted:
+            raise SendableException(f"This milk is already `{milkyway.status}`")
+
+        processor = MilkywayProcessor(ctx, milkyway.purchase_type == Milkyway.PurchaseType.none)
+        await processor.extend(milkyway)
+        await milkyway.channel.edit(topic=MilkywayHelper.get_channel_topic(milkyway))
+
+        await ctx.success("Your milkyway has been extended.")
+
+    @milkyway.command(name="accept")
+    @commands.has_guild_permissions(administrator=True)
+    async def milkyway_accept(self, ctx, id: int):
+        milkyway = Milkyway.get(identifier=id)
+        if milkyway.status != Milkyway.Status.pending:
+            raise SendableException(f"This milk is already `{milkyway.status}`")
+
+        await MilkywayHelper.accept(milkyway)
+        await ctx.success()
+        await milkyway.member.send("Your milkyway has been accepted.")
+
+    @milkyway.command(name="deny")
+    @commands.has_guild_permissions(administrator=True)
+    async def milkyway_deny(self, ctx, id: int, *, reason: str):
+        if not reason:
+            raise SendableException("Reason is mandatory.")
+
+        milkyway = Milkyway.get(identifier=id)
+        if milkyway.status != Milkyway.Status.pending:
+            raise SendableException(f"This milk is already `{milkyway.status}`")
+
+        await MilkywayHelper.deny(milkyway, reason)
+        await ctx.success("Successfully denied.")
+        await milkyway.member.send(embed=MilkywayUI.get_denied_embed(milkyway))
+
+    @tasks.loop(minutes=60)
+    async def delete_expired_channels(self):
+        for milkyway in MilkywayRepository.get_expired():
+            settings = MilkywayCache.get_settings(milkyway.guild_id)
+
+            milkyway.status = Milkyway.Status.expired
+            channel = milkyway.channel
+            if channel is not None:
+                try:
+                    await channel.delete(reason="Expired")
+                    MilkywayHelper.log(settings, f"Successfully removed expired channel `{channel.name}`")
+                except:
+                    MilkywayHelper.log(settings, f"Unable to remove channel `{channel.name}`")
+            milkyway.channel_id = None
+            milkyway.save()
 
 
 def setup(bot):

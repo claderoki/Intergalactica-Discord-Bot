@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 
 import discord
@@ -45,6 +46,11 @@ class MilkywayProcessor:
         if self.settings is None:
             raise SendableException("Milkyway is not setup for this server yet.")
 
+        currently_active = MilkywayRepository.currently_active(self.ctx.guild.id)
+        if currently_active >= self.settings.active_limit:
+            raise SendableException(f"There are currently {currently_active} milkyways already active. The limit for "
+                                    f"this server is {self.settings.active_limit}.")
+
         if self.godmode and not self.settings.godmode:
             raise SendableException("Godmode is not enabled for this server.")
 
@@ -54,15 +60,12 @@ class MilkywayProcessor:
         if not GuildRewardsHelper.is_enabled_for(self.ctx.guild.id):
             raise SendableException("Guild rewards need to be setup/enabled for this server.")
 
-    def __take_payment(self, milkyway: Milkyway):
-        if self.godmode:
-            return
+        category: discord.CategoryChannel = self.ctx.bot.get_channel(self.settings.category_id)
+        if category is None:
+            raise SendableException("The milkyway category seems to be missing. Please have an admin recheck.")
 
-        if milkyway.purchase_type == Milkyway.PurchaseType.points:
-            self.data.profile.points -= milkyway.amount
-            self.data.profile.save()
-        else:
-            HumanRepository.increment_item(self.ctx.author.id, milkyway.item_id, milkyway.amount)
+        if not category.permissions_for(self.ctx.guild.me).manage_channels:
+            raise SendableException("The bot does not have the `manage_channels` permission for this category.")
 
     async def create(self) -> Milkyway:
         self.__load()
@@ -75,26 +78,52 @@ class MilkywayProcessor:
         await milkyway.editor_for(self.ctx, "name")
         await milkyway.editor_for(self.ctx, "description")
         milkyway.save()
-        self.__take_payment(milkyway)
+        MilkywayHelper.purchase(milkyway, milkyway.amount)
         return milkyway
 
-    def __get_new_milkyway(self, available_purchase: MilkywayAvailablePurchase, amount: int) -> Milkyway:
-        milkyway = Milkyway(guild_id=self.ctx.guild.id, amount=amount)
-        milkyway.days_pending = amount
-        milkyway.user_id = self.ctx.author.id
-        milkyway.identifier = MilkywayCache.get_and_increment_identifier(self.ctx.guild.id)
+    async def extend(self, milkyway: Milkyway):
+        self.__load()
+        self.__pre_validate()
+        available_purchases = self.__get_available_purchases()
+        available_purchase = await self.__get_available_purchase(available_purchases, milkyway)
+        amount = await self.__ask_for_amount(available_purchase)
+        days_worth = self.__get_days_worth(available_purchase, amount)
+        milkyway.amount = self.__get_amount(available_purchase, amount)
+        milkyway.total_days += days_worth
+        milkyway.expires_at += datetime.timedelta(days=days_worth)
+        milkyway.save()
+        MilkywayHelper.purchase(milkyway, milkyway.amount)
 
+    def __get_days_worth(self, available_purchase: MilkywayAvailablePurchase, amount: int) -> int:
         if available_purchase.type == KnownItem.milkyway:
-            milkyway.days_pending *= 7
+            return amount * 7
+        return amount
+
+    def __get_amount(self, available_purchase: MilkywayAvailablePurchase, amount: int) -> int:
+        if available_purchase.type == "points":
+            return amount * self.settings.cost_per_day
+        return amount
+
+    def __get_purchase_type(self, available_purchase: MilkywayAvailablePurchase) -> Milkyway.PurchaseType:
+        if available_purchase.type in (KnownItem.milkyway, KnownItem.orion_belt):
+            return Milkyway.PurchaseType.item
+        elif available_purchase.type == "points":
+            return Milkyway.PurchaseType.points
+        elif self.godmode:
+            return Milkyway.PurchaseType.none
+
+    def __get_new_milkyway(self, available_purchase: MilkywayAvailablePurchase, amount: int) -> Milkyway:
+        milkyway = Milkyway(
+            guild_id=self.ctx.guild.id,
+            amount=self.__get_amount(available_purchase, amount),
+            user_id=self.ctx.author.id,
+            days_pending=self.__get_days_worth(available_purchase, amount),
+            identifier=MilkywayCache.get_and_increment_identifier(self.ctx.guild.id),
+            purchase_type=self.__get_purchase_type(available_purchase)
+        )
 
         if available_purchase.type in (KnownItem.milkyway, KnownItem.orion_belt):
             milkyway.item = ItemCache.get_id(available_purchase.type)
-            milkyway.purchase_type = Milkyway.PurchaseType.item
-        elif available_purchase.type == "points":
-            milkyway.purchase_type = Milkyway.PurchaseType.points
-            milkyway.amount = amount * self.settings.cost_per_day
-        elif self.godmode:
-            milkyway.purchase_type = Milkyway.PurchaseType.none
 
         return milkyway
 
@@ -103,17 +132,34 @@ class MilkywayProcessor:
         waiter = IntWaiter(self.ctx, min=1, max=available_purchase.amount, prompt=prompt)
         return await waiter.wait()
 
-    async def __get_available_purchase(self, purchase_types: list) -> MilkywayAvailablePurchase:
-        if len(purchase_types) == 0:
+    async def __get_available_purchase(self, available_purchases: list,
+                                       milkyway: Milkyway = None) -> MilkywayAvailablePurchase:
+        if len(available_purchases) == 0:
             raise SendableException("You are unable to create a milkyway. You do not have any clovers or items.")
-        if len(purchase_types) == 1:
-            return purchase_types[0]
+        if milkyway is not None:
+            if milkyway.purchase_type == Milkyway.PurchaseType.item:
+                type = ItemCache.get_code(milkyway.item_id)
+                min_needed = 1
+            elif milkyway.purchase_type == Milkyway.PurchaseType.points:
+                type = milkyway.purchase_type.name
+                min_needed = self.settings.cost_per_day
+            else:
+                type = "days"
+                min_needed = None
+
+            for available_purchase in available_purchases:
+                if available_purchase.type == type:
+                    return available_purchase
+            raise SendableException(f"You need at least {min_needed} {type} to extend this milkyway.")
+
+        if len(available_purchases) == 1:
+            return available_purchases[0]
 
         prompt = self.ctx.translate("milkyway_purchase_type_prompt")
-        allowed_words = [x.type for x in purchase_types]
+        allowed_words = [x.type for x in available_purchases]
         waiter = StrWaiter(self.ctx, allowed_words=allowed_words, prompt=prompt)
         selected_purchase_type = await waiter.wait()
-        for purchase_type in purchase_types:
+        for purchase_type in available_purchases:
             if purchase_type.type == selected_purchase_type:
                 return purchase_type
 
@@ -133,16 +179,33 @@ class MilkywayProcessor:
             return MilkywayData({}, None, self.ctx.author)
         profile = GuildRewardsCache.get_profile(self.ctx.author.guild.id, self.ctx.author.id)
         items = [KnownItem.milkyway, KnownItem.orion_belt]
-        mapping = {ItemCache.get_id(x): x for x in items}
-        item_amounts = HumanRepository.get_item_amounts(self.ctx.author.id, list(mapping.keys()), True)
+        item_amounts = HumanRepository.get_item_amounts(self.ctx.author.id, items, True)
 
         return MilkywayData(item_amounts, profile, self.ctx.author)
 
 
 class MilkywayHelper:
     @classmethod
-    async def extend(cls, milkyway: Milkyway):
-        pass
+    def log(cls, settings: MilkywaySettings, message: str):
+        channel = config.bot.get_channel(settings.log_channel_id)
+        asyncio.gather(channel.send(message))
+
+    @classmethod
+    def __increase_or_decrease_amount(cls, milkyway: Milkyway, amount: int):
+        if milkyway.purchase_type == Milkyway.PurchaseType.item:
+            HumanRepository.increment_item(milkyway.user_id, milkyway.item_id, amount)
+        elif milkyway.purchase_type == Milkyway.PurchaseType.points:
+            profile = GuildRewardsCache.get_profile(milkyway.guild_id, milkyway.user_id)
+            profile.points += amount
+            profile.save()
+
+    @classmethod
+    def purchase(cls, milkyway: Milkyway, amount: int):
+        cls.__increase_or_decrease_amount(milkyway, -amount)
+
+    @classmethod
+    def giveback(cls, milkyway: Milkyway, amount: int):
+        cls.__increase_or_decrease_amount(milkyway, amount)
 
     @classmethod
     async def accept(cls, milkyway: Milkyway):
@@ -151,8 +214,16 @@ class MilkywayHelper:
         milkyway.expires_at = datetime.datetime.utcnow() + datetime.timedelta(days=milkyway.days_pending)
         channel = await cls.create_channel_for(milkyway, settings.category_id)
         milkyway.channel_id = channel.id
+        milkyway.total_days = milkyway.days_pending
         milkyway.days_pending = 0
         milkyway.save()
+
+    @classmethod
+    async def deny(cls, milkyway: Milkyway, reason: str):
+        milkyway.status = Milkyway.Status.denied
+        milkyway.deny_reason = reason
+        milkyway.save()
+        cls.giveback(milkyway, milkyway.amount)
 
     @classmethod
     async def create_channel_for(cls, milkyway: Milkyway, category_id: int) -> discord.TextChannel:
@@ -187,9 +258,16 @@ class MilkywayUI:
 
         embed.description = "\n".join(lines)
 
-        footer = [f"Use '/milkway deny {milkyway.identifier} <reason>' to deny this request",
-                  f"Use '/milkway accept {milkyway.identifier}' to accept this request"]
+        footer = [f"Use '/milkyway deny {milkyway.identifier} <reason>' to deny this request",
+                  f"Use '/milkyway accept {milkyway.identifier}' to accept this request"]
         embed.set_footer(text="\n".join(footer))
+        return embed
+
+    @classmethod
+    def get_denied_embed(cls, milkyway: Milkyway) -> discord.Embed:
+        embed = discord.Embed(color=ColorHelper.get_primary_color())
+        embed.title = "Milkyway denied"
+        embed.description = "Unfortunately, your request for a milkyway channel was denied.\nReason: " + milkyway.deny_reason
         return embed
 
 
@@ -205,9 +283,6 @@ class MilkywayCache:
             return last_identifier + 1
 
         last_identifier = MilkywayRepository.get_increment_identifier(guild_id)
-        if not config.bot.production:
-            # add 999 to cached dev identifier to avoid issues.
-            last_identifier += 999
         cls._last_identifiers[guild_id] = last_identifier
         return last_identifier
 
@@ -226,5 +301,21 @@ class MilkywayCache:
 class MilkywayRepository:
     @classmethod
     def get_increment_identifier(cls, guild_id: int) -> int:
-        max = Milkyway.select(peewee.fn.MAX(Milkyway.identifier)).where(Milkyway.guild_id == guild_id).scalar()
-        return (max or 0) + 1
+        max_identifier = (Milkyway.select(peewee.fn.MAX(Milkyway.identifier))
+                          .where(Milkyway.guild_id == guild_id).scalar())
+        return (max_identifier or 0) + 1
+
+    @classmethod
+    def get_expired(cls) -> list:
+        return list((Milkyway.select(Milkyway.id, Milkyway.guild_id, Milkyway.channel_id, Milkyway.status)
+                     .where(Milkyway.expires_at != None)
+                     .where(Milkyway.expires_at <= datetime.datetime.utcnow())
+                     ))
+
+    @classmethod
+    def currently_active(cls, guild_id: int) -> int:
+        return (Milkyway
+                .select()
+                .where(Milkyway.guild_id == guild_id)
+                .where(Milkyway.status == Milkyway.Status.accepted)
+                .count())

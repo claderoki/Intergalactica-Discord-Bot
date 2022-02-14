@@ -6,10 +6,10 @@ from .base import BaseModel, EnumField
 from .human import Item
 
 
-# milkyway will be worth costs_per_day * 7, orion costs_per_day * 1
 class MilkywaySettings(BaseModel):
     guild_id = peewee.BigIntegerField(null=False)
     cost_per_day = peewee.IntegerField(null=False, default=500)
+    active_limit = peewee.IntegerField(null=False, default=10)
     category_id = peewee.BigIntegerField(null=False)
     log_channel_id = peewee.BigIntegerField(null=False)
     godmode = peewee.BooleanField(null=False, default=False)
@@ -25,6 +25,7 @@ class Milkyway(BaseModel):
         pending = 1
         accepted = 2
         denied = 3
+        expired = 4
 
     identifier = peewee.IntegerField(null=False)
     guild_id = peewee.BigIntegerField(null=False)

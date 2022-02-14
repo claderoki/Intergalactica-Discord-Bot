@@ -22,8 +22,8 @@ class GameRoleCog(BaseCog, name="Game role"):
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
-        # if not self.bot.production:
-        #     return
+        if not self.bot.production:
+            return
 
         if after.bot:
             return

@@ -65,15 +65,17 @@ class HumanRepository:
         return item.amount if item else 0
 
     @classmethod
-    def get_item_amounts(cls, user_id: int, item_ids: list, only_positives: bool = False) -> dict:
+    def get_item_amounts(cls, user_id: int, item_identifiers: list, only_positives: bool = False) -> dict:
+        mapping = {ItemCache.get_id(x): x for x in item_identifiers}
+
         items = (HumanItem.select(HumanItem.amount, HumanItem.item_id)
                  .where(HumanItem.human_id == HumanCache.get_id(user_id))
-                 .where(HumanItem.item_id.in_(item_ids)))
+                 .where(HumanItem.item_id.in_(list(mapping.keys()))))
 
         amounts = {}
         for item in items:
             if not only_positives or item.amount > 0:
-                amounts[item.item_id] = item.amount
+                amounts[mapping.get(item.item_id)] = item.amount
         return amounts
 
     @classmethod
@@ -90,4 +92,3 @@ class HumanRepository:
 
         if rows_affected == 0:
             pass
-            #insert here
