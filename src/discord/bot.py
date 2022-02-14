@@ -146,7 +146,6 @@ class Locus(commands.Bot):
             "secretsanta.cog",
             "welcoming.cog",
             "giveaway",
-            "temp_channels",
             "groups",
             "personal_roles",
             "trivia.cog",

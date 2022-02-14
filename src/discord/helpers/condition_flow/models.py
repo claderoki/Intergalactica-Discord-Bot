@@ -26,7 +26,7 @@ class Condition:
 
     __slots__ = ("source", "value", "type", "positive")
 
-    def __init__(self, source: Source, type: Type, value: ConditionValue, positive: bool = True):
+    def __init__(self, source: str, type: str, value: ConditionValue, positive: bool = True):
         self.source = source
         self.type = type
         self.value = value

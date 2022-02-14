@@ -98,12 +98,14 @@ class GameRoleProcessor:
         user_ids = self.data.setdefault(game.name, set())
         user_ids.add(member.id)
         if len(user_ids) >= self.settings.threshhold:
-            role = await RoleHelper.create(member.guild, name=game.name, position=self.__get_position(),
-                                           mentionable=True)
+            role = await RoleHelper.create(member.guild, name=game.name, position=self.__get_position(), mentionable=True)
             self.mapping[game.name] = role.id
             GameRoleRepository.save(self.guild.id, role.id, game.name)
+            for user_id in user_ids:
+                other_member = member.guild.get_member(user_id)
+                if other_member is not None:
+                    await other_member.add_roles(role)
             del self.data[game.name]
-            await member.add_roles(role)
             self.log(f"`{game.name}` role created.")
 
     async def __process_existing(self, member: discord.Member, game: discord.Game):

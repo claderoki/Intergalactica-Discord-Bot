@@ -140,7 +140,7 @@ class DailyActivityRepository:
          .execute())
 
     @classmethod
-    def get_message_count(cls, user_id: int, guild_id: int, before: datetime.datetime, after=datetime.datetime) -> int:
+    def get_message_count(cls, user_id: int, guild_id: int, before: datetime.date, after=datetime.date) -> int:
         activity = (DailyActivity
                     .select(peewee.fn.SUM(DailyActivity.message_count).alias("total_message_count"))
                     .where(DailyActivity.guild_id == guild_id)

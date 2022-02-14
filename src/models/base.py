@@ -83,7 +83,7 @@ class UnititializedModel(peewee.Model):
             value = await waiter.wait()
             if attr == "due_date":
                 value = datetime.datetime.utcnow() + value
-            elif "_id" in attr:
+            elif "_id" in attr and hasattr(value, "id"):
                 value = value.id
             setattr(self, attr, value)
         except Skipped:
@@ -122,19 +122,19 @@ class BaseModel(UnititializedModel):
         self._channel = None
 
     @property
-    def guild(self):
+    def guild(self) -> discord.Guild:
         if self._guild is None:
             self._guild = self.bot.get_guild(self.guild_id)
         return self._guild
 
     @property
-    def user(self):
+    def user(self) -> discord.User:
         if self._user is None:
             self._user = self.bot.get_user(self.user_id)
         return self._user
 
     @property
-    def member(self):
+    def member(self) -> discord.Member:
         if self._member is None:
             self._member = self.guild.get_member(self.user_id)
         return self._member

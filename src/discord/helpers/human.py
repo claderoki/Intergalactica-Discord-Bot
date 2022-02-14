@@ -1,3 +1,5 @@
+import typing
+
 from src.models import Human, HumanItem, Item
 
 
@@ -8,6 +10,7 @@ class KnownItem:
 
 class ItemCache:
     _code_mapping = {}
+    _id_mapping = {}
 
     @classmethod
     def get_id(cls, code: str) -> int:
@@ -16,7 +19,22 @@ class ItemCache:
             return id
 
         item = Item.select(Item.id).where(Item.code == code).first()
-        return item.id if item else None
+        if item is not None:
+            cls._code_mapping[code] = item.id
+            cls._id_mapping[item.id] = code
+            return item.id
+
+    @classmethod
+    def get_code(cls, id: int) -> str:
+        code = cls._id_mapping.get(id)
+        if code is not None:
+            return code
+
+        item = Item.select(Item.id).where(Item.code == code).first()
+        if item is not None:
+            cls._code_mapping[code] = item.id
+            cls._id_mapping[item.id] = code
+            return item.id
 
 
 class HumanCache:
@@ -34,8 +52,11 @@ class HumanCache:
 
 class HumanRepository:
     @classmethod
-    def get_item_amount(cls, user_id: int, item_code: str) -> int:
-        item_id = ItemCache.get_id(item_code)
+    def __get_item_id(cls, item: typing.Union[str, int]):
+        return item if isinstance(item, int) else ItemCache.get_id(item)
+
+    @classmethod
+    def get_item_amount(cls, user_id: int, item_id: int) -> int:
         human_id = HumanCache.get_id(user_id)
         item = (HumanItem.select(HumanItem.amount)
                 .where(HumanItem.human == human_id)
@@ -44,15 +65,29 @@ class HumanRepository:
         return item.amount if item else 0
 
     @classmethod
-    def get_item_amounts(cls, user_id: int, item_codes: list, only_positives: bool = False) -> dict:
-        mapping = {ItemCache.get_id(x): x for x in item_codes}
-
+    def get_item_amounts(cls, user_id: int, item_ids: list, only_positives: bool = False) -> dict:
         items = (HumanItem.select(HumanItem.amount, HumanItem.item_id)
                  .where(HumanItem.human_id == HumanCache.get_id(user_id))
-                 .where(HumanItem.item_id.in_(list(mapping.keys()))))
+                 .where(HumanItem.item_id.in_(item_ids)))
 
         amounts = {}
         for item in items:
             if not only_positives or item.amount > 0:
-                amounts[mapping.get(item.item_id)] = item.amount
+                amounts[item.item_id] = item.amount
         return amounts
+
+    @classmethod
+    def increment_item(cls, user_id: int, item: typing.Union[str, int], amount: int):
+        if amount == 0:
+            return
+
+        human_id = HumanCache.get_id(user_id)
+        item_id = cls.__get_item_id(item)
+        rows_affected = (HumanItem.update(amount=HumanItem.amount + amount)
+                         .where(HumanItem.item == item_id)
+                         .where(HumanItem.human == human_id)
+                         .execute())
+
+        if rows_affected == 0:
+            pass
+            #insert here

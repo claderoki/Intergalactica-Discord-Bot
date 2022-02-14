@@ -25,6 +25,9 @@ database = BaseModel._meta.database
 
 def setup():
     with database.connection_context():
+        # database.drop_tables([Milkyway, MilkywaySettings])
+        database.create_tables([Milkyway, MilkywaySettings])
+
         # database.drop_tables([GuildRewardsProfile, GuildRewardsSettings])
         database.create_tables([GuildRewardsProfile, GuildRewardsSettings])
 

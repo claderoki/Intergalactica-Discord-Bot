@@ -26,11 +26,13 @@ class Milkyway(BaseModel):
         accepted = 2
         denied = 3
 
+    identifier = peewee.IntegerField(null=False)
     guild_id = peewee.BigIntegerField(null=False)
-    channel_id = peewee.BigIntegerField(null=False)
+    user_id = peewee.BigIntegerField(null=False)
+    channel_id = peewee.BigIntegerField(null=True)
     expires_at = peewee.DateTimeField(null=True)
-    description = peewee.TextField(null=True)
-    name = peewee.TextField(null=True)
+    description = peewee.TextField(null=False)
+    name = peewee.TextField(null=False)
     status = EnumField(Status, null=False, default=Status.pending)
     deny_reason = peewee.TextField(null=True)
     purchase_type = EnumField(PurchaseType, null=False)
@@ -38,3 +40,8 @@ class Milkyway(BaseModel):
     amount = peewee.IntegerField(null=True)
     days_pending = peewee.IntegerField(null=False)
     total_days = peewee.IntegerField(null=False, default=0)
+
+    class Meta:
+        indexes = (
+            (("guild_id", "identifier"), True),
+        )
