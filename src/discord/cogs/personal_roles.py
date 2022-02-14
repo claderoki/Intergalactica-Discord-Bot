@@ -110,7 +110,7 @@ class PersonalRoleCog(BaseCog, name="Personal role"):
             color = random.choice(('#165B33', '#146B3A', '#F8B229', '#EA4630', '#BB2528'))
 
         if color is None:
-            color = ColorHelper.get_dominant_color(_get_icon_url(ctx.author))
+            color = ColorHelper.calculate_dominant_color(_get_icon_url(ctx.author))
         else:
             color = await commands.ColorConverter().convert(ctx, color)
 
