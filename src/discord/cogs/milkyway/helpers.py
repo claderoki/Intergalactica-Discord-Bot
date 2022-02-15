@@ -187,7 +187,7 @@ class MilkywayProcessor:
 class MilkywayHelper:
 
     @classmethod
-    def expire(cls, milkyway: Milkyway):
+    async def expire(cls, milkyway: Milkyway):
         settings = MilkywayCache.get_settings(milkyway.guild_id)
 
         milkyway.status = Milkyway.Status.expired
