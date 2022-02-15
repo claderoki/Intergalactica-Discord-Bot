@@ -88,7 +88,7 @@ class MilkywayCog(BaseCog, name="Milkyway"):
     @tasks.loop(minutes=60)
     async def delete_expired_channels(self):
         for milkyway in MilkywayRepository.get_expired():
-            MilkywayHelper.expire(milkyway)
+            await MilkywayHelper.expire(milkyway)
 
 
 def setup(bot):
