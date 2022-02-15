@@ -185,6 +185,22 @@ class MilkywayProcessor:
 
 
 class MilkywayHelper:
+
+    @classmethod
+    def expire(cls, milkyway: Milkyway):
+        settings = MilkywayCache.get_settings(milkyway.guild_id)
+
+        milkyway.status = Milkyway.Status.expired
+        channel = milkyway.channel
+        if channel is not None:
+            try:
+                await channel.delete(reason="Expired")
+                cls.log(settings, f"Successfully removed expired channel `{channel.name}`")
+            except:
+                cls.log(settings, f"Unable to remove channel `{channel.name}`")
+        milkyway.channel_id = None
+        milkyway.save()
+
     @classmethod
     def log(cls, settings: MilkywaySettings, message: str):
         channel = config.bot.get_channel(settings.log_channel_id)
