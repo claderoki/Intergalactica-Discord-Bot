@@ -10,8 +10,8 @@ import src.config as config
 import src.discord.cogs.switch as switch
 from src.utils.timezone import Timezone
 from src.utils.zodiac import ZodiacSign
-from . import GuildRewardsProfile
 from .base import BaseModel, EnumField, CountryField
+import src.models as models
 import src.discord.cogs.guildrewards as guildrewards
 
 class CurrenciesField(peewee.TextField):
@@ -191,7 +191,7 @@ class Human(BaseModel):
         if guild is not None:
             settings = guildrewards.helpers.GuildRewardsCache.get_settings(guild.id)
             if settings is not None and settings.enabled:
-                profile = GuildRewardsProfile.get_or_none(guild_id=guild.id, user_id=self.user_id)
+                profile = models.GuildRewardsProfile.get_or_none(guild_id=guild.id, user_id=self.user_id)
                 if profile is not None:
                     values.append(f"🍀 {profile.points}")
 
