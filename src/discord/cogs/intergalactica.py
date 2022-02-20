@@ -48,7 +48,7 @@ class Intergalactica(BaseCog):
         SimplePoll.add_guild_data(KnownGuild.intergalactica, self._channel_ids["staff_votes"],
                                   self._channel_ids["staff_chat"])
 
-        self.start_task(self.illegal_member_purger, check=self.bot.production)
+        # self.start_task(self.illegal_member_purger, check=self.bot.production)
         self.start_task(self.introduction_purger, check=self.bot.production)
         self.start_task(self.temp_vc_poller, check=self.bot.production)
         self.start_task(self.mouse_role_cleanup, check=self.bot.production)
