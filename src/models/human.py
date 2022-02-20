@@ -10,6 +10,7 @@ import src.config as config
 import src.discord.cogs.switch as switch
 from src.utils.timezone import Timezone
 from src.utils.zodiac import ZodiacSign
+from . import GuildRewardsProfile
 from .base import BaseModel, EnumField, CountryField
 import src.discord.cogs.guildrewards as guildrewards
 
@@ -190,8 +191,9 @@ class Human(BaseModel):
         if guild is not None:
             settings = guildrewards.helpers.GuildRewardsCache.get_settings(guild.id)
             if settings is not None and settings.enabled:
-                profile = guildrewards.helpers.GuildRewardsCache.get_profile(guild.id, self.user_id)
-                values.append(f"🍀 {profile.points}")
+                profile = GuildRewardsProfile.get_or_none(guild_id=guild.id, user_id=self.user_id)
+                if profile is not None:
+                    values.append(f"🍀 {profile.points}")
 
         if len(values) == 0:
             values.append("N/A")
