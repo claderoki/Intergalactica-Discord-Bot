@@ -10,8 +10,7 @@ from src.discord.helpers.pretty import Row, Table, limit_str
 from src.discord.helpers.waiters import *
 from src.models import (Date, Earthling, Exploration, Fight, Human,
                         HumanItem, Item, PigeonDatingAvatar, LanguageMastery, Mail, Pigeon,
-                        PigeonRelationship, Reminder, Scenario, PigeonDatingProfile,
-                        Settings, SystemMessage, database)
+                        PigeonRelationship, Reminder, Scenario, PigeonDatingProfile, SystemMessage, database)
 from src.utils.country import Country
 from src.utils.enums import Gender
 from .exploration_retrieval import ExplorationRetrieval, MailRetrieval
@@ -116,9 +115,11 @@ class PigeonCog(BaseCog, name="Pigeon"):
         return embed
 
     def get_pigeon_channel(self, guild):
-        with database.connection_context():
-            settings, _ = Settings.get_or_create(guild_id=guild.id)
-        return settings.get_channel("pigeon")
+        for channel in guild.text_channels:
+            if 'bot-spam' in channel.name.lower():
+                return channel
+            if 'bot-playground' in channel.name.lower():
+                return channel
 
     @commands.Cog.listener()
     async def on_ready(self):

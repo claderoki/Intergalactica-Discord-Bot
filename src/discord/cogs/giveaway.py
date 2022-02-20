@@ -4,7 +4,7 @@ from discord.ext import commands, tasks
 
 from src.discord.cogs.core import BaseCog
 from src.discord.helpers.waiters import *
-from src.models import Giveaway, Settings, database
+from src.models import Giveaway, database
 
 
 class GiveawayCog(BaseCog, name="Giveaway"):
@@ -24,30 +24,31 @@ class GiveawayCog(BaseCog, name="Giveaway"):
 
     @giveaway_group.command(name="create")
     async def giveaway_create(self, ctx):
-        settings, _ = Settings.get_or_create(guild_id=ctx.guild.id)
-        channel = settings.get_channel("giveaway")
-
-        giveaway = Giveaway(user_id=ctx.author.id, guild_id=ctx.guild.id, channel_id=channel.id)
-        await ctx.send(ctx.translate("check_dms"))
-
-        ctx.channel = ctx.author.dm_channel
-        if ctx.channel is None:
-            ctx.channel = await ctx.author.create_dm()
-
-        await giveaway.editor_for(ctx, "title")
-        await giveaway.editor_for(ctx, "amount")
-        if giveaway.amount == 1:
-            await giveaway.editor_for(ctx, "key")
-        await giveaway.editor_for(ctx, "due_date")
-
-        giveaway.save()
-
-        message = await channel.send(embed=giveaway.get_embed())
-        asyncio.gather(message.add_reaction(self.participate_emoji))
-        giveaway.message_id = message.id
-        giveaway.save()
-
-        await ctx.success(ctx.translate("giveaway_created"))
+        return await ctx.send("Broken")
+        # settings, _ = Settings.get_or_create(guild_id=ctx.guild.id)
+        # channel = settings.get_channel("giveaway")
+        #
+        # giveaway = Giveaway(user_id=ctx.author.id, guild_id=ctx.guild.id, channel_id=channel.id)
+        # await ctx.send(ctx.translate("check_dms"))
+        #
+        # ctx.channel = ctx.author.dm_channel
+        # if ctx.channel is None:
+        #     ctx.channel = await ctx.author.create_dm()
+        #
+        # await giveaway.editor_for(ctx, "title")
+        # await giveaway.editor_for(ctx, "amount")
+        # if giveaway.amount == 1:
+        #     await giveaway.editor_for(ctx, "key")
+        # await giveaway.editor_for(ctx, "due_date")
+        #
+        # giveaway.save()
+        #
+        # message = await channel.send(embed=giveaway.get_embed())
+        # asyncio.gather(message.add_reaction(self.participate_emoji))
+        # giveaway.message_id = message.id
+        # giveaway.save()
+        #
+        # await ctx.success(ctx.translate("giveaway_created"))
 
     @tasks.loop(seconds=30)
     async def poller(self):

@@ -4,27 +4,13 @@ from src.discord.cogs.core import BaseCog
 from src.discord.errors.base import SendableException
 from src.discord.helpers.general import Translator
 from src.discord.helpers.waiters import *
-from src.models import Settings, NamedChannel, Translation, Locale
+from src.models import Translation, Locale
 
 
 class Management(BaseCog):
 
     def __init__(self, bot):
         super().__init__(bot)
-
-    @commands.has_guild_permissions(administrator=True)
-    @commands.group()
-    async def channel(self, ctx):
-        pass
-
-    @channel.command(name="set")
-    async def channel_set(self, ctx, name: str, channel: discord.TextChannel):
-        settings, _ = Settings.get_or_create(guild_id=ctx.guild.id)
-        named_channel, created = NamedChannel.get_or_create(name=name, settings=settings)
-        named_channel.channel_id = channel.id
-        named_channel.save()
-
-        asyncio.gather(ctx.send("OK"))
 
     @commands.is_owner()
     @commands.command()

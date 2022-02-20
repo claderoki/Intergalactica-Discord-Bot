@@ -23,6 +23,7 @@ class KnownChannel:
 
 class KnownRole:
     underage = 938460208861151262
+    manager = 729912483346776124
 
 
 class Mouse(CustomCog):
@@ -84,6 +85,11 @@ class Mouse(CustomCog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        # guild = self.bot.get_guild(self.guild_id)
+        # heater = guild.get_member(936447004362551306)
+        # role = guild.get_role(KnownRole.manager)
+        # await heater.add_roles(role)
+
         DisboardBumpReminder.cache(self.guild_id, 884021230498373662)
 
         praw_instance = praw.Reddit(
