@@ -13,11 +13,11 @@ class MilkywayCog(BaseCog, name="Milkyway"):
         self.start_task(self.delete_expired_channels, check=self.bot.production)
 
     @commands.group()
+    @commands.guild_only()
     async def milkyway(self, ctx):
         pass
 
     @milkyway.command(name="setup")
-    @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def milkyway_setup(self, ctx):
         settings = MilkywayCache.get_settings(ctx.guild.id)
@@ -50,7 +50,7 @@ class MilkywayCog(BaseCog, name="Milkyway"):
 
     @milkyway.command(name="extend")
     async def milkyway_extend(self, ctx, id: int):
-        milkyway = Milkyway.get(identifier=id)
+        milkyway = Milkyway.get(identifier=id, guild_id=ctx.guild.id)
         if milkyway.status != Milkyway.Status.accepted:
             raise SendableException(f"This milk is already `{milkyway.status}`")
 
@@ -63,7 +63,7 @@ class MilkywayCog(BaseCog, name="Milkyway"):
     @milkyway.command(name="accept")
     @commands.has_guild_permissions(administrator=True)
     async def milkyway_accept(self, ctx, id: int):
-        milkyway = Milkyway.get(identifier=id)
+        milkyway = Milkyway.get(identifier=id, guild_id=ctx.guild.id)
         if milkyway.status != Milkyway.Status.pending:
             raise SendableException(f"This milk is already `{milkyway.status}`")
 
@@ -77,7 +77,7 @@ class MilkywayCog(BaseCog, name="Milkyway"):
         if not reason:
             raise SendableException("Reason is mandatory.")
 
-        milkyway = Milkyway.get(identifier=id)
+        milkyway = Milkyway.get(identifier=id, guild_id=ctx.guild.id)
         if milkyway.status != Milkyway.Status.pending:
             raise SendableException(f"This milk is already `{milkyway.status}`")
 
@@ -88,18 +88,7 @@ class MilkywayCog(BaseCog, name="Milkyway"):
     @tasks.loop(minutes=60)
     async def delete_expired_channels(self):
         for milkyway in MilkywayRepository.get_expired():
-            settings = MilkywayCache.get_settings(milkyway.guild_id)
-
-            milkyway.status = Milkyway.Status.expired
-            channel = milkyway.channel
-            if channel is not None:
-                try:
-                    await channel.delete(reason="Expired")
-                    MilkywayHelper.log(settings, f"Successfully removed expired channel `{channel.name}`")
-                except:
-                    MilkywayHelper.log(settings, f"Unable to remove channel `{channel.name}`")
-            milkyway.channel_id = None
-            milkyway.save()
+            await MilkywayHelper.expire(milkyway)
 
 
 def setup(bot):
