@@ -29,15 +29,13 @@ class MiscCog(BaseCog, name="Misc"):
             break
 
     @commands.command()
-    async def advice(self, ctx):
-        if ctx.channel.id == 835646945442791424:
-            return
-        url = "https://api.adviceslip.com/advice"
+    async def fact(self, ctx):
+        url = "https://uselessfacts.jsph.pl/random.json?language=en"
         request = requests.get(url)
         json = request.json()
         embed = discord.Embed(color=ctx.guild_color)
-        embed.description = json["slip"]["advice"]
-        embed.title = "Advice"
+        embed.description = json["text"]
+        embed.title = "Useless fact"
         await ctx.send(embed=embed)
 
     @commands.command()

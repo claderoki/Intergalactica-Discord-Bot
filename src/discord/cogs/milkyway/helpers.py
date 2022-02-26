@@ -85,7 +85,7 @@ class MilkywayProcessor:
         self.__load()
         self.__pre_validate()
         available_purchases = self.__get_available_purchases()
-        available_purchase = await self.__get_available_purchase(available_purchases, milkyway)
+        available_purchase = self.__get_existing_available_purchase(available_purchases, milkyway)
         amount = await self.__ask_for_amount(available_purchase)
         days_worth = self.__get_days_worth(available_purchase, amount)
         milkyway.amount = self.__get_amount(available_purchase, amount)
@@ -132,26 +132,25 @@ class MilkywayProcessor:
         waiter = IntWaiter(self.ctx, min=1, max=available_purchase.amount, prompt=prompt)
         return await waiter.wait()
 
-    async def __get_available_purchase(self, available_purchases: list,
-                                       milkyway: Milkyway = None) -> MilkywayAvailablePurchase:
+    def __get_existing_available_purchase(self, available_purchases: list, milkyway: Milkyway) -> MilkywayAvailablePurchase:
+        if milkyway.purchase_type == Milkyway.PurchaseType.item:
+            type = ItemCache.get_code(milkyway.item_id)
+            min_needed = 1
+        elif milkyway.purchase_type == Milkyway.PurchaseType.points:
+            type = milkyway.purchase_type.name
+            min_needed = self.settings.cost_per_day
+        else:
+            type = "days"
+            min_needed = None
+
+        for available_purchase in available_purchases:
+            if available_purchase.type == type:
+                return available_purchase
+        raise SendableException(f"You need at least {min_needed} {type} to extend this milkyway.")
+
+    async def __get_available_purchase(self, available_purchases: list) -> MilkywayAvailablePurchase:
         if len(available_purchases) == 0:
             raise SendableException("You are unable to create a milkyway. You do not have any clovers or items.")
-        if milkyway is not None:
-            if milkyway.purchase_type == Milkyway.PurchaseType.item:
-                type = ItemCache.get_code(milkyway.item_id)
-                min_needed = 1
-            elif milkyway.purchase_type == Milkyway.PurchaseType.points:
-                type = milkyway.purchase_type.name
-                min_needed = self.settings.cost_per_day
-            else:
-                type = "days"
-                min_needed = None
-
-            for available_purchase in available_purchases:
-                if available_purchase.type == type:
-                    return available_purchase
-            raise SendableException(f"You need at least {min_needed} {type} to extend this milkyway.")
-
         if len(available_purchases) == 1:
             return available_purchases[0]
 
@@ -165,7 +164,7 @@ class MilkywayProcessor:
 
     def __get_available_purchases(self) -> list:
         if self.godmode:
-            return [MilkywayAvailablePurchase("days", None)]
+            return [MilkywayAvailablePurchase("days", 999)]
 
         purchase_types = [MilkywayAvailablePurchase(k, v) for k, v in self.data.item_amounts.items()]
 
@@ -324,7 +323,7 @@ class MilkywayRepository:
     @classmethod
     def get_expired(cls) -> list:
         return list((Milkyway.select(Milkyway.id, Milkyway.guild_id, Milkyway.channel_id, Milkyway.status)
-                     .where(Milkyway.expires_at != None)
+                     .where(Milkyway.expires_at.is_null(False))
                      .where(Milkyway.expires_at <= datetime.datetime.utcnow())
                      ))
 
