@@ -34,7 +34,7 @@ class MiscCog(BaseCog, name="Misc"):
         request = requests.get(url)
         json = request.json()
         embed = discord.Embed(color=ctx.guild_color)
-        embed.description = json["text"]
+        embed.description = json["text"].replace('`','\'')
         embed.title = "Useless fact"
         await ctx.send(embed=embed)
 
