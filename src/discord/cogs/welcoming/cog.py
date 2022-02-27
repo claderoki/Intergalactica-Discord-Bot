@@ -18,7 +18,7 @@ class WelcomeCog(BaseCog):
     async def on_ready(self):
         self.add_guild(KnownGuild.kail, 884843718534901864,
                        "Welcome {member.mention}! make sure to get <#884851898346254356> and <#884851962212929547>!")
-        self.add_guild(KnownGuild.mio, 902296733588029534, "Hello {member.mention}, welcome to the server....")
+        self.add_guild(KnownGuild.mio, 902296733588029534, "{member.mention} just joined us! Happy to see you!")
 
     @commands.Cog.listener()
     async def on_message(self, message):
