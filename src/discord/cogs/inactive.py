@@ -63,9 +63,9 @@ class Inactive(BaseCog):
             if earthling.guild is None or earthling.member is None:
                 continue
             if earthling.inactive:
-                if earthling.guild_id == KnownGuild.mouse and 852955124967276556 not in [x.id for x in
-                                                                                         earthling.member.roles]:
-                    yield earthling
+                if earthling.guild_id == KnownGuild.mouse:
+                    if 852955124967276556 not in [x.id for x in earthling.member.roles]:
+                        yield earthling
                 else:
                     yield earthling
 
