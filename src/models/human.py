@@ -189,11 +189,9 @@ class Human(BaseModel):
             values.append(f"{self.bot.gold_emoji} N/A")
 
         if guild is not None:
-            settings = guildrewards.helpers.GuildRewardsCache.get_settings(guild.id)
-            if settings is not None and settings.enabled:
-                profile = models.GuildRewardsProfile.get_or_none(guild_id=guild.id, user_id=self.user_id)
-                if profile is not None:
-                    values.append(f"🍀 {profile.points}")
+            profile = models.GuildRewardsProfile.get_or_none(guild_id=guild.id, user_id=self.user_id)
+            if profile is not None:
+                values.append(f"🍀 {profile.points}")
 
         if len(values) == 0:
             values.append("N/A")
