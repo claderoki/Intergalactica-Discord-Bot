@@ -1,3 +1,4 @@
+import asyncio
 from discord.ext import commands
 
 from src.discord.cogs.core import BaseCog
@@ -43,6 +44,8 @@ class WelcomeCog(BaseCog):
 
         welcome_config = self._welcome_message_configs.get(member.guild.id)
         if welcome_config is not None:
+            if member.guild.id == KnownGuild.mouse:
+                await asyncio.sleep(60)
             await welcome_config.send(member)
 
 

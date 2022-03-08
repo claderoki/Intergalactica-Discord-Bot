@@ -4,6 +4,8 @@ import random
 
 from dateutil.relativedelta import relativedelta
 
+from src.discord.helpers.known_guilds import KnownGuild
+
 
 class WelcomeMessageCache:
     __slots__ = ("messages", "last_sent")
@@ -39,7 +41,11 @@ class WelcomeMessage:
 
     async def remove(self, member):
         try:
-            await self._cache[member.guild.id].messages[member.id].delete()
+            message = self._cache[member.guild.id].messages[member.id]
+            if member.guild.id == KnownGuild.mouse:
+                await message.edit(content=f"~~{message.content}~~")
+            else:
+                await message.delete()
         except:
             pass
 
