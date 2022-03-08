@@ -8,6 +8,7 @@ from .helpers import WelcomeMessage
 
 class WelcomeCog(BaseCog):
     _welcome_message_configs = {}
+    _instant_leavers = set()
 
     def add_guild(self, guild_id: int, channel_id: int, message: str):
         channel = self.bot.get_channel(channel_id)
@@ -17,9 +18,9 @@ class WelcomeCog(BaseCog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.add_guild(KnownGuild.kail, 884843718534901864,
-                       "Welcome {member.mention}! make sure to get <#884851898346254356> and <#884851962212929547>!")
+        self.add_guild(KnownGuild.kail, 884843718534901864, "Welcome {member.mention}! make sure to get <#884851898346254356> and <#884851962212929547>!")
         self.add_guild(KnownGuild.mio, 942170622132387860, "{member.mention} just joined us! Happy to see you!")
+        self.add_guild(KnownGuild.mouse, 729909438378541116, "Welcome to the server {member.mention}, <@&841072184953012275> say hello!")
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -46,7 +47,22 @@ class WelcomeCog(BaseCog):
         if welcome_config is not None:
             if member.guild.id == KnownGuild.mouse:
                 await asyncio.sleep(60)
-            await welcome_config.send(member)
+            if member.id not in self._instant_leavers:
+                await welcome_config.send(member)
+                self._instant_leavers.remove(member.id)
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+        if member.bot:
+            return
+
+        if not self.bot.production:
+            return
+
+        welcome_config = self._welcome_message_configs.get(member.guild.id)
+        if welcome_config is not None:
+            self._instant_leavers.add(member.id)
+            await welcome_config.remove(member)
 
 
 def setup(bot):

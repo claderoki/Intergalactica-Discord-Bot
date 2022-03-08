@@ -114,12 +114,7 @@ class Intergalactica(BaseCog):
         if not self.bot.production:
             return
 
-        if member.guild.id == KnownGuild.mouse:
-            role = member.guild.get_role(841072184953012275)
-            general = member.guild.get_channel(729909438378541116)
-            message = await general.send(f"Welcome to the server {member.mention}, {role.mention} say hello!")
-            self.welcome_messages[member.id] = message
-        elif member.guild.id == KnownGuild.intergalactica:
+        if member.guild.id == KnownGuild.intergalactica:
             welcome_channel = self.get_channel("welcome")
             text = self.bot.translate("member_join")
 
@@ -138,13 +133,13 @@ class Intergalactica(BaseCog):
         if not self.bot.production:
             return
 
+        if member.guild.id != KnownGuild.intergalactica:
+            return
+
         try:
             await self.welcome_messages[member.id].delete()
         except:
             pass
-
-        if member.guild.id != KnownGuild.intergalactica:
-            return
 
         welcome_channel = self.get_channel("welcome")
         text = self.bot.translate("member_leave")
