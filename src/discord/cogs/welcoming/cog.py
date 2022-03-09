@@ -49,7 +49,10 @@ class WelcomeCog(BaseCog):
                 await asyncio.sleep(60)
             if member.id not in self._instant_leavers:
                 await welcome_config.send(member)
+            try:
                 self._instant_leavers.remove(member.id)
+            except:
+                pass
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
