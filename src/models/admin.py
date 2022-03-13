@@ -107,11 +107,6 @@ class PersonalQuestion(BaseModel):
         return discord.Embed(title=f"Question {self.id}", color=discord.Color.gold(), description=self.value)
 
 
-class Word(BaseModel):
-    value = peewee.TextField(null=False)
-    language = peewee.CharField(null=False, max_length=2, default="EN")
-
-
 class DailyActivity(BaseModel):
     user_id = peewee.BigIntegerField(null=False)
     guild_id = peewee.BigIntegerField(null=False)

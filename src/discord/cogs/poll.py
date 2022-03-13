@@ -8,7 +8,7 @@ from src.discord.errors.base import SendableException
 from src.discord.helpers.embed import Embed
 from src.discord.helpers.pretty import prettify_dict
 from src.discord.helpers.waiters import *
-from src.models import Change, Parameter, Poll, PollTemplate, Vote, database
+from src.models import Poll, PollTemplate, Vote, database
 
 
 class PollCog(BaseCog, name="Poll"):
@@ -261,82 +261,6 @@ class PollCog(BaseCog, name="Poll"):
         self.recheck_active_polls()
 
         poll.save()
-
-    @poll_group.group(name="change")
-    @has_guild_permissions(administrator=True)
-    async def change(self, ctx):
-        pass
-
-    @change.command("delete")
-    @has_guild_permissions(administrator=True)
-    async def change_delete(self, ctx, discordObject: typing.Union[discord.TextChannel, discord.Role]):
-        poll_channel = ctx.channel
-
-        template = PollTemplate.get(name="change", guild_id=ctx.guild.id)
-        poll = Poll.from_template(template)
-        poll.author_id = ctx.author.id
-        poll.type = Poll.Type.bool
-        poll.save()
-
-        poll.create_bool_options()
-
-        change = Change.create(poll=poll, action="delete", type=Change.Type[discordObject.__class__.__name__.lower()])
-        Parameter.create(change=change, key="id", value=discordObject.id)
-
-        poll.question = poll.generate_question()
-
-        message = await poll.send()
-        poll.message_id = message.id
-        self.recheck_active_polls()
-        poll.save()
-
-    @change.command("create")
-    @has_guild_permissions(administrator=True)
-    async def change_create(self, ctx, type: str, name: str):
-        template = PollTemplate.get(name="change", guild_id=ctx.guild.id)
-        poll = Poll.from_template(template)
-        poll.author_id = ctx.author.id
-        poll.type = Poll.Type.bool
-        poll.save()
-
-        poll.create_bool_options()
-
-        await self.setup_poll(ctx, poll)
-        change = Change.create(action="create", poll=poll, type=Change.Type[type.lower()])
-        change.create_param("name", name)
-
-        poll.question = poll.generate_question()
-
-        message = await poll.send()
-        poll.message_id = message.id
-        self.recheck_active_polls()
-        poll.save()
-
-    @tasks.loop(minutes=2)
-    async def poller(self):
-        with database:
-            query = Poll.select()
-            query = query.where(Poll.ended == False)
-            query = query.where(Poll.due_date <= datetime.datetime.utcnow())
-            for poll in query:
-                if poll.type == Poll.Type.bool and poll.passed:
-                    for change in poll.changes:
-                        await change.implement()
-                        change.implemented = True
-                        change.save()
-
-                await poll.send_results()
-                poll.ended = True
-                if poll.delete_after_results:
-                    try:
-                        message = await poll.channel.fetch_message(poll.message_id)
-                        await message.delete()
-                    except:
-                        pass
-                poll.save()
-
-            self.recheck_active_polls()
-
 
 def setup(bot):
     bot.add_cog(PollCog(bot))

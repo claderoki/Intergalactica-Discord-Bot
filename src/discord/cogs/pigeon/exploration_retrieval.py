@@ -5,7 +5,7 @@ import discord
 
 import src.config as config
 from src.discord.cogs.conversions.cog import ConversionCog
-from src.models import Item, Pigeon, Buff, PigeonRelationship
+from src.models import Item, Pigeon, PigeonRelationship
 
 
 def percentage_chance(chance):
@@ -131,21 +131,6 @@ class ExplorationRetrieval(ActivityRetrieval):
                 attacker_name = f"`{other.name}`"
             bonus_messages[
                 self.Bonus.wing_damage] = f"During the flight, {pigeon.name} got attacked by {attacker_name}."
-
-        buffs = []
-        for bonus, bonus_message in bonus_messages.items():
-            if bonus.buff_code is not None:
-                buffs.append(Buff.get(code=bonus.buff_code))
-            symbol = "+" if bonus.amount > 0 else ""
-
-            embed.add_field(name=f"Bonus {Pigeon.emojis['gold']} {symbol}{bonus.amount}", value=bonus_message,
-                            inline=False)
-
-        if len(buffs) > 0:
-            lines = []
-            for buff in buffs:
-                lines.append(f"**{buff.name}**: *{buff.description}*")
-            embed.add_field(name="Buffs gained", value="\n".join(lines), inline=False)
 
         embed.add_field(
             name="Total Winnings",

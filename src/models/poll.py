@@ -108,18 +108,6 @@ class Poll(BaseModel):
         self.message_id = msg.id
         return msg
 
-    def generate_question(self, mention=False):
-        changes = list(self.changes)
-
-        lines = []
-        lines.append("Would you like to ")
-
-        for change in changes:
-            lines.append(change.to_string(mention=mention))
-
-        sep = " " if len(changes) == 1 else "\n"
-        return sep.join(lines) + "?"
-
     @property
     def due_date_passed(self) -> bool:
         current_date = datetime.datetime.utcnow()
@@ -136,51 +124,11 @@ class Poll(BaseModel):
         data.sort(key=lambda x: x["count"], reverse=True)
         return data
 
-    # def get_result_image_url(self):
-    #     votes = self.votes
-
-    #     plt.rcdefaults()
-    #     plt.style.use('seaborn-pastel')
-    #     plt.rcParams.update({'figure.autolayout': True})
-    #     fig, ax = plt.subplots()
-    #     for axis in (ax.xaxis, ax.yaxis):
-    #         axis.set_major_locator(ticker.MaxNLocator(integer=True))
-
-    #     bar_x = list(range(len(votes)))
-    #     bar_height = [x["count"] for x in votes]
-    #     bar_tick_label = [x["text"] for x in votes]
-    #     bar_label = [str(x["percentage"]) + "%" for x in votes]
-
-    #     bar_plot = plt.bar(bar_x, bar_height, tick_label=bar_tick_label)
-
-    #     for idx,rect in enumerate(bar_plot):
-    #         height = rect.get_height()
-    #         x = rect.get_x() + rect.get_width()/2.
-    #         y = 0.5*height
-    #         ax.text(x, y, bar_label[idx], ha='center', va='bottom', rotation=0)
-
-    #     plt.ylim(0,20)
-
-    #     if len(self.changes) > 0:
-    #         ax.set_title(self.generate_question(mention = False))
-    #     else:
-    #         ax.set_title(self.question)
-
-    #     ax.margins(0.3)
-    #     ax.axis('tight')
-    #     fig.tight_layout()
-
-    #     stream = io.BytesIO()
-    #     plt.savefig(stream, format = 'png', transparent = False)
-
-    #     return self.bot.store_file(stream, "results.png")
-
     async def get_results_embed(self):
         votes = [list(x.values()) for x in self.votes]
         votes.insert(0, ("%", "choice", "votes"))
         table = pretty.Table.from_list(votes, first_header=True)
 
-        changes = list(self.changes)
         passed = self.passed
 
         embed = discord.Embed(description=f"Poll #{self.id} results\n\n**{self.question}?**\n{table.generate()}",
@@ -188,85 +136,13 @@ class Poll(BaseModel):
 
         if self.type == self.Type.bool:
             if passed:
-                # TODO: translate!
                 embed.color = discord.Color.green()
                 embed.set_footer(text="Vote passed!")
             else:
                 embed.color = discord.Color.red()
                 embed.set_footer(text="Vote did not pass.")
 
-            if len(changes) > 0 and passed:
-                embed.set_footer(text="Changes have been implemented.")
-
         return embed
-
-
-class Change(BaseModel):
-    class Type(Enum):
-        textchannel = 1
-        voicechannel = 2
-        role = 3
-
-    class Action(Enum):
-        create = 1
-        delete = 2
-        edit = 3
-
-    action = peewee.TextField(null=False)
-    implemented = peewee.BooleanField(null=False, default=False)
-    type = EnumField(Type, null=False)
-    poll = peewee.ForeignKeyField(Poll, null=False, backref="changes", on_delete="CASCADE")
-
-    def create_param(self, key, value):
-        return Parameter.create(change=self, key=key, value=value)
-
-    async def _delete_action(self):
-        subject = self.subject
-        await subject.delete()
-
-    async def _create_action(self):
-        parameters = self.parameters
-
-        if self.type == self.Type.textchannel:
-            return await self.poll.guild.create_text_channel(**parameters)
-
-    def to_string(self, mention):
-        action = self.action
-
-        if action == "delete":
-            return f"{action} {self.subject if not mention else self.subject.mention}"
-        elif action == "create":
-            parameters = self.parameters
-            return f"{action} {self.type.name} " + (", ".join([x + "=" + parameters[x] for x in parameters]))
-
-    async def implement(self):
-        if self.action == "delete":
-            return await self._delete_action()
-        elif self.action == "create":
-            return await self._create_action()
-
-    async def revert(self):
-        pass
-
-    @property
-    def parameters(self):
-        return {parameter.key: parameter.value for parameter in self.parameters_select}
-
-    @property
-    def subject(self):
-        if self.action == "create":
-            return None
-
-        parameters = self.parameters
-
-        if self.type == self.Type.textchannel:
-            return self.poll.guild.get_channel(int(parameters["id"]))
-
-
-class Parameter(BaseModel):
-    key = peewee.TextField(null=False)
-    value = peewee.TextField(null=False)
-    change = peewee.ForeignKeyField(Change, backref="parameters_select", null=False, on_delete="CASCADE")
 
 
 class Option(BaseModel):

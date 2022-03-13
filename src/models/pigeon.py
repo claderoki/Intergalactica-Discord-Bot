@@ -133,15 +133,7 @@ class Pigeon(BaseModel):
         language.save()
 
     def create_buff(self, code, create_system_message=True):
-        buff = Buff.get(code=code)
-        pigeon_buff, _ = PigeonBuff.get_or_create(pigeon=self, buff=buff)
-        pigeon_buff.due_date = datetime.datetime.utcnow() + buff.duration
-        pigeon_buff.save()
-        if create_system_message:
-            SystemMessage.create(
-                text=self.bot.translate("buff_assigned").format(buff=buff),
-                human=self.human
-            )
+        return
 
     def update_stats(self, data, increment=True, save=True):
         human = self.bot.get_human(user=self.human.user_id)
