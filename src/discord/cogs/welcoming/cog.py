@@ -46,26 +46,18 @@ class WelcomeCog(BaseCog):
         welcome_config = self._welcome_message_configs.get(member.guild.id)
         if welcome_config is not None:
             if member.guild.id == KnownGuild.mouse:
-                await asyncio.sleep(60)
-            if member.id not in self._instant_leavers:
-                await welcome_config.send(member)
-            try:
-                self._instant_leavers.remove(member.id)
-            except:
-                pass
+                try:
+                    await self.bot.wait_for("typing",
+                        check = lambda c, u, _: self.check_valid(member, c, u),
+                        timeout = 360)
+                except asyncio.TimeoutError:
+                    return
+            await welcome_config.send(member)
 
-    @commands.Cog.listener()
-    async def on_member_remove(self, member):
-        if member.bot:
-            return
-
-        if not self.bot.production:
-            return
-
-        welcome_config = self._welcome_message_configs.get(member.guild.id)
-        if welcome_config is not None:
-            self._instant_leavers.add(member.id)
-            await welcome_config.remove(member)
+    def check_valid(self, new_member, channel, user):
+        if channel.guild is None or channel.guild.id != new_member.guild.id:
+            return False
+        return user.id == new_member.id
 
 
 def setup(bot):
