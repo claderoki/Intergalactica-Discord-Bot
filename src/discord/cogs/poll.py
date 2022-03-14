@@ -262,5 +262,24 @@ class PollCog(BaseCog, name="Poll"):
 
         poll.save()
 
+    @tasks.loop(minutes=2)
+    async def poller(self):
+        with database:
+            query = Poll.select()
+            query = query.where(Poll.ended == False)
+            query = query.where(Poll.due_date <= datetime.datetime.utcnow())
+            for poll in query:
+                await poll.send_results()
+                poll.ended = True
+                if poll.delete_after_results:
+                    try:
+                        message = await poll.channel.fetch_message(poll.message_id)
+                        await message.delete()
+                    except:
+                        pass
+                poll.save()
+
+            self.recheck_active_polls()
+
 def setup(bot):
     bot.add_cog(PollCog(bot))
