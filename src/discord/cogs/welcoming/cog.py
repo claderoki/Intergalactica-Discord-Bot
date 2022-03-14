@@ -8,7 +8,6 @@ from .helpers import WelcomeMessage
 
 class WelcomeCog(BaseCog):
     _welcome_message_configs = {}
-    _instant_leavers = set()
 
     def add_guild(self, guild_id: int, channel_id: int, message: str):
         channel = self.bot.get_channel(channel_id)
@@ -59,6 +58,17 @@ class WelcomeCog(BaseCog):
             return False
         return user.id == new_member.id
 
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+        if member.bot:
+            return
+
+        if not self.bot.production:
+            return
+
+        welcome_config = self._welcome_message_configs.get(member.guild.id)
+        if welcome_config is not None:
+            await welcome_config.remove(member)
 
 def setup(bot):
     bot.add_cog(WelcomeCog(bot))
