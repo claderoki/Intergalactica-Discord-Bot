@@ -40,7 +40,7 @@ class Cam(CustomCog):
         await reaction.message.delete()
 
         embed = (discord.Embed(description=reaction.message.content)
-            .set_author(name = member.name, icon_url = member.avatar_url))
+            .set_author(name = reaction.message.author.name, icon_url = member.avatar_url))
 
         await channel.send(embed = embed)
 
