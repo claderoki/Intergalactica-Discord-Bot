@@ -27,6 +27,9 @@ class Cam(CustomCog):
         # if not self.bot.production:
         #     return
 
+        if isinstance(reaction.emoji, str):
+            return
+
         if reaction.emoji.id != KnownEmoji.ians_face:
             return
 
