@@ -173,7 +173,7 @@ class Earthling(BaseModel):
     def inactive(self):
         delta = config.inactive_delta
         if self.guild_id == KnownGuild.mouse:
-            delta = datetime.timedelta(weeks=8)
+            delta = datetime.timedelta(weeks=4)
 
         last_active = self.last_active or self.member.joined_at
         return (last_active + delta) < datetime.datetime.utcnow()
