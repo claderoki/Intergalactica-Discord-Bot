@@ -40,7 +40,6 @@ class Cam(CustomCog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.add_message_redirector(MessageRedirector(KnownEmoji.ians_face, KnownChannel.conspiracy, KnownRole.conspiracy_redirector))
-        self.add_message_redirector(MessageRedirector("💩", KnownChannel.keith, KnownRole.conspiracy_redirector))
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
