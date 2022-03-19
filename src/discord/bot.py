@@ -141,7 +141,6 @@ class Locus(commands.Bot):
             "conversations",
             "welcoming.cog",
             "groups",
-            "personal_roles",
         ]
 
         if True:
