@@ -137,7 +137,6 @@ class Locus(commands.Bot):
             "custom.intergalactica.cog",
             "birthdayreminders.cog",
             "inactivechannels.cog",
-            "bumpreminders.cog",
             "conversations",
             "welcoming.cog",
             "groups",
