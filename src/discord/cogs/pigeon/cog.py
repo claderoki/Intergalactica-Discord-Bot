@@ -120,6 +120,10 @@ class PigeonCog(BaseCog, name="Pigeon"):
                 return channel
             if 'bot-playground' in channel.name.lower():
                 return channel
+            if 'bot-commands' in channel.name.lower():
+                return channel
+            if 'bot' in channel.name.lower():
+                return channel
 
     @commands.Cog.listener()
     async def on_ready(self):
