@@ -245,7 +245,9 @@ class Locus(commands.Bot):
         else:
             exception = error
 
-        if isinstance(exception, commands.errors.CommandOnCooldown):
+        if isinstance(exception, commands.errors.MissingPermissions):
+            await self.owner.send(f"```\nCommand '{ctx.command}' in '{ctx.author}' in {ctx.guild.id if ctx.guild else ''} Error: '{exception}'```")
+        elif isinstance(exception, commands.errors.CommandOnCooldown):
             embed = Embed.error(f"You are on cooldown. Try again in {seconds_readable(exception.retry_after)}")
             embed.set_footer(text=self.translate("available_again_at"))
             embed.timestamp = datetime.datetime.utcnow() + datetime.timedelta(seconds=exception.retry_after)
