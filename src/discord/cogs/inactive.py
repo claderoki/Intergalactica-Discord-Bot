@@ -70,6 +70,7 @@ class Inactive(BaseCog):
                     yield earthling
 
     @commands.has_guild_permissions(administrator=True)
+    @commands.bot_has_permissions(kick_members=True)
     @commands.command()
     @commands.guild_only()
     async def inactives(self, ctx):
