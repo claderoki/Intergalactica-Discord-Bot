@@ -1,10 +1,35 @@
 from src.discord.cogs.core import BaseCog
-import cv2
 
 from discord.ext import commands, tasks
 import asyncio
+
 import src.config as config
 from src.discord.helpers.files import FileHelper
+
+class Camera:
+    async def capture(self, filepath):
+        pass
+
+class PiCamera(Camera):
+
+    def __init__(self):
+        import picamera
+        self.inst = picamera.PiCamera()
+
+    async def capture(self, filepath):
+        return self.inst.capture(filepath)
+
+class LaptopCamera(Camera):
+    async def capture(self, filepath):
+        import cv2
+        cam = cv2.VideoCapture(0)
+        cam.read()
+        await asyncio.sleep(1)
+        frame = cam.read()[1]
+        cv2.imwrite(filepath, frame)
+        cam.release()
+
+camera_class = PiCamera if True else LaptopCamera
 
 class Personal(BaseCog):
     _started = True
@@ -15,13 +40,9 @@ class Personal(BaseCog):
 
     @tasks.loop(seconds = 20)
     async def loop(self):
-        cam = cv2.VideoCapture(0)
-        frame = cam.read()[1]
-        await asyncio.sleep(5)
-        frame = cam.read()[1]
+        camera = camera_class()
         full_path = f"{config.path}/tmp/frame.png"
-        cv2.imwrite(full_path, frame)
-        cam.release()
+        await camera.capture(full_path)
         await FileHelper.store(full_path, "frame.png", channel_id=966213030062989334)
 
     @commands.is_owner()
