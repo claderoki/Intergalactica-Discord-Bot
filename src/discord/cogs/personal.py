@@ -35,6 +35,7 @@ camera_class = PiCamera if True else LaptopCamera
 
 class Personal(BaseCog):
     _started = True
+    _camera = camera_class()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -45,9 +46,8 @@ class Personal(BaseCog):
         if not self._started:
             return
 
-        camera = camera_class()
         full_path = f"{config.path}/tmp/frame.png"
-        await camera.capture(full_path)
+        await self._camera.capture(full_path)
         await FileHelper.store(full_path, "frame.png", channel_id=966213030062989334)
 
     @commands.is_owner()
