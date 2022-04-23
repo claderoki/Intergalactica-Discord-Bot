@@ -42,6 +42,9 @@ class Personal(BaseCog):
 
     @tasks.loop(seconds = 20)
     async def loop(self):
+        if not self._started:
+            return
+
         camera = camera_class()
         full_path = f"{config.path}/tmp/frame.png"
         await camera.capture(full_path)
