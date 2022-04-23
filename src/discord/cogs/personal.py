@@ -17,7 +17,9 @@ class PiCamera(Camera):
         self.inst = picamera.PiCamera()
 
     async def capture(self, filepath):
-        return self.inst.capture(filepath)
+        self.inst.start_preview()
+        self.inst.capture(filepath)
+        self.inst.stop_preview()
 
 class LaptopCamera(Camera):
     async def capture(self, filepath):
