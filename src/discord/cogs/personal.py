@@ -51,6 +51,7 @@ class Personal(BaseCog):
         await FileHelper.store(full_path, "frame.png", channel_id=966213030062989334)
 
     @commands.is_owner()
+    @commands.command(name = "cam")
     async def camera_toggle(self, ctx):
         self._started = not self._started
         await ctx.send("OK, camera is now " + str(self._started))
