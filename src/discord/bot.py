@@ -126,6 +126,7 @@ class Locus(commands.Bot):
             "misc",
             "prank",
             "milkyway.cog",
+            "personal",
             "pigeon.cog",
             "gameroles.cog",
             "switch.cog",
