@@ -41,8 +41,7 @@ class MiscCog(BaseCog, name="Misc"):
     @commands.command()
     async def invite(self, ctx):
         """Gives an invite link so you can add the bot"""
-        # https://discord.com/api/oauth2/authorize?client_id=742365922244952095&scope=applications.commands
-        await ctx.send(f"https://discordapp.com/oauth2/authorize?client_id={ctx.bot.user.id}&scope=bot&permissions=0")
+        await ctx.send(f"https://discord.com/api/oauth2/authorize?client_id={ctx.bot.user.id}&scope=applications.commands+bot&permissions=0")
 
 
 def setup(bot):
