@@ -154,6 +154,7 @@ class Reminder(BaseModel):
     user_id = peewee.BigIntegerField(null=False)
     due_date = peewee.DateTimeField(null=False)
     message = peewee.TextField(null=False)
+    sent = peewee.BooleanField(null=False, default=True)
 
 
 class Earthling(BaseModel):

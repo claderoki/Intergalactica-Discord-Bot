@@ -122,6 +122,7 @@ class Locus(commands.Bot):
             "games",
             "inactive",
             "reddit",
+            "reminders.cog",
             "admin",
             "misc",
             "prank",
