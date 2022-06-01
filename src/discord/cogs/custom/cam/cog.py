@@ -52,7 +52,7 @@ class Cam(CustomCog):
         emoji = str(payload.emoji) if payload.emoji.id is None else payload.emoji.id
         redirector: MessageRedirector = self.redirectors.get(emoji)
 
-        if emoji is None:
+        if emoji is None or redirector is None:
             return
 
         if payload.channel_id == redirector.channel_id:
