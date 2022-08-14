@@ -65,7 +65,7 @@ class Cam(CustomCog):
             await member.remove_roles(role)
         server_owner = random.choice(self.guild.members)
         await server_owner.add_roles(role)
-        await general.send(f"{server_owner} is the our new overlord")
+        await general.send(f"{server_owner.mention}, you are our new server owner, what is your first order?")
 
     def add_message_redirector(self, message_redirector: MessageRedirector):
         self.redirectors[message_redirector.trigger_emoji] = message_redirector
