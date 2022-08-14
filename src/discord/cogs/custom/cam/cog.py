@@ -1,3 +1,4 @@
+import datetime
 import random
 
 from discord import VoiceChannel
@@ -13,10 +14,12 @@ class KnownChannel:
     conspiracy = 905587705537265695
     keith = 952992095747063888
     bitrate_vc = 917864123134537759
+    general = 762434267027472384
 
 
 class KnownRole:
     conspiracy_redirector = 953731354158305340
+    server_owner = 955123518171906049
 
 
 class KnownEmoji:
@@ -36,20 +39,42 @@ class Cam(CustomCog):
     guild_id = KnownGuild.cam
     redirectors = {}
 
+    def __init__(self, bot):
+        super().__init__(bot)
+        self.guild: discord.Guild = None
+
     @tasks.loop(hours=24)
-    async def loopy(self):
-        bitrate_channel: VoiceChannel = self.bot.get_channel(KnownChannel.bitrate_vc)
+    async def bitrate_loop(self):
+        bitrate_channel: VoiceChannel = self.guild.get_channel(KnownChannel.bitrate_vc)
         bitrate = random.randint(8, 96)
         name = f"{bitrate}bit audio quality enjoyers"
-        await bitrate_channel.edit(bitrate=bitrate*1000, name=name)
+        await bitrate_channel.edit(bitrate=bitrate * 1000, name=name)
 
+    @tasks.loop(hours=24)
+    async def owner_loop(self):
+        # only on monday
+        if datetime.date.today().weekday() != 7:
+            return
+
+        general: discord.TextChannel = self.guild.get_channel(KnownChannel.general)
+        if general is None:
+            return
+
+        role = self.guild.get_role(KnownRole.server_owner)
+        for member in role.members:
+            await member.remove_roles(role)
+        server_owner = random.choice(self.guild.members)
+        await server_owner.add_roles(role)
+        await general.send(f"{server_owner} is the our new overlord")
 
     def add_message_redirector(self, message_redirector: MessageRedirector):
         self.redirectors[message_redirector.trigger_emoji] = message_redirector
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.start_task(self.loopy)
+        self.guild = self.bot.get_guild(self.guild_id)
+        self.start_task(self.bitrate_loop, self.bot.production)
+        self.start_task(self.owner_loop, self.bot.production)
         self.add_message_redirector(
             MessageRedirector(KnownEmoji.ians_face, KnownChannel.conspiracy, KnownRole.conspiracy_redirector))
 
