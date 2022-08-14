@@ -41,7 +41,7 @@ class Cam(CustomCog):
         bitrate_channel: VoiceChannel = self.bot.get_channel(KnownChannel.bitrate_vc)
         bitrate = random.randint(8, 96)
         name = f"{bitrate}bit audio quality enjoyers"
-        await bitrate_channel.edit(bitrate=bitrate, name=name)
+        await bitrate_channel.edit(bitrate=bitrate*1000, name=name)
 
 
     def add_message_redirector(self, message_redirector: MessageRedirector):
