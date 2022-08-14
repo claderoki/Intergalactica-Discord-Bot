@@ -1,7 +1,8 @@
-from math import perm
-from sympy import per
+import random
+
+from discord import VoiceChannel
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from src.discord.helpers import ColorHelper
 from src.discord.helpers.known_guilds import KnownGuild
@@ -11,6 +12,7 @@ from ..shared.cog import CustomCog
 class KnownChannel:
     conspiracy = 905587705537265695
     keith = 952992095747063888
+    bitrate_vc = 917864123134537759
 
 
 class KnownRole:
@@ -34,12 +36,22 @@ class Cam(CustomCog):
     guild_id = KnownGuild.cam
     redirectors = {}
 
+    @tasks.loop(hours=24)
+    async def loopy(self):
+        bitrate_channel: VoiceChannel = self.bot.get_channel(KnownChannel.bitrate_vc)
+        bitrate = random.randint(8, 96)
+        name = f"{bitrate}bit audio quality enjoyers"
+        await bitrate_channel.edit(bitrate=bitrate, name=name)
+
+
     def add_message_redirector(self, message_redirector: MessageRedirector):
         self.redirectors[message_redirector.trigger_emoji] = message_redirector
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.add_message_redirector(MessageRedirector(KnownEmoji.ians_face, KnownChannel.conspiracy, KnownRole.conspiracy_redirector))
+        self.start_task(self.loopy)
+        self.add_message_redirector(
+            MessageRedirector(KnownEmoji.ians_face, KnownChannel.conspiracy, KnownRole.conspiracy_redirector))
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -79,6 +91,7 @@ class Cam(CustomCog):
 
 def is_video(content: str) -> bool:
     return "youtube" in content or "youtu.be" in content
+
 
 def message_to_embed(message: discord.Message) -> discord.Embed:
     embed = discord.Embed(color=ColorHelper.get_primary_color())
