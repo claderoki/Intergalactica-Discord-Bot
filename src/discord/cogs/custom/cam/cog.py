@@ -53,7 +53,7 @@ class Cam(CustomCog):
     @tasks.loop(hours=24)
     async def owner_loop(self):
         # only on monday
-        if datetime.date.today().weekday() != 7:
+        if datetime.date.today().weekday() != 6:
             return
 
         general: discord.TextChannel = self.guild.get_channel(KnownChannel.general)
