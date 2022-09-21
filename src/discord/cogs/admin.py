@@ -6,7 +6,7 @@ from discord.ext import commands
 import src.config as config
 from src.discord.cogs.core import BaseCog
 from src.discord.errors.base import SendableException
-
+from src.discord.cogs.custom.shared.helpers import GuildHelper
 
 class Admin(BaseCog):
     bronk_id = 771781840012705792
@@ -75,6 +75,13 @@ class Admin(BaseCog):
     @commands.is_owner()
     async def emoji(self, ctx):
         pass
+
+    @commands.command()
+    @commands.is_owner()
+    async def invo(self, ctx):
+        guild = ctx.bot.get_guild(761624318291476482)
+        invite_url = await GuildHelper.get_invite_url(guild)
+        await ctx.send(invite_url)
 
     # @emoji.command(name="add")
     # async def emoji_add(self, ctx, *, name: lambda x: x.lower().replace(" ", "_")):
