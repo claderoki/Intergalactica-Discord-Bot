@@ -135,7 +135,6 @@ class Locus(commands.Bot):
             "custom.guac.cog",
             "custom.c3po.cog",
             "custom.shared.cog",
-            "custom.intergalactica.cog",
             "birthdayreminders.cog",
             "inactivechannels.cog",
             "conversations",
