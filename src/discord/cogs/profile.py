@@ -568,5 +568,5 @@ class Profile(BaseCog):
                         earthling = Earthling.get_or_create_for_member(member)
 
 
-async async def setup(bot):
+async def setup(bot):
     await bot.add_cog(Profile(bot))
