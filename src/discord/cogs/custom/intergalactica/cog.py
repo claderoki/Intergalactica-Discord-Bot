@@ -12,5 +12,5 @@ class Intergalactica(CustomCog):
         pass
 
 
-def setup(bot):
-    bot.add_cog(Intergalactica(bot))
+async def setup(bot):
+    await bot.add_cog(Intergalactica(bot))

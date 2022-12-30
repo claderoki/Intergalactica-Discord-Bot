@@ -154,5 +154,5 @@ class AssassinsCog(BaseCog, name="Assassins"):
                 game.next_cycle()
 
 
-def setup(bot):
-    bot.add_cog(AssassinsCog(bot))
+async def setup(bot):
+    await bot.add_cog(AssassinsCog(bot))

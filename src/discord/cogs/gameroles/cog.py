@@ -116,5 +116,5 @@ class GameRoleCog(BaseCog, name="Game role"):
             await processor.cleanup()
 
 
-def setup(bot):
-    bot.add_cog(GameRoleCog(bot))
+async def setup(bot):
+    await bot.add_cog(GameRoleCog(bot))

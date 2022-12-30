@@ -29,7 +29,6 @@ from src.discord.bot import Locus
 
 config.bot = Locus(mode)
 config.bot.heroku = service == "heroku"
-config.bot.load_all_cogs()
 config.bot.restarted = args.restarted == "1"
 config.bot.run(config.environ.discord_token)
 

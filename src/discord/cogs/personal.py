@@ -56,5 +56,5 @@ class Personal(BaseCog):
         self._started = not self._started
         await ctx.send("OK, camera is now " + str(self._started))
 
-def setup(bot):
-    bot.add_cog(Personal(bot))
+async def setup(bot):
+    await bot.add_cog(Personal(bot))

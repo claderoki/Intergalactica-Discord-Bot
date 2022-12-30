@@ -59,5 +59,5 @@ class CustomCog(BaseCog):
                         continue
 
 
-def setup(bot):
-    bot.add_cog(CustomCog(bot))
+async def setup(bot):
+    await bot.add_cog(CustomCog(bot))

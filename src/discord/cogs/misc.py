@@ -44,5 +44,5 @@ class MiscCog(BaseCog, name="Misc"):
         await ctx.send(f"https://discord.com/api/oauth2/authorize?client_id={ctx.bot.user.id}&scope=applications.commands+bot&permissions=0")
 
 
-def setup(bot):
-    bot.add_cog(MiscCog(bot))
+async def setup(bot):
+    await bot.add_cog(MiscCog(bot))

@@ -168,5 +168,5 @@ All the users that wrote something for the last 20 messages are collected and th
                     currency.save()
 
 
-def setup(bot):
-    bot.add_cog(ConversionCog(bot))
+async def setup(bot):
+    await bot.add_cog(ConversionCog(bot))

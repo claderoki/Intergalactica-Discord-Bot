@@ -219,5 +219,5 @@ class TempChannelsCog(BaseCog, name="Milkyway"):
                 temp_channel.save()
 
 
-def setup(bot):
-    bot.add_cog(TempChannelsCog(bot))
+async def setup(bot):
+    await bot.add_cog(TempChannelsCog(bot))

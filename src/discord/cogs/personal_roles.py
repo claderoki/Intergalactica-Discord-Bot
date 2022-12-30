@@ -157,5 +157,5 @@ class PersonalRoleCog(BaseCog, name="Personal role"):
             await ctx.send(ctx.bot.translate("attr_removed").format(name="role"))
 
 
-def setup(bot):
-    bot.add_cog(PersonalRoleCog(bot))
+async def setup(bot):
+    await bot.add_cog(PersonalRoleCog(bot))

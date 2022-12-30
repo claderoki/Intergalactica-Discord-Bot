@@ -281,5 +281,5 @@ class PollCog(BaseCog, name="Poll"):
 
             self.recheck_active_polls()
 
-def setup(bot):
-    bot.add_cog(PollCog(bot))
+async def setup(bot):
+    await bot.add_cog(PollCog(bot))

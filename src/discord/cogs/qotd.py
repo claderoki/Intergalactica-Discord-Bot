@@ -113,5 +113,5 @@ class QotdCog(BaseCog, name="Question of the day"):
                 asyncio.gather(category_channel.channel.send(question.value))
 
 
-def setup(bot):
-    bot.add_cog(QotdCog(bot))
+async def setup(bot):
+    await bot.add_cog(QotdCog(bot))

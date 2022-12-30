@@ -40,5 +40,5 @@ class GuildRewardsCog(BaseCog, name="Server Rewards"):
         await ctx.success("Done setting up.")
 
 
-def setup(bot):
-    bot.add_cog(GuildRewardsCog(bot))
+async def setup(bot):
+    await bot.add_cog(GuildRewardsCog(bot))

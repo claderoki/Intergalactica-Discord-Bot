@@ -119,5 +119,5 @@ class Admin(BaseCog):
     #     asyncio.gather(ctx.send(ctx.translate("emoji_removed")))
 
 
-def setup(bot):
-    bot.add_cog(Admin(bot))
+async def setup(bot):
+    await bot.add_cog(Admin(bot))

@@ -20,5 +20,5 @@ class RemindersCog(BaseCog, name="Reminder"):
             reminder.sent = True
             reminder.save()
 
-def setup(bot):
-    bot.add_cog(RemindersCog(bot))
+async def setup(bot):
+    await bot.add_cog(RemindersCog(bot))

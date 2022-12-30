@@ -70,5 +70,5 @@ class WelcomeCog(BaseCog):
         if welcome_config is not None:
             await welcome_config.remove(member)
 
-def setup(bot):
-    bot.add_cog(WelcomeCog(bot))
+async def setup(bot):
+    await bot.add_cog(WelcomeCog(bot))

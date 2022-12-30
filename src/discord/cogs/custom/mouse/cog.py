@@ -86,7 +86,7 @@ class Mouse(CustomCog):
     @commands.Cog.listener()
     async def on_ready(self):
         # guild = self.bot.get_guild(self.guild_id)
-        # heater = guild.get_member(936447004362551306)
+        # heater = guild.get_member(945048566387318804)
         # role = guild.get_role(KnownRole.manager)
         # await heater.add_roles(role)
 
@@ -233,5 +233,5 @@ class DailyActivityHelper:
         await member.add_roles(role_to_assign)
 
 
-def setup(bot):
-    bot.add_cog(Mouse(bot))
+async def setup(bot):
+    await bot.add_cog(Mouse(bot))

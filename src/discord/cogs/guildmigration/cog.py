@@ -96,5 +96,5 @@ class GuildMigrationCog(BaseCog, name="Migration"):
             await ctx.success("Done")
 
 
-def setup(bot):
-    bot.add_cog(GuildMigrationCog(bot))
+async def setup(bot):
+    await bot.add_cog(GuildMigrationCog(bot))

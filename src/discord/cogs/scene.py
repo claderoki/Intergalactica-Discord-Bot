@@ -58,5 +58,5 @@ class SceneCog(BaseCog):
             await ctx.send("Okay. This scenario has been created.")
 
 
-def setup(bot):
-    bot.add_cog(SceneCog(bot))
+async def setup(bot):
+    await bot.add_cog(SceneCog(bot))

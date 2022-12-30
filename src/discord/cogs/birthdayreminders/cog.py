@@ -63,5 +63,5 @@ class BirthdayHelper:
             return f"{name} has increased in age today."
 
 
-def setup(bot):
-    bot.add_cog(BirthdayReminderCog(bot))
+async def setup(bot):
+    await bot.add_cog(BirthdayReminderCog(bot))

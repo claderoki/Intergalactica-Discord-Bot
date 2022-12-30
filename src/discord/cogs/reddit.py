@@ -89,5 +89,5 @@ class RedditCog(BaseCog, name="Reddit"):
                 pass
 
 
-def setup(bot):
-    bot.add_cog(RedditCog(bot))
+async def setup(bot):
+    await bot.add_cog(RedditCog(bot))

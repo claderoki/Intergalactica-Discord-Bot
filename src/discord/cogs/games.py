@@ -152,8 +152,8 @@ class Games(BaseCog):
         await game.start()
 
 
-def setup(bot):
-    bot.add_cog(Games(bot))
+async def setup(bot):
+    await bot.add_cog(Games(bot))
 
 
 def get_random_word():

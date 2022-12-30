@@ -99,5 +99,5 @@ class Inactive(BaseCog):
             await ctx.success("Canceled the destruction of the inactives.")
 
 
-def setup(bot):
-    bot.add_cog(Inactive(bot))
+async def setup(bot):
+    await bot.add_cog(Inactive(bot))

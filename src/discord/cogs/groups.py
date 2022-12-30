@@ -93,5 +93,5 @@ class GroupsCog(BaseCog, name="Groups"):
         await table.to_paginator(ctx, 10).wait()
 
 
-def setup(bot):
-    bot.add_cog(GroupsCog(bot))
+async def setup(bot):
+    await bot.add_cog(GroupsCog(bot))

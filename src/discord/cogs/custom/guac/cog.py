@@ -19,5 +19,5 @@ class Guac(CustomCog):
                     await after.ban(reason="Underage role")
 
 
-def setup(bot):
-    bot.add_cog(Guac(bot))
+async def setup(bot):
+    await bot.add_cog(Guac(bot))

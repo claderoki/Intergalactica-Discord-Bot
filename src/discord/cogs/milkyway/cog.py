@@ -91,5 +91,5 @@ class MilkywayCog(BaseCog, name="Milkyway"):
             await MilkywayHelper.expire(milkyway)
 
 
-def setup(bot):
-    bot.add_cog(MilkywayCog(bot))
+async def setup(bot):
+    await bot.add_cog(MilkywayCog(bot))

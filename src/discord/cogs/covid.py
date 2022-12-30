@@ -45,5 +45,5 @@ class CovidCog(BaseCog, name="Covid"):
         asyncio.gather(ctx.send(embed=embed))
 
 
-def setup(bot):
-    bot.add_cog(CovidCog(bot))
+async def setup(bot):
+    await bot.add_cog(CovidCog(bot))

@@ -25,5 +25,5 @@ class SwitchCog(BaseCog, name="Switch"):
         await ctx.success("Done setting up your switch profile")
 
 
-def setup(bot):
-    bot.add_cog(SwitchCog(bot))
+async def setup(bot):
+    await bot.add_cog(SwitchCog(bot))

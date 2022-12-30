@@ -110,10 +110,10 @@ class Locus(commands.Bot):
     def gold_emoji(self):
         return emoji.emojize(":euro:")
 
-    def load_cog(self, name):
-        self.load_extension("src.discord.cogs." + name)
+    async def load_cog(self, name):
+        await self.load_extension("src.discord.cogs." + name)
 
-    def load_all_cogs(self):
+    async def load_all_cogs(self):
         cogs = [
             "profile",
             "conversions.cog",
@@ -147,7 +147,7 @@ class Locus(commands.Bot):
             cogs.append("intergalactica")
 
         for cog in cogs:
-            self.load_cog(cog)
+            await self.load_cog(cog)
 
     @staticmethod
     def get_id(obj):
@@ -271,6 +271,7 @@ class Locus(commands.Bot):
         if self.restarted:
             await self.owner.send(embed=Embed.success("Successfully restarted"))
             self.restarted = False
+        await self.load_all_cogs()
 
     def log(self, message: str):
         if self.owner is not None:

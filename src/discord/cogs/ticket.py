@@ -96,5 +96,5 @@ class TicketCog(BaseCog, name="Ticket"):
         await ticket.sync_message()
 
 
-def setup(bot):
-    bot.add_cog(TicketCog(bot))
+async def setup(bot):
+    await bot.add_cog(TicketCog(bot))

@@ -205,5 +205,5 @@ async def process_secret_santa_queue(secret_santa: SecretSanta):
     asyncio.gather(*tasks)
 
 
-def setup(bot):
-    bot.add_cog(SecretSantaCog(bot))
+async def setup(bot):
+    await bot.add_cog(SecretSantaCog(bot))

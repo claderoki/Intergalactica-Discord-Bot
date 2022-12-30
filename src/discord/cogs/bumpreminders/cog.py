@@ -30,5 +30,5 @@ class BumpReminders(BaseCog):
                 await channel.send(content)
 
 
-def setup(bot):
-    bot.add_cog(BumpReminders(bot))
+async def setup(bot):
+    await bot.add_cog(BumpReminders(bot))

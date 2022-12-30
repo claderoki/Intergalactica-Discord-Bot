@@ -12,6 +12,7 @@ from ..shared.cog import CustomCog
 
 class KnownChannel:
     conspiracy = 905587705537265695
+    media = 1015333336668979241
     keith = 952992095747063888
     bitrate_vc = 917864123134537759
     general = 762434267027472384
@@ -20,6 +21,7 @@ class KnownChannel:
 class KnownRole:
     conspiracy_redirector = 953731354158305340
     server_owner = 955123518171906049
+    hall_monitor = 760600594825084959
 
 
 class KnownEmoji:
@@ -76,7 +78,9 @@ class Cam(CustomCog):
         self.start_task(self.bitrate_loop, self.bot.production)
         self.start_task(self.owner_loop, self.bot.production)
         self.add_message_redirector(
-            MessageRedirector(KnownEmoji.ians_face, KnownChannel.conspiracy, KnownRole.conspiracy_redirector))
+            MessageRedirector(KnownEmoji.ians_face, KnownChannel.conspiracy, KnownRole.conspiracy_redirector),
+            MessageRedirector('💩', KnownChannel.media, KnownRole.hall_monitor),
+        )
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -132,5 +136,5 @@ def message_to_embed(message: discord.Message) -> discord.Embed:
     return embed
 
 
-def setup(bot):
-    bot.add_cog(Cam(bot))
+async def setup(bot):
+    await bot.add_cog(Cam(bot))

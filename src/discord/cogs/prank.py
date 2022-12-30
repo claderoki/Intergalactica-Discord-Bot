@@ -391,5 +391,5 @@ ORDER BY people_nick_pranked DESC"""
                             asyncio.gather(prank.apply())
 
 
-def setup(bot):
-    bot.add_cog(Prank(bot))
+async def setup(bot):
+    await bot.add_cog(Prank(bot))

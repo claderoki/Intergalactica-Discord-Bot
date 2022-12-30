@@ -25,5 +25,5 @@ class C3PO(CustomCog):
             await member.add_roles(role)
 
 
-def setup(bot):
-    bot.add_cog(C3PO(bot))
+async def setup(bot):
+    await bot.add_cog(C3PO(bot))

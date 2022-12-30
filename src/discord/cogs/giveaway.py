@@ -116,5 +116,5 @@ class GiveawayCog(BaseCog, name="Giveaway"):
                 giveaway.save()
 
 
-def setup(bot):
-    bot.add_cog(GiveawayCog(bot))
+async def setup(bot):
+    await bot.add_cog(GiveawayCog(bot))

@@ -989,5 +989,5 @@ def get_pigeon_tutorial_embed(ctx):
     return embed
 
 
-def setup(bot):
-    bot.add_cog(PigeonCog(bot))
+async def setup(bot):
+    await bot.add_cog(PigeonCog(bot))

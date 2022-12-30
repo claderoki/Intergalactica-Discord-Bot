@@ -101,5 +101,5 @@ class Management(BaseCog):
         await channel.delete()
 
 
-def setup(bot):
-    bot.add_cog(Management(bot))
+async def setup(bot):
+    await bot.add_cog(Management(bot))

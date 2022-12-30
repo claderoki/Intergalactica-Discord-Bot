@@ -41,5 +41,5 @@ class InactiveChannelsCog(BaseCog, name="Inactive channels"):
         await ctx.send("\n".join(map(str, inactive_channels)))
 
 
-def setup(bot):
-    bot.add_cog(InactiveChannelsCog(bot))
+async def setup(bot):
+    await bot.add_cog(InactiveChannelsCog(bot))

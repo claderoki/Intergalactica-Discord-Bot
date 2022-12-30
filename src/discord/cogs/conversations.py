@@ -237,5 +237,5 @@ def get_conversation_tutorial_embed(ctx):
     return embed
 
 
-def setup(bot):
-    bot.add_cog(ConversationsCog(bot))
+async def setup(bot):
+    await bot.add_cog(ConversationsCog(bot))
