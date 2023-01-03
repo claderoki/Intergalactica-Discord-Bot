@@ -177,7 +177,7 @@ class Earthling(BaseModel):
             delta = datetime.timedelta(weeks=4)
 
         last_active = self.last_active or self.member.joined_at
-        return (last_active + delta) < datetime.datetime.utcnow()
+        return (last_active + delta) < datetime.datetime.now(datetime.timezone.utc)
 
     @property
     def base_embed(self):
