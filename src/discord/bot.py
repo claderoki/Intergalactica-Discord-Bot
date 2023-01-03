@@ -101,7 +101,7 @@ class Locus(commands.Bot):
     def get_base_embed(self, **kwargs) -> discord.Embed:
         user = self.user
         embed = discord.Embed(color=ColorHelper.get_dominant_color(), **kwargs)
-        return embed.set_author(name=user.name, icon_url=user.avatar_url)
+        return embed.set_author(name=user.name, icon_url='https://images-ext-2.discordapp.net/external/V7zYwOVBg6jrf7W0p7zvPxBwtNSDhi0enFMPTwV4ZsQ/%3Fsize%3D1024/https/cdn.discordapp.com/avatars/742365922244952095/710d9db4d90b2ad5be1b87a8510eb247.webp')
 
     def get_dominant_color(self, *args, **kwargs):
         return ColorHelper.get_dominant_color(*args, **kwargs)

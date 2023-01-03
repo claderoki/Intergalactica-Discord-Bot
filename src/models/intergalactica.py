@@ -176,7 +176,9 @@ class Earthling(BaseModel):
         if self.guild_id == KnownGuild.mouse:
             delta = datetime.timedelta(weeks=4)
 
-        last_active = self.last_active or self.member.joined_at
+        last_active: datetime.datetime = self.last_active or self.member.joined_at
+        last_active = last_active.replace(tzinfo=datetime.timezone.utc)
+
         return (last_active + delta) < datetime.datetime.now(datetime.timezone.utc)
 
     @property
