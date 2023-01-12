@@ -177,7 +177,7 @@ class Intergalactica(BaseCog):
         new_role = guild.get_role(764586989466943549)
 
         for member in guild.members:
-            time_here = relativedelta(datetime.datetime.utcnow(), member.joined_at)
+            time_here = relativedelta(discord.utils.utcnow(), member.joined_at)
             more_than_week = time_here.weeks >= 1 or time_here.months > 1 or time_here.years >= 1
             if more_than_week and new_role in member.roles:
                 await member.remove_roles(new_role)
