@@ -77,10 +77,10 @@ class Cam(CustomCog):
         self.guild = self.bot.get_guild(self.guild_id)
         self.start_task(self.bitrate_loop, self.bot.production)
         self.start_task(self.owner_loop, self.bot.production)
-        self.add_message_redirector(
-            MessageRedirector(KnownEmoji.ians_face, KnownChannel.conspiracy, KnownRole.conspiracy_redirector),
-            MessageRedirector('💩', KnownChannel.media, KnownRole.hall_monitor),
-        )
+        # self.add_message_redirector(
+        #     # MessageRedirector(KnownEmoji.ians_face, KnownChannel.conspiracy, KnownRole.conspiracy_redirector),
+        #     # MessageRedirector('💩', KnownChannel.media, KnownRole.hall_monitor),
+        # )
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):

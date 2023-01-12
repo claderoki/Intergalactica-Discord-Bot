@@ -258,18 +258,7 @@ class Locus(commands.Bot):
             await self.owner.send(f"```\nCommand '{ctx.command}' Error: '{exception}'```")
             raise error
 
-    async def on_ready(self):
-        self.print_info()
-        print("Ready")
-        self.owner = (await self.application_info()).owner
-        self.owner_id = self.owner.id
-
-        self._emoji_mapping = {}
-        for emoji in self.get_guild(761624318291476482).emojis:
-            self._emoji_mapping[emoji.name] = emoji
-        if self.restarted:
-            await self.owner.send(embed=Embed.success("Successfully restarted"))
-            self.restarted = False
+    async def setup_hook(self):
         await self.load_all_cogs()
 
     def log(self, message: str):

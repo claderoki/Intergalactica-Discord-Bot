@@ -24,6 +24,19 @@ class C3PO(CustomCog):
             role = member.guild.get_role(KnownRole.admin)
             await member.add_roles(role)
 
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.bot.owner = (await self.bot.application_info()).owner
+        self.bot.owner_id = self.bot.owner.id
+
+        self.bot._emoji_mapping = {}
+        for emoji in self.bot.get_guild(761624318291476482).emojis:
+            self.bot._emoji_mapping[emoji.name] = emoji
+        if self.bot.restarted:
+            await self.bot.owner.send(content="Started up")
+            self.bot.restarted = False
+
+
 
 async def setup(bot):
     await bot.add_cog(C3PO(bot))
