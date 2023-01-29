@@ -131,8 +131,6 @@ class Locus(commands.Bot):
             "gameroles.cog",
             "switch.cog",
             "custom.mouse.cog",
-            "custom.cam.cog",
-            "custom.guac.cog",
             "custom.c3po.cog",
             "custom.shared.cog",
             "birthdayreminders.cog",
