@@ -193,7 +193,7 @@ class Intergalactica(BaseCog):
                     continue
 
                 if not MemberHelper.has_mandatory_roles(member):
-                    time_here = relativedelta(datetime.datetime.utcnow(), member.joined_at)
+                    time_here = relativedelta(datetime.datetime.now(datetime.timezone.utc), member.joined_at)
                     if time_here.hours >= 6:
                         asyncio.gather(member.kick(reason="Missing mandatory role(s)"))
 
