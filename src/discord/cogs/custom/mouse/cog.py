@@ -77,19 +77,13 @@ class Mouse(CustomCog):
 
         lurkers = DailyActivityRepository.find_lurkers(user_ids, guild.id, 7)
         tasks = []
-        if len(lurkers) > 0:
-            for user_id in lurkers:
-                member = guild.get_member(user_id)
-                tasks.append(DailyActivityHelper.synchronise_roles(member, lurker_role))
+        for user_id in lurkers:
+            member = guild.get_member(user_id)
+            tasks.append(DailyActivityHelper.synchronise_roles(member, lurker_role))
         asyncio.gather(*tasks)
 
     @commands.Cog.listener()
     async def on_ready(self):
-        # guild = self.bot.get_guild(self.guild_id)
-        # heater = guild.get_member(945048566387318804)
-        # role = guild.get_role(KnownRole.manager)
-        # await heater.add_roles(role)
-
         DisboardBumpReminder.cache(self.guild_id, 884021230498373662)
 
         praw_instance = praw.Reddit(
@@ -109,6 +103,30 @@ class Mouse(CustomCog):
     async def uwu(self, ctx, *, text):
         asyncio.gather(ctx.message.delete(), return_exceptions=False)
         await ctx.send(Uwu.format(text))
+
+
+class ChannelReactionCleaner:
+    def __init__(self, channel: discord.TextChannel):
+        self.channel = channel
+        self.user_ids_in_server = [x.id for x in channel.guild.members]
+
+    async def clean(self):
+        async for message in self.channel.history():
+            await self.__clean_for(message)
+
+    async def __clean_for(self, message: discord.Message):
+        message_identifier = message.content[:50] + '...'
+        print('Starting removing for message with content', message_identifier)
+        for reaction in message.reactions:
+            left_users = [u async for u in reaction.users() if u.id not in self.user_ids_in_server]
+            print(f'Cleaning {len(left_users)} out of {reaction.count} for reaction {reaction.emoji}')
+            if len(left_users) == reaction.count:
+                print('Failsafe: removed the last user to be removed as none would remain otherwise.')
+                left_users.pop()
+
+            for user in left_users:
+                await reaction.remove(user)
+        print('Finishing removing reactions for', message_identifier)
 
 
 class AnimalCrossingBotHelper:
