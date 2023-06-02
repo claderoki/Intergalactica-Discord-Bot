@@ -132,6 +132,7 @@ class Locus(commands.Bot):
             "switch.cog",
             "custom.mouse.cog",
             "custom.c3po.cog",
+            "custom.riyo.cog",
             "custom.shared.cog",
             "birthdayreminders.cog",
             "inactivechannels.cog",
