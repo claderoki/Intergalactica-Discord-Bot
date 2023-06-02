@@ -41,7 +41,7 @@ class Riyo(CustomCog):
         channel = self.guild.get_channel(self.gen_channel_id)
         await channel.send(message)
 
-    @tasks.loop(hours=24)
+    @tasks.loop(minutes=1)
     async def loop(self):
         first = self.previous_difference is None
         url = 'https://api.wiseoldman.net/v2/competitions/25222/csv?table=participants'
