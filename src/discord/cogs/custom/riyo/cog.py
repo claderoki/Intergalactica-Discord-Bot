@@ -65,7 +65,8 @@ class Riyo(CustomCog):
             if self.previous_difference is None:
                 self.previous_difference = difference
 
-            await self.notify(f'{self.mention}, dude wtf, you\'re losing to {person_ahead.username} by {difference}%')
+            if self.previous_difference != difference or first:
+                await self.notify(f'{self.mention}, dude wtf, you\'re losing to {person_ahead.username} by {difference}%')
         elif target_index > 0:
             await self.notify(f'{self.mention}, dude wtf, you\'re losing to multiple people!')
         else:
