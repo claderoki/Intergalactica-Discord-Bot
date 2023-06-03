@@ -1,7 +1,6 @@
 import csv
 import io
 
-import discord
 import requests
 from discord.ext import commands, tasks
 
@@ -14,7 +13,7 @@ def get_difference(a, b):
     return int(((a - b) * 100) / a)
 
 
-class Ranking:
+class UserRank:
     __slots__ = ('rank', 'username', 'gained')
 
     def __init__(self, rank: int, username: str, gained: int):
@@ -52,7 +51,7 @@ class Riyo(CustomCog):
         target_index = None
         rankings = []
         for row in reader:
-            ranking = Ranking(int(row['Rank']), row['Username'], int(row['Gained']))
+            ranking = UserRank(int(row['Rank']), row['Username'], int(row['Gained']))
             if ranking.username == TARGET_NAME:
                 target_index = len(rankings)
             rankings.append(ranking)
@@ -68,7 +67,9 @@ class Riyo(CustomCog):
             if first or self.previous_difference != difference:
                 await self.notify(f'{self.mention}, dude wtf, you\'re losing to {person_ahead.username} by {difference}%')
         elif target_index > 0:
-            await self.notify(f'{self.mention}, dude wtf, you\'re losing to multiple people!')
+            difference = 99
+            if first or self.previous_difference != difference:
+                await self.notify(f'{self.mention}, dude wtf, you\'re losing to multiple people!')
         else:
             person_behind = rankings[target_index + 1]
             target = rankings[target_index]
@@ -84,7 +85,7 @@ class Riyo(CustomCog):
             elif difference != self.previous_difference or first:
                 await self.notify(f'You are {difference}% ahead of {person_behind.username}, keep it up champ')
 
-            self.previous_difference = difference
+        self.previous_difference = difference
 
 
 async def setup(bot):
