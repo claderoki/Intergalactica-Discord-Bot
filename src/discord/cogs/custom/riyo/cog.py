@@ -56,6 +56,8 @@ class Riyo(CustomCog):
                 target_index = len(rankings)
             rankings.append(ranking)
 
+        if target_index is None:
+            return
         if target_index == 1:
             person_ahead = rankings[target_index - 1]
             target = rankings[target_index]
