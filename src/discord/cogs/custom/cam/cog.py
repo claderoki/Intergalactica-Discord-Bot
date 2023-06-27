@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands, tasks
 
 from src.discord.helpers import ColorHelper
+from src.discord.helpers.general import CapsLockCorrector
 from src.discord.helpers.known_guilds import KnownGuild
 from ..shared.cog import CustomCog
 
@@ -40,10 +41,12 @@ class MessageRedirector:
 class Cam(CustomCog):
     guild_id = KnownGuild.cam
     redirectors = {}
+    caps_lock_corrector = None
 
     def __init__(self, bot):
         super().__init__(bot)
         self.guild: discord.Guild = None
+        self.caps_lock_corrector = CapsLockCorrector(self.guild_id, [1113270538622746664, 1111987592808902697], [475341889516601375])
 
     @tasks.loop(hours=24)
     async def bitrate_loop(self):
@@ -75,15 +78,21 @@ class Cam(CustomCog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.guild = self.bot.get_guild(self.guild_id)
-        self.start_task(self.bitrate_loop, self.bot.production)
-        self.start_task(self.owner_loop, self.bot.production)
+        # self.start_task(self.bitrate_loop, self.bot.production)
+        # self.start_task(self.owner_loop, self.bot.production)
         # self.add_message_redirector(
         #     # MessageRedirector(KnownEmoji.ians_face, KnownChannel.conspiracy, KnownRole.conspiracy_redirector),
         #     # MessageRedirector('💩', KnownChannel.media, KnownRole.hall_monitor),
         # )
 
     @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if self.caps_lock_corrector.should_correct(message):
+            await self.caps_lock_corrector.correct(message)
+
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        return
         # if self.bot.production:
         #     return
 
