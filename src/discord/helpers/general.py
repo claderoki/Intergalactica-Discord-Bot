@@ -3,7 +3,7 @@ from typing import List
 
 import src.config as config
 from src.models import Translation
-
+import discord
 
 class RedditHelper:
     @classmethod
@@ -50,3 +50,35 @@ class Translator:
     @classmethod
     def get_missing(cls, locale) -> set:
         return cls._missing.setdefault(locale, set())
+
+
+class CapsLockCorrector:
+    __slots__ = ("guild_id", "channel_ids", "user_ids")
+
+    def __init__(self, guild_id: int, channel_ids: list, user_ids: list):
+        self.guild_id = guild_id
+        self.channel_ids = channel_ids
+        self.user_ids = user_ids
+
+    def should_correct(self, message: discord.Message) -> bool:
+        if message.channel.id not in self.channel_ids:
+            return False
+        if message.author.id not in self.user_ids:
+            return False
+
+        caps_lock_count = sum(1 for x in message.content if x.isupper())
+        caps_lock_percentage = (caps_lock_count / len(message.content)) * 100
+        return caps_lock_percentage > 70 and len(message.content) > 10
+
+    def __correct_content(self, content: str) -> str:
+        content = content.capitalize()
+        if not content.endswith('.'):
+            content += '.'
+        return content
+
+    async def correct(self, message: discord.Message):
+        await message.delete()
+        embed: discord.Embed = discord.Embed()
+        embed.set_author(name=message.author.name, icon_url=message.author.display_avatar)
+        embed.description = self.__correct_content(message.content)
+        await message.channel.send(embed=embed)
