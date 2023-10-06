@@ -269,3 +269,44 @@ class PercentageField(peewee.IntegerField):
     def db_value(self, value):
         if value is not None:
             return max(min(value, 100), 0)
+
+
+class DiscordSnowflakeField(peewee.BigIntegerField):
+    pass
+
+
+class GuildIdField(DiscordSnowflakeField):
+    pass
+
+
+class UserIdField(DiscordSnowflakeField):
+    pass
+
+
+class RoleIdField(DiscordSnowflakeField):
+    pass
+
+
+class BaseSettings(BaseModel):
+    enabled = peewee.BooleanField(null=False, default=False)
+
+
+class MemberSettings(BaseSettings):
+    guild_id = GuildIdField(null=False)
+    user_id = UserIdField(null=False)
+
+
+class UserSettings(BaseSettings):
+    user_id = UserIdField(null=False)
+
+
+class GuildSettings(BaseSettings):
+    guild_id = GuildIdField(null=False)
+
+
+class UserProfile(BaseModel):
+    user_id = UserIdField(null=False)
+
+
+class MemberProfile(UserProfile):
+    guild_id = GuildIdField(null=False)
