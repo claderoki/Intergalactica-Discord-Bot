@@ -12,6 +12,7 @@ environ = None
 path = __file__.replace("\\", "/").replace("/src/config.py", "")
 
 bot = None
+tree = None
 
 inactive_delta = datetime.timedelta(weeks=2)
 

@@ -259,7 +259,9 @@ class Locus(commands.Bot):
             raise error
 
     async def setup_hook(self):
+        import src.discord.commands
         await self.load_all_cogs()
+        await self.tree.sync(guild=discord.Object(id=1158799313275719780))
 
     def log(self, message: str):
         if self.owner is not None:
