@@ -304,7 +304,11 @@ class GuildSettings(BaseSettings):
     guild_id = GuildIdField(null=False)
 
 
-class UserProfile(BaseModel):
+class BaseProfile(BaseModel):
+    pass
+
+
+class UserProfile(BaseProfile):
     user_id = UserIdField(null=False)
 
 

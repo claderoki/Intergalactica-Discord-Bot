@@ -1,6 +1,5 @@
 import peewee
 
-from src.discord.errors.base import SendableException
 from src.models.human import Human
 from .base import BaseModel
 
