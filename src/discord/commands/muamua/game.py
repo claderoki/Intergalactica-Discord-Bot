@@ -102,11 +102,12 @@ class Player:
 
 
 class Cycler:
-    __slots__ = ('items', 'forwards', 'current_index')
+    __slots__ = ('items', 'forwards', 'current_index', 'cycles')
 
     def __init__(self, items: list, forwards: bool = True):
         self.items = items
         self.forwards = forwards
+        self.cycles = 0
         self.current_index = 0
 
     def reverse(self):
@@ -146,7 +147,9 @@ class Cycler:
         return self.items[self.current_index]
 
     def next(self):
+        self.cycles += 1
         return self.__get_next_item(True)
 
     def previous(self):
+        self.cycles += 1
         return self.__get_previous_item(True)

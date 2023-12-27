@@ -94,9 +94,10 @@ class Stacking:
 
 
 class Notification:
-    def __init__(self, message: str, player: Player = None):
+    def __init__(self, message: str, round: int, player: Player = None):
         self.message = message
         self.player = player
+        self.round = round
 
 
 class GameMenu(discord.ui.View):
