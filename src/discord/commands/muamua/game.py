@@ -3,8 +3,12 @@ from enum import Enum
 from typing import List
 
 
+# class Rank(Enum):
+#     A = 1
+#     2 = 2
+
 class Card:
-    class Suits(Enum):
+    class Suit(Enum):
         spades = "♠"
         clubs = "♣"
         hearts = "♥"
@@ -28,8 +32,13 @@ class Card:
         self.special = self.rank in ('A', '7', '9', 'J', 'Q', '*')
         self.stackable = self.rank in ('7', '9', '*')
 
-    def can_place_on(self, card: 'Card') -> bool:
+    def can_place_on(self, card: 'Card', stacking: bool = False) -> bool:
+        if stacking and card.stackable:
+            return card.rank == self.rank
+
         if self.rank == '*' or card.rank == '*':
+            return True
+        if self.rank == 'J':
             return True
         same_rank = card.rank == self.rank
         if card.suit == self.suit or same_rank:
@@ -43,13 +52,13 @@ class Card:
 class Deck:
     __slots__ = ('cards',)
 
-    def __init__(self, cards: list):
+    def __init__(self, cards: List[Card]):
         self.cards = cards
 
     @classmethod
     def standard52(cls):
         cards = []
-        for suit in Card.Suits:
+        for suit in Card.Suit:
             for i in range(1, 14):
                 cards.append(Card(i, suit))
         return cls(cards)
@@ -57,7 +66,7 @@ class Deck:
     @classmethod
     def standard53(cls):
         cards = []
-        for suit in Card.Suits:
+        for suit in Card.Suit:
             for i in range(1, 14):
                 cards.append(Card(i, suit))
 
