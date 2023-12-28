@@ -82,6 +82,10 @@ class Deck:
     def take_cards(self, amount: int) -> List[Card]:
         return [self.take_card() for _ in range(amount)]
 
+    def add_card_at_random_position(self, card: Card):
+        index = random.randint(0, len(self.cards))
+        self.cards.insert(index, card)
+
 
 class Player:
     __slots__ = ('identifier', 'hand', 'skip_for', 'member')
