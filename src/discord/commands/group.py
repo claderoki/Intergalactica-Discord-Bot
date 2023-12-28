@@ -184,7 +184,7 @@ class GameMenu(discord.ui.View):
         if self.overriden_suit is None:
             unicode = self.card_unicode(self.table_card)
         else:
-            unicode = self.card_unicode_raw('', self.overriden_suit.value)
+            unicode = self.card_unicode_raw(' ', self.overriden_suit.value)
 
         content.append('>>> ```\n' + unicode + '```')
         content.append(f'{self.cycler.current()}')
