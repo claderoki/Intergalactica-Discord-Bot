@@ -38,10 +38,13 @@ class CardSelect(discord.ui.Select):
             placeholder='Choose a card',
             min_values=1,
             max_values=1,
-            options=[discord.SelectOption(label=str(x), value=i, description=x.ability_description) for i, x in
-                     enumerate(cards)])
+            options=[self.__card_to_option(i, x) for i, x in enumerate(cards)])
         self.selected = None
         self.cards = cards
+
+    @staticmethod
+    def __card_to_option(index: int, card: Card):
+        return discord.SelectOption(label=str(card), value=str(index), description=card.ability_description)
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -94,7 +97,7 @@ class Stacking:
 
 
 class Notification:
-    def __init__(self, message: str, round: int, player: Player = None):
+    def __init__(self, message: str, player: Player, round: int):
         self.message = message
         self.player = player
         self.round = round
@@ -105,6 +108,7 @@ class GameMenu(discord.ui.View):
         super(GameMenu, self).__init__()
         self.timeout = 2000
         self.notifications = []
+        self.all_notifications = []
         self.followup = None
         self.stacking: Optional[Stacking] = None
         self.table = []
@@ -181,11 +185,13 @@ class GameMenu(discord.ui.View):
         if len(self.notifications):
             content.append('Notifications')
         for notification in self.notifications:
+            if notification.round < self.cycler.cycles - 5:
+                continue
             if notification.player is None:
                 content.append(f'{notification.message}')
             else:
                 content.append(f'{notification.player}: {notification.message}')
-        # self.notifications.clear()
+
         return '\n'.join(content)
 
     def is_allowed(self, interaction: discord.Interaction):
@@ -228,8 +234,8 @@ class GameMenu(discord.ui.View):
                 self.__add_notification('Reversed direction', self.cycler.current())
                 self.cycler.reverse()
 
-    def __add_notification(self, message: str, player: Player = None):
-        self.notifications.append(Notification(message, player))
+    def __add_notification(self, message: str, player: Player):
+        self.notifications.append(Notification(message, player, self.cycler.cycles))
 
     def __apply_stacked_cards(self, player: Player, force: bool = False) -> bool:
         if self.stacking and (force or len(self.__get_valid_hand(player)) == 0):
