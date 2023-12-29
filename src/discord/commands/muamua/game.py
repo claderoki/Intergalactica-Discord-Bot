@@ -90,7 +90,7 @@ class Deck:
 class Player:
     __slots__ = ('identifier', 'hand', 'skip_for', 'member')
 
-    def __init__(self, identifier: int | str, member=None):
+    def __init__(self, identifier: str, member=None):
         self.identifier = identifier
         self.member = member
         self.hand: List[Card] = []

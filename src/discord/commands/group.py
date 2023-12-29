@@ -63,6 +63,32 @@ class CardChoice(discord.ui.View):
         return self.children[0].selected
 
 
+class DataSelect(discord.ui.Select):
+    def __init__(self, data: list, to_select):
+        self.data = {}
+        options = []
+        for x in data:
+            select = to_select(x)
+            self.data[select.value] = x
+            options.append(select)
+        super().__init__(min_values=1, max_values=1, options=options)
+        self.selected = []
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        self.selected = [self.data[x] for x in self.values]
+        self.view.stop()
+
+
+class DataChoice(discord.ui.View):
+    def __init__(self, data: list, to_select):
+        super(DataChoice, self).__init__()
+        self.add_item(DataSelect(data, to_select))
+
+    def get_selected(self) -> list:
+        return self.children[0].selected
+
+
 class BooleanChoice(discord.ui.View):
     def __init__(self, default: bool = False):
         super(BooleanChoice, self).__init__()
@@ -113,15 +139,15 @@ class GameMenu(discord.ui.View):
         self.notifications = []
         self.game_over = False
         self.all_notifications = []
-        self.players_mau: Dict[str | int, float] = {}
+        self.players_mau: Dict[str, float] = {}
         self.followup = None
         self.stacking: Optional[Stacking] = None
         self.table_card = None
         self.min_players = 4
-        self.overriden_suit: Card.Suit | None = None
+        self.overriden_suit: Card.Suit = None
         self.__fill_with_ai(players)
         self.cycler = Cycler(players)
-        self.players: Dict[str | int, Player] = {x.identifier: x for x in players}
+        self.players: Dict[str, Player] = {x.identifier: x for x in players}
         self.deck = Deck.standard53()
         self.__load()
 
@@ -451,6 +477,19 @@ class GameMenu(discord.ui.View):
 
     @discord.ui.button(label='MauMau', style=discord.ButtonStyle.red)
     async def maumau(self, interaction: discord.Interaction, _button: discord.ui.Button):
+        mau = self.players_mau.get(interaction.user.id)
+        if mau is None:
+            await interaction.response.defer()
+        diff = mau - time.time()
+        if diff > 20:
+            await interaction.response.send_message('Fool..', ephemeral=True)
+        else:
+            await interaction.response.send_message('Yeah okay', ephemeral=True)
+            self.__add_notification('MAU MAU!!', self.players[interaction.user.id])
+            del self.players_mau[interaction.user.id]
+
+    @discord.ui.button(label='Report MauMau', style=discord.ButtonStyle.red)
+    async def maumaufail(self, interaction: discord.Interaction, _button: discord.ui.Button):
         mau = self.players_mau.get(interaction.user.id)
         if mau is None:
             await interaction.response.defer()
