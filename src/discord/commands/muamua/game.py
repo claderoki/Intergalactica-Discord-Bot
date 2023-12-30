@@ -87,14 +87,21 @@ class Deck:
         self.cards.insert(index, card)
 
 
+class MauTrack:
+    def __init__(self, time: float, cycles: int):
+        self.time = time
+        self.cycles = cycles
+
+
 class Player:
-    __slots__ = ('identifier', 'hand', 'skip_for', 'member')
+    __slots__ = ('identifier', 'hand', 'skip_for', 'member', 'last_mau')
 
     def __init__(self, identifier: str, member=None):
         self.identifier = identifier
         self.member = member
         self.hand: List[Card] = []
         self.skip_for = 0
+        self.last_mau = None
 
     def __str__(self):
         if self.is_ai():
@@ -103,6 +110,9 @@ class Player:
 
     def is_ai(self):
         return 'AI' in str(self.identifier)
+
+    def mau(self, mau_track: MauTrack):
+        self.last_mau = mau_track
 
 
 class Cycler:

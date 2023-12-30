@@ -7,7 +7,7 @@ import discord
 # import peewee
 
 import src.config as config
-from src.discord.commands.muamua.game import Cycler, Deck, Player, Card
+from src.discord.commands.muamua.game import Cycler, Deck, Player, Card, MauTrack
 
 
 class JoinMenu(discord.ui.View):
@@ -137,13 +137,11 @@ class GameMenu(discord.ui.View):
         self.timeout = 2000
         self.all_ai = False
         self.notifications = []
-        self.game_over = False
-        self.all_notifications = []
         self.players_mau: Dict[str, float] = {}
         self.followup = None
         self.stacking: Optional[Stacking] = None
         self.table_card = None
-        self.min_players = 4
+        self.min_players = 2
         self.overriden_suit: Card.Suit = None
         self.__fill_with_ai(players)
         self.cycler = Cycler(players)
@@ -156,7 +154,7 @@ class GameMenu(discord.ui.View):
 
     def __fill_with_ai(self, players: List[Player]):
         self.all_ai = len(players) == 0
-        for i in range(self.min_players-len(players)):
+        for i in range(self.min_players - len(players)):
             players.append(Player(f'AI{i + 1}'))
 
     def __load(self):
@@ -218,7 +216,7 @@ class GameMenu(discord.ui.View):
         if len(self.notifications):
             content.append('Notifications')
         for notification in self.notifications:
-            round = int(self.cycler.cycles / len(self.players))+1
+            round = int(self.cycler.cycles / len(self.players)) + 1
             if notification.round > round - 3:
                 content.append(f'Round {notification.round} {notification.player}: {notification.message}')
 
@@ -267,7 +265,7 @@ class GameMenu(discord.ui.View):
                 self.cycler.reverse()
 
     def __add_notification(self, message: str, player: Player):
-        round = int(self.cycler.cycles / len(self.players))+1
+        round = int(self.cycler.cycles / len(self.players)) + 1
         self.notifications.append(Notification(message, player, round))
 
     def __apply_stacked_cards(self, player: Player, force: bool = False) -> bool:
@@ -310,6 +308,19 @@ class GameMenu(discord.ui.View):
 
         return best_suit
 
+    def __ai_report_cycle(self):
+        if random.randint(0, 5) != 2:
+            return
+        players = [x for x in self.players.values() if x.last_mau is not None and self.__can_report_mau_mau(x, self.__current_mau_track())]
+        if len(players) == 0:
+            return
+        ai_players_remaining = [x for x in self.players.values() if x.is_ai() and x not in players]
+        if len(ai_players_remaining) == 0:
+            return
+        reporter = random.choice(ai_players_remaining)
+        player = random.choice(players)
+        self.__report_player(player, reporter)
+
     async def __decide_ai_interaction(self, player: Player):
         await asyncio.sleep(random.uniform(0.5, 2.3))
         filtered_hand = self.__get_valid_hand(player)
@@ -325,8 +336,7 @@ class GameMenu(discord.ui.View):
         await self.__place_card(None, player, random.choice(filtered_hand), self.__choose_ai_suit)
         if len(player.hand) == 1:
             if random.randint(0, 3) == 1:
-                del self.players_mau[player.identifier]
-                self.__add_notification('MAU MAU!!', player)
+                self.__call_mau_mau(player)
 
     async def __followup(self, **kwargs):
         await self.followup.edit(**kwargs)
@@ -339,42 +349,30 @@ class GameMenu(discord.ui.View):
     async def __update(self):
         await self.__followup(embed=self.get_embed(), view=self)
 
-    def __mau_fail(self, player: Player):
-        mau = self.players_mau.get(player.identifier)
-        if mau is None:
-            return
-        self.__add_notification('Failed to call MAU MAU and gets 2 free cards.', player)
-        player.hand.extend(self.deck.take_cards(2))
-        del self.players_mau[player.identifier]
-
     async def __post_interaction(self):
         if len(self.cycler.current().hand) == 0:
-            await self.__end_game(self.cycler.current())
-            return
+            return await self.__end_game(self.cycler.current())
 
-        if self.all_ai and self.cycler.cycles != 0:
-            self.cycler.next()
-
-        self.__mau_fail(self.cycler.current())
+        # if self.all_ai and self.cycler.cycles != 0:
+        self.__ai_report_cycle()
+        self.cycler.next()
 
         while True:
             skipped = False
             if await self.__should_skip_player(self.cycler.current()):
-                self.__mau_fail(self.cycler.current())
                 if len(self.cycler.current().hand) == 0:
-                    await self.__end_game(self.cycler.current())
-                    return
+                    return await self.__end_game(self.cycler.current())
 
+                self.__ai_report_cycle()
                 self.cycler.next()
                 await self.__update()
                 skipped = True
             if self.cycler.current().is_ai():
-                self.__mau_fail(self.cycler.current())
                 await self.__decide_ai_interaction(self.cycler.current())
                 if len(self.cycler.current().hand) == 0:
-                    await self.__end_game(self.cycler.current())
-                    return
+                    return await self.__end_game(self.cycler.current())
 
+                self.__ai_report_cycle()
                 self.cycler.next()
                 await self.__update()
                 skipped = True
@@ -406,7 +404,7 @@ class GameMenu(discord.ui.View):
         self.table_card = card
         player.hand.remove(card)
         if len(player.hand) == 1:
-            self.players_mau[player.identifier] = time.time()
+            player.last_mau = self.__current_mau_track()
 
     @discord.ui.button(label='Draw', style=discord.ButtonStyle.red)
     async def draw(self, interaction: discord.Interaction, _button: discord.ui.Button):
@@ -471,35 +469,63 @@ class GameMenu(discord.ui.View):
             await interaction.response.defer()
         await interaction.response.send_message(self.get_hand_contents(player), ephemeral=True)
 
-    # @discord.ui.button(label='Refresh', style=discord.ButtonStyle.red)
-    # async def refresh(self, interaction: discord.Interaction, _button: discord.ui.Button):
-    #     self.followup = await interaction.response.send_message(embed=self.get_embed(), view=self)
+    def __current_mau_track(self) -> MauTrack:
+        return MauTrack(time.time(), self.cycler.cycles)
+
+    def __call_mau_mau(self, player: Player):
+        player.last_mau = None
+        self.__add_notification('MAU MAU!!', player)
+
+    def __can_call_mau_mau(self, player: Player, current: MauTrack = None) -> bool:
+        current = current or self.__current_mau_track()
+        print('diff', current.time - player.last_mau.time)
+        return current.time - player.last_mau.time < 10
+
+    def __can_report_mau_mau(self, player: Player, current: MauTrack = None) -> bool:
+        current = current or self.__current_mau_track()
+        if self.__can_call_mau_mau(player, current):
+            return False
+        return (current.time - player.last_mau.time) < 40
 
     @discord.ui.button(label='MauMau', style=discord.ButtonStyle.red)
     async def maumau(self, interaction: discord.Interaction, _button: discord.ui.Button):
-        mau = self.players_mau.get(interaction.user.id)
-        if mau is None:
+        player = self.players[interaction.user.id]
+        if player is None or player.last_mau is None:
             await interaction.response.defer()
-        diff = mau - time.time()
-        if diff > 20:
-            await interaction.response.send_message('Fool..', ephemeral=True)
-        else:
-            await interaction.response.send_message('Yeah okay', ephemeral=True)
-            self.__add_notification('MAU MAU!!', self.players[interaction.user.id])
-            del self.players_mau[interaction.user.id]
+            return
+
+        if self.__can_call_mau_mau(player):
+            self.__call_mau_mau(player)
+
+    def __report_player(self, player: Player, reporter: Player):
+        self.__add_notification(f'The MauMau authorities received an anonymous tip by {reporter} '
+                                f'that someone forgot to call MauMau, +5 cards.', player)
+        player.hand.extend(self.deck.take_cards(5))
+        player.last_mau = None
+
+    def __get_mau_players(self, current: Player):
+        return [x for x in self.players.values() if x.identifier != current.identifier and x.last_mau is not None]
 
     @discord.ui.button(label='Report MauMau', style=discord.ButtonStyle.red)
-    async def maumaufail(self, interaction: discord.Interaction, _button: discord.ui.Button):
-        mau = self.players_mau.get(interaction.user.id)
-        if mau is None:
+    async def report_maumau(self, interaction: discord.Interaction, _button: discord.ui.Button):
+        reporter = self.players.get(interaction.user.id)
+        if reporter is None:
             await interaction.response.defer()
-        diff = mau - time.time()
-        if diff > 20:
-            await interaction.response.send_message('Fool..', ephemeral=True)
-        else:
-            await interaction.response.send_message('Yeah okay', ephemeral=True)
-            self.__add_notification('MAU MAU!!', self.players[interaction.user.id])
-            del self.players_mau[interaction.user.id]
+            return
+
+        players = self.__get_mau_players(reporter)
+        if len(players) == 0:
+            await interaction.response.defer()
+            return
+
+        current = self.__current_mau_track()
+
+        view = DataChoice(players, lambda x: discord.SelectOption(label=str(x.identifier, x.member.display_name)))
+        await interaction.response.send_message(f"Boom", ephemeral=True, view=view)
+        await view.wait()
+        player = view.get_selected()[0]
+        if self.__can_report_mau_mau(player, current):
+            self.__report_player(player, reporter)
 
     @discord.ui.button(label='BOT FIGHT', style=discord.ButtonStyle.red)
     async def botfight(self, interaction: discord.Interaction, _button: discord.ui.Button):
