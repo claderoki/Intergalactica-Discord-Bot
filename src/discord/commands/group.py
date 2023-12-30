@@ -533,18 +533,18 @@ class GameMenu(discord.ui.View):
         if self.cycler.cycles == 0:
             await self.__post_interaction()
 
-
-@config.tree.command(name="maumau",
-                     description="My first application Command",
-                     guild=discord.Object(id=761624318291476482))
-async def first_command(interaction):
-    menu = JoinMenu()
-    await interaction.response.send_message("_", view=menu)
-    await menu.wait()
-
-    menu = GameMenu([Player(x) for x in menu.user_ids])
-    if menu.all_ai:
-        menu.children.clear()
-    menu.followup = await interaction.followup.send(embed=menu.get_embed(), wait=True, view=menu)
-
-    await menu.wait()
+#
+# @config.tree.command(name="maumau",
+#                      description="My first application Command",
+#                      guild=discord.Object(id=761624318291476482))
+# async def first_command(interaction):
+#     menu = JoinMenu()
+#     await interaction.response.send_message("_", view=menu)
+#     await menu.wait()
+#
+#     menu = GameMenu([Player(x) for x in menu.user_ids])
+#     if menu.all_ai:
+#         menu.children.clear()
+#     menu.followup = await interaction.followup.send(embed=menu.get_embed(), wait=True, view=menu)
+#
+#     await menu.wait()
