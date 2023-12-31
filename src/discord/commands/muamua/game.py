@@ -26,7 +26,7 @@ class Card:
     def __init__(self, value, suit):
         self.value = value
         self.suit = suit
-        self.symbol = suit.value if suit else ''
+        self.symbol = suit.value if suit else None
         self.ability_description = self._ability_desc.get(self.value, None)
         self.rank = self._ranks.get(self.value, str(self.value))
         self.special = self.rank in ('A', '7', '9', 'J', 'Q', '*')
@@ -46,7 +46,10 @@ class Card:
         return False
 
     def __str__(self):
-        return f'{self.rank} {self.symbol}'
+        return f'{self.rank} {self.symbol if self.symbol is not None else ""}'
+
+    def __repr__(self):
+        return str(self)
 
 
 class Deck:
@@ -94,12 +97,13 @@ class MauTrack:
 
 
 class Player:
-    __slots__ = ('identifier', 'hand', 'skip_for', 'member', 'last_mau', 'picking')
+    __slots__ = ('identifier', 'hand', 'skip_for', 'member', 'last_mau', 'picking', 'short_identifier')
 
     def __init__(self, identifier: str, member=None):
         self.identifier = identifier
         self.member = member
         self.hand: List[Card] = []
+        self.short_identifier = None
         self.skip_for = 0
         self.picking = False
         self.last_mau = None
@@ -130,6 +134,9 @@ class Cycler:
 
     def reverse(self):
         self.forwards = not self.forwards
+
+    def set_current(self, item):
+        self.current_index = self.items.index(item)
 
     def __next_index(self):
         if self.current_index >= len(self.items) - 1:

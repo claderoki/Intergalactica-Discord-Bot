@@ -1,6 +1,7 @@
 import asyncio
 import time
 import random
+import string
 from typing import Optional, List, Dict
 
 import discord
@@ -134,7 +135,6 @@ class Notification:
         self.player = player
         self.round = round
 
-
 class GameMenu(discord.ui.View):
     def __init__(self, players: List[Player]):
         super(GameMenu, self).__init__()
@@ -146,9 +146,10 @@ class GameMenu(discord.ui.View):
         self.followup = None
         self.stacking: Optional[Stacking] = None
         self.table_card = None
-        self.min_players = 2
-        self.overriden_suit: Card.Suit = None
+        self.min_players = 8
+        self.overriden_suit: Optional[Card.Suit] = None
         self.__fill_with_ai(players)
+        self.first_to_place_nine = None
         self.cycler = Cycler(players)
         self.players: Dict[str, Player] = {x.identifier: x for x in players}
         self.deck = Deck.standard53()
@@ -165,7 +166,8 @@ class GameMenu(discord.ui.View):
     def __load(self):
         self.deck.shuffle()
 
-        for player in self.players.values():
+        for i, player in enumerate(self.players.values()):
+            player.short_identifier = string.ascii_uppercase[i]
             player.hand.extend(self.deck.take_cards(5))
 
         for i, card in enumerate(self.deck.cards):
@@ -174,7 +176,12 @@ class GameMenu(discord.ui.View):
                 self.table_card = card
                 break
 
+        if self.all_ai:
+            for child in self.children:
+                self.remove_item(child)
+
     def card_unicode_raw(self, rank, symbol):
+        symbol = symbol or ' '
         spaces = " " if len(rank) == 1 else ""
         lines = []
         lines.append("┌─────┐")
@@ -185,7 +192,7 @@ class GameMenu(discord.ui.View):
         unicode = "\n".join(lines)
         return unicode.replace("┌", "╭").replace("┐", "╮").replace("┘", "╯").replace("└", "╰")
 
-    def card_unicode(self, card):
+    def card_unicode(self, card: Card):
         return self.card_unicode_raw(card.rank, card.symbol)
 
     def get_hand_contents(self, player: Player):
@@ -199,35 +206,30 @@ class GameMenu(discord.ui.View):
         return f'```\n{c}```'
 
     def get_embed(self):
-        embed = discord.Embed(description=self.get_content())
-        for player in self.players.values():
-            embed.add_field(name="Player " + player.display_name(),
-                            value=f"{len(player.hand)} cards",
-                            inline=False
-                            )
-        return embed
-
-    def get_content(self):
-        content = []
-
         if self.overriden_suit is None:
             unicode = self.card_unicode(self.table_card)
         else:
             unicode = self.card_unicode_raw(' ', self.overriden_suit.value)
-
-        content.append('>>> ```\n' + unicode + '```')
-        content.append(f'{self.cycler.current()}\n')
+        embed = discord.Embed(description='>>> ```\n' + unicode + '```')
 
         if len(self.notifications):
-            content.append('Notifications')
-        for notification in self.notifications:
             round = int(self.cycler.cycles / len(self.players)) + 1
-            if notification.round > round - 3:
-                content.append(f'Round {notification.round} {notification.player}: {notification.message}')
+            value = []
+            for notification in self.notifications:
+                if notification.round > round - 3:
+                    value.append(f'Round {notification.round} {notification.player}: {notification.message}')
+            embed.add_field(name='Log', value='\n'.join(value), inline=False)
+
+        for player in self.players.values():
+            turn = player == self.cycler.current()
+            embed.add_field(name=f"Player {player.display_name()} {'⬅️' if turn else ''}",
+                            value=f"{len(player.hand)} cards",
+                            inline=False
+                            )
 
         if self.wait_time > 0:
-            content.append(f'\nWaiting {self.wait_time}s')
-        return '\n'.join(content)
+            embed.set_footer(text=f'\nWaiting {self.wait_time}s')
+        return embed
 
     def is_allowed(self, interaction: discord.Interaction):
         player = self.players.get(interaction.user.id)
@@ -239,7 +241,9 @@ class GameMenu(discord.ui.View):
         if rank == '7' or rank == '*':
             return self.cycler.get_next()
         elif rank == '9':
-            return self.cycler.get_previous()
+            if self.stacking is None:
+                return self.cycler.get_previous()
+            return self.cycler.get_next()
 
     def __use_stacked_special_ability(self) -> int:
         if self.stacking is None:
@@ -250,6 +254,9 @@ class GameMenu(discord.ui.View):
             cards_to_take = 2 * self.stacking.count
         elif self.stacking.rank == '9':
             cards_to_take = 1 * self.stacking.count
+            self.cycler.set_current(self.first_to_place_nine)
+            self.cycler.reverse()
+            self.first_to_place_nine = None
         elif self.stacking.rank == '*':
             cards_to_take = 5 * self.stacking.count
 
@@ -275,16 +282,17 @@ class GameMenu(discord.ui.View):
         round = int(self.cycler.cycles / len(self.players)) + 1
         self.notifications.append(Notification(message, player, round))
 
-    def __apply_stacked_cards(self, player: Player, force: bool = False) -> bool:
-        if self.stacking and (force or len(self.__get_valid_hand(player)) == 0):
-            cards_given = self.__use_stacked_special_ability()
-            stacking = self.stacking
-            self.__add_notification(f'+{cards_given} cards', stacking.target)
-            target = stacking.target
-            self.stacking = None
-            if stacking.rank == '9':
-                return False
-            return target == player
+    def __has_valid_hand(self, player: Player) -> bool:
+        return len(self.__get_valid_hand(player)) > 0
+
+    def __apply_stacked_cards(self, player: Player, check_hand: bool = True) -> bool:
+        if self.stacking:
+            if not check_hand or not self.__has_valid_hand(player):
+                cards_given = self.__use_stacked_special_ability()
+                self.__add_notification(f'+{cards_given} cards', self.stacking.target)
+                target = self.stacking.target
+                self.stacking = None
+                return target == player
         return False
 
     async def __should_skip_player(self, player: Player) -> bool:
@@ -336,12 +344,11 @@ class GameMenu(discord.ui.View):
         await asyncio.sleep(random.uniform(0.5, 2.3))
         filtered_hand = self.__get_valid_hand(player)
         if len(filtered_hand) == 0:
-            if not self.__apply_stacked_cards(player, force=False):
+            if not self.__apply_stacked_cards(player):
                 card = self.deck.take_card()
                 player.hand.append(card)
                 self.__add_notification('Drew a card', player)
                 if card.can_place_on(self.table_card, self.stacking is not None):
-                    # todo: may not always want to place the card depending on the hand.
                     await self.__place_card(None, player, card, self.__choose_ai_suit)
             return
         await self.__place_card(None, player, random.choice(filtered_hand), self.__choose_ai_suit)
@@ -398,6 +405,10 @@ class GameMenu(discord.ui.View):
             if not skipped:
                 break
 
+    async def start_bot_fight(self):
+        if self.all_ai:
+            await self.__post_interaction()
+
     def __get_valid_hand(self, player: Player):
         if self.overriden_suit:
             return [x for x in player.hand if x.suit == self.overriden_suit]
@@ -410,8 +421,11 @@ class GameMenu(discord.ui.View):
         if card.stackable:
             if self.stacking is None:
                 self.stacking = Stacking(card.rank, self.__get_stacked_target(card.rank))
-            if card.rank != '9':
-                self.stacking.target = self.__get_stacked_target(card.rank)
+                if card.rank == '9':
+                    self.first_to_place_nine = player
+                    self.cycler.reverse()
+
+            self.stacking.target = self.__get_stacked_target(card.rank)
             self.stacking.count += 1
         elif card.special:
             await self.__use_immediate_special_ability(interaction, card.rank, suit_callback)
@@ -422,9 +436,13 @@ class GameMenu(discord.ui.View):
         player.hand.remove(card)
         if len(player.hand) == 1:
             player.last_mau = self.__current_mau_track()
-            self.wait_time = 5
+            self.__set_wait_time(5)
         else:
-            self.wait_time = 3
+            self.__set_wait_time(3)
+
+    def __set_wait_time(self, time: int):
+        if not self.all_ai:
+            self.wait_time = time
 
     def __current_mau_track(self) -> MauTrack:
         return MauTrack(time.time(), self.cycler.cycles)
@@ -457,9 +475,10 @@ class GameMenu(discord.ui.View):
             return
 
         player: Player = self.players[interaction.user.id]
-        if self.__apply_stacked_cards(player, force=False):
+        if self.__apply_stacked_cards(player, check_hand=False):
             await self.__post_interaction()
             return
+
         if player.picking:
             await interaction.response.send_message("You are already picking", ephemeral=True)
             return
@@ -506,7 +525,7 @@ class GameMenu(discord.ui.View):
         await view.wait()
         card = view.get_selected()
         if card is None:
-            if not self.__apply_stacked_cards(player, force=False):
+            if not self.__apply_stacked_cards(player):
                 self.__add_notification('Timed out, taking card...', player)
                 player.hand.append(self.deck.take_card)
             await self.__post_interaction()
@@ -522,7 +541,7 @@ class GameMenu(discord.ui.View):
             await interaction.response.defer()
         await interaction.response.send_message(self.get_hand_contents(player), ephemeral=True)
 
-    @discord.ui.button(label='MauMau', style=discord.ButtonStyle.blurple, emoji='🦜')
+    @discord.ui.button(label='MauMau', style=discord.ButtonStyle.blurple, emoji='‼️')
     async def maumau(self, interaction: discord.Interaction, _button: discord.ui.Button):
         player = self.players[interaction.user.id]
         if player is None or player.last_mau is None:
@@ -560,15 +579,9 @@ class GameMenu(discord.ui.View):
             await interaction.response.defer()
         await self.__update()
 
-    @discord.ui.button(label='BOT FIGHT', style=discord.ButtonStyle.primary, emoji='🤖')
-    async def botfight(self, interaction: discord.Interaction, _button: discord.ui.Button):
-        await interaction.response.defer()
-        if self.cycler.cycles == 0:
-            await self.__post_interaction()
-
 
 @config.tree.command(name="maumau",
-                     description="My first application Command",
+                     description="Play MauMau",
                      guild=discord.Object(id=761624318291476482))
 async def first_command(interaction: discord.Interaction):
     menu = JoinMenu()
@@ -576,8 +589,10 @@ async def first_command(interaction: discord.Interaction):
     await menu.wait()
 
     menu = GameMenu([Player(x, member=interaction.guild.get_member(x)) for x in menu.user_ids])
-    if menu.all_ai:
-        menu.children.clear()
     menu.followup = await interaction.followup.send(embed=menu.get_embed(), wait=True, view=menu)
-
+    if menu.all_ai:
+        try:
+            await menu.start_bot_fight()
+        except:
+            pass
     await menu.wait()
