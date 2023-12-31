@@ -94,19 +94,23 @@ class MauTrack:
 
 
 class Player:
-    __slots__ = ('identifier', 'hand', 'skip_for', 'member', 'last_mau')
+    __slots__ = ('identifier', 'hand', 'skip_for', 'member', 'last_mau', 'picking')
 
     def __init__(self, identifier: str, member=None):
         self.identifier = identifier
         self.member = member
         self.hand: List[Card] = []
         self.skip_for = 0
+        self.picking = False
         self.last_mau = None
 
     def __str__(self):
         if self.is_ai():
             return self.identifier
         return f'<@{self.identifier}>'
+
+    def display_name(self):
+        return str(self.identifier) if self.member is None else self.member.display_name
 
     def is_ai(self):
         return 'AI' in str(self.identifier)
