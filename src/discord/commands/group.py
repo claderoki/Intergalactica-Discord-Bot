@@ -135,6 +135,7 @@ class Notification:
         self.player = player
         self.round = round
 
+
 class GameMenu(discord.ui.View):
     def __init__(self, players: List[Player]):
         super(GameMenu, self).__init__()
@@ -142,11 +143,10 @@ class GameMenu(discord.ui.View):
         self.all_ai = False
         self.wait_time = 0
         self.notifications = []
-        self.players_mau: Dict[str, float] = {}
         self.followup = None
         self.stacking: Optional[Stacking] = None
         self.table_card = None
-        self.min_players = 8
+        self.min_players = 2
         self.overriden_suit: Optional[Card.Suit] = None
         self.__fill_with_ai(players)
         self.first_to_place_nine = None
@@ -596,3 +596,4 @@ async def first_command(interaction: discord.Interaction):
         except:
             pass
     await menu.wait()
+    # TODO: send a message with full log? Maybe
