@@ -168,7 +168,7 @@ class GameMenu(discord.ui.View):
 
         for i, player in enumerate(self.players.values()):
             player.short_identifier = string.ascii_uppercase[i]
-            player.hand.extend(self.deck.take_cards(5))
+            player.hand.extend(self.deck.take_cards(2))
 
         for i, card in enumerate(self.deck.cards):
             if not card.special:
@@ -277,6 +277,9 @@ class GameMenu(discord.ui.View):
             else:
                 self.__add_notification('Reversed direction', self.cycler.current())
                 self.cycler.reverse()
+        elif rank == '9':
+            self.first_to_place_nine = self.cycler.current()
+            self.cycler.reverse()
 
     def __add_notification(self, message: str, player: Player):
         round = int(self.cycler.cycles / len(self.players)) + 1
@@ -327,18 +330,22 @@ class GameMenu(discord.ui.View):
         return best_suit
 
     def __ai_report_cycle(self):
-        if random.randint(0, 5) != 2:
+        invalid_report = False
+
+        if random.randint(0, 40) < 3:
+            invalid_report = True
+        elif random.randint(0, 5) != 2:
             return
-        players = [x for x in self.players.values() if
-                   x.last_mau is not None and self.__can_report_mau_mau(x, self.__current_mau_track())]
-        if len(players) == 0:
+
+        if not invalid_report and self.reportable_player_with_one_card is None:
             return
-        ai_players_remaining = [x for x in self.players.values() if x.is_ai() and x not in players]
+
+        ai_players_remaining = [x for x in self.players.values() if x.is_ai() and x != self.reportable_player_with_one_card]
         if len(ai_players_remaining) == 0:
             return
+
         reporter = random.choice(ai_players_remaining)
-        player = random.choice(players)
-        self.__report_player(player, reporter)
+        self.__report_player(self.reportable_player_with_one_card, reporter)
 
     async def __decide_ai_interaction(self, player: Player):
         await asyncio.sleep(random.uniform(0.5, 2.3))
@@ -350,11 +357,12 @@ class GameMenu(discord.ui.View):
                 self.__add_notification('Drew a card', player)
                 if card.can_place_on(self.table_card, self.stacking is not None):
                     await self.__place_card(None, player, card, self.__choose_ai_suit)
-            return
-        await self.__place_card(None, player, random.choice(filtered_hand), self.__choose_ai_suit)
-        if len(player.hand) == 1:
-            if random.randint(0, 3) == 1:
-                self.__call_mau_mau(player)
+        else:
+            card = random.choice(filtered_hand)
+            await self.__place_card(None, player, card, self.__choose_ai_suit)
+            if len(player.hand) == 1:
+                if random.randint(0, 3) == 1:
+                    self.__call_mau_mau(player)
 
     async def __followup(self, **kwargs):
         await self.followup.edit(**kwargs)
@@ -418,24 +426,24 @@ class GameMenu(discord.ui.View):
         self.__add_notification('Placed ' + str(card), player)
         if suit_callback is None:
             suit_callback = self.__choose_suit
+
         if card.stackable:
             if self.stacking is None:
                 self.stacking = Stacking(card.rank, self.__get_stacked_target(card.rank))
-                if card.rank == '9':
-                    self.first_to_place_nine = player
-                    self.cycler.reverse()
-
             self.stacking.target = self.__get_stacked_target(card.rank)
             self.stacking.count += 1
-        elif card.special:
+
+        if card.special:
             await self.__use_immediate_special_ability(interaction, card.rank, suit_callback)
         if card.rank != 'J':
             self.overriden_suit = None
         self.deck.add_card_at_random_position(card)
         self.table_card = card
         player.hand.remove(card)
+
+        self.reportable_player_with_one_card = None
         if len(player.hand) == 1:
-            player.last_mau = self.__current_mau_track()
+            self.reportable_player_with_one_card = player
             self.__set_wait_time(5)
         else:
             self.__set_wait_time(3)
@@ -444,29 +452,23 @@ class GameMenu(discord.ui.View):
         if not self.all_ai:
             self.wait_time = time
 
-    def __current_mau_track(self) -> MauTrack:
-        return MauTrack(time.time(), self.cycler.cycles)
-
     def __call_mau_mau(self, player: Player):
-        player.last_mau = None
+        self.reportable_player_with_one_card = None
         self.__add_notification('MAU MAU!!', player)
 
-    def __can_call_mau_mau(self, player: Player, current: MauTrack = None) -> bool:
-        current = current or self.__current_mau_track()
-        return current.cycles == player.last_mau.cycles
-
-    def __can_report_mau_mau(self, player: Player, current: MauTrack = None) -> bool:
-        current = current or self.__current_mau_track()
-        return player.last_mau.cycles+1 == current.cycles
+    def __can_report_mau_mau(self, player: Player) -> bool:
+        return self.reportable_player_with_one_card != player
 
     def __report_player(self, player: Player, reporter: Player):
-        self.__add_notification(f'The MauMau authorities received an anonymous tip by {reporter} '
-                                f'that someone forgot to call MauMau, +5 cards.', player)
-        player.hand.extend(self.deck.take_cards(5))
-        player.last_mau = None
-
-    def __get_mau_players(self, current: Player):
-        return [x for x in self.players.values() if x.identifier != current.identifier and x.last_mau is not None]
+        if player is None:
+            self.__add_notification(f'You waste the MauMau authorities time and resources with an invalid report.'
+                                    f' They let you off with a slap on the wrist this time... +5 cards.', reporter)
+            reporter.hand.extend(self.deck.take_cards(5))
+        else:
+            self.__add_notification(f'The MauMau authorities received an anonymous tip by {reporter} '
+                                    f'that someone forgot to call MauMau, +5 cards.', player)
+            player.hand.extend(self.deck.take_cards(5))
+            self.reportable_player_with_one_card = None
 
     @discord.ui.button(label='Draw', style=discord.ButtonStyle.gray, emoji='🫴')
     async def draw(self, interaction: discord.Interaction, _button: discord.ui.Button):
@@ -527,7 +529,7 @@ class GameMenu(discord.ui.View):
         if card is None:
             if not self.__apply_stacked_cards(player):
                 self.__add_notification('Timed out, taking card...', player)
-                player.hand.append(self.deck.take_card)
+                player.hand.append(self.deck.take_card())
             await self.__post_interaction()
             return
 
@@ -544,11 +546,10 @@ class GameMenu(discord.ui.View):
     @discord.ui.button(label='MauMau', style=discord.ButtonStyle.blurple, emoji='‼️')
     async def maumau(self, interaction: discord.Interaction, _button: discord.ui.Button):
         player = self.players[interaction.user.id]
-        if player is None or player.last_mau is None:
+        if player is None or self.reportable_player_with_one_card is None:
             await interaction.response.defer()
             return
-
-        if self.__can_call_mau_mau(player):
+        if self.reportable_player_with_one_card == player:
             self.__call_mau_mau(player)
         await interaction.response.defer()
 
@@ -559,24 +560,7 @@ class GameMenu(discord.ui.View):
             await interaction.response.defer()
             return
 
-        players = self.__get_mau_players(reporter)
-        if len(players) == 0:
-            await interaction.response.defer()
-            return
-        current = self.__current_mau_track()
-
-        if len(players) == 1:
-            player = players[0]
-        else:
-            view = DataChoice(players, lambda x: discord.SelectOption(label=x.display_name(), value=str(x.identifier)))
-            await interaction.response.send_message(f"Boom", ephemeral=True, view=view)
-            await view.wait()
-            player = view.get_selected()[0]
-
-        if self.__can_report_mau_mau(player, current):
-            self.__report_player(player, reporter)
-        if len(players) == 1:
-            await interaction.response.defer()
+        self.__report_player(self.reportable_player_with_one_card, reporter)
         await self.__update()
 
 

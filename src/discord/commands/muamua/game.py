@@ -106,7 +106,6 @@ class Player:
         self.short_identifier = None
         self.skip_for = 0
         self.picking = False
-        self.last_mau = None
 
     def __str__(self):
         if self.is_ai():
@@ -118,9 +117,6 @@ class Player:
 
     def is_ai(self):
         return 'AI' in str(self.identifier)
-
-    def mau(self, mau_track: MauTrack):
-        self.last_mau = mau_track
 
 
 class Cycler:
