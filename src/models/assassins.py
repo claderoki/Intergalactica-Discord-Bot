@@ -7,7 +7,7 @@ import discord
 import peewee
 from dateutil import relativedelta
 
-from src.discord.helpers.known_guilds import KnownGuild
+from src.disc.helpers.known_guilds import KnownGuild
 from .base import BaseModel
 
 

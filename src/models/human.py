@@ -7,12 +7,12 @@ import pycountry
 from dateutil.relativedelta import relativedelta
 
 import src.config as config
-import src.discord.cogs.switch as switch
+import src.disc.cogs.switch as switch
 from src.utils.timezone import Timezone
 from src.utils.zodiac import ZodiacSign
 from .base import BaseModel, EnumField, CountryField
 import src.models as models
-import src.discord.cogs.guildrewards as guildrewards
+import src.disc.cogs.guildrewards as guildrewards
 
 class CurrenciesField(peewee.TextField):
     def db_value(self, value):

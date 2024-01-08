@@ -2,7 +2,7 @@ import asyncio
 
 import discord
 
-from src.discord.helpers.waiters import ReactionWaiter
+from src.disc.helpers.waiters import ReactionWaiter
 from .ui import UI
 
 

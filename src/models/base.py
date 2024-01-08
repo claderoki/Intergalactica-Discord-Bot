@@ -6,8 +6,8 @@ import peewee
 import pycountry
 
 import src.config as config
-from src.discord.helpers.pretty import prettify_value
-from src.discord.helpers.waiters import *
+from src.disc.helpers.pretty import prettify_value
+from src.disc.helpers.waiters import *
 from src.utils.country import Country
 
 

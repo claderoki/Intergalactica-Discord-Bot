@@ -25,13 +25,13 @@ else:
         print(f"Please enter the environmental variables in the {path} file.")
         quit()
 
-from src.discord.bot import Locus
+from src.disc.bot import Locus
 
 config.bot = Locus(mode)
 config.tree = config.bot.tree
 config.bot.heroku = service == "heroku"
 config.bot.restarted = args.restarted == "1"
-config.bot.run(config.environ.discord_token)
+config.bot.run(config.environ.discord_token_dev)
 
 args = ["-m", "src"]
 

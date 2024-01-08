@@ -9,8 +9,8 @@ import discord
 import peewee
 from emoji import emojize
 
-import src.discord.helpers.pretty as pretty
-from src.discord.helpers.waiters import TimeDeltaWaiter
+import src.disc.helpers.pretty as pretty
+from src.disc.helpers.waiters import TimeDeltaWaiter
 from src.utils.general import text_to_emojis
 from .base import BaseModel, EnumField, EmojiField
 

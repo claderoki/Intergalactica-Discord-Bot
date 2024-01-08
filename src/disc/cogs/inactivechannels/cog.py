@@ -1,0 +1,45 @@
+from discord.ext import commands
+
+from src.disc import SendableException
+from src.disc.cogs.core import BaseCog
+from .helpers import *
+
+
+class InactiveChannelsCog(BaseCog, name="Inactive channels"):
+
+    @commands.group(aliases=["ic"])
+    @commands.guild_only()
+    @commands.has_guild_permissions(administrator=True)
+    async def inactivechannels(self, ctx):
+        pass
+
+    @inactivechannels.command(name="setup")
+    async def inactivechannels_setup(self, ctx):
+        settings = InactiveChannelsRepository.get_settings(ctx.guild.id)
+        if settings is None:
+            settings = InactiveChannelsSettings(guild_id=ctx.guild.id)
+
+        await settings.editor_for(ctx, "timespan")
+        await settings.editor_for(ctx, "max_messages")
+        settings.save()
+
+        await ctx.success("Done setting up.")
+
+    @inactivechannels.command(name="check")
+    async def inactivechannels_check(self, ctx: commands.Context):
+        settings = InactiveChannelsRepository.get_settings(ctx.guild.id)
+        if settings is None:
+            raise SendableException("Not setup yet.")
+
+        await ctx.trigger_typing()
+        inactive_channels = []
+        for channel in ctx.guild.text_channels:
+            inactive = await InactiveChannelsHelper.is_inactive(channel, settings)
+            if inactive:
+                inactive_channels.append(channel)
+
+        await ctx.send("\n".join(map(str, inactive_channels)))
+
+
+async def setup(bot):
+    await bot.add_cog(InactiveChannelsCog(bot))

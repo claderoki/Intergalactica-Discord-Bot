@@ -1,3 +1,5 @@
+import discord
+
 import datetime
 from enum import Enum
 
@@ -12,7 +14,9 @@ environ = None
 path = __file__.replace("\\", "/").replace("/src/config.py", "")
 
 bot = None
-tree = None
+
+
+tree: discord.app_commands.CommandTree = None
 
 inactive_delta = datetime.timedelta(weeks=2)
 
