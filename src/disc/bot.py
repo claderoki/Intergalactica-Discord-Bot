@@ -264,7 +264,7 @@ class Locus(commands.Bot):
         import src.disc.commands
         await self.load_all_cogs()
         await self.tree.sync(guild=discord.Object(id=761624318291476482))
-        await self.tree.sync()
+        # await self.tree.sync()
 
     def log(self, message: str):
         if self.owner is not None:
