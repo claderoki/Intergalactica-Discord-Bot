@@ -51,11 +51,15 @@ class Card:
     def __repr__(self):
         return str(self)
 
+    def copy(self) -> 'Card':
+        return Card(self.value, self.suit)
+
 
 class Deck:
-    __slots__ = ('cards',)
+    __slots__ = ('cards', 'name')
 
-    def __init__(self, cards: List[Card]):
+    def __init__(self, name: str, cards: List[Card]):
+        self.name = name
         self.cards = cards
 
     @classmethod
@@ -64,7 +68,7 @@ class Deck:
         for suit in Card.Suit:
             for i in range(1, 14):
                 cards.append(Card(i, suit))
-        return cls(cards)
+        return cls('Standard 52', cards)
 
     @classmethod
     def standard53(cls):
@@ -74,7 +78,19 @@ class Deck:
                 cards.append(Card(i, suit))
 
         cards.append(Card(15, None))
-        return cls(cards)
+        return cls('Standard 53', cards)
+
+    def __mul__(self, other):
+        if other != 1:
+            for i in range(0, other):
+                self.combine(self.copy())
+        return self
+
+    def copy(self) -> 'Deck':
+        return Deck(self.name, [x.copy() for x in self.cards])
+
+    def combine(self, deck: 'Deck'):
+        self.cards.extend(deck.cards)
 
     def shuffle(self):
         random.shuffle(self.cards)

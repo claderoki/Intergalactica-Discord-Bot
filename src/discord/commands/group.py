@@ -2,6 +2,7 @@ import asyncio
 import time
 import random
 import string
+from contextlib import contextmanager
 from typing import Optional, List, Dict
 
 import discord
@@ -136,27 +137,110 @@ class Notification:
         self.round = round
 
 
+class Stat:
+    def __init__(self, type: str, format=None):
+        self.type = type
+        self.format = format
+
+    def combine(self, other: 'Stat'):
+        pass
+
+    def readable(self) -> str:
+        if self.format is not None:
+            return self.format(self)
+        return self.type
+
+
+class CountableStat(Stat):
+    def __init__(self, type: str, format=None):
+        super().__init__(type, format)
+        self.count = 1
+
+    def combine(self, other: 'CountableStat'):
+        self.count += other.count
+
+    @classmethod
+    def invalid_reports(cls):
+        return cls('invalid_reports', lambda x: f'Invalid reports: {x.count}')
+
+    @classmethod
+    def valid_reports(cls):
+        return cls('valid_reports', lambda x: f'Valid reports: {x.count}')
+
+    @classmethod
+    def maumau(cls):
+        return cls('maumau', lambda x: f'Called MauMau: {x.count}')
+
+
+class ComparingStat(Stat):
+    def __init__(self, type: str, value, additional=None, format=None):
+        super().__init__(type, format)
+        self.value = value
+        self.additional = additional
+
+    def combine(self, other: 'ComparingStat'):
+        if other.value > self.value:
+            self.value = other.value
+            self.additional = other.additional
+
+    @classmethod
+    def longest_stack(cls, amount, rank):
+        return cls('longest_stack', amount, rank, lambda x: f'Longest stack {x.additional}: {x.value}')
+
+
+@contextmanager
+def func_log(func):
+    # print('Entering', func.__name__)
+    yield
+    # print('Exiting', func.__name__)
+
+
+def async_log(func):
+    async def dec(*args, **kwargs):
+        with func_log(func):
+            return await func(*args, **kwargs)
+    return dec
+
+
+def log(func):
+    def dec(*args, **kwargs):
+        with func_log(func):
+            return func(*args, **kwargs)
+    return dec
+
+
 class GameMenu(discord.ui.View):
-    def __init__(self, players: List[Player]):
+    def __init__(self, players: List[Player], min_players: Optional[int] = 2):
         super(GameMenu, self).__init__()
         self.timeout = 2000
         self.all_ai = False
         self.wait_time = 0
+        self.game_info = []
         self.notifications = []
+        self.stats: Dict[str, Stat] = {}
+        self.game_over = False
         self.followup = None
         self.stacking: Optional[Stacking] = None
         self.table_card = None
-        self.min_players = 2
+        self.min_players = min_players
         self.overriden_suit: Optional[Card.Suit] = None
         self.__fill_with_ai(players)
         self.first_to_place_nine = None
         self.cycler = Cycler(players)
         self.players: Dict[str, Player] = {x.identifier: x for x in players}
-        self.deck = Deck.standard53()
+        self.deck_multiplier = max(1, int(len(players) / 3))
+        self.deck = Deck.standard53() * self.deck_multiplier
         self.__load()
 
     async def on_timeout(self):
         print('Timed out...')
+
+    def __add_stat(self, stat: Stat):
+        existing = self.stats.get(stat.type)
+        if existing is None:
+            self.stats[stat.type] = stat
+        else:
+            existing.combine(stat)
 
     def __fill_with_ai(self, players: List[Player]):
         self.all_ai = len(players) == 0
@@ -168,7 +252,7 @@ class GameMenu(discord.ui.View):
 
         for i, player in enumerate(self.players.values()):
             player.short_identifier = string.ascii_uppercase[i]
-            player.hand.extend(self.deck.take_cards(2))
+            player.hand.extend(self.deck.take_cards(5))
 
         for i, card in enumerate(self.deck.cards):
             if not card.special:
@@ -213,21 +297,34 @@ class GameMenu(discord.ui.View):
         embed = discord.Embed(description='>>> ```\n' + unicode + '```')
 
         if len(self.notifications):
-            round = int(self.cycler.cycles / len(self.players)) + 1
             value = []
-            for notification in self.notifications:
-                if notification.round > round - 3:
-                    value.append(f'Round {notification.round} {notification.player}: {notification.message}')
+            length = 0
+            for i in range(len(self.notifications)-1, -1, -1):
+                notification = self.notifications[i]
+                message = f'Round {notification.round} {notification.player or ""}: {notification.message}'
+                would_be_length = length + len(message) + 1
+                if would_be_length >= (1024/2):
+                    break
+                length = would_be_length
+                value.insert(0, message)
             embed.add_field(name='Log', value='\n'.join(value), inline=False)
+
+        if self.game_over and len(self.stats) > 0:
+            stats = []
+            for stat in self.stats.values():
+                stats.append(stat.readable())
+            if len(stats) > 0:
+                embed.add_field(name='Post game stats', value='\n'.join(stats), inline=False)
 
         for player in self.players.values():
             turn = player == self.cycler.current()
-            embed.add_field(name=f"Player {player.display_name()} {'⬅️' if turn else ''}",
+            arrow = '⬅️' if turn and not self.game_over else ''
+            embed.add_field(name=f"Player {player.display_name()} {arrow}",
                             value=f"{len(player.hand)} cards",
                             inline=False
                             )
 
-        if self.wait_time > 0:
+        if not self.game_over and self.wait_time > 0:
             embed.set_footer(text=f'\nWaiting {self.wait_time}s')
         return embed
 
@@ -262,6 +359,7 @@ class GameMenu(discord.ui.View):
 
         if cards_to_take > 0:
             self.stacking.target.hand.extend(self.deck.take_cards(cards_to_take))
+            self.__add_stat(ComparingStat.longest_stack(self.stacking.count, self.stacking.rank))
         return cards_to_take
 
     async def __use_immediate_special_ability(self, interaction, rank: str, suit_callback):
@@ -282,7 +380,7 @@ class GameMenu(discord.ui.View):
             self.cycler.reverse()
 
     def __add_notification(self, message: str, player: Player):
-        round = int(self.cycler.cycles / len(self.players)) + 1
+        round = max(int(self.cycler.cycles / len(self.players)) + 1, 1)
         self.notifications.append(Notification(message, player, round))
 
     def __has_valid_hand(self, player: Player) -> bool:
@@ -329,10 +427,11 @@ class GameMenu(discord.ui.View):
 
         return best_suit
 
+    @log
     def __ai_report_cycle(self):
         invalid_report = False
 
-        if random.randint(0, 40) < 3:
+        if random.randint(0, len(self.players) * 25) < 3:
             invalid_report = True
         elif random.randint(0, 5) != 2:
             return
@@ -347,6 +446,7 @@ class GameMenu(discord.ui.View):
         reporter = random.choice(ai_players_remaining)
         self.__report_player(self.reportable_player_with_one_card, reporter)
 
+    @async_log
     async def __decide_ai_interaction(self, player: Player):
         await asyncio.sleep(random.uniform(0.5, 2.3))
         filtered_hand = self.__get_valid_hand(player)
@@ -368,6 +468,7 @@ class GameMenu(discord.ui.View):
         await self.followup.edit(**kwargs)
 
     async def __end_game(self, winner: Player):
+        self.game_over = True
         await self.__followup(content=f"Game ended, {winner} won",
                               embed=self.get_embed(),
                               view=self)
@@ -381,12 +482,12 @@ class GameMenu(discord.ui.View):
         embed = self.get_embed()
         await self.__followup(embed=embed, view=self)
 
+    @async_log
     async def __post_player(self, player: Player):
         player.picking = False
         if len(player.hand) == 0:
             await self.__end_game(player)
             raise GameOverException()
-
         self.__ai_report_cycle()
         await self.__update()
 
@@ -397,6 +498,7 @@ class GameMenu(discord.ui.View):
         self.cycler.next()
         await self.__update()
 
+    @async_log
     async def __post_interaction(self):
         if not self.all_ai:
             await self.__post_player(self.cycler.current())
@@ -411,6 +513,7 @@ class GameMenu(discord.ui.View):
                 await self.__post_player(self.cycler.current())
                 skipped = True
             if not skipped:
+                print('Breaking...')
                 break
 
     async def start_bot_fight(self):
@@ -453,6 +556,7 @@ class GameMenu(discord.ui.View):
             self.wait_time = time
 
     def __call_mau_mau(self, player: Player):
+        self.__add_stat(CountableStat.maumau())
         self.reportable_player_with_one_card = None
         self.__add_notification('MAU MAU!!', player)
 
@@ -464,10 +568,12 @@ class GameMenu(discord.ui.View):
             self.__add_notification(f'You waste the MauMau authorities time and resources with an invalid report.'
                                     f' They let you off with a slap on the wrist this time... +5 cards.', reporter)
             reporter.hand.extend(self.deck.take_cards(5))
+            self.__add_stat(CountableStat.invalid_reports())
         else:
             self.__add_notification(f'The MauMau authorities received an anonymous tip by {reporter} '
                                     f'that someone forgot to call MauMau, +5 cards.', player)
             player.hand.extend(self.deck.take_cards(5))
+            self.__add_stat(CountableStat.valid_reports())
             self.reportable_player_with_one_card = None
 
     @discord.ui.button(label='Draw', style=discord.ButtonStyle.gray, emoji='🫴')
@@ -567,17 +673,17 @@ class GameMenu(discord.ui.View):
 @config.tree.command(name="maumau",
                      description="Play MauMau",
                      guild=discord.Object(id=761624318291476482))
-async def first_command(interaction: discord.Interaction):
+async def first_command(interaction: discord.Interaction, min_players: Optional[int]):
     menu = JoinMenu()
     await interaction.response.send_message("_", view=menu)
     await menu.wait()
 
-    menu = GameMenu([Player(x, member=interaction.guild.get_member(x)) for x in menu.user_ids])
+    menu = GameMenu([Player(x, member=interaction.guild.get_member(x)) for x in menu.user_ids], min_players)
     menu.followup = await interaction.followup.send(embed=menu.get_embed(), wait=True, view=menu)
     if menu.all_ai:
         try:
             await menu.start_bot_fight()
-        except:
+        except GameOverException:
             pass
     await menu.wait()
     # TODO: send a message with full log? Maybe
