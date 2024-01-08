@@ -673,7 +673,7 @@ class GameMenu(discord.ui.View):
 @config.tree.command(name="maumau",
                      description="Play MauMau",
                      guild=discord.Object(id=761624318291476482))
-async def first_command(interaction: discord.Interaction, min_players: Optional[int]):
+async def maumau(interaction: discord.Interaction, min_players: Optional[int]):
     menu = JoinMenu()
     await interaction.response.send_message("_", view=menu)
     await menu.wait()

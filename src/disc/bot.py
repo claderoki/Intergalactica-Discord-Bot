@@ -148,6 +148,8 @@ class Locus(commands.Bot):
         for cog in cogs:
             await self.load_cog(cog)
 
+        # await self.load_extension("src.disc.commands.pigeon.commands")
+
     @staticmethod
     def get_id(obj):
         if hasattr(obj, "id"):
@@ -262,6 +264,7 @@ class Locus(commands.Bot):
         import src.disc.commands
         await self.load_all_cogs()
         await self.tree.sync(guild=discord.Object(id=761624318291476482))
+        await self.tree.sync()
 
     def log(self, message: str):
         if self.owner is not None:
