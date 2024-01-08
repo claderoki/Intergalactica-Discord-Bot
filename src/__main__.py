@@ -31,7 +31,7 @@ config.bot = Locus(mode)
 config.tree = config.bot.tree
 config.bot.heroku = service == "heroku"
 config.bot.restarted = args.restarted == "1"
-config.bot.run(config.environ.discord_token_dev)
+config.bot.run(config.environ.discord_token)
 
 args = ["-m", "src"]
 
