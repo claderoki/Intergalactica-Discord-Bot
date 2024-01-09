@@ -148,7 +148,7 @@ class Locus(commands.Bot):
         for cog in cogs:
             await self.load_cog(cog)
 
-        # await self.load_extension("src.disc.commands.pigeon.commands")
+        await self.load_extension("src.disc.commands.pigeon.commands")
 
     @staticmethod
     def get_id(obj):
@@ -263,7 +263,9 @@ class Locus(commands.Bot):
     async def setup_hook(self):
         import src.disc.commands
         await self.load_all_cogs()
+        self.tree.copy_global_to(guild=discord.Object(id=761624318291476482))
         await self.tree.sync(guild=discord.Object(id=761624318291476482))
+        print(self.tree)
         # await self.tree.sync()
 
     def log(self, message: str):

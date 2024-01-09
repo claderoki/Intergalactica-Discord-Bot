@@ -1,2 +1,2 @@
-from .group import *
+from .muamua import *
 from .pigeon import *

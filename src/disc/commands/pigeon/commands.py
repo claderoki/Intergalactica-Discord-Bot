@@ -1,11 +1,17 @@
 import discord
-
-import src.config as config
-
-GUILD = discord.Object(id=761624318291476482)
-group = discord.app_commands.Group(name='pigeon', description='...', guild_ids=[GUILD.id])
+from discord.ext import commands
+from discord import app_commands
 
 
-@group.command(name='feed', description='Feed the pigeon')
-async def pigeon_feed(interaction: discord.Interaction):
-    print('feeding...')
+class Pigeon2(commands.GroupCog, name="pigeon"):
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
+        super().__init__()
+
+    @app_commands.command(name="feed", description="Feed your pigeon.")
+    async def feed(self, interaction: discord.Interaction) -> None:
+        await interaction.response.send_message("Hello from sub command 1")
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Pigeon2(bot))
