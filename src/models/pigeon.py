@@ -417,3 +417,36 @@ class Date(Challenge):
     @property
     def icon_url(self):
         return "https://tubelife.org/wp-content/uploads/2019/08/Valentines-Heart-GIF.gif"
+
+
+class ExplorationPlanetLocation(BaseModel):
+    pass
+
+
+class ExplorationPlanet(BaseModel):
+    pass
+
+
+class ExplorationAction(BaseModel):
+    pass
+
+# int id, int planetId, String imageUrl, String planetName, String name, List<ExplorationAction> actions
+
+
+
+    # private Map<Integer, List<ExplorationAction>> getAllActions() {
+    #     Map<Integer, List<ExplorationScenario>> scenarios = getAllScenarios();
+    #     String query = "SELECT `id`, `name`, `symbol`, `location_id` FROM `exploration_action`";
+    #     Map<Integer, List<ExplorationAction>> actions = new HashMap<>();
+    #     for (Result result: getMany(query)) {
+    #         actions.computeIfAbsent(result.getInt("location_id"), a -> new ArrayList<>())
+    #             .add(new ExplorationAction(
+    #                 result.getInt("id"),
+    #                 result.getString("name"),
+    #                 result.getString("symbol"),
+    #                 scenarios.get(result.getInt("id"))
+    #         ));
+    #     }
+    #
+    #     return actions;
+    # }
