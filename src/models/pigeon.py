@@ -135,6 +135,9 @@ class Pigeon(BaseModel):
     def create_buff(self, code, create_system_message=True):
         return
 
+    def update_winnings(self, winnings):
+        self.update_stats({x.name: x.value for x in winnings.stats})
+
     def update_stats(self, data, increment=True, save=True):
         human = self.bot.get_human(user=self.human.user_id)
         for key, value in data.items():

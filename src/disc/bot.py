@@ -202,8 +202,8 @@ class Locus(commands.Bot):
             self._human_cache[user_id] = human
         else:
             human = self._human_cache[user_id]
-            h = Human.select(Human.gold).where(Human.user_id == user_id).first()
-            human.gold = h.gold
+            # h = Human.select(Human.gold).where(Human.user_id == user_id).first()
+            # human.gold = h.gold
             return human
         return self._human_cache[user_id]
 

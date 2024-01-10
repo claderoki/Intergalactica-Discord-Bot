@@ -25,7 +25,7 @@ class Cache:
         self.cache = dict()
 
     def __hash_func_call(self, func, args, kwargs) -> str:
-        return str(hash(func.__name__) + hash(args) + hash(kwargs))
+        return str(hash(func.__name__) + hash(args) + hash(frozenset(kwargs)))
 
     def result(self, func):
         def decorator(*args, **kwargs):
@@ -33,7 +33,7 @@ class Cache:
             cached = self.cache.get(hash)
             if cached is not None:
                 return cached
-            result = func(*args)
+            result = func(*args, **kwargs)
             self.cache[hash] = result
             return result
         return decorator
