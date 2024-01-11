@@ -4,6 +4,7 @@ import emoji
 
 from src.disc.cogs.pigeon.cog import get_active_pigeon
 from src.models import Pigeon
+from src.models.pigeon import ExplorationPlanetLocation
 
 
 class Stat:
@@ -59,7 +60,7 @@ class PigeonHelper:
         return get_active_pigeon(user_id)
 
     def get_all_locations(self):
-        pass
+        ExplorationPlanetLocation
 
 
     # public Map<Integer, FullExplorationLocation> getAllLocations() {

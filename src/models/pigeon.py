@@ -9,7 +9,7 @@ from dateutil.relativedelta import relativedelta
 
 from src.utils.enums import Gender
 from .base import BaseModel, EnumField, EmojiField, PercentageField, TimeDeltaField, CountryField, LanguageField
-from .human import Human, Item
+from .human import Human, Item, ItemCategory
 
 
 class Activity(BaseModel):
@@ -419,18 +419,53 @@ class Date(Challenge):
         return "https://tubelife.org/wp-content/uploads/2019/08/Valentines-Heart-GIF.gif"
 
 
-class ExplorationPlanetLocation(BaseModel):
-    pass
+class SpaceExploration(BaseModel):
+    location = peewee.TextField()
+    start_date = peewee.DateTimeField()
+    arrival_date = peewee.DateTimeField()
+    end_date = peewee.DateTimeField(null=True)
+    finished = peewee.BooleanField(default=False)
+    pigeon = peewee.ForeignKeyField(Pigeon)
+    actions_remaining = peewee.IntegerField()
+    total_actions = peewee.IntegerField()
 
 
 class ExplorationPlanet(BaseModel):
-    pass
+    code = peewee.TextField()
+    name = peewee.TextField()
+    image_url = peewee.TextField()
+
+
+class ExplorationPlanetLocation(BaseModel):
+    name = peewee.TextField()
+    planet = peewee.ForeignKeyField(ExplorationPlanet)
+    image_url = peewee.TextField(null=True)
+    active = peewee.BooleanField()
 
 
 class ExplorationAction(BaseModel):
-    pass
+    code = peewee.TextField()
+    name = peewee.TextField()
+    symbol = peewee.TextField()
+    location = peewee.ForeignKeyField(ExplorationPlanetLocation)
+    planet = peewee.ForeignKeyField(ExplorationPlanet)
 
-# int id, int planetId, String imageUrl, String planetName, String name, List<ExplorationAction> actions
+
+class ExplorationActionScenarioWinnings(BaseModel):
+    gold = peewee.IntegerField()
+    health = peewee.IntegerField()
+    happiness = peewee.IntegerField()
+    experience = peewee.IntegerField()
+    cleanliness = peewee.IntegerField()
+    food = peewee.IntegerField()
+    item = peewee.ForeignKeyField(Item, null=True)
+    item_category = peewee.ForeignKeyField(ItemCategory, null=True)
+
+
+class ExplorationActionScenario(BaseModel):
+    text = peewee.TextField()
+    action = peewee.ForeignKeyField(ExplorationAction)
+    winnings = peewee.ForeignKeyField(ExplorationActionScenarioWinnings)
 
 
 
