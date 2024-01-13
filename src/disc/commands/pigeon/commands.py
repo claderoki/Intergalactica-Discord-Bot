@@ -1,3 +1,4 @@
+import enum
 from distutils.cmd import Command
 from typing import List, Optional, Union, Callable
 
@@ -104,7 +105,11 @@ class Pigeon2(commands.GroupCog, name="pigeon"):
     @app_commands.command(name="explore", description="Send your pigeon to space")
     async def explore(self, interaction: discord.Interaction) -> None:
         pigeon = await self.validate(interaction, **self.explore.extras)
+        # random location ID, with location
 
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Pigeon2(bot))
+
+
+
