@@ -43,7 +43,7 @@ class PigeonStat(Stat):
 
     @classmethod
     def gold_modifier(cls, amount: float) -> 'PigeonStat':
-        return cls('gold_modifier', amount, '❤🌻')
+        return cls('gold_modifier', amount, '❤')
 
 
 class Winnings:

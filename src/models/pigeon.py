@@ -467,8 +467,6 @@ class ExplorationActionScenario(BaseModel):
     action = peewee.ForeignKeyField(ExplorationAction)
     winnings = peewee.ForeignKeyField(ExplorationActionScenarioWinnings)
 
-
-
     # private Map<Integer, List<ExplorationAction>> getAllActions() {
     #     Map<Integer, List<ExplorationScenario>> scenarios = getAllScenarios();
     #     String query = "SELECT `id`, `name`, `symbol`, `location_id` FROM `exploration_action`";
