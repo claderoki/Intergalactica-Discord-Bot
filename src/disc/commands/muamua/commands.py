@@ -1,3 +1,7 @@
+
+
+
+
 import asyncio
 import random
 import string
@@ -213,8 +217,7 @@ class GameMenu(discord.ui.View):
         self.timeout = 2000
         self.all_ai = False
         self.wait_time = 0
-        self.game_info = []
-        self.notifications = []
+        self.log = []
         self.stats: Dict[str, Stat] = {}
         self.game_over = False
         self.followup = None
@@ -266,11 +269,11 @@ class GameMenu(discord.ui.View):
         symbol = symbol or ' '
         spaces = " " if len(rank) == 1 else ""
         lines = []
-        lines.append("┌─────┐")
+        lines.append(f"┌─────┐")
         lines.append(f"│{rank}{spaces}   │")
         lines.append(f"│{symbol}   {symbol}│")
         lines.append(f"│   {spaces}{rank}│")
-        lines.append("└─────┘")
+        lines.append(f"└─────┘")
         unicode = "\n".join(lines)
         return unicode.replace("┌", "╭").replace("┐", "╮").replace("┘", "╯").replace("└", "╰")
 
@@ -294,11 +297,11 @@ class GameMenu(discord.ui.View):
             unicode = self.card_unicode_raw(' ', self.overriden_suit.value)
         embed = discord.Embed(description='>>> ```\n' + unicode + '```')
 
-        if len(self.notifications):
+        if len(self.log):
             value = []
             length = 0
-            for i in range(len(self.notifications)-1, -1, -1):
-                notification = self.notifications[i]
+            for i in range(len(self.log) - 1, -1, -1):
+                notification = self.log[i]
                 message = f'Round {notification.round} {notification.player or ""}: {notification.message}'
                 would_be_length = length + len(message) + 1
                 if would_be_length >= (1024/2):
@@ -379,7 +382,7 @@ class GameMenu(discord.ui.View):
 
     def __add_notification(self, message: str, player: Player):
         round = max(int(self.cycler.cycles / len(self.players)) + 1, 1)
-        self.notifications.append(Notification(message, player, round))
+        self.log.append(Notification(message, player, round))
 
     def __has_valid_hand(self, player: Player) -> bool:
         return len(self.__get_valid_hand(player)) > 0

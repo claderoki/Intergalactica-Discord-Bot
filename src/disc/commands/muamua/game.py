@@ -2,11 +2,6 @@ import random
 from enum import Enum
 from typing import List
 
-
-# class Rank(Enum):
-#     A = 1
-#     2 = 2
-
 class Card:
     class Suit(Enum):
         spades = "♠"
