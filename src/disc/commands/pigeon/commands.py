@@ -1,15 +1,15 @@
-import enum
-from distutils.cmd import Command
-from typing import List, Optional, Union, Callable
+import datetime
+import random
+from typing import List, Optional
 
 import discord
-from discord.app_commands import Group, ContextMenu
 from discord.ext import commands
 from discord import app_commands
 
 from src.disc.commands.pigeon.helpers import PigeonHelper, Stat, CheckResult, Winnings, PigeonStat, HumanStat
 import src.config as config
 from src.models import Pigeon
+from src.models.pigeon import ExplorationPlanetLocation, SpaceExploration
 
 
 def validation(settings: 'ValidationSettings'):
@@ -22,6 +22,7 @@ def validation(settings: 'ValidationSettings'):
             return inner
         else:
             return inner(func)
+
     return wrapper
 
 
@@ -48,7 +49,6 @@ class Pigeon2(commands.GroupCog, name="pigeon"):
                 settings: ValidationSettings = None,
                 ) -> CheckResult:
         settings = settings or ValidationSettings()
-        print(settings.required_status)
         result = CheckResult()
         result.pigeon = self.helper.get_pigeon(user_id)
         if settings.needs_active_pigeon and result.pigeon is None:
@@ -78,6 +78,7 @@ class Pigeon2(commands.GroupCog, name="pigeon"):
                        other: bool = False,
                        settings: ValidationSettings = None
                        ) -> Optional[Pigeon]:
+        settings = settings or interaction.command.extras.get('settings')
         result = self.__check(user_id=user_id or interaction.user.id, other=other, settings=settings)
         if result.errors:
             await interaction.response.send_message(result.errors[0])
@@ -102,14 +103,43 @@ class Pigeon2(commands.GroupCog, name="pigeon"):
         await self.__update_stat(interaction, PigeonStat.health(20), 20, 'You heal that thing you call a pigeon.')
 
     @validation(ValidationSettings(required_status=Pigeon.Status.idle))
+    @commands.max_concurrency(1, commands.BucketType.user)
     @app_commands.command(name="explore", description="Send your pigeon to space")
     async def explore(self, interaction: discord.Interaction) -> None:
-        pigeon = await self.validate(interaction, **self.explore.extras)
-        # random location ID, with location
+        pigeon = await self.validate(interaction)
+        location: ExplorationPlanetLocation = random.choice(list(self.helper.get_all_locations()))
+        id = location.id
+        image_url = location.image_url or location.planet.image_url
+        arrival_date = datetime.datetime.utcnow() + datetime.timedelta(minutes=90)
+
+        SpaceExploration.create(
+            location=id,
+            start_date=datetime.datetime.utcnow(),
+            arrival_date=arrival_date,
+            end_date=None,
+            finished=False,
+            pigeon=pigeon,
+            actions_remaining=3,
+            total_actions=3
+        )
+
+        pigeon.status = Pigeon.Status.space_exploring
+        pigeon.save()
+        await interaction.response.send_message('OK, your pigeon is on its way.')
+
+    @validation(ValidationSettings(required_status=Pigeon.Status.space_exploring))
+    @commands.max_concurrency(1, commands.BucketType.user)
+    @app_commands.command(name="space", description="Get your pigeon back from space")
+    async def space(self, interaction: discord.Interaction) -> None:
+        # todo: bucket, only allow one at a time per user
+        pigeon = await self.validate(interaction)
+        exploration: SpaceExploration = SpaceExploration.get(pigeon=pigeon, finished=False)
+        if exploration.arrival_date < datetime.datetime.utcnow():
+            await interaction.response.send_message('Still traveling, dumbass')
+            return
+
+        await interaction.response.send_message('Done traveling, not working yet though, dumbass')
 
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Pigeon2(bot))
-
-
-

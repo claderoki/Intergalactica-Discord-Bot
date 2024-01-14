@@ -1,7 +1,8 @@
-from typing import Optional
+from typing import Optional, Iterable
 
 import emoji
 
+from src import config
 from src.disc.cogs.pigeon.cog import get_active_pigeon
 from src.models import Pigeon
 from src.models.pigeon import ExplorationPlanetLocation
@@ -55,13 +56,13 @@ class Winnings:
 
 
 class PigeonHelper:
-    # @config.cache.result
+    @config.cache.result(category='pigeon')
     def get_pigeon(self, user_id: int) -> Optional[Pigeon]:
         return get_active_pigeon(user_id)
 
-    def get_all_locations(self):
-        ExplorationPlanetLocation
-
+    @config.cache.result(category='pigeon')
+    def get_all_locations(self) -> Iterable[ExplorationPlanetLocation]:
+        return ExplorationPlanetLocation
 
     # public Map<Integer, FullExplorationLocation> getAllLocations() {
     #     Map<Integer, List<ExplorationAction>> actions = getAllActions();

@@ -419,16 +419,6 @@ class Date(Challenge):
         return "https://tubelife.org/wp-content/uploads/2019/08/Valentines-Heart-GIF.gif"
 
 
-class SpaceExploration(BaseModel):
-    location = peewee.TextField()
-    start_date = peewee.DateTimeField()
-    arrival_date = peewee.DateTimeField()
-    end_date = peewee.DateTimeField(null=True)
-    finished = peewee.BooleanField(default=False)
-    pigeon = peewee.ForeignKeyField(Pigeon)
-    actions_remaining = peewee.IntegerField()
-    total_actions = peewee.IntegerField()
-
 
 class ExplorationPlanet(BaseModel):
     code = peewee.TextField()
@@ -466,6 +456,20 @@ class ExplorationActionScenario(BaseModel):
     text = peewee.TextField()
     action = peewee.ForeignKeyField(ExplorationAction)
     winnings = peewee.ForeignKeyField(ExplorationActionScenarioWinnings)
+
+
+class SpaceExploration(BaseModel):
+    class Meta:
+        table_name = 'exploration'
+
+    location = peewee.ForeignKeyField(ExplorationPlanetLocation, column_name='planet_location_id')
+    start_date = peewee.DateTimeField()
+    arrival_date = peewee.DateTimeField()
+    end_date = peewee.DateTimeField(null=True)
+    finished = peewee.BooleanField(default=False)
+    pigeon = peewee.ForeignKeyField(Pigeon)
+    actions_remaining = peewee.IntegerField()
+    total_actions = peewee.IntegerField()
 
     # private Map<Integer, List<ExplorationAction>> getAllActions() {
     #     Map<Integer, List<ExplorationScenario>> scenarios = getAllScenarios();
