@@ -9,13 +9,7 @@ class SqliteBaseModel(UnititializedModel):
         legacy_table_names = False
         only_save_dirty = True
         table_settings = ["DEFAULT CHARSET=utf8"]
-        database = peewee.MySQLDatabase(
-            "birthday_db",
-            user=config.environ["mysql_user"],
-            password=config.environ["mysql_password"],
-            host=config.environ["mysql_host"],
-            port=int(config.environ["mysql_port"])
-        )
+        database = config.config.settings.birthday_database
 
 
 class Person(SqliteBaseModel):

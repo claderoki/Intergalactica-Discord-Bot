@@ -13,6 +13,7 @@ import src.disc.helpers.pretty as pretty
 from src.disc.helpers.waiters import TimeDeltaWaiter
 from src.utils.general import text_to_emojis
 from .base import BaseModel, EnumField, EmojiField
+from .helpers import create
 
 
 def calculate_percentage(part, total):
@@ -27,6 +28,7 @@ def calculate_percentage(part, total):
         return percentage
 
 
+@create()
 class Poll(BaseModel):
     class Type(Enum):
         custom = 1
@@ -145,12 +147,14 @@ class Poll(BaseModel):
         return embed
 
 
+@create()
 class Option(BaseModel):
     poll = peewee.ForeignKeyField(Poll, backref="options", on_delete="CASCADE")
     value = peewee.TextField()
     reaction = EmojiField()
 
 
+@create()
 class Vote(BaseModel):
     user_id = peewee.BigIntegerField()
     option = peewee.ForeignKeyField(Option, backref="votes", on_delete="CASCADE")
@@ -162,6 +166,7 @@ class Vote(BaseModel):
         )
 
 
+@create()
 class PollTemplate(BaseModel):
     name = peewee.CharField(null=False, max_length=100)
     guild_id = peewee.BigIntegerField(null=False)

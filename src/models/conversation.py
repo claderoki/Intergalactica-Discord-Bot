@@ -6,8 +6,10 @@ import peewee
 from dateutil.relativedelta import relativedelta
 
 from . import BaseModel
+from .helpers import create
 
 
+@create()
 class Conversant(BaseModel):
     user_id = peewee.BigIntegerField(null=False)
     enabled = peewee.BooleanField(null=False, default=True)
@@ -21,6 +23,7 @@ class Conversant(BaseModel):
         return query
 
 
+@create()
 class Participant(BaseModel):
     key = peewee.TextField(null=False, default=lambda: secrets.token_urlsafe(10))
     reveal = peewee.BooleanField(null=False, default=False)
@@ -34,6 +37,7 @@ class Participant(BaseModel):
         return await self.conversant.user.send(*args, **kwargs)
 
 
+@create()
 class Conversation(BaseModel):
     participant1 = peewee.ForeignKeyField(Participant, null=False)
     participant2 = peewee.ForeignKeyField(Participant, null=False)

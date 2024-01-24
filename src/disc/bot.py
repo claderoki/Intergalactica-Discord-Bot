@@ -3,12 +3,11 @@ import datetime
 import os
 
 import discord
-import emoji
 import praw
 from dateutil.relativedelta import relativedelta
 from discord.ext import commands
 
-import src.config as config
+from src.classes import Mode, Config
 from src.disc.errors.base import SendableException
 from src.disc.helpers import ColorHelper
 from src.disc.helpers.embed import Embed
@@ -59,19 +58,19 @@ class Locus(commands.Bot):
         Cancelled,
     )
 
-    def __init__(self, mode):
+    def __init__(self, config: Config):
+        self.config = config
         self._human_cache = {}
-        self.mode = mode
-        self.production = mode == config.Mode.production
+        self.production = config.mode == Mode.production
         self.heroku = False
         self.restarting = False
 
         os.makedirs(f"{config.path}/tmp", exist_ok=True)
 
-        if not self.production:
-            prefix = "."
-        else:
+        if self.production:
             prefix = [";", "/"]
+        else:
+            prefix = "."
 
         intents = discord.Intents.all()
         super().__init__(intents=intents, command_prefix=prefix)
@@ -92,8 +91,8 @@ class Locus(commands.Bot):
 
     def print_info(self):
         print("--------------------")
-        print(f"Mode          = {self.mode.name}")
-        print(f"Path          = {config.path}")
+        print(f"Mode          = {self.config.mode.name}")
+        print(f"Path          = {self.config.path}")
         print(f"Prefix        = {self.command_prefix}")
         print(f"Total members = {sum([x.member_count for x in self.guilds])}")
         print("--------------------")
@@ -105,10 +104,6 @@ class Locus(commands.Bot):
 
     def get_dominant_color(self, *args, **kwargs):
         return ColorHelper.get_dominant_color(*args, **kwargs)
-
-    @property
-    def gold_emoji(self):
-        return emoji.emojize(":euro:")
 
     async def load_cog(self, name):
         await self.load_extension("src.disc.cogs." + name)
@@ -197,13 +192,11 @@ class Locus(commands.Bot):
         """Cached human, with updated gold."""
         user = user or ctx.author
         user_id = self.get_id(user)
-        if user_id not in self._human_cache:
+        human = self._human_cache.get(user_id)
+        if human is None:
             human, _ = Human.get_or_create(user_id=user_id)
             self._human_cache[user_id] = human
         else:
-            human = self._human_cache[user_id]
-            # h = Human.select(Human.gold).where(Human.user_id == user_id).first()
-            # human.gold = h.gold
             return human
         return self._human_cache[user_id]
 

@@ -37,7 +37,6 @@ class Inactive(BaseCog):
                         human=config.bot.get_human(user=member)
                     )
                 except Exception as e:
-                    print(e)
                     pass
 
     @commands.Cog.listener()

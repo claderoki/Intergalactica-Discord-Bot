@@ -6,8 +6,10 @@ import emoji
 import peewee
 
 from .base import BaseModel, EnumField
+from .helpers import create
 
 
+@create()
 class Ticket(BaseModel):
     class Type(Enum):
         support = 1
@@ -105,6 +107,7 @@ class Ticket(BaseModel):
         await self.member.send(embed=self.embed)
 
 
+@create()
 class Reply(BaseModel):
     class Type(Enum):
         author = 1

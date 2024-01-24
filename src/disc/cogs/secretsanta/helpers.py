@@ -4,6 +4,7 @@ import random
 import discord
 
 import src.config as config
+from src.constants import Constants, BR
 from src.disc.errors.base import SendableException
 from src.disc.helpers.known_guilds import KnownGuild
 from src.models.secretsanta import SecretSanta, SecretSantaParticipant
@@ -51,7 +52,7 @@ def command_to_field(prefix, command, description=None):
     if description is None:
         kwargs["name"] = desc
     else:
-        kwargs["value"] += f"\n{desc}{config.br}"
+        kwargs["value"] += f"\n{desc}{BR}"
     kwargs["inline"] = False
     return kwargs
 

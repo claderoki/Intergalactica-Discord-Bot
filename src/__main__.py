@@ -2,43 +2,66 @@ import argparse
 import os
 import sys
 
+import peewee
+
 import src.config as config
+from src.classes import Mode, Cache, Settings
 from src.utils.environmental_variables import EnvironmentalVariables
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--mode', default=config.Mode.development.name, choices=[x.name for x in list(config.Mode)])
-parser.add_argument('--service', default="none", choices=["heroku", "none"])
+parser.add_argument('--mode', default=Mode.development.name, choices=[x.name for x in list(Mode)])
+parser.add_argument('--sqlite', default='0', choices=['0', '1'])
 parser.add_argument('--restarted', default='0', choices=['0', '1'])
 
 args = parser.parse_args()
-mode = config.Mode[args.mode]
-service = args.service
+mode = Mode[args.mode]
+restarted = args.restarted == '1'
+sqlite = args.sqlite == '1'
 
-if service == "heroku":
-    config.environ = EnvironmentalVariables.from_environ()
-else:
+
+def init_environ() -> EnvironmentalVariables:
     path = config.path + "/.env"
     try:
-        config.environ = EnvironmentalVariables.from_path(path)
+        return EnvironmentalVariables.from_path(path)
     except FileNotFoundError:
         EnvironmentalVariables.create_env_file(path)
         print(f"Please enter the environmental variables in the {path} file.")
         quit()
 
+
+def create_database(database_name: str) -> peewee.Database:
+    if args.sqlite == '1':
+        return peewee.SqliteDatabase(f'data/{database_name}.sqlite')
+    return peewee.MySQLDatabase(
+        database_name,
+        user=config.environ["mysql_user"],
+        password=config.environ["mysql_password"],
+        host=config.environ["mysql_host"],
+        port=int(config.environ["mysql_port"])
+    )
+
+
+environ = init_environ()
+config.init(mode, environ, None, Cache(),
+            Settings(create_database(environ["mysql_db_name"]), create_database('birthday_db')))
+
 from src.disc.bot import Locus
 
-config.bot = Locus(mode)
-config.tree = config.bot.tree
-config.bot.heroku = service == "heroku"
-config.bot.restarted = args.restarted == "1"
-config.bot.run(config.environ.discord_token)
+locus = Locus(config.config)
+
+config.init(mode, environ, locus, Cache(), Settings(
+    create_database(environ["mysql_db_name"]),
+    create_database('birthday_db')
+))
+
+config.config.bot.restarted = restarted
+config.config.bot.run(config.environ.discord_token_dev)
 
 args = ["-m", "src"]
 
 for arg in sys.argv[1:]:
     args.append(arg)
 
-if config.bot.restarting:
+if config.config.bot.restarting:
     args.append(f"--restarted=1")
-
     os.execl(sys.executable, os.path.abspath(config.path), *args)

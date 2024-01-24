@@ -1,12 +1,11 @@
 import asyncio
 import random
 import string
-from contextlib import contextmanager
 from typing import Optional, List, Dict
 
 import discord
 
-import src.config as config
+from src.config import config
 from src.disc.commands import GameOverException
 from src.disc.commands.horse_fight.game import Horse
 

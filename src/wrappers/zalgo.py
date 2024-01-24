@@ -57,8 +57,3 @@ class Zalgo:
         Source : https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-string
         """
         return u"".join([c for c in unicodedata.normalize('NFKD', text) if not unicodedata.combining(c)])
-
-
-if __name__ == "__main__":
-    z = Zalgo()
-    print(z.zalgofy("Name"))

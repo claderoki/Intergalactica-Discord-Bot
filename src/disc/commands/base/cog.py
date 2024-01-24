@@ -1,0 +1,67 @@
+from typing import List
+
+import discord
+from discord.app_commands import CommandInvokeError
+from discord.ext import commands
+
+from src.disc.commands.base.validation import Validation
+from src.models import Human, Pigeon
+
+
+class CheckResult:
+    def __init__(self, targets: 'TargetCollection', errors: List[str]):
+        self.targets = targets
+        self.errors = errors
+
+
+class TargetCollection(dict):
+    def __init__(self):
+        super().__init__()
+
+    def get_human(self):
+        return self.get(Human)
+
+    def get_pigeon(self):
+        return self.get(Pigeon)
+
+
+class ValidationFailed(Exception):
+    pass
+
+
+class BaseGroupCog(commands.GroupCog):
+    def check(self,
+              user_id: int,
+              other: bool = False,
+              validations: List[Validation] = None
+              ) -> CheckResult:
+        validations = validations or []
+        targets = TargetCollection()
+        errors = []
+        for validation in validations:
+            type = validation.get_target_type()
+            if type not in targets:
+                targets[type] = validation.find_target(user_id)
+            val = validation.validate(targets[type])
+            if not val:
+                errors.append(validation.failure_message_other() if other else validation.failure_message_self())
+
+        return CheckResult(targets, errors)
+
+    async def validate(self,
+                       interaction: discord.Interaction,
+                       user_id: int = None,
+                       other: bool = False,
+                       validations: List[Validation] = None
+                       ) -> TargetCollection:
+        validations = validations or interaction.command.extras.get('validations')
+        result = self.check(user_id=user_id or interaction.user.id, other=other, validations=validations)
+        if result.errors:
+            await interaction.response.send_message(result.errors[0])
+            raise ValidationFailed()
+        return result.targets
+
+    async def cog_app_command_error(self, interation, error):
+        original = error.original if isinstance(error, CommandInvokeError) else error
+        if not isinstance(original, ValidationFailed):
+            raise error

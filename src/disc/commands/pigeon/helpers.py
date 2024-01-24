@@ -2,9 +2,9 @@ from typing import Optional, Iterable
 
 import emoji
 
-from src import config
+from src.config import config
 from src.disc.cogs.pigeon.cog import get_active_pigeon
-from src.models import Pigeon
+from src.models import Pigeon, Human
 from src.models.pigeon import ExplorationPlanetLocation
 
 
@@ -56,47 +56,22 @@ class Winnings:
 
 
 class PigeonHelper:
-    @config.cache.result(category='pigeon')
+    @config.cache(category='pigeon')
     def get_pigeon(self, user_id: int) -> Optional[Pigeon]:
         return get_active_pigeon(user_id)
 
-    @config.cache.result(category='pigeon')
+    @config.cache(category='pigeon')
     def get_all_locations(self) -> Iterable[ExplorationPlanetLocation]:
         return ExplorationPlanetLocation
 
-    # public Map<Integer, FullExplorationLocation> getAllLocations() {
-    #     Map<Integer, List<ExplorationAction>> actions = getAllActions();
-    #     Map<Integer, FullExplorationLocation> locations = new HashMap<>();
-    #     String query = """
-    #         SELECT
-    #             `exploration_planet_location`.`id` AS `id`,
-    #             `planet_id`,
-    #             IFNULL(`exploration_planet_location`.`image_url`, `exploration_planet`.`image_url`) AS `image_url`,
-    #             `exploration_planet_location`.`name` AS `name`,
-    #             `exploration_planet`.`name` AS `planet_name`
-    #         FROM `exploration_planet_location`
-    #         INNER JOIN `exploration_planet` ON `exploration_planet`.`id` = `exploration_planet_location`.`planet_id`
-    #         WHERE `exploration_planet_location`.`active` = 1
-    #     """;
-    #     for(Result result: getMany(query)) {
-    #         FullExplorationLocation location = new FullExplorationLocation(
-    #             result.getInt("id"),
-    #             result.getInt("planet_id"),
-    #             result.getString("image_url"),
-    #             result.getString("planet_name"),
-    #             result.getString("name"),
-    #             actions.get(result.getInt("id"))
-    #         );
-    #         locations.put(location.id(), location);
-    #     }
-    #     return locations;
-    # }
+    def find_location(self, location_id: int) -> Optional[ExplorationPlanetLocation]:
+        for location in self.get_all_locations():
+            if location.id == location_id:
+                return location
 
 
-
-class CheckResult:
-    __slots__ = ('pigeon', 'errors')
-
-    def __init__(self):
-        self.pigeon = None
-        self.errors = []
+class HumanHelper:
+    @config.cache(category='human')
+    def get_human(self, user_id: int) -> Optional[int]:
+        human, _ = Human.get_or_create(user_id=user_id)
+        return human

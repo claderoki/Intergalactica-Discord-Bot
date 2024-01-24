@@ -4,6 +4,7 @@ from enum import Enum
 import peewee
 
 from .base import BaseModel, EnumField
+from .helpers import create
 
 
 class StoredUnit(BaseModel):
@@ -36,6 +37,7 @@ class StoredUnit(BaseModel):
         return False
 
 
+@create()
 class Currency(StoredUnit):
     pass
 
@@ -46,6 +48,7 @@ class MeasurementSubType(Enum):
     mass = 3
 
 
+@create()
 class Measurement(StoredUnit):
     subtype = EnumField(MeasurementSubType, null=False)
     squareable = peewee.BooleanField(null=False, default=False)

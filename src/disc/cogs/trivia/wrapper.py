@@ -120,13 +120,3 @@ class TriviaApi:
             id = category["id"]
             print(f'{id}')
 
-
-if __name__ == "__main__":
-    api = TriviaApi()
-    for question in api.get_questions(
-            amount=10,
-            difficulty=QuestionDifficulty.easy,
-            category=Category.id_27,
-            type=QuestionType.boolean
-    ):
-        print(question)

@@ -50,8 +50,3 @@ class Timezone:
 
     def __str__(self):
         return "Timezone object: name=" + self.name
-
-
-if __name__ == "__main__":
-    timezone = Timezone.from_city("Warsaw")
-    print(timezone.country)

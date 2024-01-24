@@ -70,7 +70,6 @@ class PersonalRoleCog(BaseCog, name="Personal role"):
                 await role.edit(position=position)
                 await role.edit(position=position)
             except Exception as e:
-                print(f"Couldn't move to position {position}: ", e)
                 pass
             earthling.personal_role = role
             earthling.save()

@@ -3,9 +3,11 @@ from enum import Enum
 import peewee
 
 from .base import BaseModel, EnumField
+from .helpers import create
 from .human import Item
 
 
+@create()
 class MilkywaySettings(BaseModel):
     guild_id = peewee.BigIntegerField(null=False)
     cost_per_day = peewee.IntegerField(null=False, default=500)
@@ -15,6 +17,7 @@ class MilkywaySettings(BaseModel):
     godmode = peewee.BooleanField(null=False, default=False)
 
 
+@create()
 class Milkyway(BaseModel):
     class PurchaseType(Enum):
         item = 1

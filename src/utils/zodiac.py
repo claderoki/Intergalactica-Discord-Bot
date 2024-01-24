@@ -72,13 +72,3 @@ class ZodiacSign(Enum):
             return cls.libra if (date.day < 23) else cls.scorpio
         elif date.month == 11:
             return cls.scorpio if (date.day < 22) else cls.sagittarius
-
-
-if __name__ == "__main__":
-    dates = DateRange(datetime.datetime(2020, 11, 10))
-    for date in dates:
-        print(date)
-    print(datetime.datetime(2020, 11, 10) in dates)
-
-    sign = ZodiacSign.from_date(datetime.datetime(2020, 11, 10))
-    print(sign.emoji)

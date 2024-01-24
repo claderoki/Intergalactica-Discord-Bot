@@ -2,6 +2,7 @@ import random
 
 from discord.ext import commands, tasks
 
+from src.constants import Constants, BR, GOLD_EMOJI
 from src.disc.cogs.core import BaseCog
 from src.disc.errors.base import SendableException
 from src.disc.helpers.converters import EnumConverter
@@ -127,7 +128,7 @@ class PigeonCog(BaseCog, name="Pigeon"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        Pigeon.emojis["gold"] = self.bot.gold_emoji
+        Pigeon.emojis["gold"] = GOLD_EMOJI
         self.start_task(self.date_ticker, check=self.bot.production)
         self.start_task(self.fight_ticker, check=self.bot.production)
         await asyncio.sleep(60 * 60)
@@ -740,9 +741,9 @@ AND (pigeon1_id = {ctx.pigeon.id} OR pigeon2_id = {ctx.pigeon.id})
             url="https://cdn.discordapp.com/attachments/705242963550404658/766680730457604126/pigeon_tiny.png")
 
         if money > 0:
-            embed.description += f" You earn {self.bot.gold_emoji} {abs(money)}"
+            embed.description += f" You earn {GOLD_EMOJI} {abs(money)}"
         elif money < 0:
-            embed.description += f" You lose {self.bot.gold_emoji} {abs(money)}"
+            embed.description += f" You lose {GOLD_EMOJI} {abs(money)}"
 
         human.gold += money
         human.save()
@@ -943,7 +944,7 @@ def command_to_field(ctx, command, description=None):
     if description is None:
         kwargs["name"] = desc
     else:
-        kwargs["value"] += f"\n{desc}{config.br}"
+        kwargs["value"] += f"\n{desc}{BR}"
     kwargs["inline"] = False
     return kwargs
 

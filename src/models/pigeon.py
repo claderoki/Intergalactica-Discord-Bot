@@ -2,6 +2,7 @@ import datetime
 import math
 import random
 from enum import Enum
+from typing import Iterable
 
 import discord
 import peewee
@@ -9,9 +10,11 @@ from dateutil.relativedelta import relativedelta
 
 from src.utils.enums import Gender
 from .base import BaseModel, EnumField, EmojiField, PercentageField, TimeDeltaField, CountryField, LanguageField
+from .helpers import create, drop
 from .human import Human, Item, ItemCategory
 
 
+@create()
 class Activity(BaseModel):
     start_date = peewee.DateTimeField(null=True, default=lambda: datetime.datetime.utcnow())
     end_date = peewee.DateTimeField(null=True)
@@ -26,6 +29,7 @@ class Activity(BaseModel):
         return int((self.end_date - self.start_date).total_seconds() / 60.0)
 
 
+@create()
 class TravelActivity(Activity):
     residence = CountryField(null=True)
     destination = CountryField(null=True)
@@ -63,6 +67,7 @@ class TravelActivity(Activity):
         return duration
 
 
+@create()
 class Pigeon(BaseModel):
     emojis = {
         "name": "📛",
@@ -192,6 +197,7 @@ class Pigeon(BaseModel):
         return query
 
 
+@create()
 class Buff(BaseModel):
     name = peewee.TextField(null=False)
     description = peewee.TextField(null=False)
@@ -207,6 +213,7 @@ class Buff(BaseModel):
     #     modifier = 3
 
 
+@create()
 class PigeonBuff(BaseModel):
     pigeon = peewee.ForeignKeyField(Pigeon, null=False, backref="_buffs", on_delete="CASCADE")
     buff = peewee.ForeignKeyField(Buff, null=False, on_delete="CASCADE")
@@ -214,6 +221,7 @@ class PigeonBuff(BaseModel):
                                     default=lambda: datetime.datetime.utcnow() + datetime.timedelta(hours=24))
 
 
+@create()
 class PigeonRelationship(BaseModel):
     pigeon1 = peewee.ForeignKeyField(Pigeon, null=False, on_delete="CASCADE")
     pigeon2 = peewee.ForeignKeyField(Pigeon, null=False, on_delete="CASCADE")
@@ -269,17 +277,20 @@ class PigeonRelationship(BaseModel):
             return cls.create(pigeon1=pigeon1, pigeon2=pigeon2)
 
 
+@create()
 class PigeonDatingAvatar(BaseModel):
     description = peewee.TextField()
     image_url = peewee.TextField()
 
 
+@create()
 class PigeonDatingProfile(BaseModel):
     pigeon = peewee.ForeignKeyField(Pigeon)
     description = peewee.TextField()
     image_url = peewee.TextField()
 
 
+@create()
 class PigeonDatingParticipant(BaseModel):
     class Status(Enum):
         liked = 1
@@ -289,11 +300,13 @@ class PigeonDatingParticipant(BaseModel):
     pigeon = peewee.ForeignKeyField(Pigeon)
 
 
+@create()
 class PigeonDatingRelationship(BaseModel):
     participant1 = peewee.ForeignKeyField(PigeonDatingParticipant)
     participant2 = peewee.ForeignKeyField(PigeonDatingParticipant)
 
 
+@create()
 class LanguageMastery(BaseModel):
     language = LanguageField()
     mastery = PercentageField(null=False, default=0)
@@ -313,6 +326,7 @@ class LanguageMastery(BaseModel):
             return "native"
 
 
+@create()
 class SystemMessage(BaseModel):
     human = peewee.ForeignKeyField(Human, null=False, backref="system_messages", on_delete="CASCADE")
     text = peewee.TextField(null=False)
@@ -323,6 +337,7 @@ class SystemMessage(BaseModel):
         return discord.Embed(description=self.text)
 
 
+@create()
 class Mail(TravelActivity):
     recipient = peewee.ForeignKeyField(Human, null=False, backref="inbox", on_delete="CASCADE")
     sender = peewee.ForeignKeyField(Pigeon, null=False, backref="outbox", on_delete="CASCADE")
@@ -332,6 +347,7 @@ class Mail(TravelActivity):
     read = peewee.BooleanField(null=False, default=True)
 
 
+@create()
 class Exploration(TravelActivity):
     name = peewee.TextField(null=True)
     pigeon = peewee.ForeignKeyField(Pigeon, null=False, backref="explorations", on_delete="CASCADE")
@@ -348,6 +364,7 @@ class Exploration(TravelActivity):
         return math.ceil(self.duration_in_minutes * 0.6)
 
 
+@create()
 class Challenge(Activity):
     pigeon1 = peewee.ForeignKeyField(Pigeon, null=False, on_delete="CASCADE")
     pigeon2 = peewee.ForeignKeyField(Pigeon, null=False, on_delete="CASCADE")
@@ -368,13 +385,14 @@ class Challenge(Activity):
         return None
 
     def delete_instance(self, *args, **kwargs):
-        self.pigeon1.status = Pigeon.status.idle
-        self.pigeon2.status = Pigeon.status.idle
+        self.pigeon1.status = Pigeon.Status.idle
+        self.pigeon2.status = Pigeon.Status.idle
         self.pigeon1.save()
         self.pigeon2.save()
         return super().delete_instance(*args, **kwargs)
 
 
+@create()
 class Fight(Challenge):
     bet = peewee.BigIntegerField(null=False, default=50)
     won = peewee.BooleanField(null=True)  # null is not ended yet, true means challenger won, false means challengee won
@@ -410,6 +428,7 @@ class Fight(Challenge):
         self.pigeon1 = value
 
 
+@create()
 class Date(Challenge):
     gift = peewee.ForeignKeyField(Item, null=True)
     score = peewee.IntegerField(null=False, default=0)  # max 100, min -100
@@ -419,45 +438,44 @@ class Date(Challenge):
         return "https://tubelife.org/wp-content/uploads/2019/08/Valentines-Heart-GIF.gif"
 
 
-
+@create()
 class ExplorationPlanet(BaseModel):
-    code = peewee.TextField()
     name = peewee.TextField()
     image_url = peewee.TextField()
 
 
+@create()
 class ExplorationPlanetLocation(BaseModel):
     name = peewee.TextField()
     planet = peewee.ForeignKeyField(ExplorationPlanet)
     image_url = peewee.TextField(null=True)
     active = peewee.BooleanField()
+    actions: Iterable['ExplorationAction']
 
 
+@create()
 class ExplorationAction(BaseModel):
-    code = peewee.TextField()
     name = peewee.TextField()
     symbol = peewee.TextField()
-    location = peewee.ForeignKeyField(ExplorationPlanetLocation)
+    location = peewee.ForeignKeyField(ExplorationPlanetLocation, backref='actions')
     planet = peewee.ForeignKeyField(ExplorationPlanet)
 
 
-class ExplorationActionScenarioWinnings(BaseModel):
-    gold = peewee.IntegerField()
-    health = peewee.IntegerField()
-    happiness = peewee.IntegerField()
-    experience = peewee.IntegerField()
-    cleanliness = peewee.IntegerField()
-    food = peewee.IntegerField()
+@create()
+class ExplorationActionScenario(BaseModel):
+    text = peewee.TextField()
+    action = peewee.ForeignKeyField(ExplorationAction)
+    gold = peewee.IntegerField(default=0)
+    health = peewee.IntegerField(default=0)
+    happiness = peewee.IntegerField(default=0)
+    experience = peewee.IntegerField(default=0)
+    cleanliness = peewee.IntegerField(default=0)
+    food = peewee.IntegerField(default=0)
     item = peewee.ForeignKeyField(Item, null=True)
     item_category = peewee.ForeignKeyField(ItemCategory, null=True)
 
 
-class ExplorationActionScenario(BaseModel):
-    text = peewee.TextField()
-    action = peewee.ForeignKeyField(ExplorationAction)
-    winnings = peewee.ForeignKeyField(ExplorationActionScenarioWinnings)
-
-
+@create()
 class SpaceExploration(BaseModel):
     class Meta:
         table_name = 'exploration'
@@ -470,20 +488,3 @@ class SpaceExploration(BaseModel):
     pigeon = peewee.ForeignKeyField(Pigeon)
     actions_remaining = peewee.IntegerField()
     total_actions = peewee.IntegerField()
-
-    # private Map<Integer, List<ExplorationAction>> getAllActions() {
-    #     Map<Integer, List<ExplorationScenario>> scenarios = getAllScenarios();
-    #     String query = "SELECT `id`, `name`, `symbol`, `location_id` FROM `exploration_action`";
-    #     Map<Integer, List<ExplorationAction>> actions = new HashMap<>();
-    #     for (Result result: getMany(query)) {
-    #         actions.computeIfAbsent(result.getInt("location_id"), a -> new ArrayList<>())
-    #             .add(new ExplorationAction(
-    #                 result.getInt("id"),
-    #                 result.getString("name"),
-    #                 result.getString("symbol"),
-    #                 scenarios.get(result.getInt("id"))
-    #         ));
-    #     }
-    #
-    #     return actions;
-    # }

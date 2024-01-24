@@ -1,44 +1,16 @@
-import discord
+from discord.ext import commands
 
-import datetime
-from enum import Enum
+from src.classes import Cache, Settings, Config, Mode
+from src.utils.environmental_variables import EnvironmentalVariables
 
-
-class Mode(Enum):
-    production = 1
-    development = 2
-
-
-environ = None
+environ: EnvironmentalVariables
 path = __file__.replace("\\", "/").replace("/src/config.py", "")
-bot = None
-tree: discord.app_commands.CommandTree = None
-inactive_delta = datetime.timedelta(weeks=2)
-xp_timeout = 120
-min_xp = 10
-max_xp = 20
-br = "\uFEFF"
+bot: commands.Bot
+config: 'Config'
 
 
-class Cache:
-    def __init__(self):
-        self.cache = dict()
-
-    def __hash_func_call(self, func, args, kwargs) -> str:
-        return str(hash(func.__name__) + hash(args) + hash(frozenset(kwargs)))
-
-    def result(self, category=None):
-        def wrapper(func):
-            def decorator(*args, **kwargs):
-                hash = self.__hash_func_call(func, args, kwargs)
-                cached = self.cache.get(hash)
-                if cached is not None:
-                    return cached
-                result = func(*args, **kwargs)
-                self.cache[hash] = result
-                return result
-            return decorator
-        return wrapper
-
-
-cache = Cache()
+def init(mode: Mode, _environ: EnvironmentalVariables, _bot: commands.Bot, cache: Cache, settings: Settings):
+    global bot, environ, config
+    bot = _bot
+    environ = _environ
+    config = Config(mode, bot, cache, settings, path, _environ)

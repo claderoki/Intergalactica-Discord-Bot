@@ -1,7 +1,3 @@
-
-
-
-
 import asyncio
 import random
 import string
@@ -10,7 +6,7 @@ from typing import Optional, List, Dict
 
 import discord
 
-import src.config as config
+from src.config import config
 from src.disc.commands.muamua.game import Cycler, Deck, Player, Card
 
 
@@ -223,7 +219,7 @@ class GameMenu(discord.ui.View):
         self.followup = None
         self.stacking: Optional[Stacking] = None
         self.table_card = None
-        self.min_players = min_players
+        self.min_players = min_players or 2
         self.overriden_suit: Optional[Card.Suit] = None
         self.__fill_with_ai(players)
         self.first_to_place_nine = None
@@ -514,7 +510,6 @@ class GameMenu(discord.ui.View):
                 await self.__post_player(self.cycler.current())
                 skipped = True
             if not skipped:
-                print('Breaking...')
                 break
 
     async def start_bot_fight(self):
@@ -605,7 +600,6 @@ class GameMenu(discord.ui.View):
             await view.wait()
             if view.value:
                 await self.__place_card(interaction, player, card)
-
         if not responded:
             await interaction.response.send_message(self.get_hand_contents(player), ephemeral=True)
 

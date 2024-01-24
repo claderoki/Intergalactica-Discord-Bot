@@ -3,6 +3,7 @@ import math
 
 import discord
 
+from src.constants import Constants, GOLD_EMOJI
 from .ui import UI
 
 
@@ -120,11 +121,9 @@ class DiscordUI(UI):
         i = 0
         for player in players:
             name = player.identity.member.mention
-            gold_emoji = self.ctx.bot.gold_emoji
-
             if player.dead:
                 player.identity.remove_points(player.bet)
-                lines.append(f"{name}\nLost {gold_emoji} **{player.bet}**")
+                lines.append(f"{name}\nLost {GOLD_EMOJI} **{player.bet}**")
                 continue
 
             percentage_guessed = player.get_percentage_guessed(game.word)
@@ -138,7 +137,7 @@ class DiscordUI(UI):
             letters_guessed = player.correct_guesses
 
             player.identity.add_points(won)
-            lines.append(f"{name}\nWon {gold_emoji}** {won}** ({letters_guessed}/{total_letters}) guessed")
+            lines.append(f"{name}\nWon {GOLD_EMOJI}** {won}** ({letters_guessed}/{total_letters}) guessed")
             i += 1
 
         definition = game.word_definition

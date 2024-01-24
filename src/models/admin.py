@@ -6,27 +6,7 @@ import discord
 import peewee
 
 from .base import BaseModel, EmojiField, JsonField, EnumField
-
-
-class DailyReminderTime(BaseModel):
-    class TimeType(Enum):
-        local = 1
-        utc = 2
-
-    week_days = JsonField(null=False)
-    time = peewee.TimeField(null=True)
-    time_type = EnumField(TimeType, null=False, default=TimeType.utc)
-
-
-class DailyReminder(DailyReminderTime):
-    class ReminderType(Enum):
-        text = 1
-        stoic = 2
-
-    type = EnumField(ReminderType, null=False, default=ReminderType.text)
-    value = EmojiField(null=False)
-    user_id = peewee.BigIntegerField(null=False)
-    last_reminded = peewee.DateField(null=True)
+from .helpers import create
 
 
 class SavedEmoji(BaseModel):
@@ -83,30 +63,7 @@ class Giveaway(BaseModel):
         return embed
 
 
-class Location(BaseModel):
-    latitude = peewee.DecimalField(null=False)
-    longitude = peewee.DecimalField(null=False)
-    created_on = peewee.DateTimeField(null=True, default=lambda: datetime.datetime.utcnow())
-    name = peewee.TextField(null=False)
-
-    @property
-    def google_maps_url(self):
-        return f"https://www.google.com/maps/place/{self.latitude}+{self.longitude}/@{self.latitude},{self.longitude},20z"
-
-
-class PersonalQuestion(BaseModel):
-    value = peewee.TextField(null=False)
-    asked = peewee.BooleanField(null=False, default=False)
-
-    @classmethod
-    def get_random(cls):
-        return cls.select().where(cls.asked == False).order_by(peewee.fn.Rand()).first()
-
-    @property
-    def embed(self):
-        return discord.Embed(title=f"Question {self.id}", color=discord.Color.gold(), description=self.value)
-
-
+@create()
 class DailyActivity(BaseModel):
     user_id = peewee.BigIntegerField(null=False)
     guild_id = peewee.BigIntegerField(null=False)
@@ -120,6 +77,7 @@ class DailyActivity(BaseModel):
         )
 
 
+@create()
 class GameRole(BaseModel):
     guild_id = peewee.BigIntegerField(null=False)
     role_id = peewee.BigIntegerField(null=False)
@@ -132,6 +90,7 @@ class GameRole(BaseModel):
         )
 
 
+@create()
 class GameRoleSettings(BaseModel):
     guild_id = peewee.BigIntegerField(null=False)
     threshhold = peewee.IntegerField(null=False, default=2)

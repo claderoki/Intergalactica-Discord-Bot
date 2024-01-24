@@ -4,6 +4,7 @@ from enum import Enum
 import emoji
 import peewee
 import pycountry
+from discord.ext import commands
 
 import src.config as config
 from src.disc.helpers.pretty import prettify_value
@@ -104,7 +105,7 @@ class UnititializedModel(peewee.Model):
         return cls.select().order_by(peewee.fn.Rand()).limit(1).first()
 
     @property
-    def bot(self):
+    def bot(self) -> commands.Bot:
         return config.bot
 
     @classmethod
@@ -113,7 +114,6 @@ class UnititializedModel(peewee.Model):
 
 
 class BaseModel(UnititializedModel):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._member = None
@@ -148,14 +148,9 @@ class BaseModel(UnititializedModel):
     class Meta:
         legacy_table_names = False
         only_save_dirty = True
-        table_settings = ["DEFAULT CHARSET=utf8"]
-        database = peewee.MySQLDatabase(
-            config.environ["mysql_db_name"],
-            user=config.environ["mysql_user"],
-            password=config.environ["mysql_password"],
-            host=config.environ["mysql_host"],
-            port=int(config.environ["mysql_port"])
-        )
+        if isinstance(config.config.settings.base_database, peewee.MySQLDatabase):
+            table_settings = ["DEFAULT CHARSET=utf8"]
+        database = config.config.settings.base_database
 
 
 class JsonField(peewee.TextField):

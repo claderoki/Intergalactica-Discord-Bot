@@ -13,11 +13,14 @@ from src.utils.zodiac import ZodiacSign
 from .base import BaseModel, EnumField, CountryField
 import src.models as models
 import src.disc.cogs.guildrewards as guildrewards
+from .helpers import create
+
 
 class CurrenciesField(peewee.TextField):
     def db_value(self, value):
         if value:
             return ";".join(set(x.alpha_3 for x in value if x is not None))
+        return ''
 
     def python_value(self, value):
         if value:
@@ -26,6 +29,7 @@ class CurrenciesField(peewee.TextField):
             return set()
 
 
+@create()
 class Human(BaseModel):
     user_id = peewee.BigIntegerField(null=False, unique=True)
     gold = peewee.BigIntegerField(null=False, default=250)
@@ -211,12 +215,14 @@ class Human(BaseModel):
         return {"name": name, "value": sep.join(values), "inline": True}
 
 
+@create()
 class ItemCategory(BaseModel):
     name = peewee.CharField(null=False)
     code = peewee.CharField(max_length=45)
     parent = peewee.ForeignKeyField("self", null=True)
 
 
+@create()
 class Item(BaseModel):
     class Rarity(Enum):
         junk = 1
@@ -295,6 +301,7 @@ class Item(BaseModel):
         return embed
 
 
+@create()
 class HumanItem(BaseModel):
     human = peewee.ForeignKeyField(Human, null=False, backref="human_items")
     item = peewee.ForeignKeyField(Item, null=False)

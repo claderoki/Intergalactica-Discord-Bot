@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 
 import src.config as config
+from src.constants import Constants, BR
 from src.disc.cogs.core import BaseCog
 from src.disc.errors.base import SendableException
 from src.models import Conversant, Participant, Conversation
@@ -215,7 +216,7 @@ class ConversationsCog(BaseCog, name="Conversations"):
 def command_to_field(ctx, command, description):
     kwargs = {}
     kwargs["name"] = description
-    kwargs["value"] = f"`{ctx.prefix}{command.qualified_name}`\n{command.callback.__doc__}{config.br}"
+    kwargs["value"] = f"`{ctx.prefix}{command.qualified_name}`\n{command.callback.__doc__}{BR}"
     kwargs["inline"] = False
     return kwargs
 
@@ -225,7 +226,7 @@ def get_conversation_tutorial_embed(ctx):
     lines = []
     lines.append("Conversation has been started with an anonymous person.")
     lines.append("Chat by chatting in DMs (commands will not work)")
-    lines.append(config.br)
+    lines.append(BR)
 
     end_command = ctx.bot.get_command("conversation end")
     embed.add_field(**command_to_field(ctx, end_command, "⛔ Ending a conversation"))
