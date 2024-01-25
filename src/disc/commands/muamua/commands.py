@@ -208,7 +208,7 @@ def log(func):
 
 
 class GameMenu(discord.ui.View):
-    def __init__(self, players: List[Player], min_players: Optional[int] = 2):
+    def __init__(self, players: List[Player], min_players: int = 2):
         super(GameMenu, self).__init__()
         self.timeout = 2000
         self.all_ai = False
@@ -219,13 +219,14 @@ class GameMenu(discord.ui.View):
         self.followup = None
         self.stacking: Optional[Stacking] = None
         self.table_card = None
-        self.min_players = min_players or 2
+        self.min_players = min_players
         self.overriden_suit: Optional[Card.Suit] = None
         self.__fill_with_ai(players)
         self.first_to_place_nine = None
         self.cycler = Cycler(players)
         self.players: Dict[str, Player] = {x.identifier: x for x in players}
         self.deck_multiplier = max(1, int(len(players) / 3))
+        self.add_start_card_value = None
         self.deck = Deck.standard53() * self.deck_multiplier
         self.__load()
 
@@ -250,6 +251,8 @@ class GameMenu(discord.ui.View):
         for i, player in enumerate(self.players.values()):
             player.short_identifier = string.ascii_uppercase[i]
             player.hand.extend(self.deck.take_cards(5))
+            if self.add_start_card_value:
+                player.hand.append(Card(self.add_start_card_value, Card.Suit.hearts))
 
         for i, card in enumerate(self.deck.cards):
             if not card.special:
@@ -372,7 +375,7 @@ class GameMenu(discord.ui.View):
             else:
                 self.__add_notification('Reversed direction', self.cycler.current())
                 self.cycler.reverse()
-        elif rank == '9':
+        elif rank == '9' and self.stacking.count == 1:
             self.first_to_place_nine = self.cycler.current()
             self.cycler.reverse()
 
@@ -428,7 +431,7 @@ class GameMenu(discord.ui.View):
     def __ai_report_cycle(self):
         invalid_report = False
 
-        if random.randint(0, len(self.players) * 25) < 3:
+        if random.randint(0, len(self.players) * 35) < 3:
             invalid_report = True
         elif random.randint(0, 5) != 2:
             return
@@ -529,7 +532,8 @@ class GameMenu(discord.ui.View):
         if card.stackable:
             if self.stacking is None:
                 self.stacking = Stacking(card.rank, self.__get_stacked_target(card.rank))
-            self.stacking.target = self.__get_stacked_target(card.rank)
+            else:
+                self.stacking.target = self.__get_stacked_target(card.rank)
             self.stacking.count += 1
 
         if card.special:
@@ -673,7 +677,7 @@ async def maumau(interaction: discord.Interaction, min_players: Optional[int]):
     await interaction.response.send_message("_", view=menu)
     await menu.wait()
 
-    menu = GameMenu([Player(x, member=interaction.guild.get_member(x)) for x in menu.user_ids], min_players)
+    menu = GameMenu([Player(x, member=interaction.guild.get_member(x)) for x in menu.user_ids], min_players or 2)
     menu.followup = await interaction.followup.send(embed=menu.get_embed(), wait=True, view=menu)
     if menu.all_ai:
         try:

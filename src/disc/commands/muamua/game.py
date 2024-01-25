@@ -2,6 +2,7 @@ import random
 from enum import Enum
 from typing import List
 
+
 class Card:
     class Suit(Enum):
         spades = "♠"
@@ -120,11 +121,11 @@ class Player:
 
     def __str__(self):
         if self.is_ai():
-            return self.identifier
+            return self.short_identifier
         return f'<@{self.identifier}>'
 
     def display_name(self):
-        return str(self.identifier) if self.member is None else self.member.display_name
+        return str(self) if self.member is None else self.member.display_name
 
     def is_ai(self):
         return 'AI' in str(self.identifier)
