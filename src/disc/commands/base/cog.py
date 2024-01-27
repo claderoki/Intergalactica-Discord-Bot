@@ -4,7 +4,7 @@ import discord
 from discord.app_commands import CommandInvokeError
 from discord.ext import commands
 
-from src.disc.commands.base.validation import Validation
+from src.disc.commands.base.validation import Validation, Invertable
 from src.models import Human, Pigeon
 
 
@@ -42,9 +42,13 @@ class BaseGroupCog(commands.GroupCog):
             type = validation.get_target_type()
             if type not in targets:
                 targets[type] = validation.find_target(user_id)
-            val = validation.validate(targets[type])
-            if not val:
-                errors.append(validation.failure_message_other() if other else validation.failure_message_self())
+            if not validation.validate(targets[type]):
+                func = 'failure_message_'
+                func += 'other' if other else 'self'
+                if isinstance(validation, Invertable) and validation.inverted:
+                    func += '_inverted'
+                errors.append(getattr(validation, func)())
+                return CheckResult(targets, errors)
 
         return CheckResult(targets, errors)
 

@@ -6,10 +6,21 @@ import peewee
 import pycountry
 from discord.ext import commands
 
-import src.config as config
+from src.config import config
 from src.disc.helpers.pretty import prettify_value
 from src.disc.helpers.waiters import *
 from src.utils.country import Country
+
+
+def rand():
+    # if isinstance(config.settings.base_database, peewee.SqliteDatabase):
+    return peewee.fn.Random()
+    # return peewee.fn.Rand()
+
+
+def order_by_random(select: peewee.ModelSelect):
+    print(select.model._meta.database)
+    return select.order_by(peewee.fn.Rand())
 
 
 class OnSkipAction(Enum):
@@ -19,7 +30,23 @@ class OnSkipAction(Enum):
     exception = 4
 
 
+class BaseModelSelect(peewee.ModelSelect):
+    def rand(self) -> 'BaseModelSelect':
+        if isinstance(self.model._meta.database, peewee.SqliteDatabase):
+            rand = peewee.fn.Random()
+        else:
+            rand = peewee.fn.Rand()
+
+        return self.order_by(rand)
+
+
 class UnititializedModel(peewee.Model):
+    @classmethod
+    def select(cls, *fields) -> BaseModelSelect:
+        is_default = not fields
+        if not fields:
+            fields = cls._meta.sorted_fields
+        return BaseModelSelect(cls, fields, is_default=is_default)
 
     @classmethod
     def pluck(cls, attr):
@@ -264,6 +291,10 @@ class PercentageField(peewee.IntegerField):
     def db_value(self, value):
         if value is not None:
             return max(min(value, 100), 0)
+
+
+class LongTextField(peewee.TextField):
+    pass
 
 
 class DiscordSnowflakeField(peewee.BigIntegerField):

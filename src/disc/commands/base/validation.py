@@ -5,13 +5,29 @@ from typing import Optional, TypeVar, Generic, Type
 from src.models import Human, Pigeon
 from src.config import config
 
-
 T = TypeVar("T")
+
+
+class Invertable(ABC):
+    def __init__(self):
+        self.inverted = False
+
+    def invert(self):
+        self.inverted = True
+        return self
+
+    @abc.abstractmethod
+    def failure_message_self_inverted(self) -> str:
+        pass
+
+    @abc.abstractmethod
+    def failure_message_other_inverted(self) -> str:
+        pass
 
 
 class Validation(ABC, Generic[T]):
     def __init__(self):
-        self._inverted = False
+        super().__init__()
 
     @abc.abstractmethod
     def _validate(self, target: T) -> bool:
@@ -34,14 +50,10 @@ class Validation(ABC, Generic[T]):
         pass
 
     def validate(self, target) -> bool:
-        if self._inverted:
+        if isinstance(self, Invertable) and self.inverted:
             return not self._validate(target)
         else:
             return self._validate(target)
-
-    def invert(self):
-        self._inverted = True
-        return self
 
     def wrap(self):
         return validation_decorator(self)
@@ -79,7 +91,7 @@ class PigeonValidation(Validation[Pigeon], ABC):
         return PigeonHelper().get_pigeon(user_id)
 
 
-class HasPigeon(PigeonValidation):
+class HasPigeon(PigeonValidation, Invertable):
     def _validate(self, target: Pigeon) -> bool:
         return target is not None
 
@@ -88,6 +100,12 @@ class HasPigeon(PigeonValidation):
 
     def failure_message_other(self) -> str:
         return 'The other person does not have a pigeon.'
+
+    def failure_message_self_inverted(self) -> str:
+        return 'You already have a pigeon.'
+
+    def failure_message_other_inverted(self) -> str:
+        return 'The other person already has a pigeon.'
 
 
 class HasStatus(PigeonValidation):
@@ -125,7 +143,7 @@ def validation_decorator(validation: Validation):
     def wrapper(func):
         def inner(f):
             existing = f.extras.get('validations', [])
-            existing.append(validation)
+            existing.insert(0, validation)
             f.extras['validations'] = existing
             return f
 

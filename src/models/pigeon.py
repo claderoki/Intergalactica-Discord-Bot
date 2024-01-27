@@ -9,9 +9,11 @@ import peewee
 from dateutil.relativedelta import relativedelta
 
 from src.utils.enums import Gender
-from .base import BaseModel, EnumField, EmojiField, PercentageField, TimeDeltaField, CountryField, LanguageField
+from .base import BaseModel, EnumField, EmojiField, PercentageField, TimeDeltaField, CountryField, LanguageField, \
+    LongTextField, BaseModelSelect
 from .helpers import create, drop
 from .human import Human, Item, ItemCategory
+from ..utils.stats import Winnings, PigeonStat, HumanStat
 
 
 @create()
@@ -449,8 +451,8 @@ class ExplorationPlanetLocation(BaseModel):
     name = peewee.TextField()
     planet = peewee.ForeignKeyField(ExplorationPlanet)
     image_url = peewee.TextField(null=True)
-    active = peewee.BooleanField()
-    actions: Iterable['ExplorationAction']
+    active = peewee.BooleanField(default=False)
+    actions: BaseModelSelect
 
 
 @create()
@@ -460,11 +462,13 @@ class ExplorationAction(BaseModel):
     location = peewee.ForeignKeyField(ExplorationPlanetLocation, backref='actions')
     planet = peewee.ForeignKeyField(ExplorationPlanet)
 
+    scenarios: BaseModelSelect
+
 
 @create()
 class ExplorationActionScenario(BaseModel):
-    text = peewee.TextField()
-    action = peewee.ForeignKeyField(ExplorationAction)
+    text = LongTextField()
+    action = peewee.ForeignKeyField(ExplorationAction, backref='scenarios')
     gold = peewee.IntegerField(default=0)
     health = peewee.IntegerField(default=0)
     happiness = peewee.IntegerField(default=0)
@@ -473,6 +477,18 @@ class ExplorationActionScenario(BaseModel):
     food = peewee.IntegerField(default=0)
     item = peewee.ForeignKeyField(Item, null=True)
     item_category = peewee.ForeignKeyField(ItemCategory, null=True)
+
+    def to_winnings(self) -> Winnings:
+        stats = [
+            HumanStat.gold(self.gold),
+            PigeonStat.health(self.health),
+            PigeonStat.happiness(self.happiness),
+            PigeonStat.experience(self.experience),
+            PigeonStat.cleanliness(self.cleanliness),
+            PigeonStat.food(self.food),
+            HumanStat.item(self.item.id if self.item is not None else None)
+        ]
+        return Winnings(*[x for x in stats if x.value])
 
 
 @create()

@@ -2,11 +2,13 @@ from typing import List, Optional, Type, Dict
 
 import discord
 import peewee
-from discord import SelectOption
+from discord import SelectOption, TextStyle
+
+from src.models.base import LongTextField
 
 
-async def edit_view(interaction: discord.Interaction, model: peewee.Model):
-    view = guess_view(model)
+async def edit_view(interaction: discord.Interaction, model: peewee.Model, view: discord.ui.View = None):
+    view = view or guess_view(model)
     if isinstance(view, discord.ui.Modal):
         await interaction.response.send_modal(view)
     else:
@@ -15,6 +17,8 @@ async def edit_view(interaction: discord.Interaction, model: peewee.Model):
 
 
 def __get_views(model, items, constr) -> List[discord.ui.View]:
+    if len(items) == 0:
+        return []
     views: List[discord.ui.View] = [constr(model)]
     for i in range(len(items)):
         item = items[i]
@@ -27,11 +31,13 @@ def __get_views(model, items, constr) -> List[discord.ui.View]:
     return views
 
 
-def guess_view(model: peewee.Model, forms: List['FieldForm'] = None) -> discord.ui.View:
-    forms = forms or guess(model.__class__)
+def guess_view(model: peewee.Model) -> discord.ui.View:
+    return forms_to_view(model, guess(model.__class__))
+
+
+def forms_to_view(model: peewee.Model, forms: List['FieldForm']) -> discord.ui.View:
     text_inputs = []
     others = []
-
     for x in forms:
         if isinstance(x.get_item(), discord.ui.TextInput):
             text_inputs.append(x)
@@ -41,56 +47,30 @@ def guess_view(model: peewee.Model, forms: List['FieldForm'] = None) -> discord.
             others.append(x)
 
     views = []
-    if others:
-        views.extend(__get_views(model, others, EditView))
-    if text_inputs:
-        views.extend(__get_views(model, text_inputs, EditModal))
+    views.extend(__get_views(model, others, EditView))
+    views.extend(__get_views(model, text_inputs, EditModal))
 
     for i in range(1, len(views)):
         views[i-1].after = views[i]
-    print(views)
     return views[0]
-
-    # base = None
-    # base_modal = None
-    # if text_inputs:
-    #     base_modal = EditModal(model)
-    #     base = base_modal
-    #     modal = base_modal
-    #     for i in range(len(text_inputs)):
-    #         input = text_inputs[i]
-    #         try:
-    #             modal.add_form(input)
-    #         except ValueError:
-    #             new = EditModal(model)
-    #             new.add_form(input)
-    #             modal.after = new
-    #             modal = new
-    # if others:
-    #     base_view = EditView(model)
-    #     base = base_view
-    #     last_view = base_view
-    #     for i in range(len(others)):
-    #         other = others[i]
-    #         try:
-    #             last_view.add_form(other)
-    #         except ValueError:
-    #             view = EditView(model)
-    #             view.add_form(other)
-    #             last_view.after = view
-    #             last_view = view
-    #     last_view.after = base_modal
-    return base
 
 
 def guess(model: Type[peewee.Model]) -> List['FieldForm']:
-    forms = {}
+    fields = []
     for attr in vars(model):
-        if attr == 'id':
-            continue
         attribute = getattr(model, attr)
-        if isinstance(attribute, peewee.Field):
-            forms[attribute.name] = FieldForm(attribute, not attribute.null)
+        if isinstance(attribute, peewee.Field) and attr != 'id':
+            fields.append(attribute)
+    return guess_for_fields(fields)
+
+
+def guess_for_fields(fields: List[peewee.Field]) -> List['FieldForm']:
+    forms = {}
+    for field in fields:
+        if field.name == 'id':
+            continue
+        if field.name not in forms:
+            forms[field.name] = FieldForm(field, not field.null)
     return list(forms.values())
 
 
@@ -98,16 +78,16 @@ class FieldForm:
     def __init__(self, field: peewee.Field, required: bool = False):
         self.field = field
         self._required = required
-        self._item = None
+        self.item = None
 
     @classmethod
     def required(cls, field: peewee.Field):
         return cls(field, True)
 
     def get_item(self) -> Optional[discord.ui.Item]:
-        if self._item is None:
-            self._item = self.__get_item()
-        return self._item
+        if self.item is None:
+            self.item = self.__get_item()
+        return self.item
 
     def __get_select_options(self) -> List[SelectOption]:
         if isinstance(self.field, peewee.ForeignKeyField):
@@ -126,7 +106,8 @@ class FieldForm:
         return discord.ui.TextInput(
             label=str(self.field.name),
             required=self._required,
-            default=str(self.field.default)
+            default=str(self.field.default),
+            style=TextStyle.long if isinstance(self.field, LongTextField) else TextStyle.short
         )
 
 
@@ -135,7 +116,7 @@ class EditModal(discord.ui.Modal, title='Edit'):
         super(self.__class__, self).__init__()
         self.model = model
         self.forms: Dict[str, discord.ui.TextInput] = {}
-        self.after: discord.ui.Modal = None
+        self.after: Optional[discord.ui.Modal] = None
 
     def add_form(self, form: FieldForm):
         item = form.get_item()
@@ -161,7 +142,6 @@ class EditModal(discord.ui.Modal, title='Edit'):
         await self.pre_save()
         await self.post_save()
         if self.after:
-            print([x for x in self.after.__modal_children_items__])
             await interaction.response.send_modal(self.after)
             await self.after.wait()
         else:

@@ -1,0 +1,33 @@
+# scenarios.stats are: gold, health, happiness, cleanliness, and food. In that order, separated by a comma.
+# Experience will be the sum of the absolute value of every stat (max 50 per stat)
+planets:
+  - name: Earth
+    image_url: Nothing...
+    locations:
+      - name: Tallahassee
+        image_url: Nothing...
+        actions:
+          - name: Search trash
+            emoji: 🗑️
+            scenarios:
+              - text: Your pigeon searches the trash and finds trash
+                stats: 0,0,0,-10,0
+              - text: Your pigeon searches the trash and finds a very expensive gaming keyboard
+                stats: 50,0,0,-10,0
+              - text: Your pigeon searches the trash and finds some soap and a clean towel
+                stats: 0,0,0,10,0
+          - name: Annoy college kids
+            emoji: 🗑️
+            scenarios:
+              - text: Your pigeon shits all over the football players and annoys them successfully. They try to attack your pigeon and fail.
+                stats: 20,0,0,10,0
+          - name: Cool off
+            emoji: 🗑️
+            scenarios:
+              - text: Your pigeon fails to cool off and overheats.
+                stats: 0,-10,-5,0,0
+          - name: House hunting
+            emoji: 🗑️
+            scenarios:
+              - text: Your pigeon buys a huge mansion that only costs a couple euro's and sells it for more euro's
+                stats: 50,0,0,0,0

@@ -1,16 +1,14 @@
-import datetime
-import random
 
-import discord
 from discord.ext import commands
 from discord import app_commands
 
 from src.disc.commands.base.cog import BaseGroupCog
-from src.disc.commands.base.validation import does_not_have_pigeon, has_status, has_gold
-from src.disc.commands.pigeon.helpers import PigeonHelper, Winnings, PigeonStat, HumanStat
-from src.disc.commands.pigeon.view import guess_view, edit_view
-from src.models import Pigeon
-from src.models.pigeon import ExplorationPlanetLocation, SpaceExploration, ExplorationAction, ExplorationActionScenario
+from src.disc.commands.base.validation import does_not_have_pigeon, has_status, has_gold, has_pigeon
+from src.disc.commands.pigeon.helpers import PigeonHelper
+from src.disc.commands.base.view import *
+from src.disc.commands.pigeon.ui import SpaceActionView
+from src.models.pigeon import *
+from src.resources import process_scenarios
 
 
 class Pigeon2(BaseGroupCog, name="pigeon"):
@@ -56,6 +54,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         pigeon.update_winnings(winnings)
         await interaction.response.send_message('Sure\n' + winnings.format())
 
+    @has_pigeon()
     @has_status(Pigeon.Status.idle)
     @commands.max_concurrency(1, commands.BucketType.user)
     @app_commands.command(name="explore", description="Send your pigeon to space")
@@ -82,26 +81,38 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         pigeon.save()
         await interaction.response.send_message('OK, your pigeon is on its way.')
 
+    @has_pigeon()
     @has_status(Pigeon.Status.space_exploring)
     @commands.max_concurrency(1, commands.BucketType.user)
     @app_commands.command(name="space", description="Get your pigeon back from space")
     async def space(self, interaction: discord.Interaction):
-        pigeon = await self.validate(interaction)
-        exploration: SpaceExploration = SpaceExploration.get(pigeon=pigeon, finished=False)
-        if exploration.arrival_date < datetime.datetime.utcnow():
+        targets = await self.validate(interaction)
+        exploration: SpaceExploration = SpaceExploration.get(pigeon=targets.get_pigeon(), finished=False)
+
+        location = self.helper.find_location(exploration.location.id)
+        menu = SpaceActionView(list(location.actions))
+        await interaction.response.send_message(content='''
+You arrive at Luna (Crater).
+
+What action would you like to perform?
+        ''', view=menu)
+        await menu.wait()
+
+        if exploration.arrival_date > datetime.datetime.utcnow():
             await interaction.response.send_message('Still traveling, dumbass')
             return
 
-        location = self.helper.find_location(exploration.location.id)
         await interaction.response.send_message('Done traveling, not working yet though, dumbass')
 
     @app_commands.command(name="manage", description="Manage")
     async def manage(self, interaction: discord.Interaction):
-        model = ExplorationActionScenario()
-        await edit_view(interaction, model)
+        process_scenarios()
+
+        # model = ExplorationActionScenario()
+        # model.action = 2
+        # await edit_view(interaction, model, forms_to_view(model, guess_for_fields([ExplorationActionScenario.text])))
         # model.save()
-        print('DONE')
-        await interaction.followup.send(content='Saved')
+        # await interaction.followup.send(content='Saved')
 
 
 async def setup(bot: commands.Bot) -> None:
