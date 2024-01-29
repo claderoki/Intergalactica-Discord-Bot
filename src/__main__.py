@@ -55,7 +55,7 @@ config.init(mode, environ, locus, Cache(), Settings(
 ))
 
 config.config.bot.restarted = restarted
-config.config.bot.run(config.environ.discord_token_dev)
+config.config.bot.run(config.environ.discord_token)
 
 args = ["-m", "src"]
 
