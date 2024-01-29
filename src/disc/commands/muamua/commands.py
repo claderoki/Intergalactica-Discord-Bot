@@ -63,46 +63,6 @@ class CardChoice(discord.ui.View):
         return self.children[0].selected
 
 
-class DataSelect(discord.ui.Select):
-    def __init__(self, data: list, to_select):
-        self.data = {}
-        options = []
-        for x in data:
-            select = to_select(x)
-            self.data[select.value] = x
-            options.append(select)
-        super().__init__(min_values=1, max_values=1, options=options)
-        self.selected = []
-
-    async def callback(self, interaction: discord.Interaction):
-        await interaction.response.defer()
-        self.selected = [self.data[x] for x in self.values]
-        self.view.stop()
-
-
-class DataChoice(discord.ui.View):
-    def __init__(self, data: list, to_select):
-        super(DataChoice, self).__init__()
-        self.add_item(DataSelect(data, to_select))
-
-    def get_selected(self) -> list:
-        return self.children[0].selected
-
-
-class BooleanChoice(discord.ui.View):
-    def __init__(self, default: bool = False):
-        super(BooleanChoice, self).__init__()
-        self.value = default
-
-    options = [discord.SelectOption(label='Yes'), discord.SelectOption(label='No')]
-
-    @discord.ui.select(placeholder='Choose', min_values=1, max_values=1, options=options)
-    async def select(self, interaction: discord.Interaction, select: discord.ui.Select):
-        self.value = select.values[0] == 'Yes'
-        await interaction.response.defer()
-        self.stop()
-
-
 class GameOverException(Exception):
     pass
 

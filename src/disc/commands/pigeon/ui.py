@@ -1,10 +1,8 @@
 from typing import List
 
 import discord
-import peewee
 
-from src.models.base import rand
-from src.models.pigeon import ExplorationAction, ExplorationActionScenario
+from src.models.pigeon import ExplorationAction, ExplorationActionScenario, SpaceExploration
 
 
 class SpaceActionButton(discord.ui.Button):
@@ -23,11 +21,25 @@ class SpaceActionButton(discord.ui.Button):
         embed.title = f'{self.action.symbol} {self.action.name}'
         embed.description = f'{scenario.text}\n\n{winnings.format()}'
         await interaction.response.send_message(embed=embed)
+        self.disabled = True
+        self.view.decrement_action()
+        # await self.view.refresh()
 
 
 class SpaceActionView(discord.ui.View):
-    def __init__(self, actions: List[ExplorationAction]):
+    def __init__(self, user: discord.User, actions: List[ExplorationAction], exploration: SpaceExploration):
         super(self.__class__, self).__init__()
         self.actions = actions
+        self.user = user
         for action in self.actions:
             self.add_item(SpaceActionButton(action))
+        self.exploration = exploration
+
+    def decrement_action(self):
+        self.exploration.actions_remaining -= 1
+        self.exploration.save()
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if self.exploration.actions_remaining <= 0:
+            return False
+        return interaction.user.id == self.user.id

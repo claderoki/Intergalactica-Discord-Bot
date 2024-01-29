@@ -504,3 +504,16 @@ class SpaceExploration(BaseModel):
     pigeon = peewee.ForeignKeyField(Pigeon)
     actions_remaining = peewee.IntegerField()
     total_actions = peewee.IntegerField()
+
+
+@create()
+class SpaceExplorationScenarioWinnings(BaseModel):
+    action = peewee.ForeignKeyField(ExplorationAction)
+    exploration = peewee.ForeignKeyField(SpaceExploration)
+    gold = peewee.IntegerField(default=0)
+    health = peewee.IntegerField(default=0)
+    happiness = peewee.IntegerField(default=0)
+    experience = peewee.IntegerField(default=0)
+    cleanliness = peewee.IntegerField(default=0)
+    food = peewee.IntegerField(default=0)
+    item = peewee.ForeignKeyField(Item, null=True)

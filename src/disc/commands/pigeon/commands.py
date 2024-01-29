@@ -89,20 +89,21 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         targets = await self.validate(interaction)
         exploration: SpaceExploration = SpaceExploration.get(pigeon=targets.get_pigeon(), finished=False)
 
-        location = self.helper.find_location(exploration.location.id)
-        menu = SpaceActionView(list(location.actions))
-        await interaction.response.send_message(content='''
-You arrive at Luna (Crater).
-
-What action would you like to perform?
-        ''', view=menu)
-        await menu.wait()
-
         if exploration.arrival_date > datetime.datetime.utcnow():
             await interaction.response.send_message('Still traveling, dumbass')
             return
 
-        await interaction.response.send_message('Done traveling, not working yet though, dumbass')
+        location = self.helper.find_location(exploration.location.id)
+
+        menu = SpaceActionView(interaction.user, list(location.actions), exploration)
+        desc = []
+        desc.append(f'You arrive at {location.planet.name} ({location.name}).')
+        desc.append('What action would you like to perform?')
+        embed = discord.Embed(description='\n\n'.join(desc))
+        message = await interaction.response.send_message(embed=embed, view=menu)
+        menu.message = message
+        menu.refresh = lambda: interaction.response.edit_message(embed=embed, view=menu)
+        await menu.wait()
 
     @app_commands.command(name="manage", description="Manage")
     async def manage(self, interaction: discord.Interaction):

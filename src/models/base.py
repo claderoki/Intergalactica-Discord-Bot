@@ -12,17 +12,6 @@ from src.disc.helpers.waiters import *
 from src.utils.country import Country
 
 
-def rand():
-    # if isinstance(config.settings.base_database, peewee.SqliteDatabase):
-    return peewee.fn.Random()
-    # return peewee.fn.Rand()
-
-
-def order_by_random(select: peewee.ModelSelect):
-    print(select.model._meta.database)
-    return select.order_by(peewee.fn.Rand())
-
-
 class OnSkipAction(Enum):
     ignore = 1
     null = 2
