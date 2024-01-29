@@ -29,29 +29,29 @@ def init_environ() -> EnvironmentalVariables:
         quit()
 
 
-def create_database(database_name: str) -> peewee.Database:
+def create_database(environ: EnvironmentalVariables, database_name: str) -> peewee.Database:
     if args.sqlite == '1':
         return peewee.SqliteDatabase(f'data/{database_name}.sqlite')
     return peewee.MySQLDatabase(
         database_name,
-        user=config.environ["mysql_user"],
-        password=config.environ["mysql_password"],
-        host=config.environ["mysql_host"],
-        port=int(config.environ["mysql_port"])
+        user=environ["mysql_user"],
+        password=environ["mysql_password"],
+        host=environ["mysql_host"],
+        port=int(environ["mysql_port"])
     )
 
 
 environ = init_environ()
 config.init(mode, environ, None, Cache(),
-            Settings(create_database(environ["mysql_db_name"]), create_database('birthday_db')))
+            Settings(create_database(environ, environ["mysql_db_name"]), create_database(environ, 'birthday_db')))
 
 from src.disc.bot import Locus
 
 locus = Locus(config.config)
 
 config.init(mode, environ, locus, Cache(), Settings(
-    create_database(environ["mysql_db_name"]),
-    create_database('birthday_db')
+    create_database(environ, environ["mysql_db_name"]),
+    create_database(environ, 'birthday_db')
 ))
 
 config.config.bot.restarted = restarted
