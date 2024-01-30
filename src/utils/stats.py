@@ -46,15 +46,18 @@ class PigeonStat(Stat):
 
 class Winnings:
     def __init__(self, *stats: Stat):
-        self.stats = stats
+        self._stats = list(stats)
 
     def format(self, separator: str = ' ', include_empty: bool = False) -> str:
         values = []
-        for stat in self.stats:
+        for stat in self._stats:
             if not include_empty and not stat.value:
                 continue
             values.append(f'{stat.emoji} {stat.value}')
         return separator.join(values)
 
     def to_dict(self):
-        return {x.name: x.value for x in self.stats}
+        return {x.name: x.value for x in self._stats}
+
+    def add_stat(self, stat: Stat):
+        self._stats.append(stat)

@@ -105,10 +105,9 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         menu.refresh = lambda: interaction.response.edit_message(embed=embed, view=menu)
         await menu.wait()
 
-    @app_commands.command(name="manage", description="Manage")
-    async def manage(self, interaction: discord.Interaction):
-        process_scenarios()
-
+    # @app_commands.command(name="manage", description="Manage")
+    # async def manage(self, interaction: discord.Interaction):
+    #     process_scenarios()
         # model = ExplorationActionScenario()
         # model.action = 2
         # await edit_view(interaction, model, forms_to_view(model, guess_for_fields([ExplorationActionScenario.text])))

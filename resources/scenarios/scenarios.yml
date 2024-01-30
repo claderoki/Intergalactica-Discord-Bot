@@ -2,7 +2,7 @@
 # Experience will be the sum of the absolute value of every stat (max 50 per stat)
 planets:
   - name: Earth
-    image_url: Nothing...
+    image_url: https://cdn.discordapp.com/attachments/744172199770062899/850905995394809926/Earth2.png
     locations:
       - name: Tallahassee
         image_url: Nothing...
@@ -31,3 +31,157 @@ planets:
             scenarios:
               - text: Your pigeon buys a huge mansion that only costs a couple euro's and sells it for more euro's
                 stats: 50,0,0,0,0
+  - name: Luna
+    image_url: https://cdn.discordapp.com/attachments/744172199770062899/840741166345355274/Planet_D.png
+    locations:
+      - name: Crater
+        actions:
+          - name: Search dust
+            emoji: 🔎
+            scenarios:
+              - text: You search the surrounding dust, you find a slice of moon cheese
+                stats: 70,5,10,-5,5
+              - text: You search the surrounding dust and find some hidden stash of loot!
+                stats: 70,0,10,0,5
+              - text: You search the surrounding dust and find some alien footprints... Where could these lead to...
+                stats: 40,5,5,0,0
+              - text: You search the surrounding dust, finding some green, disgusting alien poop.
+                stats: 0,0,-20,-20,0
+              - text: You search the dust and find some tasty, edible dust...
+                stats: 60,5,10,0,20
+          - name: Search for life
+            emoji: 👽
+            scenarios:
+              - text: You search for aliens inside the crater, you find a friendly alien who gives your pigeon a gift.
+                stats: 50,0,10,0,5
+              - text: You search for alien lifeforms, suddenly you stumble upon an alien colony and get your butt kicked.
+                stats: 30,-10,-10,-5,0
+              - text: You search for alien lifeforms but on your journey you suddenly become hungry. Thankfully a kind alien comes along and gives you some seeds!
+                stats: 60,30,10,0,20
+              - text: You search for alien lifeforms, finding a poor little begger alien, you give it 10 gold and it gives you a gift in return!
+                stats: -1,5,10,5,0
+          - name: Ravage
+            emoji: 👺
+            scenarios:
+            - text: You find only rubble. You try to bite the rubble and trip, hurting yourself.
+              stats: 0,-10,-10,-5,0
+            - text: You find a friendly little alien, in your anger you claw the alien, it cries and runs off; quenching your bloodlust.
+              stats: 60,10,20,5,5
+            - text: You find a big bulky alien, you bare your claws and it retaliates, kicking your pigeon away. Better stick to weaker aliens next time.
+              stats: 0,-10,-10,-5,0
+            - text: You find nothing but rubble, you bite the rubble and find a gold chest under it.
+              stats: 60,5,20,0,0
+            - text: You find a small alien. Upon pecking at its eye its alien guard dog starts to bite you. You barely manage to fly away.
+              stats: -10,-10,-10,-10,0
+            - text: You sneak up on a big bulky alien, and peck at it from behind. Leaving it unconscious you take the contents of its alien wallet and empty its pockets.
+              stats: 50,5,10,0,10
+          - name: Date
+            emoji: 😍
+            scenarios:
+              - text: Your pigeon starts its mating call in the most unlikeliest of places, succeeding, it finds an alien lifeform resembling Earth's pigeon and they hit it off.
+                stats: 60,10,0,0,0
+              - text: Your pigeon sees an attractive looking alien. It asks the alien out on a date but gets rejected... At least it won't have to pay for the date
+                stats: 50,0,-5,0,0
+              - text: Your pigeon falls in love with one of the researched alien lifeforms. They start dating!
+                stats: 70,20,10,0,0
+              - text: Your pigeon falls in love with an alien lifeform. While leaning in for a kiss your pigeon gets bit.
+                stats: 0,-10,-5,-5,0
+              - text: Your pigeon asks an alien lifeform out on a date, the lifefom accepts and they have a date. Realizing they don't have very much in common they both amicably decide to end things. It hurts a bit, but you accept that this is for the best.
+                stats: 40,-1,-1,0,20
+          - name: Search for gemstones
+            emoji: 💎
+            scenarios:
+              - text: Your pigeon is searching for gemstones. It finds a diamond!
+                stats: 70,5,10,5,0
+              - text: Your pigeon searches for gemstones. It finds something very valuable looking, but upon further examination realises it's alien poop.
+                stats: -10,0,-10,-20,0
+              - text: Your pigeon starts pecking on a stone. After a while of pecking some redstones get revealed!
+                stats: 70,0,10,-5,0
+              - text: Your pigeon finds a mine. It starts pecking. After pecking for hours your pigeon finds nothing but coal.
+                stats: -10,0,-10,-20,0
+              - text: Your pigeon stumbles upon a chest of gemstones. It attempts to take it but soon hears some angry yelling getting louder and louder. It flies away quickly, taking as many as it can carry, and narrowly escapes the angry alien mob.
+                stats: 100,0,0,0,0
+          - name: Study wildlife
+            emoji: 🐸
+            scenarios:
+            - text: You attempt to study the local wildlife. You find a very intriguing piece of moon dust. As you study it for a few hours you can almost swear it looked at you.
+              stats: 60,0,0,0,0
+            - text: You attempt to study the local wildlife. You see a tiny little space worm; you approach it slowly. As you get close it sprays poison onto your face.
+              stats: -10,-15,-15,-15,0
+            - text: You attempt to study the local wildlife. You find a little furball on the ground, unsure whether it is alive or not you peck at it gently; after a while, it opens its eye in fear. You feel superior and respected so you decide to let it go.
+              stats: 45,5,10,0,0
+            - text: You attempt to study the local wildlife. You start digging a hole in the ground and after a while you find a bunch of friendly alien worms!
+              stats: 60,0,20,-4,0
+            - text: You attempt to study the local wildlife. You come across a huge alien bird. You try to approach it but it kicks you away with an immense force.
+              stats: 0,-10,-10,-5,0
+            - text: You attempt to study the local wildlife. You come across a pile of goop and mistake it for an alien; you peck at it for a while until you feel satisfied.
+              stats: 40,10,10,-5,0
+      - name: Crater
+        actions:
+          - name: Dig poop
+            emoji: 💩
+            scenarios:
+            - text: Your pigeon digs through a pile of alien poop and find some treasure
+              stats: 30,0,0,-5,0
+            - text: Your pigeon digs through a pile of alien poop and find what looks like a huge diamond, but on further inspection find that it's just hardened poop.
+              stats: 0,0,0,-5,0
+            - text: Your pigeon digs through a huge pile of alien poop and accidentally slip and fall into it, disgusting. Its feathers are covered in poop, but it finds a milky way inside.
+              stats: 30,0,0,-15,0
+            - text: Your pigeon digs through a huge stinky pile of alien poop and finds some magical powder that heals it.
+              stats: 30,15,0,0,0
+            - text: Your pigeon finds poop- wait it just left that one a few moments ago, whoops.
+              stats: 0,0,0,-3,0
+            - text: Your pigeon digs through a nice pile of poop. It questions it's reasoning, then locates a golden worm. Huh, good idea.
+              stats: 100,0,0,-5,0
+          - name: Take picture
+            emoji: 📷
+            scenarios:
+            - text: Your pigeon takes a beautiful picture of planet Earth. An alien photograph expert happens to be near and gives it some gold as an investment in its future as a photographer.
+              stats: 30,0,0,0,0
+            - text: Your pigeon tries to take an image of a female alien and suddenly her alien boyfriend shows up behind it and is not pleased with it taking an image of his girlfriend without consent. He slaps your pigeon around and takes some coins from it.
+              stats: -10,-5,0,0,0
+            - text: Your pigeon takes a mediocre image of a piece of alien poop. That did not impress anyone, but at least it didn't step into the poop.
+              stats: 35,0,0,0,0
+            - text: Your pigeon takes a selfie. It feels lonely and depressed.
+              stats: 0,0,-5,0,0
+            - text: Your pigeon tries to take a picture but accidentally recorded a video instead. It uploads the video on MoonTube and becomes a celebrity!
+              stats: 75,0,20,0,0
+            - text: Your pigeon takes a photo. It wonders if it'd look better without its space helmet on. This was a horrible idea and your pigeon nearly died!
+              stats: 0,-25,-5,0,0
+          - name: Lick surface
+            emoji: 👅
+            scenarios:
+            - text: Your pigeon licks the surface of the moon. Tastes cheesy
+              stats: 30,5,5,0,5
+            - text: Your pigeon licks the surface of the moon. It tastes like alien poop, because it is alien poop.
+              stats: 0,0,0,-5,0
+            - text: Your pigeon licks the surface of the moon. It tastes like hummus.
+              stats: 15,0,5,0,5
+            - text: Your pigeon licks the surface of the moon. It contracts a severe alien illness. Luckily the alien hospital nearby was able to cure it. Be more careful next time!
+              stats: -50,-30,-10,-5,-10
+          - name: Order ice cream
+            emoji: 🍦
+            scenarios:
+              - text: Your pigeon orders some alien ice cream. After standing in line for a very long time it finally gets some disgusting ice cream. It barely manages to keep the ice cream down and eventually just throws it out, but not without leaving a 1 star rating on MoonYelp.
+                stats: -1,-1,-2,-2,2
+              - text: Your pigeon orders some alien ice cream. It gets some delicious fry flavored ice cream. In your bliss you leave a little tip
+                stats: -2,3,5,0,15
+              - text: Your pigeon orders some alien ice cream. It gets some curry flavored ice cream, not that great.
+                stats: -1,0,0,0,0
+          - name: Alien college
+            emoji: 🎓
+            scenarios:
+              - text: Your pigeon goes to alien college. It learns some alien programming!
+                stats: 30,0,0,0,0
+              - text: Your pigeon goes to alien college. It doesn't learn too much, unfortunately
+                stats: 30,0,0,0,0
+              - text: Your pigeon goes to alien college. It ends up being a waste of time, and of money.
+                stats: -5,0,0,0,0
+              - text: Your pigeon goes to alien college and ends up having a midlife crisis. The alien substitute teacher asks how its doing and it bursts out in tears. It's fellow alien classmates look at it with disgust; your pigeon is very sad, and very embarrassed.
+                stats: -5,-5,-10,0,0
+              - text: Your pigeon goes to alien college. It learns about quantum mechanics and impresses the teacher with it's earthly knowledge on string theory.
+                stats: 100,5,10,0,0
+              - text: Your pigeon goes to alien college. It gets bullied and beat up by one of its classmates. They take its lunch money, take its dignity, and take some of its health. Your pigeon feels helpless and alone.
+                stats: -20,-10,-10,-5,0
+              - text: Your pigeon goes to alien college. It meets some like-minded lifeforms. It's allowed to join their special, exclusive little club where only the coolest of lifeforms are invited to. Your pigeon excludes a friendly little worm from joining and feels cool and special.
+                stats: 150,0,30,0,0

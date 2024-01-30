@@ -4,6 +4,7 @@ import discord
 
 from src.models.pigeon import ExplorationAction, ExplorationActionScenario, SpaceExploration, \
     SpaceExplorationScenarioWinnings
+from src.utils.stats import HumanStat
 
 
 class SpaceActionButton(discord.ui.Button):
@@ -17,18 +18,22 @@ class SpaceActionButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         scenario: ExplorationActionScenario = self.action.scenarios.rand().limit(1).first()
         winnings = scenario.to_winnings()
-
+        if scenario.item_category is not None:
+            pass
+            # item_id = None
+            # winnings.add_stat(HumanStat.item(item_id))
+            # todo: category support.
         embed = discord.Embed()
         embed.title = f'{self.action.symbol} {self.action.name}'
         embed.description = f'{scenario.text}\n\n{winnings.format()}'
         await interaction.response.send_message(embed=embed)
         self.disabled = True
-        self.view.decrement_action()
         SpaceExplorationScenarioWinnings.create(
             action=self.action,
             exploration=self.view.exploration,
             **winnings.to_dict()
         )
+        self.view.decrement_action()
         # await self.view.refresh()
 
 
@@ -44,6 +49,8 @@ class SpaceActionView(discord.ui.View):
     def decrement_action(self):
         self.exploration.actions_remaining -= 1
         self.exploration.save()
+        if self.exploration.actions_remaining <= 0:
+            self.stop()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if self.exploration.actions_remaining <= 0:
