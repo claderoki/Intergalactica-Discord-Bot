@@ -165,7 +165,7 @@ class BaseModel(UnititializedModel):
         legacy_table_names = False
         only_save_dirty = True
         if isinstance(config.config.settings.base_database, peewee.MySQLDatabase):
-            table_settings = ["DEFAULT CHARSET=utf8"]
+            table_settings = ['ENGINE=InnoDB', "DEFAULT CHARSET=utf8"]
         database = config.config.settings.base_database
 
 

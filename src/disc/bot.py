@@ -9,11 +9,10 @@ from discord.ext import commands
 
 from src.classes import Mode, Config
 from src.disc.errors.base import SendableException
-from src.disc.helpers import ColorHelper
+from src.disc.helpers.colors import ColorHelper
 from src.disc.helpers.embed import Embed
 from src.disc.helpers.general import Translator
 from src.disc.helpers.waiters.base import Cancelled
-from src.models import Human, database
 from src.wrappers.openweathermap import OpenWeatherMapApi
 
 
@@ -143,7 +142,7 @@ class Locus(commands.Bot):
         for cog in cogs:
             await self.load_cog(cog)
 
-        # await self.load_extension("src.disc.commands.pigeon.commands")
+        await self.load_extension("src.disc.commands.pigeon.commands")
 
     @staticmethod
     def get_id(obj):
@@ -190,6 +189,7 @@ class Locus(commands.Bot):
 
     def get_human(self, ctx=None, user=None):
         """Cached human, with updated gold."""
+        from src.models import Human
         user = user or ctx.author
         user_id = self.get_id(user)
         human = self._human_cache.get(user_id)
@@ -205,7 +205,7 @@ class Locus(commands.Bot):
         return Translator.translate(key, locale)
 
     async def before_any_command(self, ctx):
-        ctx.db = database.connection_context()
+        ctx.db = self.config.settings.base_database.connection_context()
         ctx.db.__enter__()
 
         ctx.translate = lambda x: Translator.translate(x, "en_US")

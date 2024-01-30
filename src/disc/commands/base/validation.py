@@ -56,7 +56,16 @@ class Validation(ABC, Generic[T]):
             return self._validate(target)
 
     def wrap(self):
-        return validation_decorator(self)
+        def wrapper(func):
+            def inner(f):
+                existing = f.extras.get('validations', [])
+                existing.insert(0, self)
+                f.extras['validations'] = existing
+                return f
+
+            return inner if func is None else inner(func)
+
+        return wrapper
 
 
 class HumanValidation(Validation[Human], ABC):
@@ -137,16 +146,3 @@ def does_not_have_pigeon():
 
 def has_gold(amount: int):
     return HasGold(amount).wrap()
-
-
-def validation_decorator(validation: Validation):
-    def wrapper(func):
-        def inner(f):
-            existing = f.extras.get('validations', [])
-            existing.insert(0, validation)
-            f.extras['validations'] = existing
-            return f
-
-        return inner if func is None else inner(func)
-
-    return wrapper

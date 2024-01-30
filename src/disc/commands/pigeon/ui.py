@@ -2,7 +2,8 @@ from typing import List
 
 import discord
 
-from src.models.pigeon import ExplorationAction, ExplorationActionScenario, SpaceExploration
+from src.models.pigeon import ExplorationAction, ExplorationActionScenario, SpaceExploration, \
+    SpaceExplorationScenarioWinnings
 
 
 class SpaceActionButton(discord.ui.Button):
@@ -23,6 +24,11 @@ class SpaceActionButton(discord.ui.Button):
         await interaction.response.send_message(embed=embed)
         self.disabled = True
         self.view.decrement_action()
+        SpaceExplorationScenarioWinnings.create(
+            action=self.action,
+            exploration=self.view.exploration,
+            **winnings.to_dict()
+        )
         # await self.view.refresh()
 
 

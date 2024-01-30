@@ -508,6 +508,9 @@ class SpaceExploration(BaseModel):
 
 @create()
 class SpaceExplorationScenarioWinnings(BaseModel):
+    class Meta:
+        table_name = 'exploration_winnings'
+
     action = peewee.ForeignKeyField(ExplorationAction)
     exploration = peewee.ForeignKeyField(SpaceExploration)
     gold = peewee.IntegerField(default=0)
