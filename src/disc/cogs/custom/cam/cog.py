@@ -5,7 +5,7 @@ from discord import VoiceChannel
 import discord
 from discord.ext import commands, tasks
 
-from src.disc.helpers import ColorHelper
+from src.disc.helpers.colors import ColorHelper
 from src.disc.helpers.general import CapsLockCorrector
 from src.disc.helpers.known_guilds import KnownGuild
 from ..shared.cog import CustomCog

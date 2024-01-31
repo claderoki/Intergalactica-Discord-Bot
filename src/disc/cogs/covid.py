@@ -6,7 +6,7 @@ from discord.ext import commands
 import src.disc.helpers.pretty as pretty
 from src.disc.cogs.core import BaseCog
 from src.disc.errors.base import SendableException
-from src.disc.helpers import ColorHelper
+from src.disc.helpers.colors import ColorHelper
 from src.disc.helpers.converters import CountryConverter
 
 

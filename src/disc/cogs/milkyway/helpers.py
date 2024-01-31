@@ -8,7 +8,9 @@ import src.config as config
 from src.disc import SendableException
 from src.models import MilkywaySettings, Milkyway, GuildRewardsProfile
 from src.disc.cogs.guildrewards.helpers import GuildRewardsCache, GuildRewardsHelper
-from src.disc.helpers import HumanRepository, KnownItem, IntWaiter, StrWaiter, ItemCache, ColorHelper
+from src.disc.helpers.human import HumanRepository, KnownItem, ItemCache
+from src.disc.helpers.waiters import IntWaiter, StrWaiter
+from src.disc.helpers.colors import ColorHelper
 
 
 class MilkywayData:
