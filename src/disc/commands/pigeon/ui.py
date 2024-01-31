@@ -4,7 +4,8 @@ from typing import List
 import discord
 
 from src.models.pigeon import ExplorationAction, ExplorationActionScenario, SpaceExploration, \
-    SpaceExplorationScenarioWinnings
+    SpaceExplorationScenarioWinnings, Pigeon
+from src.utils.stats import Winnings
 
 
 class SpaceActionButton(discord.ui.Button):
@@ -21,7 +22,7 @@ class SpaceActionView(discord.ui.View):
         super(self.__class__, self).__init__()
         self.actions = actions
         self.user = user
-        self.winnings = []
+        self.winnings: List[Winnings] = []
         for action in self.actions:
             button = SpaceActionButton(action)
             button.callback = self.__create_callback_for(button)
@@ -38,6 +39,20 @@ class SpaceActionView(discord.ui.View):
             return self.action_callback(button, interaction)
         return wrapper
 
+    async def __end(self, interaction: discord.Interaction):
+        self.exploration.finished = True
+        self.exploration.end_date = datetime.datetime.utcnow()
+        first = self.winnings[0]
+        for i in range(1, len(self.winnings)):
+            first.merge(self.winnings[i])
+        await interaction.followup.send(content='After {x} of traveling, your pigeon gets home.\n' + first.format())
+        self.stop()
+        pigeon: Pigeon = self.exploration.pigeon
+        pigeon.update_winnings(first)
+        pigeon.status = Pigeon.Status.idle
+        pigeon.save()
+        self.exploration.save()
+
     async def action_callback(self, button: SpaceActionButton, interaction: discord.Interaction):
         scenario: ExplorationActionScenario = button.action.scenarios.rand().limit(1).first()
         winnings = scenario.to_winnings()
@@ -51,18 +66,15 @@ class SpaceActionView(discord.ui.View):
         await interaction.response.send_message(embed=embed)
 
         button.disabled = True
-        self.winnings.append(SpaceExplorationScenarioWinnings.create(
+        SpaceExplorationScenarioWinnings.create(
             action=button.action,
             exploration=self.exploration,
             **winnings.to_dict()
-        ))
+        )
+        self.winnings.append(winnings)
 
         self.exploration.actions_remaining -= 1
         if self.exploration.actions_remaining <= 0:
-            self.exploration.finished = True
-            self.exploration.end_date = datetime.datetime.utcnow()
-            self.winnings
-            await interaction.followup.send(content='After {x} of traveling, your pigeon returns home.')
-            self.stop()
-        self.exploration.save()
-
+            await self.__end(interaction)
+        else:
+            self.exploration.save()

@@ -139,8 +139,14 @@ class Pigeon(BaseModel):
         language.mastery += mastery
         language.save()
 
-    def update_winnings(self, winnings):
-        self.update_stats({x.name: x.value for x in winnings.stats})
+    def update_winnings(self, winnings: Winnings):
+        stats = winnings.to_dict()
+        item_id = stats.get('item')
+        if item_id:
+            # todo: add item
+            del stats['item']
+
+        self.update_stats(stats)
 
     def update_stats(self, data, increment=True, save=True):
         human = self.bot.get_human(user=self.human.user_id)
@@ -402,19 +408,7 @@ class ExplorationAction(BaseModel):
     scenarios: BaseModelSelect
 
 
-@create()
-class ExplorationActionScenario(BaseModel):
-    text = LongTextField()
-    action = peewee.ForeignKeyField(ExplorationAction, backref='scenarios')
-    gold = peewee.IntegerField(default=0)
-    health = peewee.IntegerField(default=0)
-    happiness = peewee.IntegerField(default=0)
-    experience = peewee.IntegerField(default=0)
-    cleanliness = peewee.IntegerField(default=0)
-    food = peewee.IntegerField(default=0)
-    item = peewee.ForeignKeyField(Item, null=True)
-    item_category = peewee.ForeignKeyField(ItemCategory, null=True)
-
+class ToWinnings:
     def to_winnings(self) -> Winnings:
         stats = [
             HumanStat.gold(self.gold),
@@ -425,7 +419,21 @@ class ExplorationActionScenario(BaseModel):
             PigeonStat.food(self.food),
             HumanStat.item(self.item.id if self.item is not None else None)
         ]
-        return Winnings(*[x for x in stats if x.value])
+        return Winnings(*[x for x in stats if x.amount])
+
+
+@create()
+class ExplorationActionScenario(BaseModel, ToWinnings):
+    text = LongTextField()
+    action = peewee.ForeignKeyField(ExplorationAction, backref='scenarios')
+    gold = peewee.IntegerField(default=0)
+    health = peewee.IntegerField(default=0)
+    happiness = peewee.IntegerField(default=0)
+    experience = peewee.IntegerField(default=0)
+    cleanliness = peewee.IntegerField(default=0)
+    food = peewee.IntegerField(default=0)
+    item = peewee.ForeignKeyField(Item, null=True)
+    item_category = peewee.ForeignKeyField(ItemCategory, null=True)
 
 
 @create()
@@ -444,7 +452,7 @@ class SpaceExploration(BaseModel):
 
 
 @create()
-class SpaceExplorationScenarioWinnings(BaseModel):
+class SpaceExplorationScenarioWinnings(BaseModel, ToWinnings):
     class Meta:
         table_name = 'exploration_winnings'
 
