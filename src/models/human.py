@@ -215,11 +215,33 @@ class Human(BaseModel):
         return {"name": name, "value": sep.join(values), "inline": True}
 
 
+class CategoryPathField(peewee.CharField):
+    pass
+
+
+def refresh_paths():
+    paths = []
+    for category in ItemCategory.get_children():
+        path = [category.id]
+        parent = category.parent
+        while parent is not None:
+            path.append(parent.id)
+            parent = parent.parent
+        paths.append(path)
+
+
 @create()
 class ItemCategory(BaseModel):
     name = peewee.CharField(null=False)
     code = peewee.CharField(max_length=45)
     parent = peewee.ForeignKeyField("self", null=True)
+    path = CategoryPathField(null=True)
+
+    @classmethod
+    def get_children(cls):
+        return ItemCategory.raw(
+            'SELECT * FROM item_category where id not in (select distinct parent_id from item_category where parent_id is not null)'
+        )
 
 
 @create()
@@ -291,6 +313,10 @@ class Item(BaseModel):
 
         for item in cls.raw(query):
             return item
+
+    @classmethod
+    def by_category_id(cls):
+        pass
 
     @property
     def embed(self):

@@ -7,6 +7,7 @@ from typing import Optional, List, Dict
 import discord
 
 from src.config import config
+from src.disc.commands.base.stats import ComparingStat, CountableStat, Stat
 from src.disc.commands.muamua.game import Cycler, Deck, Player, Card
 
 
@@ -95,55 +96,22 @@ class Notification:
         self.round = round
 
 
-class Stat:
-    def __init__(self, type: str, format=None):
-        self.type = type
-        self.format = format
-
-    def combine(self, other: 'Stat'):
-        pass
-
-    def readable(self) -> str:
-        if self.format is not None:
-            return self.format(self)
-        return self.type
-
-
-class CountableStat(Stat):
-    def __init__(self, type: str, format=None):
-        super().__init__(type, format)
-        self.count = 1
-
-    def combine(self, other: 'CountableStat'):
-        self.count += other.count
+class Stats:
+    @classmethod
+    def longest_stack(cls, amount, rank) -> ComparingStat:
+        return ComparingStat('longest_stack', amount, rank, lambda x: f'Longest stack {x.additional}: {x.value}')
 
     @classmethod
-    def invalid_reports(cls):
-        return cls('invalid_reports', lambda x: f'Invalid reports: {x.count}')
+    def invalid_reports(cls) -> CountableStat:
+        return CountableStat('invalid_reports', lambda x: f'Invalid reports: {x.count}')
 
     @classmethod
-    def valid_reports(cls):
-        return cls('valid_reports', lambda x: f'Valid reports: {x.count}')
+    def valid_reports(cls) -> CountableStat:
+        return CountableStat('valid_reports', lambda x: f'Valid reports: {x.count}')
 
     @classmethod
-    def maumau(cls):
-        return cls('maumau', lambda x: f'Called MauMau: {x.count}')
-
-
-class ComparingStat(Stat):
-    def __init__(self, type: str, value, additional=None, format=None):
-        super().__init__(type, format)
-        self.value = value
-        self.additional = additional
-
-    def combine(self, other: 'ComparingStat'):
-        if other.value > self.value:
-            self.value = other.value
-            self.additional = other.additional
-
-    @classmethod
-    def longest_stack(cls, amount, rank):
-        return cls('longest_stack', amount, rank, lambda x: f'Longest stack {x.additional}: {x.value}')
+    def maumau(cls) -> CountableStat:
+        return CountableStat('maumau', lambda x: f'Called MauMau: {x.count}')
 
 
 @contextmanager
@@ -157,6 +125,7 @@ def async_log(func):
     async def dec(*args, **kwargs):
         with func_log(func):
             return await func(*args, **kwargs)
+
     return dec
 
 
@@ -164,6 +133,7 @@ def log(func):
     def dec(*args, **kwargs):
         with func_log(func):
             return func(*args, **kwargs)
+
     return dec
 
 
@@ -263,7 +233,7 @@ class GameMenu(discord.ui.View):
                 notification = self.log[i]
                 message = f'Round {notification.round} {notification.player or ""}: {notification.message}'
                 would_be_length = length + len(message) + 1
-                if would_be_length >= (1024/2):
+                if would_be_length >= (1024 / 2):
                     break
                 length = would_be_length
                 value.insert(0, message)
@@ -319,7 +289,7 @@ class GameMenu(discord.ui.View):
 
         if cards_to_take > 0:
             self.stacking.target.hand.extend(self.deck.take_cards(cards_to_take))
-            self.__add_stat(ComparingStat.longest_stack(self.stacking.count, self.stacking.rank))
+            self.__add_stat(Stats.longest_stack(self.stacking.count, self.stacking.rank))
         return cards_to_take
 
     async def __use_immediate_special_ability(self, interaction, rank: str, suit_callback):
@@ -399,7 +369,8 @@ class GameMenu(discord.ui.View):
         if not invalid_report and self.reportable_player_with_one_card is None:
             return
 
-        ai_players_remaining = [x for x in self.players.values() if x.is_ai() and x != self.reportable_player_with_one_card]
+        ai_players_remaining = [x for x in self.players.values() if
+                                x.is_ai() and x != self.reportable_player_with_one_card]
         if len(ai_players_remaining) == 0:
             return
 
@@ -516,7 +487,7 @@ class GameMenu(discord.ui.View):
             self.wait_time = time
 
     def __call_mau_mau(self, player: Player):
-        self.__add_stat(CountableStat.maumau())
+        self.__add_stat(Stats.maumau())
         self.reportable_player_with_one_card = None
         self.__add_notification('MAU MAU!!', player)
 
@@ -528,12 +499,12 @@ class GameMenu(discord.ui.View):
             self.__add_notification(f'You waste the MauMau authorities time and resources with an invalid report.'
                                     f' They let you off with a slap on the wrist this time... +5 cards.', reporter)
             reporter.hand.extend(self.deck.take_cards(5))
-            self.__add_stat(CountableStat.invalid_reports())
+            self.__add_stat(Stats.invalid_reports())
         else:
             self.__add_notification(f'The MauMau authorities received an anonymous tip by {reporter} '
                                     f'that someone forgot to call MauMau, +5 cards.', player)
             player.hand.extend(self.deck.take_cards(5))
-            self.__add_stat(CountableStat.valid_reports())
+            self.__add_stat(Stats.valid_reports())
             self.reportable_player_with_one_card = None
 
     @discord.ui.button(label='Draw', style=discord.ButtonStyle.gray, emoji='🫴')

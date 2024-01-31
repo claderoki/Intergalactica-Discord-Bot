@@ -139,9 +139,6 @@ class Pigeon(BaseModel):
         language.mastery += mastery
         language.save()
 
-    def create_buff(self, code, create_system_message=True):
-        return
-
     def update_winnings(self, winnings):
         self.update_stats({x.name: x.value for x in winnings.stats})
 
@@ -155,10 +152,6 @@ class Pigeon(BaseModel):
                     setattr(self, key, (getattr(self, key) + value))
                 else:
                     setattr(self, key, value)
-
-                # new_value = getattr(self, key)
-                # if key == "food" and new_value >= 100:
-                # self.create_buff("fully_fed")
 
                 if key == "health":
                     if self.health <= 0:
@@ -189,38 +182,11 @@ class Pigeon(BaseModel):
             return query.first()
 
     @property
-    def buffs(self):
-        return self._buffs.where(PigeonBuff.due_date > datetime.datetime.utcnow())
-
-    @property
     def fights(self):
         query = Fight.select()
         query = query.where((Fight.challenger == self) | (Fight.challengee == self))
         return query
 
-
-@create()
-class Buff(BaseModel):
-    name = peewee.TextField(null=False)
-    description = peewee.TextField(null=False)
-    code = peewee.TextField(null=False)
-    duration = TimeDeltaField(null=False)
-
-    # stat        = peewee.TextField       (null = True)
-    # type        = EnumField              (Type, default = Type.add)
-    # amount      = peewee.IntegerField    (null = False, default = 0)
-    # class Type(Enum):
-    #     add      = 1
-    #     remove   = 2
-    #     modifier = 3
-
-
-@create()
-class PigeonBuff(BaseModel):
-    pigeon = peewee.ForeignKeyField(Pigeon, null=False, backref="_buffs", on_delete="CASCADE")
-    buff = peewee.ForeignKeyField(Buff, null=False, on_delete="CASCADE")
-    due_date = peewee.DateTimeField(null=False,
-                                    default=lambda: datetime.datetime.utcnow() + datetime.timedelta(hours=24))
 
 
 @create()
@@ -277,35 +243,6 @@ class PigeonRelationship(BaseModel):
             return relationship
         else:
             return cls.create(pigeon1=pigeon1, pigeon2=pigeon2)
-
-
-@create()
-class PigeonDatingAvatar(BaseModel):
-    description = peewee.TextField()
-    image_url = peewee.TextField()
-
-
-@create()
-class PigeonDatingProfile(BaseModel):
-    pigeon = peewee.ForeignKeyField(Pigeon)
-    description = peewee.TextField()
-    image_url = peewee.TextField()
-
-
-@create()
-class PigeonDatingParticipant(BaseModel):
-    class Status(Enum):
-        liked = 1
-        disliked = 2
-
-    status = EnumField(Status, null=False, default=False)
-    pigeon = peewee.ForeignKeyField(Pigeon)
-
-
-@create()
-class PigeonDatingRelationship(BaseModel):
-    participant1 = peewee.ForeignKeyField(PigeonDatingParticipant)
-    participant2 = peewee.ForeignKeyField(PigeonDatingParticipant)
 
 
 @create()

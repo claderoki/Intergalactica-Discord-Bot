@@ -33,14 +33,6 @@ class ExplorationRetrieval(ActivityRetrieval):
         wing_damage = 5
 
         @property
-        def buff_code(self):
-            return None
-            if self == self.language:
-                return "enlightened"
-            if self == self.wing_damage:
-                return "bleeding"
-
-        @property
         def amount(self):
             if self == self.language:
                 return 40
@@ -183,9 +175,6 @@ class ExplorationRetrieval(ActivityRetrieval):
             pigeon.human.add_item(self.item, amount=1, found=True)
         pigeon.status = pigeon.Status.idle
         pigeon.update_stats(self.winnings)
-        for bonus in self.bonuses:
-            if bonus.buff_code is not None:
-                pigeon.create_buff(bonus.buff_code, create_system_message=False)
         self.exploration.finished = True
         self.exploration.save()
 
