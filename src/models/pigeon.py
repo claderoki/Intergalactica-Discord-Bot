@@ -416,9 +416,10 @@ class ToWinnings:
             PigeonStat.happiness(self.happiness),
             PigeonStat.experience(self.experience),
             PigeonStat.cleanliness(self.cleanliness),
-            PigeonStat.food(self.food),
-            HumanStat.item(self.item.id if self.item is not None else None)
+            PigeonStat.food(self.food)
         ]
+        if self.item is not None:
+            stats.append(HumanStat.item(self.item.id))
         return Winnings(*[x for x in stats if x.amount])
 
 

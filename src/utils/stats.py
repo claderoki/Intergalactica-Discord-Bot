@@ -1,3 +1,5 @@
+from typing import Dict
+
 from emoji import emojize
 
 
@@ -10,6 +12,9 @@ class Stat:
 
     def combine(self, stat: 'Stat'):
         self.amount += stat.amount
+
+    def copy(self) -> 'Stat':
+        return Stat(self.name, self.amount, self.info, self.emoji)
 
 
 class HumanStat(Stat):
@@ -71,3 +76,14 @@ class Winnings:
 
     def add_stat(self, stat: Stat):
         self._stats.append(stat)
+
+    @classmethod
+    def combine_all(cls, *winnings: 'Winnings'):
+        stats: Dict[str, Stat] = {}
+        for winning in winnings:
+            for stat in winning._stats:
+                if stat.name in stats:
+                    stats[stat.name].combine(stat)
+                else:
+                    stats[stat.name] = stat.copy()
+        return Winnings(*stats)

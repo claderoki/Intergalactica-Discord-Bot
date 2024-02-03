@@ -42,13 +42,11 @@ class SpaceActionView(discord.ui.View):
     async def __end(self, interaction: discord.Interaction):
         self.exploration.finished = True
         self.exploration.end_date = datetime.datetime.utcnow()
-        first = self.winnings[0]
-        for i in range(1, len(self.winnings)):
-            first.merge(self.winnings[i])
-        await interaction.followup.send(content='After {x} of traveling, your pigeon gets home.\n' + first.format())
+        winnings = Winnings.combine_all(*self.winnings)
+        await interaction.followup.send(content='After {x} of traveling, your pigeon gets home.\n' + winnings.format())
         self.stop()
         pigeon: Pigeon = self.exploration.pigeon
-        pigeon.update_winnings(first)
+        pigeon.update_winnings(winnings)
         pigeon.status = Pigeon.Status.idle
         pigeon.save()
         self.exploration.save()
