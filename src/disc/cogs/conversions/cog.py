@@ -1,7 +1,7 @@
 import discord
 from discord.ext import tasks, commands
 
-import src.config as config
+from src.config import config
 from src.disc.cogs.core import BaseCog
 from src.models import Currency, Measurement, StoredUnit
 from src.wrappers.fixerio import Api as FixerioApi

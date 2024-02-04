@@ -65,7 +65,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         location: ExplorationPlanetLocation = random.choice(list(self.helper.get_all_locations()))
         id = location.id
         image_url = location.image_url or location.planet.image_url
-        arrival_date = datetime.datetime.utcnow() + datetime.timedelta(minutes=90)
+        arrival_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
 
         SpaceExploration.create(
             location=id,
@@ -96,13 +96,11 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         location = self.helper.find_location(exploration.location.id)
 
         menu = SpaceActionView(interaction.user, list(location.actions), exploration)
-        desc = []
-        desc.append(f'You arrive at {location.planet.name} ({location.name}).')
-        desc.append('What action would you like to perform?')
+        desc = [f'You arrive at {location.planet.name} ({location.name}).', 'What action would you like to perform?']
         embed = discord.Embed(description='\n\n'.join(desc))
-        message = await interaction.response.send_message(embed=embed, view=menu)
-        menu.message = message
-        menu.refresh = lambda: interaction.response.edit_message(embed=embed, view=menu)
+        await interaction.response.send_message(embed=embed, view=menu)
+        r = await interaction.original_response()
+        menu.refresh = lambda: r.edit(embed=embed, view=menu)
         await menu.wait()
 
     # @app_commands.command(name="manage", description="Manage")

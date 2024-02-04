@@ -2,11 +2,11 @@ import random
 
 from discord.ext import commands, tasks
 
-from src.constants import Constants, BR, GOLD_EMOJI
+from src.constants import BR, GOLD_EMOJI
 from src.disc.cogs.core import BaseCog
 from src.disc.errors.base import SendableException
 from src.disc.helpers.converters import EnumConverter
-from src.disc.helpers.paginating import Paginator, Page
+from src.disc.helpers.paginating import Paginator
 from src.disc.helpers.pretty import Row, Table, limit_str
 from src.disc.helpers.waiters import *
 from src.models import (Date, Earthling, Exploration, Fight, Human,

@@ -5,7 +5,7 @@ import discord
 import requests
 from discord.ext import commands
 
-import src.config as config
+from src.config import config
 import src.games.blackjack as blackjack
 import src.games.hangman as hangman
 import src.games.slotmachine as slotmachine

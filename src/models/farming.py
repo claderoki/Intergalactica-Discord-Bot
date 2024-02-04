@@ -3,8 +3,7 @@ import math
 
 import peewee
 from dateutil.relativedelta import relativedelta
-
-import src.config as config
+from src.config import config
 from .base import BaseModel, TimeDeltaField
 from . import Human, Item
 

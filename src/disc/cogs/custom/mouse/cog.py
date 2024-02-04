@@ -7,7 +7,7 @@ import peewee
 import praw
 from discord.ext import commands, tasks
 
-import src.config as config
+from src.config import config
 from src.disc.cogs.bumpreminders.helpers import DisboardBumpReminder
 from src.disc.cogs.custom.shared.cog import CustomCog
 from src.disc.cogs.custom.shared.helpers.praw_cache import PrawInstanceCache

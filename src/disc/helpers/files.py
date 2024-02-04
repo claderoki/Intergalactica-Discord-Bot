@@ -3,7 +3,7 @@ from typing import Union
 
 import discord
 
-import src.config as config
+from src.config import config
 
 
 class FileHelper:

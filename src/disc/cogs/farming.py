@@ -6,12 +6,12 @@ import discord
 from PIL import Image
 from discord.ext import commands
 
-import src.config as config
+from src.config import config
 from src.disc.cogs.core import BaseCog
 from src.disc.errors.base import SendableException
 from src.disc.helpers.converters import StringConverter
 from src.disc.helpers.files import FileHelper
-from src.models import Farm, Crop, FarmCrop, HumanItem
+from src.models import HumanItem
 
 
 class FarmingCog(BaseCog, name="Farming"):

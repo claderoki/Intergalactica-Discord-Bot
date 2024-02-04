@@ -9,25 +9,27 @@ def process_scenarios():
     if not isinstance(config.settings.base_database, peewee.SqliteDatabase):
         raise Exception('No, I don\'t think so.')
 
-    for table in [ExplorationPlanet, ExplorationPlanetLocation, ExplorationAction, ExplorationActionScenario]:
-        table.drop_table()
-        table.create_table()
+    ExplorationActionScenario.drop_table()
+    ExplorationActionScenario.create_table()
+    # for table in [ExplorationPlanet, ExplorationPlanetLocation, ExplorationAction, ExplorationActionScenario]:
+    #     table.drop_table()
+    #     table.create_table()
 
     with open('resources/scenarios/scenarios.yml', 'r') as file:
         scenarios = yaml.safe_load(file)
         for raw_planet in scenarios['planets']:
-            planet = ExplorationPlanet()
+            planet = ExplorationPlanet.get_or_none(name=raw_planet['name']) or ExplorationPlanet()
             planet.image_url = raw_planet['image_url']
             planet.name = raw_planet['name']
             planet.save()
             for raw_location in raw_planet['locations']:
-                location = ExplorationPlanetLocation()
-                location.image_url = raw_location['image_url']
+                location = ExplorationPlanetLocation.get_or_none(name=raw_location['name'], planet=planet) or ExplorationPlanetLocation()
+                location.image_url = raw_location.get('image_url')
                 location.name = raw_location['name']
                 location.planet = planet
                 location.save()
                 for raw_action in raw_location['actions']:
-                    action = ExplorationAction()
+                    action = ExplorationAction.get_or_none(name=raw_action['name'], location=location) or ExplorationAction()
                     action.name = raw_action['name']
                     action.symbol = raw_action['emoji']
                     action.location = location

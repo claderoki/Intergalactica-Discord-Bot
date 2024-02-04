@@ -451,6 +451,10 @@ class SpaceExploration(BaseModel):
     actions_remaining = peewee.IntegerField()
     total_actions = peewee.IntegerField()
 
+    @classmethod
+    def a(cls):
+        pass
+
 
 @create()
 class SpaceExplorationScenarioWinnings(BaseModel, ToWinnings):
@@ -466,3 +470,9 @@ class SpaceExplorationScenarioWinnings(BaseModel, ToWinnings):
     cleanliness = peewee.IntegerField(default=0)
     food = peewee.IntegerField(default=0)
     item = peewee.ForeignKeyField(Item, null=True)
+
+    @classmethod
+    def for_exploration(cls, exploration_id: int) -> peewee.Query:
+        return SpaceExplorationScenarioWinnings.select()\
+            .where(SpaceExplorationScenarioWinnings.exploration == exploration_id)
+

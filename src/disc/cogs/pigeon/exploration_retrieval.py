@@ -3,7 +3,7 @@ from enum import Enum
 
 import discord
 
-import src.config as config
+from src.config import config
 from src.disc.cogs.conversions.cog import ConversionCog
 from src.models import Item, Pigeon, PigeonRelationship
 

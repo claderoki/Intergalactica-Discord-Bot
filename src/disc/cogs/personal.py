@@ -3,7 +3,7 @@ from src.disc.cogs.core import BaseCog
 from discord.ext import commands, tasks
 import asyncio
 
-import src.config as config
+from src.config import config
 from src.disc.helpers.files import FileHelper
 
 class Camera:

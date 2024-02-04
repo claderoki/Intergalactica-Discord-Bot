@@ -3,8 +3,10 @@ from typing import List
 
 import discord
 
+from src.disc.commands.base.interfaces import Refreshable
+from src.disc.helpers.pretty import TimeDeltaHelper
 from src.models.pigeon import ExplorationAction, ExplorationActionScenario, SpaceExploration, \
-    SpaceExplorationScenarioWinnings, Pigeon
+    SpaceExplorationScenarioWinnings, Pigeon, ToWinnings
 from src.utils.stats import Winnings
 
 
@@ -22,12 +24,27 @@ class SpaceActionView(discord.ui.View):
         super(self.__class__, self).__init__()
         self.actions = actions
         self.user = user
-        self.winnings: List[Winnings] = []
+        self.exploration = exploration
+        self._used_action_ids = []
+        self.winnings = self.__load_winnings()
         for action in self.actions:
             button = SpaceActionButton(action)
+            button.disabled = action.id in self._used_action_ids
             button.callback = self.__create_callback_for(button)
             self.add_item(button)
-        self.exploration = exploration
+
+    async def refresh(self):
+        pass
+
+    def __load_winnings(self) -> List[Winnings]:
+        if self.exploration.actions_remaining == self.exploration.total_actions:
+            return []
+        else:
+            winnings = []
+            for winning in SpaceExplorationScenarioWinnings.for_exploration(self.exploration.id):
+                self._used_action_ids.append(winning.action_id)
+                winnings.append(winning.to_winnings())
+            return winnings
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if self.exploration.actions_remaining <= 0:
@@ -43,7 +60,8 @@ class SpaceActionView(discord.ui.View):
         self.exploration.finished = True
         self.exploration.end_date = datetime.datetime.utcnow()
         winnings = Winnings.combine_all(*self.winnings)
-        await interaction.followup.send(content='After {x} of traveling, your pigeon gets home.\n' + winnings.format())
+        travel_format = TimeDeltaHelper.prettify(self.exploration.arrival_date - self.exploration.start_date)
+        await interaction.followup.send(content=f'After {travel_format} of traveling, your pigeon gets home.\n' + winnings.format())
         self.stop()
         pigeon: Pigeon = self.exploration.pigeon
         pigeon.update_winnings(winnings)
@@ -54,6 +72,7 @@ class SpaceActionView(discord.ui.View):
     async def action_callback(self, button: SpaceActionButton, interaction: discord.Interaction):
         scenario: ExplorationActionScenario = button.action.scenarios.rand().limit(1).first()
         winnings = scenario.to_winnings()
+
         # todo: category support.
         # if scenario.item_category is not None:
             # item_id = None
@@ -63,7 +82,6 @@ class SpaceActionView(discord.ui.View):
         embed.description = f'{scenario.text}\n\n{winnings.format()}'
         await interaction.response.send_message(embed=embed)
 
-        button.disabled = True
         SpaceExplorationScenarioWinnings.create(
             action=button.action,
             exploration=self.exploration,
@@ -76,3 +94,5 @@ class SpaceActionView(discord.ui.View):
             await self.__end(interaction)
         else:
             self.exploration.save()
+        button.disabled = True
+        await self.refresh()

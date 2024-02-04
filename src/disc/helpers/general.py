@@ -1,8 +1,7 @@
 import random
 from typing import List
 
-import src.config as config
-from src.models import Translation
+from src.config import config
 import discord
 
 class RedditHelper:
@@ -34,6 +33,7 @@ class Translator:
 
     @classmethod
     def translate(cls, key, locale) -> str:
+        from src.models import Translation
         cache = cls._translations.setdefault(locale, {})
         translation = cache.get(key)
         if translation is not None:

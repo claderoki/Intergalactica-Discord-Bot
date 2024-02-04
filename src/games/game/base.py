@@ -1,4 +1,4 @@
-import src.config as config
+from src.config import config
 from src.models import database
 
 

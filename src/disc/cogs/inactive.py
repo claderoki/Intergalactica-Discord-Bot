@@ -3,7 +3,7 @@ import datetime
 import discord
 from discord.ext import commands
 
-import src.config as config
+from src.config import config
 from src.disc.cogs.core import BaseCog
 from src.disc.helpers.known_guilds import KnownGuild
 from src.disc.helpers.waiters import BoolWaiter

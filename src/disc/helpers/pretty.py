@@ -16,10 +16,11 @@ class TimeDeltaHelper:
 
     @classmethod
     def prettify(cls, value: datetime.timedelta) -> str:
-        seconds = value.total_seconds()
+        # Does it make sense to call abs?
+        seconds = abs(value.total_seconds())
 
         if seconds < 60:
-            # just a little override to make it a bit more efficient in the case of really small deltas.
+            # just an override to make it a bit more efficient in the case of small deltas.
             return f"{int(seconds)} seconds"
 
         years = int((seconds / 2592000) / 12)

@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import MissingPermissions
 
-import src.config as config
+from src.config import config
 import src.disc.helpers.pretty as pretty
 from src.disc.cogs.core import BaseCog
 from src.disc.errors.base import SendableException

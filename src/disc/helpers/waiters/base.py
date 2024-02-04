@@ -5,7 +5,7 @@ import re
 import discord
 import pytz
 
-import src.config as config
+from src.config import config
 from src.disc.helpers.embed import Embed
 from src.disc.helpers.files import FileHelper
 from src.utils.country import Country, CountryNotFound

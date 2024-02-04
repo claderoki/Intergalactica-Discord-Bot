@@ -5,8 +5,8 @@ import random
 import discord
 from discord.ext import commands
 
-import src.config as config
-from src.constants import Constants, BR
+from src.config import config
+from src.constants import BR
 from src.disc.cogs.core import BaseCog
 from src.disc.errors.base import SendableException
 from src.models import Conversant, Participant, Conversation
@@ -18,7 +18,7 @@ class NotAvailable(Exception): pass
 user_ids_currently_being_checked = []
 
 
-async def check_if_available(user):
+async def check_if_available(user: discord.User):
     if user.id in user_ids_currently_being_checked:
         return False
 

@@ -2,7 +2,7 @@ import asyncio
 
 import discord
 
-import src.config as config
+from src.config import config
 
 
 class GuildHelper:

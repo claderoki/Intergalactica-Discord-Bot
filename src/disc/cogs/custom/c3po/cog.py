@@ -32,10 +32,6 @@ class C3PO(CustomCog):
         self.bot._emoji_mapping = {}
         for emoji in self.bot.get_guild(761624318291476482).emojis:
             self.bot._emoji_mapping[emoji.name] = emoji
-        if self.bot.restarted:
-            await self.bot.owner.send(content="Started up")
-            self.bot.restarted = False
-
 
 
 async def setup(bot):

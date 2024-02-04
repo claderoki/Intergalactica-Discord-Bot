@@ -4,7 +4,7 @@ import datetime
 import discord
 import peewee
 
-import src.config as config
+from src.config import config
 from src.disc import SendableException
 from src.models import MilkywaySettings, Milkyway, GuildRewardsProfile
 from src.disc.cogs.guildrewards.helpers import GuildRewardsCache, GuildRewardsHelper

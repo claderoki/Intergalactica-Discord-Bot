@@ -3,8 +3,8 @@ import random
 
 import discord
 
-import src.config as config
-from src.constants import Constants, BR
+from src.config import config
+from src.constants import BR
 from src.disc.errors.base import SendableException
 from src.disc.helpers.known_guilds import KnownGuild
 from src.models.secretsanta import SecretSanta, SecretSantaParticipant

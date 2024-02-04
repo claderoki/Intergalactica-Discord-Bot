@@ -1,11 +1,5 @@
-import asyncio
-
-import discord
 from discord.ext import commands
-
-import src.config as config
 from src.disc.cogs.core import BaseCog
-from src.disc.errors.base import SendableException
 from src.disc.cogs.custom.shared.helpers import GuildHelper
 from src.disc.helpers.waiters import *
 

@@ -116,7 +116,7 @@ planets:
               stats: 0,-10,-10,-5,0
             - text: You attempt to study the local wildlife. You come across a pile of goop and mistake it for an alien; you peck at it for a while until you feel satisfied.
               stats: 40,10,10,-5,0
-      - name: Crater
+      - name: Onko
         actions:
           - name: Dig poop
             emoji: 💩

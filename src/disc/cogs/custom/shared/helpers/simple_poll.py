@@ -3,7 +3,7 @@ from enum import Enum
 
 import discord
 
-import src.config as config
+from src.config import config
 from src.disc.helpers.known_guilds import KnownGuild
 from src.disc.helpers.waiters import MemberWaiter
 

@@ -1,6 +1,8 @@
+from __future__ import annotations
 import enum
 
 import peewee
+from discord import app_commands
 from discord.ext import commands
 
 from src.utils.environmental_variables import EnvironmentalVariables
@@ -41,16 +43,24 @@ class Mode(enum.Enum):
 class Config:
     def __init__(self,
                  mode: Mode,
-                 bot: commands.Bot,
                  cache: Cache,
                  settings: Settings,
                  path: str,
                  environ: EnvironmentalVariables
                  ):
-        self.bot = bot
-        self.tree = bot.tree if bot else None
         self.cache = cache
+        self.tree: app_commands.CommandTree = None
+        self._bot: 'src.disc.bot.Locus' = None
         self.mode = mode
         self.settings = settings
         self.path = path
         self.environ = environ
+
+    @property
+    def bot(self):
+        return self._bot
+
+    @bot.setter
+    def bot(self, bot: commands.Bot):
+        self._bot = bot
+        self.tree = bot.tree if bot else None

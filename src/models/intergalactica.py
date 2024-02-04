@@ -5,7 +5,7 @@ from enum import Enum
 import discord
 import peewee
 
-import src.config as config
+from src.config import config
 from src.disc.helpers.known_guilds import KnownGuild
 from .base import BaseModel, EnumField, EmojiField
 from .human import Human

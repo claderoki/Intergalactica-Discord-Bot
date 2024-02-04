@@ -6,7 +6,6 @@ import peewee
 import pycountry
 from discord.ext import commands
 
-from src.config import config
 from src.disc.helpers.pretty import prettify_value
 from src.disc.helpers.waiters import *
 from src.utils.country import Country
@@ -164,9 +163,9 @@ class BaseModel(UnititializedModel):
     class Meta:
         legacy_table_names = False
         only_save_dirty = True
-        if isinstance(config.config.settings.base_database, peewee.MySQLDatabase):
+        if isinstance(config.settings.base_database, peewee.MySQLDatabase):
             table_settings = ['ENGINE=InnoDB', "DEFAULT CHARSET=utf8"]
-        database = config.config.settings.base_database
+        database = config.settings.base_database
 
 
 class JsonField(peewee.TextField):

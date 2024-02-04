@@ -1,26 +1,24 @@
 import argparse
-import os
-import sys
 
 import peewee
 
-import src.config as config
-from src.classes import Mode, Cache, Settings
+from src import config
+from src.classes import Mode, Cache, Settings, Config
 from src.utils.environmental_variables import EnvironmentalVariables
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', default=Mode.development.name, choices=[x.name for x in list(Mode)])
 parser.add_argument('--sqlite', default='0', choices=['0', '1'])
-parser.add_argument('--restarted', default='0', choices=['0', '1'])
 
 args = parser.parse_args()
 mode = Mode[args.mode]
-restarted = args.restarted == '1'
 sqlite = args.sqlite == '1'
+
+PATH = __file__.replace("\\", "/").replace("/src/__main__.py", "")
 
 
 def init_environ() -> EnvironmentalVariables:
-    path = config.path + "/.env"
+    path = PATH + "/.env"
     try:
         return EnvironmentalVariables.from_path(path)
     except FileNotFoundError:
@@ -42,26 +40,18 @@ def create_database(environ: EnvironmentalVariables, database_name: str) -> peew
 
 
 environ = init_environ()
-config.init(mode, environ, None, Cache(),
-            Settings(create_database(environ, environ["mysql_db_name"]), create_database(environ, 'birthday_db')))
+config.config = Config(
+    mode,
+    None,
+    Cache(),
+    Settings(create_database(environ, environ["mysql_db_name"]), create_database(environ, 'birthday_db')),
+    PATH,
+    environ,
+)
 
 from src.disc.bot import Locus
 
-locus = Locus(config.config)
+bot = Locus(config.config)
+config.config.bot = bot
 
-config.init(mode, environ, locus, Cache(), Settings(
-    create_database(environ, environ["mysql_db_name"]),
-    create_database(environ, 'birthday_db')
-))
-
-config.config.bot.restarted = restarted
-config.config.bot.run(config.environ.discord_token)
-
-args = ["-m", "src"]
-
-for arg in sys.argv[1:]:
-    args.append(arg)
-
-if config.config.bot.restarting:
-    args.append(f"--restarted=1")
-    os.execl(sys.executable, os.path.abspath(config.path), *args)
+config.config.bot.run(environ.discord_token)

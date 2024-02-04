@@ -6,13 +6,12 @@ import peewee
 import pycountry
 from dateutil.relativedelta import relativedelta
 
-import src.config as config
+from src.config import config
 import src.disc.cogs.switch as switch
 from src.utils.timezone import Timezone
 from src.utils.zodiac import ZodiacSign
 from .base import BaseModel, EnumField, CountryField
 import src.models as models
-import src.disc.cogs.guildrewards as guildrewards
 from .helpers import create
 
 

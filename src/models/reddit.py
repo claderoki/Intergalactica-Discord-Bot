@@ -3,7 +3,7 @@ from enum import Enum
 import discord
 import peewee
 
-import src.config as config
+from src.config import config
 from .base import BaseModel, JsonField, EnumField
 
 

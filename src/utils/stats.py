@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 from emoji import emojize
 
@@ -55,7 +55,7 @@ class PigeonStat(Stat):
 
 class Winnings:
     def __init__(self, *stats: Stat):
-        self._stats = list(stats)
+        self._stats: List[Stat] = list(stats)
 
     def format(self, separator: str = ' ', include_empty: bool = False) -> str:
         values = []
@@ -86,4 +86,4 @@ class Winnings:
                     stats[stat.name].combine(stat)
                 else:
                     stats[stat.name] = stat.copy()
-        return Winnings(*stats)
+        return Winnings(*stats.values())
