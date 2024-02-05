@@ -42,7 +42,6 @@ def create_database(environ: EnvironmentalVariables, database_name: str) -> peew
 environ = init_environ()
 config.config = Config(
     mode,
-    None,
     Cache(),
     Settings(create_database(environ, environ["mysql_db_name"]), create_database(environ, 'birthday_db')),
     PATH,
