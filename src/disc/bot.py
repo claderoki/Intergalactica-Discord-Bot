@@ -27,7 +27,13 @@ def seconds_readable(seconds):
     return "".join(text)
 
 
+class classproperty(property):
+    def __get__(self, cls, owner):
+        return classmethod(self.fget).__get__(None, owner)()
+
 class Locus(commands.Bot):
+    _instance: 'Locus' = None
+
     cooldowns = {}
     cooldowned_users = []
     owner = None
@@ -58,7 +64,9 @@ class Locus(commands.Bot):
     )
 
     def __init__(self, config: Config):
+        self.__class__._instance = self
         self.config = config
+        self.config.bot = self
         self._human_cache = {}
         self.production = config.mode == Mode.production
         self.heroku = False
@@ -99,7 +107,8 @@ class Locus(commands.Bot):
     def get_base_embed(self, **kwargs) -> discord.Embed:
         user = self.user
         embed = discord.Embed(color=ColorHelper.get_dominant_color(), **kwargs)
-        return embed.set_author(name=user.name, icon_url='https://images-ext-2.discordapp.net/external/V7zYwOVBg6jrf7W0p7zvPxBwtNSDhi0enFMPTwV4ZsQ/%3Fsize%3D1024/https/cdn.discordapp.com/avatars/742365922244952095/710d9db4d90b2ad5be1b87a8510eb247.webp')
+        return embed.set_author(name=user.name,
+                                icon_url='https://images-ext-2.discordapp.net/external/V7zYwOVBg6jrf7W0p7zvPxBwtNSDhi0enFMPTwV4ZsQ/%3Fsize%3D1024/https/cdn.discordapp.com/avatars/742365922244952095/710d9db4d90b2ad5be1b87a8510eb247.webp')
 
     def get_dominant_color(self, *args, **kwargs):
         return ColorHelper.get_dominant_color(*args, **kwargs)
@@ -241,7 +250,8 @@ class Locus(commands.Bot):
             exception = error
 
         if isinstance(exception, commands.errors.MissingPermissions):
-            await self.owner.send(f"```\nCommand '{ctx.command}' in '{ctx.author}' in {ctx.guild.id if ctx.guild else ''} Error: '{exception}'```")
+            await self.owner.send(
+                f"```\nCommand '{ctx.command}' in '{ctx.author}' in {ctx.guild.id if ctx.guild else ''} Error: '{exception}'```")
         elif isinstance(exception, commands.errors.CommandOnCooldown):
             embed = Embed.error(f"You are on cooldown. Try again in {seconds_readable(exception.retry_after)}")
             embed.set_footer(text=self.translate("available_again_at"))
@@ -264,3 +274,7 @@ class Locus(commands.Bot):
             asyncio.gather(self.owner.send(message))
         else:
             print(f"Owner not initialized yet, logged: {message}")
+
+    @classproperty
+    def instance(cls) -> 'Locus':
+        return cls._instance

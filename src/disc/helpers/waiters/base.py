@@ -5,7 +5,6 @@ import re
 import discord
 import pytz
 
-from src.config import config
 from src.disc.helpers.embed import Embed
 from src.disc.helpers.files import FileHelper
 from src.utils.country import Country, CountryNotFound
@@ -25,13 +24,14 @@ def _get_id_match(argument):
 
 
 class Waiter:
-    __slots__ = ("verbose")
+    __slots__ = ("verbose",)
 
     def __init__(self, verbose=True):
         self.verbose = verbose
 
     @property
     def bot(self):
+        from src.config import config
         return config.bot
 
 

@@ -2,6 +2,7 @@ import argparse
 
 import peewee
 
+from src.disc.bot import Locus
 from src import config
 from src.classes import Mode, Cache, Settings, Config
 from src.utils.environmental_variables import EnvironmentalVariables
@@ -47,10 +48,5 @@ config.config = Config(
     PATH,
     environ,
 )
-
-from src.disc.bot import Locus
-
 bot = Locus(config.config)
-config.config.bot = bot
-
-config.config.bot.run(environ.discord_token)
+Locus.instance.run(environ.discord_token)

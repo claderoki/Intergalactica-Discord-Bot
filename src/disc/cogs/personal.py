@@ -48,7 +48,7 @@ class Personal(BaseCog):
 
         full_path = f"{config.path}/tmp/frame.png"
         await self._camera.capture(full_path)
-        await FileHelper.store(full_path, "frame.png", channel_id=966213030062989334)
+        await FileHelper.store(full_path, "frame.png")
 
     @commands.is_owner()
     @commands.command(name = "cam")
