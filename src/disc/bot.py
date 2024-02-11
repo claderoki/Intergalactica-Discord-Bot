@@ -64,14 +64,14 @@ class Locus(commands.Bot):
         Cancelled,
     )
 
-    def get_prefix(self, config: Config):
+    def __get_prefix(self, config: Config):
         if config.mode == Mode.production:
             return [";", "/"]
         else:
             return "."
 
     def __init__(self, config: Config):
-        super().__init__(intents=discord.Intents.all(), command_prefix=self.get_prefix(config))
+        super().__init__(intents=discord.Intents.all(), command_prefix=self.__get_prefix(config))
 
         HueBridgeCall.set_ip("192.168.178.10")
         self.__class__._instance = self
