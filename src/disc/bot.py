@@ -12,6 +12,7 @@ from src.disc.errors.base import SendableException
 from src.disc.helpers.embed import Embed
 from src.disc.helpers.general import Translator
 from src.disc.helpers.waiters.base import Cancelled
+from src.wrappers.hue_bridge import HueBridgeCall
 from src.wrappers.openweathermap import OpenWeatherMapApi
 
 
@@ -72,6 +73,7 @@ class Locus(commands.Bot):
     def __init__(self, config: Config):
         super().__init__(intents=discord.Intents.all(), command_prefix=self.get_prefix(config))
 
+        HueBridgeCall.set_ip("192.168.178.10")
         self.__class__._instance = self
         self.config = config
         self.config.bot = self
@@ -268,6 +270,7 @@ class Locus(commands.Bot):
         await self.load_all_cogs()
         self.tree.copy_global_to(guild=discord.Object(id=761624318291476482))
         await self.tree.sync(guild=discord.Object(id=761624318291476482))
+        await self.tree.sync(guild=discord.Object(id=1163169122868269187))
 
     def log(self, message: str):
         if self.owner is not None:

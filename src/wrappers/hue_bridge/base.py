@@ -27,29 +27,19 @@ class HueBridgeCall(ApiCall):
         return f"http://{self.ip}/api"
 
 
-class Cache:
-    __slots__ = ()
-
-    base_folder = "data/"
+class InMemoryCache:
+    _data = {}
 
     @classmethod
     def set(cls, key, value):
-        with open(f"{cls.base_folder}/{key}", "w") as f:
-            f.write(str(value))
+        cls._data[key] = value
 
     @classmethod
     def get(cls, key):
-        try:
-            with open(f"{cls.base_folder}/{key}") as f:
-                value = f.read()
-                if value:
-                    return value
-        except FileNotFoundError:
-            return None
+        return cls._data.get(key)
 
 
-class HueBridgeCache(Cache):
-
+class HueBridgeCache(InMemoryCache):
     @classmethod
     def get_username(cls) -> str:
         return cls.get("hue_bridge_username")

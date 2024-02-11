@@ -8,6 +8,7 @@ import discord
 
 from src.config import config
 from src.disc.commands.base.stats import ComparingStat, CountableStat, Stat
+from src.disc.commands.base.view import BooleanChoice
 from src.disc.commands.muamua.game import Cycler, Deck, Player, Card
 
 
