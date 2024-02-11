@@ -1,11 +1,11 @@
 import peewee
-import yaml
 
 from src.config import config
 from src.models.pigeon import ExplorationPlanet, ExplorationPlanetLocation, ExplorationAction, ExplorationActionScenario
 
 
 def process_scenarios():
+    import yaml
     if not isinstance(config.settings.base_database, peewee.SqliteDatabase):
         raise Exception('No, I don\'t think so.')
 
