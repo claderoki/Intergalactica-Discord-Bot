@@ -68,7 +68,7 @@ class Locus(commands.Bot):
         if config.mode == Mode.production:
             return [";", "/"]
         else:
-            prefix = "."
+            return "."
 
     def __init__(self, config: Config):
         super().__init__(intents=discord.Intents.all(), command_prefix=self.get_prefix(config))
@@ -268,9 +268,13 @@ class Locus(commands.Bot):
     async def setup_hook(self):
         import src.disc.commands
         await self.load_all_cogs()
-        self.tree.copy_global_to(guild=discord.Object(id=761624318291476482))
-        await self.tree.sync(guild=discord.Object(id=761624318291476482))
+
         await self.tree.sync(guild=discord.Object(id=1163169122868269187))
+        if self.production:
+            await self.tree.sync()
+        else:
+            self.tree.copy_global_to(guild=discord.Object(id=761624318291476482))
+            await self.tree.sync(guild=discord.Object(id=761624318291476482))
 
     def log(self, message: str):
         if self.owner is not None:
