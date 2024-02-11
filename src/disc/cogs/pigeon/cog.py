@@ -2,6 +2,7 @@ import random
 
 from discord.ext import commands, tasks
 
+from src.config import config
 from src.constants import BR, GOLD_EMOJI
 from src.disc.cogs.core import BaseCog
 from src.disc.errors.base import SendableException

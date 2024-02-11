@@ -9,7 +9,6 @@ from discord.ext import commands
 
 from src.classes import Mode, Config
 from src.disc.errors.base import SendableException
-from src.disc.helpers.colors import ColorHelper
 from src.disc.helpers.embed import Embed
 from src.disc.helpers.general import Translator
 from src.disc.helpers.waiters.base import Cancelled
@@ -30,6 +29,7 @@ def seconds_readable(seconds):
 class classproperty(property):
     def __get__(self, cls, owner):
         return classmethod(self.fget).__get__(None, owner)()
+
 
 class Locus(commands.Bot):
     _instance: 'Locus' = None
@@ -63,24 +63,24 @@ class Locus(commands.Bot):
         Cancelled,
     )
 
+    def get_prefix(self, config: Config):
+        if config.mode == Mode.production:
+            return [";", "/"]
+        else:
+            prefix = "."
+
     def __init__(self, config: Config):
+        super().__init__(intents=discord.Intents.all(), command_prefix=self.get_prefix(config))
+
         self.__class__._instance = self
         self.config = config
         self.config.bot = self
         self._human_cache = {}
-        self.production = config.mode == Mode.production
         self.heroku = False
         self.restarting = False
+        self.production = config.mode == Mode.production
 
         os.makedirs(f"{config.path}/tmp", exist_ok=True)
-
-        if self.production:
-            prefix = [";", "/"]
-        else:
-            prefix = "."
-
-        intents = discord.Intents.all()
-        super().__init__(intents=intents, command_prefix=prefix)
 
         self.owm_api = OpenWeatherMapApi(config.environ["owm_key"])
 
@@ -106,12 +106,12 @@ class Locus(commands.Bot):
 
     def get_base_embed(self, **kwargs) -> discord.Embed:
         user = self.user
-        embed = discord.Embed(color=ColorHelper.get_dominant_color(), **kwargs)
+        embed = discord.Embed(color=self.get_dominant_color(), **kwargs)
         return embed.set_author(name=user.name,
                                 icon_url='https://images-ext-2.discordapp.net/external/V7zYwOVBg6jrf7W0p7zvPxBwtNSDhi0enFMPTwV4ZsQ/%3Fsize%3D1024/https/cdn.discordapp.com/avatars/742365922244952095/710d9db4d90b2ad5be1b87a8510eb247.webp')
 
     def get_dominant_color(self, *args, **kwargs):
-        return ColorHelper.get_dominant_color(*args, **kwargs)
+        return discord.Color.from_rgb(242, 180, 37)
 
     async def load_cog(self, name):
         await self.load_extension("src.disc.cogs." + name)
@@ -227,7 +227,7 @@ class Locus(commands.Bot):
 
         ctx.raise_if_not_enough_gold = self.raise_if_not_enough_gold(ctx)
 
-        ctx.guild_color = ColorHelper.get_dominant_color(ctx.guild)
+        ctx.guild_color = self.get_dominant_color()
 
         timeout = 60
         if ctx.author.id in self.cooldowned_users:
