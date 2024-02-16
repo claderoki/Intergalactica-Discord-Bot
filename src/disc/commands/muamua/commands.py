@@ -17,18 +17,18 @@ class JoinMenu(discord.ui.View):
         super(JoinMenu, self).__init__()
         self.user_ids = set()
 
-    def __get_content(self):
+    def get_content(self):
         return "\n".join(map(lambda x: f'<@{x}>', self.user_ids))
 
     @discord.ui.button(label='Join', style=discord.ButtonStyle.red)
     async def join(self, interaction: discord.Interaction, _button: discord.ui.Button):
         self.user_ids.add(interaction.user.id)
-        await interaction.response.edit_message(content=self.__get_content(), view=self)
+        await interaction.response.edit_message(content=self.get_content(), view=self)
 
     @discord.ui.button(label='Leave', style=discord.ButtonStyle.red)
     async def leave(self, interaction: discord.Interaction, _button: discord.ui.Button):
         self.user_ids.remove(interaction.user.id)
-        await interaction.response.edit_message(content=self.__get_content(), view=self)
+        await interaction.response.edit_message(content=self.get_content(), view=self)
 
     @discord.ui.button(label='Start', style=discord.ButtonStyle.red)
     async def start(self, interaction: discord.Interaction, _button: discord.ui.Button):
@@ -58,7 +58,7 @@ class CardSelect(discord.ui.Select):
 
 class CardChoice(discord.ui.View):
     def __init__(self, cards: List[Card]):
-        super(CardChoice, self).__init__()
+        super(CardChoice, self).__init__(timeout=45)
         self.add_item(CardSelect(cards))
 
     def get_selected(self) -> Optional[Card]:
@@ -141,7 +141,7 @@ def log(func):
 class GameMenu(discord.ui.View):
     def __init__(self, players: List[Player], min_players: int = 2):
         super(GameMenu, self).__init__()
-        self.timeout = 2000
+        self.timeout = 360
         self.all_ai = False
         self.wait_time = 0
         self.log = []
@@ -606,7 +606,8 @@ class GameMenu(discord.ui.View):
                      guild=discord.Object(id=761624318291476482))
 async def maumau(interaction: discord.Interaction, min_players: Optional[int]):
     menu = JoinMenu()
-    await interaction.response.send_message("_", view=menu)
+    menu.user_ids.add(interaction.user.id)
+    await interaction.response.send_message(menu.get_content(), view=menu)
     await menu.wait()
 
     menu = GameMenu([Player(x, member=interaction.guild.get_member(x)) for x in menu.user_ids], min_players or 2)

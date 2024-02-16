@@ -27,4 +27,4 @@ async def togglelight(interaction: discord.Interaction, light: Lights, brightnes
         state.brightness = brightness
     UpdateLightCall(username, light.value, state).call()
 
-    await interaction.response.send_message(f'Changed light {light.name} brightness from {brightness} to  {previous_brightness}')
+    await interaction.response.send_message(f'Changed light {light.name} brightness from {previous_brightness} to {brightness}')
