@@ -28,19 +28,23 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         await interaction.response.send_message(message + '\n' + winnings.format())
 
     @app_commands.command(name="feed", description="Feed your pigeon.")
+    @has_pigeon()
     async def feed(self, interaction: discord.Interaction) -> None:
         await self.__update_stat(interaction, PigeonStat.food(20), 20, 'You feed that thing you call a pigeon.')
 
     @app_commands.command(name="clean", description="Clean your pigeon.")
+    @has_pigeon()
     async def clean(self, interaction: discord.Interaction) -> None:
         await self.__update_stat(interaction, PigeonStat.cleanliness(20), 20, 'You clean that thing you call a pigeon.')
 
     @app_commands.command(name="play", description="Play with your pigeon.")
+    @has_pigeon()
     async def play(self, interaction: discord.Interaction) -> None:
         await self.__update_stat(interaction, PigeonStat.happiness(20), 20,
                                  'You play with that thing you call a pigeon.')
 
     @app_commands.command(name="heal", description="Heal your pigeon.")
+    @has_pigeon()
     async def heal(self, interaction: discord.Interaction) -> None:
         await self.__update_stat(interaction, PigeonStat.health(20), 20, 'You heal that thing you call a pigeon.')
 
