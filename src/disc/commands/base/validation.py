@@ -96,7 +96,7 @@ class PigeonValidation(Validation[Pigeon], ABC):
         return Pigeon
 
     def find_target(self, user_id: int) -> Optional[Pigeon]:
-        from src.disc.commands import PigeonHelper
+        from src.disc.commands.pigeon.helpers import PigeonHelper
         return PigeonHelper().get_pigeon(user_id)
 
 
