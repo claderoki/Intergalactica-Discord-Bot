@@ -43,8 +43,8 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         await self.__update_stat(interaction, PigeonStat.happiness(20), 20,
                                  'You play with that thing you call a pigeon.')
 
-    @app_commands.command(name="heal", description="Heal your pigeon.")
     @has_pigeon()
+    @app_commands.command(name="heal", description="Heal your pigeon.")
     async def heal(self, interaction: discord.Interaction) -> None:
         await self.__update_stat(interaction, PigeonStat.health(20), 20, 'You heal that thing you call a pigeon.')
 
