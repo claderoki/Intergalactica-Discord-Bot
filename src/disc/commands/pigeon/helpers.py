@@ -15,7 +15,7 @@ class PigeonHelper:
 
     @config.cache(category='pigeon')
     def get_all_locations(self) -> Iterable[ExplorationPlanetLocation]:
-        return ExplorationPlanetLocation
+        return ExplorationPlanetLocation.select().where(ExplorationPlanetLocation.active == True)
 
     def find_location(self, location_id: int) -> Optional[ExplorationPlanetLocation]:
         for location in self.get_all_locations():

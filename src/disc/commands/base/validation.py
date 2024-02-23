@@ -2,6 +2,8 @@ import abc
 from abc import ABC
 from typing import Optional, TypeVar, Generic, Type
 
+from discord.app_commands import Command
+
 from src.models import Human, Pigeon
 from src.config import config
 
@@ -57,7 +59,7 @@ class Validation(ABC, Generic[T]):
 
     def wrap(self):
         def wrapper(func):
-            def inner(f):
+            def inner(f: Command):
                 existing = f.extras.get('validations', [])
                 existing.insert(0, self)
                 f.extras['validations'] = existing

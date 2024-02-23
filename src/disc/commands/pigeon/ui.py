@@ -3,10 +3,9 @@ from typing import List
 
 import discord
 
-from src.disc.commands.base.interfaces import Refreshable
 from src.disc.helpers.pretty import TimeDeltaHelper
 from src.models.pigeon import ExplorationAction, ExplorationActionScenario, SpaceExploration, \
-    SpaceExplorationScenarioWinnings, Pigeon, ToWinnings
+    SpaceExplorationScenarioWinnings, Pigeon
 from src.utils.stats import Winnings
 
 

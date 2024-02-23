@@ -5,10 +5,8 @@ from discord import app_commands
 from src.disc.commands.base.cog import BaseGroupCog
 from src.disc.commands.base.validation import does_not_have_pigeon, has_status, has_gold, has_pigeon
 from src.disc.commands.pigeon.helpers import PigeonHelper
-from src.disc.commands.base.view import *
 from src.disc.commands.pigeon.ui import SpaceActionView
 from src.models.pigeon import *
-from src.resources import process_scenarios
 
 
 class Pigeon2(BaseGroupCog, name="pigeon"):
@@ -18,13 +16,10 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         self.helper = PigeonHelper()
 
     async def __update_stat(self, interaction: discord.Interaction, stat: PigeonStat, cost: int, message: str):
-        result = self.check(user_id=interaction.user.id)
-        if result.errors:
-            await interaction.response.send_message(result.errors[0])
-            return
+        targets = await self.validate(interaction)
 
         winnings = Winnings(stat, HumanStat.gold(-cost))
-        result.pigeon.update_winnings(winnings)
+        targets.get_pigeon().update_winnings(winnings)
         await interaction.response.send_message(message + '\n' + winnings.format())
 
     @has_pigeon()
@@ -69,7 +64,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         location: ExplorationPlanetLocation = random.choice(list(self.helper.get_all_locations()))
         id = location.id
         image_url = location.image_url or location.planet.image_url
-        arrival_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
+        arrival_date = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
 
         SpaceExploration.create(
             location=id,

@@ -36,7 +36,8 @@ def create_database(environ: EnvironmentalVariables, database_name: str) -> peew
         user=environ["mysql_user"],
         password=environ["mysql_password"],
         host=environ["mysql_host"],
-        port=int(environ["mysql_port"])
+        port=int(environ["mysql_port"]),
+        charset='utf8mb4'
     )
 
 
