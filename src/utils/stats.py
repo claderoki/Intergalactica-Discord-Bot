@@ -2,6 +2,8 @@ from typing import Dict, List
 
 from emoji import emojize
 
+from src.models import Item
+
 
 class Stat:
     def __init__(self, name: str, amount, info=None, emoji=None):
@@ -16,6 +18,9 @@ class Stat:
     def copy(self) -> 'Stat':
         return Stat(self.name, self.amount, self.info, self.emoji)
 
+    def format(self):
+        return f'{self.emoji} {self.info or self.amount}'
+
 
 class HumanStat(Stat):
     @classmethod
@@ -23,8 +28,13 @@ class HumanStat(Stat):
         return cls('gold', amount, emoji=emojize(":euro:"))
 
     @classmethod
-    def item(cls, id: int) -> 'HumanStat':
-        return cls('item', 1, info=id)
+    def item(cls, item: Item) -> 'HumanItem':
+        return HumanItem('item', 1, info=item, emoji='🎒')
+
+
+class HumanItem(HumanStat):
+    def format(self):
+        return f'{self.emoji} {self.info.name} ({self.amount})'
 
 
 class PigeonStat(Stat):
@@ -62,7 +72,7 @@ class Winnings:
         for stat in self._stats:
             if not include_empty and not stat.amount:
                 continue
-            values.append(f'{stat.emoji} {stat.info or stat.amount}')
+            values.append(stat.format())
         return separator.join(values)
 
     def merge(self, winnings: 'Winnings'):
