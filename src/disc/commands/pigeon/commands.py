@@ -1,12 +1,39 @@
+import datetime
+import random
 
+import discord
 from discord.ext import commands
 from discord import app_commands
 
 from src.disc.commands.base.cog import BaseGroupCog
-from src.disc.commands.base.validation import does_not_have_pigeon, has_status, has_gold, has_pigeon
+from src.disc.commands.base.decorators import extras
+from src.disc.commands.base.validation import does_not_have_pigeon, has_status, has_gold, has_pigeon, food_less_than
 from src.disc.commands.pigeon.helpers import PigeonHelper
 from src.disc.commands.pigeon.ui import SpaceActionView
-from src.models.pigeon import *
+from src.disc.helpers.pretty import prettify_dict
+from src.models import Pigeon, Item
+from src.models.base import PercentageField
+from src.models.pigeon import ExplorationPlanetLocation, SpaceExploration
+from src.utils.stats import Winnings, HumanStat, PigeonStat
+
+
+class Probabilities:
+    def __init__(self, items):
+        self.items = items
+
+    def __weights(self):
+        return [x.probability for x in self.items]
+
+    def choice(self):
+        return random.choices(self.items, weights=self.__weights())[0]
+
+
+class StatUpdate:
+    def __init__(self, gain: int, cost: int, message: str, probability: float):
+        self.gain = gain
+        self.cost = cost
+        self.message = message
+        self.probability = probability
 
 
 class Pigeon2(BaseGroupCog, name="pigeon"):
@@ -17,34 +44,40 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
 
     async def __update_stat(self, interaction: discord.Interaction, stat: PigeonStat, cost: int, message: str):
         targets = await self.validate(interaction)
-
         winnings = Winnings(stat, HumanStat.gold(-cost))
         targets.get_pigeon().update_winnings(winnings)
         await interaction.response.send_message(message + '\n' + winnings.format())
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
+    @food_less_than(100)
+    @extras('probabilities', Probabilities([
+        StatUpdate(20, 20, 'You feed your pigeon some regular seeds.', 1),
+        StatUpdate(25, 20, 'You feed your pigeon some premium seeds.', 0.1),
+        StatUpdate(100, 10, 'Your pigeon gets a great deal on some very rejuvenating fries.', 0.01),
+    ]))
     @app_commands.command(name="feed", description="Feed your pigeon.")
-    async def feed(self, interaction: discord.Interaction) -> None:
-        await self.__update_stat(interaction, PigeonStat.food(20), 20, 'You feed that thing you call a pigeon.')
+    async def feed(self, interaction: discord.Interaction):
+        outcome = interaction.command.extras['probabilities'].choice()
+        await self.__update_stat(interaction, PigeonStat.food(outcome.gain), outcome.cost, outcome.message)
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
     @app_commands.command(name="clean", description="Clean your pigeon.")
-    async def clean(self, interaction: discord.Interaction) -> None:
+    async def clean(self, interaction: discord.Interaction):
         await self.__update_stat(interaction, PigeonStat.cleanliness(20), 20, 'You clean that thing you call a pigeon.')
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
     @app_commands.command(name="play", description="Play with your pigeon.")
-    async def play(self, interaction: discord.Interaction) -> None:
+    async def play(self, interaction: discord.Interaction):
         await self.__update_stat(interaction, PigeonStat.happiness(20), 20,
                                  'You play with that thing you call a pigeon.')
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
     @app_commands.command(name="heal", description="Heal your pigeon.")
-    async def heal(self, interaction: discord.Interaction) -> None:
+    async def heal(self, interaction: discord.Interaction):
         await self.__update_stat(interaction, PigeonStat.health(20), 20, 'You heal that thing you call a pigeon.')
 
     @does_not_have_pigeon()
@@ -56,6 +89,34 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         winnings = Winnings(HumanStat.gold(-250))
         pigeon.update_winnings(winnings)
         await interaction.response.send_message('Sure\n' + winnings.format())
+
+    @has_pigeon()
+    @app_commands.command(name="profile", description="Check the status of your pigeon.")
+    async def profile(self, interaction: discord.Interaction):
+        targets = await self.validate(interaction)
+        pigeon = targets.get_pigeon()
+
+        data = {}
+        emojis = []
+
+        for attr, emoji in Pigeon.emojis.items():
+            try:
+                value = getattr(pigeon, attr)
+            except AttributeError:
+                continue
+            if isinstance(getattr(Pigeon, attr), PercentageField):
+                data[attr] = f"{value}%"
+            else:
+                data[attr] = f"{value}"
+            emojis.append(emoji)
+
+        emojis.append(pigeon.status.value)
+        data["status"] = pigeon.status.name
+        lines = prettify_dict(data, emojis=emojis)
+        embed = discord.Embed()
+        embed.description = f"```\n{lines}```"
+
+        await interaction.response.send_message(embed=embed)
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
@@ -121,11 +182,11 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
     # @app_commands.command(name="manage", description="Manage")
     # async def manage(self, interaction: discord.Interaction):
     #     process_scenarios()
-        # model = ExplorationActionScenario()
-        # model.action = 2
-        # await edit_view(interaction, model, forms_to_view(model, guess_for_fields([ExplorationActionScenario.text])))
-        # model.save()
-        # await interaction.followup.send(content='Saved')
+    # model = ExplorationActionScenario()
+    # model.action = 2
+    # await edit_view(interaction, model, forms_to_view(model, guess_for_fields([ExplorationActionScenario.text])))
+    # model.save()
+    # await interaction.followup.send(content='Saved')
 
 
 async def setup(bot: commands.Bot) -> None:

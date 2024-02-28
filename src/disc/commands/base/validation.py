@@ -128,10 +128,43 @@ class HasStatus(PigeonValidation):
         return target.status == self.status
 
     def failure_message_self(self) -> str:
-        return 'Status bad'
+        return f'Your pigeon needs to be {self.status} to perform this action.'
 
     def failure_message_other(self) -> str:
-        return 'Status bad'
+        return f'The other persons pigeon needs to be {self.status} to perform this action.'
+
+
+class StatLessThan(PigeonValidation):
+    def __init__(self, name: str, value: int):
+        super().__init__()
+        self.name = name
+        self.value = value
+
+    def _validate(self, target: Pigeon) -> bool:
+        value = getattr(target, self.name)
+        return value < self.value
+
+    def failure_message_self(self) -> str:
+        return f'Your pigeon needs to have under {self.value} {self.name} for this action'
+
+    def failure_message_other(self) -> str:
+        return f'The other persons pigeon needs to have under {self.value} {self.name} for this action'
+
+
+def food_less_than(value: int):
+    return StatLessThan('food', value).wrap()
+
+
+def cleanliness_less_than(value: int):
+    return StatLessThan('cleanliness', value).wrap()
+
+
+def health_less_than(value: int):
+    return StatLessThan('health', value).wrap()
+
+
+def happiness_less_than(value: int):
+    return StatLessThan('happiness', value).wrap()
 
 
 def has_status(status: Pigeon.Status):
