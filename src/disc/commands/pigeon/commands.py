@@ -1,5 +1,6 @@
 import datetime
 import random
+from typing import List
 
 import discord
 from discord.ext import commands
@@ -7,7 +8,9 @@ from discord import app_commands
 
 from src.disc.commands.base.cog import BaseGroupCog
 from src.disc.commands.base.decorators import extras
-from src.disc.commands.base.validation import does_not_have_pigeon, has_status, has_gold, has_pigeon, food_less_than
+from src.disc.commands.base.probabilities import Probabilities, Probability
+from src.disc.commands.base.validation import does_not_have_pigeon, has_status, has_gold, has_pigeon, food_less_than, \
+    cleanliness_less_than, happiness_less_than, health_less_than
 from src.disc.commands.pigeon.helpers import PigeonHelper
 from src.disc.commands.pigeon.ui import SpaceActionView
 from src.disc.helpers.pretty import prettify_dict
@@ -17,23 +20,18 @@ from src.models.pigeon import ExplorationPlanetLocation, SpaceExploration
 from src.utils.stats import Winnings, HumanStat, PigeonStat
 
 
-class Probabilities:
-    def __init__(self, items):
-        self.items = items
+class StatUpdate(Probability):
+    __slots__ = ('probability', 'gain', 'cost', 'message')
 
-    def __weights(self):
-        return [x.probability for x in self.items]
-
-    def choice(self):
-        return random.choices(self.items, weights=self.__weights())[0]
-
-
-class StatUpdate:
     def __init__(self, gain: int, cost: int, message: str, probability: float):
+        super().__init__(probability)
         self.gain = gain
         self.cost = cost
         self.message = message
-        self.probability = probability
+
+
+def probabilities(*updates: StatUpdate):
+    return extras('probabilities', Probabilities(list(updates)))
 
 
 class Pigeon2(BaseGroupCog, name="pigeon"):
@@ -51,24 +49,32 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
     @food_less_than(100)
-    @extras('probabilities', Probabilities([
+    @probabilities(
         StatUpdate(20, 20, 'You feed your pigeon some regular seeds.', 1),
         StatUpdate(25, 20, 'You feed your pigeon some premium seeds.', 0.1),
         StatUpdate(100, 10, 'Your pigeon gets a great deal on some very rejuvenating fries.', 0.01),
-    ]))
+    )
     @app_commands.command(name="feed", description="Feed your pigeon.")
     async def feed(self, interaction: discord.Interaction):
-        outcome = interaction.command.extras['probabilities'].choice()
+        outcome: StatUpdate = interaction.command.extras['probabilities'].choice()
         await self.__update_stat(interaction, PigeonStat.food(outcome.gain), outcome.cost, outcome.message)
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
+    @cleanliness_less_than(100)
+    @probabilities(
+        StatUpdate(20, 20, 'You give your pigeon a regular bath.', 1),
+        StatUpdate(25, 20, 'You give your pigeon a premium bath.', 0.1),
+        StatUpdate(100, 10, 'Your pigeon gets a great deal on some very good soap.', 0.01),
+    )
     @app_commands.command(name="clean", description="Clean your pigeon.")
     async def clean(self, interaction: discord.Interaction):
-        await self.__update_stat(interaction, PigeonStat.cleanliness(20), 20, 'You clean that thing you call a pigeon.')
+        outcome: StatUpdate = interaction.command.extras['probabilities'].choice()
+        await self.__update_stat(interaction, PigeonStat.cleanliness(outcome.gain), outcome.cost, outcome.message)
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
+    @happiness_less_than(100)
     @app_commands.command(name="play", description="Play with your pigeon.")
     async def play(self, interaction: discord.Interaction):
         await self.__update_stat(interaction, PigeonStat.happiness(20), 20,
@@ -76,6 +82,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
+    @health_less_than(100)
     @app_commands.command(name="heal", description="Heal your pigeon.")
     async def heal(self, interaction: discord.Interaction):
         await self.__update_stat(interaction, PigeonStat.health(20), 20, 'You heal that thing you call a pigeon.')

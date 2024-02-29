@@ -13,6 +13,7 @@ from src.utils.zodiac import ZodiacSign
 from .base import BaseModel, EnumField, CountryField
 import src.models as models
 from .helpers import create
+from .. import constants
 
 
 class CurrenciesField(peewee.TextField):
@@ -187,9 +188,9 @@ class Human(BaseModel):
             values.append("🌡️ N/A")
 
         if self.gold is not None:
-            values.append(f"{self.bot.gold_emoji} {self.gold}")
+            values.append(f"{constants.GOLD_EMOJI} {self.gold}")
         elif show_all:
-            values.append(f"{self.bot.gold_emoji} N/A")
+            values.append(f"{constants.GOLD_EMOJI} N/A")
 
         if guild is not None:
             profile = models.GuildRewardsProfile.get_or_none(guild_id=guild.id, user_id=self.user_id)

@@ -11,8 +11,9 @@ from dateutil.relativedelta import relativedelta
 from src.utils.enums import Gender
 from .base import BaseModel, EnumField, EmojiField, PercentageField, TimeDeltaField, CountryField, LanguageField, \
     LongTextField, BaseModelSelect
-from .helpers import create, drop
+from .helpers import create
 from .human import Human, Item, ItemCategory
+from .. import constants
 from ..utils.stats import Winnings, PigeonStat, HumanStat
 
 
@@ -73,7 +74,7 @@ class TravelActivity(Activity):
 class Pigeon(BaseModel):
     emojis = {
         "name": "📛",
-        "gold": "",
+        "gold": constants.GOLD_EMOJI,
         "experience": "📊",
         "cleanliness": "💩",
         "food": "🌾",
