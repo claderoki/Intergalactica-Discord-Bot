@@ -93,6 +93,20 @@ class HasGold(HumanValidation):
         return f'The other person does not have enough gold for this. {self.amount} needed.'
 
 
+class AddHumanToTarget(HumanValidation):
+    def __init__(self):
+        super().__init__()
+
+    def _validate(self, target: Human) -> bool:
+        return True
+
+    def failure_message_self(self) -> str:
+        return ''
+
+    def failure_message_other(self) -> str:
+        return ''
+
+
 class PigeonValidation(Validation[Pigeon], ABC):
     def get_target_type(self):
         return Pigeon
@@ -181,3 +195,7 @@ def does_not_have_pigeon():
 
 def has_gold(amount: int):
     return HasGold(amount).wrap()
+
+
+def add_human_to_target():
+    return AddHumanToTarget().wrap()

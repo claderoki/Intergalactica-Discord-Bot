@@ -106,6 +106,8 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         data = {}
         emojis = []
 
+        pigeon.get_stats()
+
         for attr, emoji in Pigeon.emojis.items():
             try:
                 value = getattr(pigeon, attr)

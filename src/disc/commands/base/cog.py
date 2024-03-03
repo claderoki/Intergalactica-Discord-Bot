@@ -18,10 +18,10 @@ class TargetCollection(dict):
     def __init__(self):
         super().__init__()
 
-    def get_human(self):
+    def get_human(self) -> Human:
         return self.get(Human)
 
-    def get_pigeon(self):
+    def get_pigeon(self) -> Pigeon:
         return self.get(Pigeon)
 
 
