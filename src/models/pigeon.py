@@ -2,14 +2,14 @@ import datetime
 import math
 import random
 from enum import Enum
-from typing import Iterable
+from typing import Iterable, List
 
 import discord
 import peewee
 from dateutil.relativedelta import relativedelta
 
 from src.utils.enums import Gender
-from .base import BaseModel, EnumField, EmojiField, PercentageField, TimeDeltaField, CountryField, LanguageField, \
+from .base import BaseModel, EnumField, EmojiField, PercentageField, CountryField, LanguageField, \
     LongTextField, BaseModelSelect
 from .helpers import create
 from .human import Human, Item, ItemCategory
@@ -194,6 +194,15 @@ class Pigeon(BaseModel):
         query = query.where((Fight.challenger == self) | (Fight.challengee == self))
         return query
 
+    def get_stats(self) -> List[PigeonStat]:
+        return [
+            PigeonStat.food(self.food),
+            PigeonStat.health(self.health),
+            PigeonStat.cleanliness(self.cleanliness),
+            PigeonStat.happiness(self.happiness),
+            PigeonStat.experience(self.experience),
+            PigeonStat.gold_modifier(self.gold_modifier),
+        ]
 
 
 @create()

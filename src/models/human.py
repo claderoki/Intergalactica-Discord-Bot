@@ -1,5 +1,6 @@
 import datetime
 from enum import Enum
+from typing import List
 
 import discord
 import peewee
@@ -20,7 +21,7 @@ class CurrenciesField(peewee.TextField):
     def db_value(self, value):
         if value:
             return ";".join(set(x.alpha_3 for x in value if x is not None))
-        return ''
+        return None
 
     def python_value(self, value):
         if value:
@@ -213,6 +214,12 @@ class Human(BaseModel):
             sep += "\n"
 
         return {"name": name, "value": sep.join(values), "inline": True}
+
+    # def get_stats(self) -> List[HumanStat]:
+    #     from ..utils.stats import HumanStat
+    #     return [
+    #         HumanStat.gold(self.gold),
+    #     ]
 
 
 class CategoryPathField(peewee.CharField):
