@@ -1,6 +1,6 @@
 import random
 from enum import Enum
-from typing import List
+from typing import List, TypeVar, Generic
 
 
 class Card:
@@ -43,6 +43,10 @@ class Card:
 
     def __str__(self):
         return f'{self.rank} {self.symbol if self.symbol is not None else ""}'
+
+    def snapshot_str(self):
+        #todo: fix
+        return f'{self.rank} {self.suit.name[0] if self.suit else ""}'.strip()
 
     def __repr__(self):
         return str(self)
@@ -115,7 +119,7 @@ class Player:
         self.identifier = identifier
         self.member = member
         self.hand: List[Card] = []
-        self.short_identifier = None
+        self.short_identifier: str = None
         self.skip_for = 0
         self.picking = False
 
@@ -131,10 +135,13 @@ class Player:
         return 'AI' in str(self.identifier)
 
 
-class Cycler:
+T = TypeVar('T')
+
+
+class Cycler(Generic[T]):
     __slots__ = ('items', 'forwards', 'current_index', 'cycles')
 
-    def __init__(self, items: list, forwards: bool = True):
+    def __init__(self, items: List[T], forwards: bool = True):
         self.items = items
         self.forwards = forwards
         self.cycles = 0
@@ -143,7 +150,7 @@ class Cycler:
     def reverse(self):
         self.forwards = not self.forwards
 
-    def set_current(self, item):
+    def set_current(self, item: T):
         self.current_index = self.items.index(item)
 
     def __next_index(self):
@@ -158,31 +165,31 @@ class Cycler:
         else:
             return self.current_index - 1
 
-    def __get_next_item(self, seek: bool):
+    def __get_next_item(self, seek: bool) -> T:
         index = self.__next_index() if self.forwards else self.__previous_index()
         if seek:
             self.current_index = index
         return self.items[index]
 
-    def __get_previous_item(self, seek: bool):
+    def __get_previous_item(self, seek: bool) -> T:
         index = self.__previous_index() if self.forwards else self.__next_index()
         if seek:
             self.current_index = index
         return self.items[index]
 
-    def get_next(self):
+    def get_next(self) -> T:
         return self.__get_next_item(False)
 
-    def get_previous(self):
+    def get_previous(self) -> T:
         return self.__get_previous_item(False)
 
-    def current(self):
+    def current(self) -> T:
         return self.items[self.current_index]
 
-    def next(self):
+    def next(self) -> T:
         self.cycles += 1
         return self.__get_next_item(True)
 
-    def previous(self):
+    def previous(self) -> T:
         self.cycles += 1
         return self.__get_previous_item(True)
