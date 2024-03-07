@@ -69,7 +69,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
     )
     @app_commands.command(name="clean", description="Clean your pigeon.")
     async def clean(self, interaction: discord.Interaction):
-        outcome: StatUpdate = interaction.command.extras['probabilities'].choice()
+        outcome: StatUpdate = self.probability(interaction)
         await self.__update_stat(interaction, PigeonStat.cleanliness(outcome.gain), outcome.cost, outcome.message)
 
     @has_pigeon()
@@ -106,25 +106,14 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         data = {}
         emojis = []
 
-        pigeon.get_stats()
-
-        for attr, emoji in Pigeon.emojis.items():
-            try:
-                value = getattr(pigeon, attr)
-            except AttributeError:
-                continue
-            if isinstance(getattr(Pigeon, attr), PercentageField):
-                data[attr] = f"{value}%"
-            else:
-                data[attr] = f"{value}"
-            emojis.append(emoji)
+        for stat in pigeon.get_stats():
+            data[stat.name] = str(stat.amount)
+            emojis.append(stat.emoji)
 
         emojis.append(pigeon.status.value)
-        data["status"] = pigeon.status.name
+        data['status'] = pigeon.status.name
         lines = prettify_dict(data, emojis=emojis)
-        embed = discord.Embed()
-        embed.description = f"```\n{lines}```"
-
+        embed = discord.Embed(description=f'```\n{lines}```')
         await interaction.response.send_message(embed=embed)
 
     @has_pigeon()

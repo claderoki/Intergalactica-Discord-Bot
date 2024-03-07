@@ -129,7 +129,6 @@ class PigeonCog(BaseCog, name="Pigeon"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        Pigeon.emojis["gold"] = GOLD_EMOJI
         self.start_task(self.date_ticker, check=self.bot.production)
         self.start_task(self.fight_ticker, check=self.bot.production)
         await asyncio.sleep(60 * 60)
@@ -562,7 +561,7 @@ ORDER BY score DESC;
             if mail.message is not None:
                 embed.add_field(name="📜 message", value=mail.message, inline=False)
             if mail.gold > 0:
-                embed.add_field(name=f"{Pigeon.emojis['gold']} gold", value=f"{mail.gold}", inline=False)
+                embed.add_field(name=f"{GOLD_EMOJI} gold", value=f"{mail.gold}", inline=False)
             if mail.item is not None:
                 lines = []
                 lines.append(mail.item.name)
@@ -881,21 +880,6 @@ def get_winnings_value(**kwargs):
     for key, value in kwargs.items():
         if value != 0:
             lines.append(f"{Pigeon.emojis[key]} {'+' if value > 0 else ''}{value}")
-    return ", ".join(lines)
-
-
-def get_winnings_value_included(pigeon, **kwargs):
-    human = config.bot.get_human(user=pigeon.human.user_id)
-    lines = []
-    for key, value in kwargs.items():
-        if value != 0:
-            if key == "gold":
-                current_value = human.gold
-            else:
-                current_value = getattr(pigeon, key)
-            new_value = current_value + value
-
-            lines.append(f"{Pigeon.emojis[key]} {current_value}/{new_value} {'+' if value > 0 else ''}{value}")
     return ", ".join(lines)
 
 

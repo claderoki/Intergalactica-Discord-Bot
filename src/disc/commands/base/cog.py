@@ -52,6 +52,9 @@ class BaseGroupCog(commands.GroupCog):
 
         return CheckResult(targets, errors)
 
+    def probability(self, interaction: discord.Interaction):
+        return interaction.command.extras['probabilities'].choice()
+
     async def validate(self,
                        interaction: discord.Interaction,
                        user_id: int = None,

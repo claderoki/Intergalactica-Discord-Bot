@@ -269,6 +269,7 @@ class Locus(commands.Bot):
         import src.disc.commands
         await self.load_all_cogs()
 
+        self.tree.copy_global_to(guild=discord.Object(id=1163169122868269187))
         await self.tree.sync(guild=discord.Object(id=1163169122868269187))
         if self.production:
             await self.tree.sync()
