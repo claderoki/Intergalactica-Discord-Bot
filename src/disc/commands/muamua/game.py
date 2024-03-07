@@ -1,6 +1,6 @@
 import random
 from enum import Enum
-from typing import List, TypeVar, Generic
+from typing import List, TypeVar, Generic, Union
 
 
 class Card:
@@ -115,7 +115,7 @@ class MauTrack:
 class Player:
     __slots__ = ('identifier', 'hand', 'skip_for', 'member', 'last_mau', 'picking', 'short_identifier')
 
-    def __init__(self, identifier: str, member=None):
+    def __init__(self, identifier: Union[str, int], member=None):
         self.identifier = identifier
         self.member = member
         self.hand: List[Card] = []

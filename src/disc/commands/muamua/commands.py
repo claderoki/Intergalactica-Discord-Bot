@@ -3,8 +3,7 @@ import io
 import json
 import random
 import string
-from contextlib import contextmanager
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Union
 
 import discord
 
@@ -132,6 +131,7 @@ class Stats:
 class GameMenu(discord.ui.View):
     def __init__(self, players: List[Player], min_players: int = 2):
         super(GameMenu, self).__init__()
+        self.action_spent = False
         self.reporting = False
         self.timeout = 360
         self.all_ai = False
@@ -151,7 +151,7 @@ class GameMenu(discord.ui.View):
 
         self.__fill_with_ai(players)
         self.cycler = Cycler(players)
-        self.players: Dict[str, Player] = {x.identifier: x for x in players}
+        self.players: Dict[Union[str, int], Player] = {x.identifier: x for x in players}
         self.deck_multiplier = max(1, int(len(players) / 3))
         self.deck = Deck.standard53() * self.deck_multiplier
         self.__load()
@@ -439,6 +439,7 @@ class GameMenu(discord.ui.View):
             await asyncio.sleep(self.wait_time)
             self.wait_time = 0
 
+        self.action_spent = False
         self.cycler.next()
         await self.__update()
 
@@ -530,11 +531,7 @@ class GameMenu(discord.ui.View):
             await self.__post_interaction()
             return
 
-        if player.picking:
-            await interaction.response.send_message("You are already picking", ephemeral=True)
-            return
-
-        player.picking = True
+        self.action_spent = True
         card = self.deck.take_card()
         player.hand.append(card)
         responded = False
@@ -560,16 +557,11 @@ class GameMenu(discord.ui.View):
 
         player: Player = self.players[interaction.user.id]
 
-        if player.picking:
-            await interaction.response.send_message("You are already picking", ephemeral=True)
-            return
-
         filtered_hand = self.__get_valid_hand(player)
         if len(filtered_hand) == 0:
             await interaction.response.send_message("No cards", ephemeral=True)
             return
 
-        player.picking = True
         view = CardChoice(filtered_hand)
         await interaction.response.send_message("_", view=view, ephemeral=True)
         await view.wait()
@@ -581,6 +573,15 @@ class GameMenu(discord.ui.View):
             await self.__post_interaction()
             return
 
+        if self.cycler.current().identifier != interaction.user.id:
+            await interaction.followup.send("You rat", ephemeral=True)
+            return
+
+        if self.action_spent:
+            await interaction.followup.send("Wtf rat", ephemeral=True)
+            return
+
+        self.action_spent = True
         await self.__place_card(interaction, player, card)
         await self.__post_interaction()
 
