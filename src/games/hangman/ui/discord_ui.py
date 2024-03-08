@@ -3,7 +3,7 @@ import math
 
 import discord
 
-from src.constants import Constants, GOLD_EMOJI
+from src.constants import GOLD_EMOJI
 from .ui import UI
 
 

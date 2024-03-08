@@ -10,7 +10,14 @@ class Card:
         hearts = "♥"
         diamonds = "♦"
 
-    _ranks = {1: "A", 11: "J", 12: "Q", 13: "K", 15: '*'}
+    class Rank:
+        ace = "A"
+        jay = "J"
+        queen = "Q"
+        king = "K"
+        joker = "*"
+
+    _ranks = {1: Rank.ace, 11: Rank.jay, 12: Rank.queen, 13: Rank.king, 15: Rank.joker}
 
     _ability_desc = {1: "Skip next persons turn",
                      11: "Choose new suit",
@@ -25,16 +32,16 @@ class Card:
         self.symbol = suit.value if suit else None
         self.ability_description = self._ability_desc.get(self.value, None)
         self.rank = self._ranks.get(self.value, str(self.value))
-        self.special = self.rank in ('A', '7', '9', 'J', 'Q', '*')
-        self.stackable = self.rank in ('7', '9', '*')
+        self.special = self.rank in (self.Rank.ace, '7', '9', self.Rank.king, self.Rank.queen, self.Rank.joker)
+        self.stackable = self.rank in ('7', '9', self.Rank.joker)
 
     def can_place_on(self, card: 'Card', stacking: bool = False) -> bool:
         if stacking and card.stackable:
             return card.rank == self.rank
 
-        if self.rank == '*' or card.rank == '*':
+        if self.rank == self.Rank.joker or card.rank == self.Rank.joker:
             return True
-        if self.rank == 'J':
+        if self.rank == self.Rank.jay:
             return True
         same_rank = card.rank == self.rank
         if card.suit == self.suit or same_rank:
@@ -45,8 +52,9 @@ class Card:
         return f'{self.rank} {self.symbol if self.symbol is not None else ""}'
 
     def snapshot_str(self):
-        #todo: fix
-        return f'{self.rank} {self.suit.name[0] if self.suit else ""}'.strip()
+        if not self.suit:
+            return self.rank
+        return f'{self.rank} {self.suit.name}'
 
     def __repr__(self):
         return str(self)
@@ -193,3 +201,7 @@ class Cycler(Generic[T]):
     def previous(self) -> T:
         self.cycles += 1
         return self.__get_previous_item(True)
+
+    # def full_cycle(self) -> List[T]:
+    #     self.cycles += 1
+    #     return self.__get_previous_item(True)
