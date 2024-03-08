@@ -12,6 +12,17 @@ from src.config import config
 from src.disc.commands.base.stats import ComparingStat, CountableStat, Stat
 from src.disc.commands.base.view import BooleanChoice
 from src.disc.commands.muamua.game import Cycler, Deck, Player, Card
+from src.models.game import GameStat
+
+
+def ai_only(func):
+    func.__ai_only__ = True
+    return func
+
+
+def non_ai_only(func):
+    func.__non_ai_only__ = True
+    return func
 
 
 class JoinMenu(discord.ui.View):
@@ -131,6 +142,7 @@ class GameMenu(discord.ui.View):
         self.reporting = False
         self.timeout = 360
         self.all_ai = False
+        self.ai_speed = 0
         self.wait_time = 0
         self.log = []
         self.stats: Dict[str, Stat] = {}
@@ -195,10 +207,12 @@ class GameMenu(discord.ui.View):
                 self.table_card = card
                 break
 
-        if self.all_ai:
-            for child in self.children:
-                if child.label != 'Bug report':
-                    self.remove_item(child)
+        for item in self.children:
+            func = item.callback.callback
+            if hasattr(func, '__ai_only__') and func.__ai_only__ and not self.all_ai:
+                self.remove_item(item)
+            if hasattr(func, '__non_ai_only__') and func.__non_ai_only__ and self.all_ai:
+                self.remove_item(item)
 
     def card_unicode_raw(self, rank, symbol):
         symbol = symbol or ' '
@@ -244,7 +258,7 @@ class GameMenu(discord.ui.View):
             order = list(initial) + list(second)
         else:
             initial = range(current, -1, -1)
-            second = range(len(self.players)-1, current, -1)
+            second = range(len(self.players) - 1, current, -1)
             order = list(initial) + list(second)
         return [self.cycler.items[x] for x in order]
 
@@ -272,6 +286,8 @@ class GameMenu(discord.ui.View):
                             inline=False
                             )
 
+        if self.ai_speed > 0:
+            embed.set_footer(text=f'AI speed {self.ai_speed}')
         if not self.game_over and self.wait_time > 0:
             embed.set_footer(text=f'\nWaiting {self.wait_time}s')
         return embed
@@ -398,7 +414,8 @@ class GameMenu(discord.ui.View):
         self.__report_player(self.reportable_player_with_one_card, reporter)
 
     async def __decide_ai_interaction(self, player: Player):
-        await asyncio.sleep(random.uniform(0.5, 2.3))
+        if self.ai_speed == 0:
+            await asyncio.sleep(random.uniform(0.5, 2.3))
         filtered_hand = self.__get_valid_hand(player)
         if len(filtered_hand) == 0:
             if not self.__apply_stacked_cards(player):
@@ -430,6 +447,8 @@ class GameMenu(discord.ui.View):
             await super().on_error(interaction, error, item)
 
     async def __update_ui(self):
+        if self.all_ai and self.ai_speed > 0 and self.cycler.cycles % (self.ai_speed * 3) != 0:
+            return
         await self.__followup(embed=self.get_embed(), view=self)
 
     async def __post_player(self, player: Player):
@@ -526,6 +545,7 @@ class GameMenu(discord.ui.View):
             self.__add_stat(Stats.valid_reports())
             self.reportable_player_with_one_card = None
 
+    @non_ai_only
     @discord.ui.button(label='Draw', style=discord.ButtonStyle.gray, emoji='🫴')
     async def draw(self, interaction: discord.Interaction, _button: discord.ui.Button):
         if not self.is_allowed(interaction):
@@ -555,6 +575,7 @@ class GameMenu(discord.ui.View):
 
         await self.__post_interaction()
 
+    @non_ai_only
     @discord.ui.button(label='Place', style=discord.ButtonStyle.green, emoji='🫳')
     async def place(self, interaction: discord.Interaction, _button: discord.ui.Button):
         if not self.is_allowed(interaction):
@@ -592,6 +613,7 @@ class GameMenu(discord.ui.View):
         await self.__place_card(interaction, player, card)
         await self.__post_interaction()
 
+    @non_ai_only
     @discord.ui.button(label='Show hand', style=discord.ButtonStyle.gray, emoji='✋')
     async def show(self, interaction: discord.Interaction, _button: discord.ui.Button):
         player = self.players.get(interaction.user.id)
@@ -599,6 +621,7 @@ class GameMenu(discord.ui.View):
             await interaction.response.defer()
         await interaction.response.send_message(self.get_hand_contents(player), ephemeral=True)
 
+    @non_ai_only
     @discord.ui.button(label='MauMau', style=discord.ButtonStyle.blurple, emoji='‼️')
     async def maumau(self, interaction: discord.Interaction, _button: discord.ui.Button):
         player = self.players[interaction.user.id]
@@ -609,6 +632,7 @@ class GameMenu(discord.ui.View):
             self.__call_mau_mau(player)
         await interaction.response.defer()
 
+    @non_ai_only
     @discord.ui.button(label='Report MauMau', style=discord.ButtonStyle.red, emoji='🚔')
     async def report_maumau(self, interaction: discord.Interaction, _button: discord.ui.Button):
         reporter = self.players.get(interaction.user.id)
@@ -619,28 +643,27 @@ class GameMenu(discord.ui.View):
         self.__report_player(self.reportable_player_with_one_card, reporter)
         await self.__update_ui()
 
-    @discord.ui.button(label='Bug report', style=discord.ButtonStyle.red, emoji='🐛')
+    @discord.ui.button(label='Bug report', style=discord.ButtonStyle.gray, emoji='🐛')
     async def bug_report(self, interaction: discord.Interaction, _button: discord.ui.Button):
         self.reporting = True
         await interaction.response.send_message("Okay, at the end of the game I'll send a debug file")
 
-    @discord.ui.button(label='Leave', style=discord.ButtonStyle.red, emoji='🐛')
+    @ai_only
+    @discord.ui.button(label='Speed up', style=discord.ButtonStyle.gray, emoji='🤖')
+    async def speedup(self, interaction: discord.Interaction, _button: discord.ui.Button):
+        self.ai_speed += 1
+        await interaction.response.defer()
+
+    @non_ai_only
+    @discord.ui.button(label='Leave', style=discord.ButtonStyle.red, emoji='🚪')
     async def leave(self, interaction: discord.Interaction, _button: discord.ui.Button):
         player = self.players[interaction.user.id]
         if player is None:
             await interaction.response.defer()
             return
-        """
-        A[0] -> B[1] -> C[2]
-        A[0] <- B[1] <- C[2]
-        """
+
         player.skip_for = 999
         await interaction.response.send_message("Not yet implemented, permanently skipping for now.")
-
-    # @discord.ui.button(label='Refresh', style=discord.ButtonStyle.red, emoji='🐛')
-    # async def refresh(self, interaction: discord.Interaction, _button: discord.ui.Button):
-    #     interaction.response.send_message("ok")
-    #     self.followup = await interaction.followup.send(embed=self.get_embed(), view=self, wait=True)
 
 
 @config.tree.command(name="maumau",
@@ -662,14 +685,18 @@ async def maumau(interaction: discord.Interaction, min_players: Optional[int]):
 
     winner = menu.winner.member if not menu.winner.is_ai() else None
     if winner is not None:
-        pass
+        GameStat.increment_by('maumau_wins', winner.id, 1)
 
     if menu.reporting:
         data = json.dumps(menu.snapshots, indent=4)
         file = discord.File(io.StringIO(data), filename='state.json')
-        try:
-            await interaction.followup.send(file=file)
-        except Exception:
-            print(data)
-    print('finished')
-    # TODO: send a message with full log? Maybe
+        await interaction.followup.send(file=file)
+
+
+@config.tree.command(name="maumau_scoreboard",
+                     description="Check out the MauMau scoreboard (sponsored by the MauMau authorities)")
+async def maumau_scoreboard(interaction: discord.Interaction):
+    values = list(GameStat.select().where(GameStat.key == 'maumau_wins'))
+    values.sort(key=lambda x: int(x.value), reverse=True)
+    messages = [f'<@{x.user_id}>: {x.value}' for x in values]
+    await interaction.response.send_message('\n'.join(messages))

@@ -19,6 +19,7 @@ from .inactivechannels import InactiveChannelsSettings
 from .milkyway import Milkyway, MilkywaySettings
 from .guildrewards import GuildRewardsProfile, GuildRewardsSettings
 from .helpers import tables_to_create, tables_to_drop
+from .game import GameStat
 
 database: peewee.Database = BaseModel._meta.database
 with database.connection_context():
