@@ -1,4 +1,4 @@
-from typing import List, Optional, Type, Dict
+from typing import List, Optional, Type, Dict, Set
 
 import discord
 import peewee
@@ -51,7 +51,7 @@ def forms_to_view(model: peewee.Model, forms: List['FieldForm']) -> discord.ui.V
     views.extend(__get_views(model, text_inputs, EditModal))
 
     for i in range(1, len(views)):
-        views[i-1].after = views[i]
+        views[i - 1].after = views[i]
     return views[0]
 
 
@@ -179,6 +179,7 @@ class EditView(discord.ui.View):
                 value = value == '1'
             setattr(self.model, name, value)
             await interaction.response.defer()
+
         return callback
 
     @discord.ui.button(label='Confirm', style=discord.ButtonStyle.red)
@@ -235,3 +236,34 @@ class BooleanChoice(discord.ui.View):
         await interaction.response.defer()
         self.stop()
 
+
+class JoinMenu(discord.ui.View):
+    def __init__(self):
+        super(JoinMenu, self).__init__()
+        self.user_ids: Set[int] = set()
+
+    def get_content(self) -> str:
+        return "\n".join(map(lambda x: f'<@{x}>', self.user_ids))
+
+    @discord.ui.button(label='Join', style=discord.ButtonStyle.red)
+    async def join(self, interaction: discord.Interaction, _button: discord.ui.Button):
+        self.user_ids.add(interaction.user.id)
+        await interaction.response.edit_message(content=self.get_content(), view=self)
+
+    @discord.ui.button(label='Leave', style=discord.ButtonStyle.red)
+    async def leave(self, interaction: discord.Interaction, _button: discord.ui.Button):
+        self.user_ids.remove(interaction.user.id)
+        await interaction.response.edit_message(content=self.get_content(), view=self)
+
+    @discord.ui.button(label='Start', style=discord.ButtonStyle.red)
+    async def start(self, interaction: discord.Interaction, _button: discord.ui.Button):
+        self.stop()
+        await interaction.response.defer()
+
+
+async def wait_for_players(interaction: discord.Interaction) -> Set[int]:
+    menu = JoinMenu()
+    menu.user_ids.add(interaction.user.id)
+    await interaction.response.send_message(menu.get_content(), view=menu)
+    await menu.wait()
+    return menu.user_ids

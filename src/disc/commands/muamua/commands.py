@@ -3,14 +3,14 @@ import io
 import json
 import random
 import string
-from typing import Optional, List, Dict, Union, Set
+from typing import Optional, List, Dict, Union
 
 import discord
 
 from src import constants
 from src.config import config
 from src.disc.commands.base.stats import ComparingStat, CountableStat, Stat
-from src.disc.commands.base.view import BooleanChoice
+from src.disc.commands.base.view import BooleanChoice, wait_for_players
 from src.disc.commands.muamua.game import Cycler, Deck, Player, Card
 from src.models.game import GameStat
 
@@ -23,30 +23,6 @@ def ai_only(func):
 def non_ai_only(func):
     func.__non_ai_only__ = True
     return func
-
-
-class JoinMenu(discord.ui.View):
-    def __init__(self):
-        super(JoinMenu, self).__init__()
-        self.user_ids: Set[int] = set()
-
-    def get_content(self) -> str:
-        return "\n".join(map(lambda x: f'<@{x}>', self.user_ids))
-
-    @discord.ui.button(label='Join', style=discord.ButtonStyle.red)
-    async def join(self, interaction: discord.Interaction, _button: discord.ui.Button):
-        self.user_ids.add(interaction.user.id)
-        await interaction.response.edit_message(content=self.get_content(), view=self)
-
-    @discord.ui.button(label='Leave', style=discord.ButtonStyle.red)
-    async def leave(self, interaction: discord.Interaction, _button: discord.ui.Button):
-        self.user_ids.remove(interaction.user.id)
-        await interaction.response.edit_message(content=self.get_content(), view=self)
-
-    @discord.ui.button(label='Start', style=discord.ButtonStyle.red)
-    async def start(self, interaction: discord.Interaction, _button: discord.ui.Button):
-        self.stop()
-        await interaction.response.defer()
 
 
 class CardSelect(discord.ui.Select):
@@ -135,16 +111,24 @@ class Stats:
         return CountableStat('maumau', lambda x: f'Called MauMau: {x.count}')
 
 
+class GameSettings:
+    def __init__(self, initial_cards: int = 2, invalid_report_penalty: int = 5, valid_report_penalty: int = 5):
+        self.initial_cards = initial_cards
+        self.invalid_report_penalty = invalid_report_penalty
+        self.valid_report_penalty = valid_report_penalty
+
+
 class GameMenu(discord.ui.View):
     def __init__(self, players: List[Player], min_players: int = 2):
         super(GameMenu, self).__init__()
+        self.settings = GameSettings()
         self.action_spent = False
         self.reporting = False
         self.timeout = 360
         self.all_ai = False
         self.ai_speed = 0
         self.wait_time = 0
-        self.log = []
+        self.log: List[Notification] = []
         self.stats: Dict[str, Stat] = {}
         self.game_over = False
         self.table_card: Card = None
@@ -161,9 +145,19 @@ class GameMenu(discord.ui.View):
         self.__fill_with_ai(players)
         self.cycler = Cycler(players)
         self.players: Dict[Union[str, int], Player] = {x.identifier: x for x in players}
-        self.deck_multiplier = max(1, int(len(players) / 3))
+        self.deck_multiplier = max(2, int(len(players) / 3))
         self.deck = Deck.standard53() * self.deck_multiplier
         self.__load()
+
+    async def start(self):
+        if self.all_ai:
+            await self.start_bot_fight()
+        else:
+            await self.wait()
+
+    def get_report_file(self):
+        data = json.dumps(self.snapshots, indent=4)
+        return discord.File(io.StringIO(data), filename='state.json')
 
     async def on_timeout(self):
         print('Timed out...')
@@ -197,7 +191,7 @@ class GameMenu(discord.ui.View):
 
         for i, player in enumerate(self.players.values()):
             player.short_identifier = string.ascii_uppercase[i]
-            player.hand.extend(self.deck.take_cards(5))
+            player.hand.extend(self.deck.take_cards(self.settings.initial_cards))
             if self.add_start_card_value:
                 player.hand.append(Card(self.add_start_card_value, Card.Suit.hearts))
 
@@ -292,7 +286,7 @@ class GameMenu(discord.ui.View):
             embed.set_footer(text=f'\nWaiting {self.wait_time}s')
         return embed
 
-    def is_allowed(self, interaction: discord.Interaction):
+    def __can_perform_action(self, interaction: discord.Interaction):
         player = self.players.get(interaction.user.id)
         if player is None:
             return False
@@ -383,7 +377,6 @@ class GameMenu(discord.ui.View):
     async def __choose_ai_suit(self, _, player: Player) -> Card.Suit:
         best_suit = None
         highest = 0
-
         count = {}
         for card in player.hand:
             val = count.setdefault(card.suit, 0) + 1
@@ -486,7 +479,10 @@ class GameMenu(discord.ui.View):
 
     async def start_bot_fight(self):
         if self.all_ai:
-            await self.__post_interaction()
+            try:
+                await self.__post_interaction()
+            except GameOverException:
+                pass
 
     def __get_valid_hand(self, player: Player):
         if self.overridden_suit:
@@ -536,19 +532,19 @@ class GameMenu(discord.ui.View):
         if player is None:
             self.__add_notification(f'You waste the MauMau authorities time and resources with an invalid report.'
                                     f' They let you off with a slap on the wrist this time... +5 cards.', reporter)
-            reporter.hand.extend(self.deck.take_cards(5))
+            reporter.hand.extend(self.deck.take_cards(self.settings.invalid_report_penalty))
             self.__add_stat(Stats.invalid_reports())
         else:
             self.__add_notification(f'The MauMau authorities received an anonymous tip by {reporter} '
                                     f'that someone forgot to call MauMau, +5 cards.', player)
-            player.hand.extend(self.deck.take_cards(5))
+            player.hand.extend(self.deck.take_cards(self.settings.valid_report_penalty))
             self.__add_stat(Stats.valid_reports())
             self.reportable_player_with_one_card = None
 
     @non_ai_only
     @discord.ui.button(label='Draw', style=discord.ButtonStyle.gray, emoji='🫴')
     async def draw(self, interaction: discord.Interaction, _button: discord.ui.Button):
-        if not self.is_allowed(interaction):
+        if not self.__can_perform_action(interaction):
             await interaction.response.defer()
             return
 
@@ -578,7 +574,7 @@ class GameMenu(discord.ui.View):
     @non_ai_only
     @discord.ui.button(label='Place', style=discord.ButtonStyle.green, emoji='🫳')
     async def place(self, interaction: discord.Interaction, _button: discord.ui.Button):
-        if not self.is_allowed(interaction):
+        if not self.__can_perform_action(interaction):
             await interaction.response.defer()
             return
 
@@ -669,28 +665,17 @@ class GameMenu(discord.ui.View):
 @config.tree.command(name="maumau",
                      description="Play MauMau")
 async def maumau(interaction: discord.Interaction, min_players: Optional[int]):
-    menu = JoinMenu()
-    menu.user_ids.add(interaction.user.id)
-    await interaction.response.send_message(menu.get_content(), view=menu)
-    await menu.wait()
-
-    menu = GameMenu([Player(x, member=interaction.guild.get_member(x)) for x in menu.user_ids], min_players or 2)
+    user_ids = wait_for_players(interaction)
+    menu = GameMenu([Player(x, member=interaction.guild.get_member(x)) for x in user_ids], min_players or 2)
     menu.followup = await interaction.followup.send(embed=menu.get_embed(), wait=True, view=menu)
-    if menu.all_ai:
-        try:
-            await menu.start_bot_fight()
-        except GameOverException:
-            pass
-    await menu.wait()
+    await menu.start()
 
     winner = menu.winner.member if not menu.winner.is_ai() else None
     if winner is not None:
         GameStat.increment_by('maumau_wins', winner.id, 1)
 
     if menu.reporting:
-        data = json.dumps(menu.snapshots, indent=4)
-        file = discord.File(io.StringIO(data), filename='state.json')
-        await interaction.followup.send(file=file)
+        await interaction.followup.send(file=menu.get_report_file())
 
 
 @config.tree.command(name="maumau_scoreboard",
