@@ -32,7 +32,7 @@ class Card:
         self.symbol = suit.value if suit else None
         self.ability_description = self._ability_desc.get(self.value, None)
         self.rank = self._ranks.get(self.value, str(self.value))
-        self.special = self.rank in (self.Rank.ace, '7', '9', self.Rank.king, self.Rank.queen, self.Rank.joker)
+        self.special = self.rank in (self.Rank.ace, '7', '9', self.Rank.jay, self.Rank.queen, self.Rank.joker)
         self.stackable = self.rank in ('7', '9', self.Rank.joker)
 
     def can_place_on(self, card: 'Card', stacking: bool = False) -> bool:

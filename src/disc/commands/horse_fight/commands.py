@@ -10,74 +10,6 @@ from src.disc.commands import GameOverException
 from src.disc.commands.horse_fight.game import Horse
 
 
-class DataSelect(discord.ui.Select):
-    def __init__(self, data: list, to_select):
-        self.data = {}
-        options = []
-        for x in data:
-            select = to_select(x)
-            self.data[select.value] = x
-            options.append(select)
-        super().__init__(min_values=1, max_values=1, options=options)
-        self.selected = []
-
-    async def callback(self, interaction: discord.Interaction):
-        await interaction.response.defer()
-        self.selected = [self.data[x] for x in self.values]
-        self.view.stop()
-
-
-class DataChoice(discord.ui.View):
-    def __init__(self, data: list, to_select):
-        super(DataChoice, self).__init__()
-        self.add_item(DataSelect(data, to_select))
-
-    def get_selected(self) -> list:
-        return self.children[0].selected
-
-
-class Notification:
-    def __init__(self, message: str, horse: Horse, round: int):
-        self.message = message
-        self.horse = horse
-        self.round = round
-
-
-class Stat:
-    def __init__(self, type: str, format=None):
-        self.type = type
-        self.format = format
-
-    def combine(self, other: 'Stat'):
-        pass
-
-    def readable(self) -> str:
-        if self.format is not None:
-            return self.format(self)
-        return self.type
-
-
-class CountableStat(Stat):
-    def __init__(self, type: str, format=None):
-        super().__init__(type, format)
-        self.count = 1
-
-    def combine(self, other: 'CountableStat'):
-        self.count += other.count
-
-
-class ComparingStat(Stat):
-    def __init__(self, type: str, value, additional=None, format=None):
-        super().__init__(type, format)
-        self.value = value
-        self.additional = additional
-
-    def combine(self, other: 'ComparingStat'):
-        if other.value > self.value:
-            self.value = other.value
-            self.additional = other.additional
-
-
 class GameMenu(discord.ui.View):
     def __init__(self, min_horses: Optional[int] = 2):
         super(GameMenu, self).__init__()
@@ -87,7 +19,6 @@ class GameMenu(discord.ui.View):
         self.start_location = 0
         self.end_location = 100
         self.log = []
-        self.stats: Dict[str, Stat] = {}
         self.game_over = False
         self.followup = None
         self.min_horses = min_horses
@@ -98,13 +29,6 @@ class GameMenu(discord.ui.View):
 
     async def on_timeout(self):
         print('Timed out...')
-
-    def __add_stat(self, stat: Stat):
-        existing = self.stats.get(stat.type)
-        if existing is None:
-            self.stats[stat.type] = stat
-        else:
-            existing.combine(stat)
 
     def __fill_with_ai(self, horses: List[Horse]):
         self.all_ai = len(horses) == 0
@@ -148,10 +72,6 @@ class GameMenu(discord.ui.View):
         if not self.game_over and self.wait_time > 0:
             embed.set_footer(text=f'\nWaiting {self.wait_time}s')
         return embed
-
-    def __add_notification(self, message: str, horse: Horse):
-        round = 1
-        self.log.append(Notification(message, horse, round))
 
     async def __followup(self, **kwargs):
         await self.followup.edit(**kwargs)

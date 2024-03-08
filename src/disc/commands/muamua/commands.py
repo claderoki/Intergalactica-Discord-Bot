@@ -1,5 +1,6 @@
 import asyncio
 import io
+import itertools
 import json
 import random
 import string
@@ -10,7 +11,7 @@ import discord
 from src import constants
 from src.config import config
 from src.disc.commands.base.stats import ComparingStat, CountableStat, Stat
-from src.disc.commands.base.view import BooleanChoice, wait_for_players
+from src.disc.commands.base.view import BooleanChoice, wait_for_players, DataChoice
 from src.disc.commands.muamua.game import Cycler, Deck, Player, Card
 from src.models.game import GameStat
 
@@ -25,51 +26,8 @@ def non_ai_only(func):
     return func
 
 
-class CardSelect(discord.ui.Select):
-    def __init__(self, cards: List[Card]):
-        super().__init__(
-            placeholder='Choose a card',
-            min_values=1,
-            max_values=1,
-            options=[self.__card_to_option(i, x) for i, x in enumerate(cards)])
-        self.selected = None
-        self.cards = cards
-
-    @staticmethod
-    def __card_to_option(index: int, card: Card):
-        return discord.SelectOption(label=str(card), value=str(index), description=card.ability_description)
-
-    async def callback(self, interaction: discord.Interaction):
-        await interaction.response.defer()
-        self.selected = self.cards[int(self.values[0])]
-        self.view.stop()
-
-
-class CardChoice(discord.ui.View):
-    def __init__(self, cards: List[Card]):
-        super(CardChoice, self).__init__(timeout=45)
-        self.add_item(CardSelect(cards))
-
-    def get_selected(self) -> Optional[Card]:
-        return self.children[0].selected
-
-
 class GameOverException(Exception):
     pass
-
-
-class SuitChoice(discord.ui.View):
-    def __init__(self):
-        super(SuitChoice, self).__init__()
-        self.value = None
-
-    options = [discord.SelectOption(label=f'{x.name} ({x.value})', value=x.value) for x in Card.Suit]
-
-    @discord.ui.select(placeholder='Choose', min_values=1, max_values=1, options=options)
-    async def select(self, interaction: discord.Interaction, select: discord.ui.Select):
-        self.value = Card.Suit(select.values[0])
-        await interaction.response.defer()
-        self.stop()
 
 
 class Stacking:
@@ -370,10 +328,12 @@ class GameMenu(discord.ui.View):
         return self.__apply_stacked_cards(player)
 
     async def __choose_suit(self, interaction, _: Player) -> Card.Suit:
-        view = SuitChoice()
+        view = DataChoice(list(Card.Suit),
+                          to_select=lambda x: discord.SelectOption(label=f'{x.name} ({x.value})', value=x.value))
+
         await interaction.followup.send(content="Choose a suit", ephemeral=True, wait=True, view=view)
         await view.wait()
-        return view.value or random.choice(list(Card.Suit))
+        return view.get_first_or_none() or random.choice(list(Card.Suit))
 
     async def __choose_ai_suit(self, _, player: Player) -> Card.Suit:
         best_suit = None
@@ -485,7 +445,7 @@ class GameMenu(discord.ui.View):
             except GameOverException:
                 pass
 
-    def __get_valid_hand(self, player: Player):
+    def __get_valid_hand(self, player: Player) -> List[Card]:
         if self.overridden_suit:
             return [x for x in player.hand if x.suit == self.overridden_suit]
         return [x for x in player.hand if x.can_place_on(self.table_card, self.stacking is not None)]
@@ -586,7 +546,11 @@ class GameMenu(discord.ui.View):
             await interaction.response.send_message("No cards", ephemeral=True)
             return
 
-        view = CardChoice(filtered_hand)
+        cont = itertools.count()
+        view = DataChoice(filtered_hand,
+                          lambda x: discord.SelectOption(label=str(x),
+                                                         value=str(next(cont)),
+                                                         description=x.ability_description))
         await interaction.response.send_message(constants.BR, view=view, ephemeral=True)
         await view.wait()
 
@@ -599,7 +563,7 @@ class GameMenu(discord.ui.View):
             return
 
         self.action_spent = True
-        card = view.get_selected()
+        card = view.get_first_or_none()
         if card is None:
             if not self.__apply_stacked_cards(player):
                 self.__add_notification('Timed out, taking card...', player)

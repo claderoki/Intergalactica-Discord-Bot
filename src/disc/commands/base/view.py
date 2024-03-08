@@ -1,4 +1,4 @@
-from typing import List, Optional, Type, Dict, Set
+from typing import List, Optional, Type, Dict, Set, TypeVar, Generic, Callable
 
 import discord
 import peewee
@@ -197,16 +197,19 @@ class EditView(discord.ui.View):
         self.stop()
 
 
-class DataSelect(discord.ui.Select):
-    def __init__(self, data: list, to_select):
+T = TypeVar('T')
+
+
+class DataSelect(discord.ui.Select, Generic[T]):
+    def __init__(self, data: List[T], to_select):
         self.data = {}
         options = []
         for x in data:
-            select = to_select(x)
+            select: discord.SelectOption = to_select(x)
             self.data[select.value] = x
             options.append(select)
         super().__init__(min_values=1, max_values=1, options=options)
-        self.selected = []
+        self.selected: List[T] = []
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -214,13 +217,20 @@ class DataSelect(discord.ui.Select):
         self.view.stop()
 
 
-class DataChoice(discord.ui.View):
-    def __init__(self, data: list, to_select):
+class DataChoice(discord.ui.View, Generic[T]):
+    def __init__(self, data: List[T], to_select: Callable[[T], discord.SelectOption]):
         super(DataChoice, self).__init__()
         self.add_item(DataSelect(data, to_select))
 
-    def get_selected(self) -> list:
-        return self.children[0].selected
+    def get_selected(self) -> List[T]:
+        select: DataSelect = self.children[0]
+        return select.selected
+
+    def get_first_or_none(self) -> Optional[T]:
+        selected = self.get_selected()
+        if len(selected) == 0:
+            return None
+        return selected[0]
 
 
 class BooleanChoice(discord.ui.View):
