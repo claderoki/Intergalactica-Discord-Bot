@@ -144,6 +144,7 @@ class GameMenu(discord.ui.View):
         self.first_to_place_nine = None
         self.add_start_card_value = None
         self.snapshots = {'rounds': []}
+        self.winner: Optional[Player] = None
 
         self.__fill_with_ai(players)
         self.cycler = Cycler(players)
@@ -418,6 +419,7 @@ class GameMenu(discord.ui.View):
 
     async def __end_game(self, winner: Player):
         self.game_over = True
+        self.winner = winner
         await self.__followup(content=f"Game ended, {winner} won",
                               embed=self.get_embed(),
                               view=self)
@@ -657,6 +659,10 @@ async def maumau(interaction: discord.Interaction, min_players: Optional[int]):
         except GameOverException:
             pass
     await menu.wait()
+
+    winner = menu.winner.member if not menu.winner.is_ai() else None
+    if winner is not None:
+        pass
 
     if menu.reporting:
         data = json.dumps(menu.snapshots, indent=4)
