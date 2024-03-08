@@ -112,7 +112,7 @@ class Stats:
 
 
 class GameSettings:
-    def __init__(self, initial_cards: int = 2, invalid_report_penalty: int = 5, valid_report_penalty: int = 5):
+    def __init__(self, initial_cards: int = 5, invalid_report_penalty: int = 5, valid_report_penalty: int = 5):
         self.initial_cards = initial_cards
         self.invalid_report_penalty = invalid_report_penalty
         self.valid_report_penalty = valid_report_penalty
@@ -148,6 +148,7 @@ class GameMenu(discord.ui.View):
         self.deck_multiplier = max(2, int(len(players) / 3))
         self.deck = Deck.standard53() * self.deck_multiplier
         self.__load()
+        self.__save_round_snapshot()
 
     async def start(self):
         if self.all_ai:
@@ -665,7 +666,7 @@ class GameMenu(discord.ui.View):
 @config.tree.command(name="maumau",
                      description="Play MauMau")
 async def maumau(interaction: discord.Interaction, min_players: Optional[int]):
-    user_ids = wait_for_players(interaction)
+    user_ids = await wait_for_players(interaction)
     menu = GameMenu([Player(x, member=interaction.guild.get_member(x)) for x in user_ids], min_players or 2)
     menu.followup = await interaction.followup.send(embed=menu.get_embed(), wait=True, view=menu)
     await menu.start()
