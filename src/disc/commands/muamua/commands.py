@@ -645,7 +645,7 @@ async def maumau(interaction: discord.Interaction, min_players: Optional[int] = 
     elif not winner.is_ai():
         stat, _ = GameStat.get_or_create(key='maumau_wins', user_id=winner.member.id)
         stat.value = str(int(stat.value) + 1)
-        winnings = Winnings(HumanStat.gold(5))
+        winnings = Winnings(HumanStat.gold(random.randint(5, 15)))
         await interaction.followup.send(f'Congrats <@{winner.member.id}>, you now have a total of {stat.value} wins'
                                         f'.\nYou won {winnings.format()}')
         stat.save()
