@@ -4,7 +4,7 @@ import itertools
 import json
 import random
 import string
-from typing import Optional, List, Dict, Union
+from typing import Optional, List, Dict, Union, Callable
 
 import discord
 
@@ -14,30 +14,22 @@ from src.disc.commands.base.stats import ComparingStat, CountableStat, Stat
 from src.disc.commands.base.view import BooleanChoice, wait_for_players, DataChoice
 from src.disc.commands.muamua.game import Cycler, Deck, Player, Card
 from src.models.game import GameStat
+from src.utils.stats import Winnings, HumanStat
 
 
-class GameValidation:
-    def __init__(self, ai_only: bool = False, non_ai_only: bool = False):
-        self.ai_only = ai_only
-        self.non_ai_only = non_ai_only
-
-    def validate(self, game: 'GameMenu') -> bool:
-        if game.all_ai and self.ai_only:
-            return True
-        if not game.all_ai and self.non_ai_only:
-            return True
-        return False
+def ai_only():
+    return item_validation(lambda _, x: x.all_ai)
 
 
-def ai_only(func):
-    func.__validation__ = GameValidation(ai_only=True)
-    func.__ai_only__ = True
-    return func
+def non_ai_only():
+    return item_validation(lambda _, x: not x.all_ai)
 
 
-def non_ai_only(func):
-    func.__non_ai_only__ = True
-    return func
+def item_validation(validation: Callable[[discord.ui.Item, 'GameMenu'], bool]):
+    def wrapper(func):
+        func.__validation__ = validation
+        return func
+    return wrapper
 
 
 class GameOverException(Exception):
@@ -178,9 +170,7 @@ class GameMenu(discord.ui.View):
 
         for item in self.children:
             func = item.callback.callback
-            if hasattr(func, '__ai_only__') and func.__ai_only__ and not self.all_ai:
-                self.remove_item(item)
-            if hasattr(func, '__non_ai_only__') and func.__non_ai_only__ and self.all_ai:
+            if hasattr(func, '__validation__') and not func.__validation__(item, self):
                 self.remove_item(item)
 
     def card_unicode_raw(self, rank, symbol):
@@ -518,7 +508,7 @@ class GameMenu(discord.ui.View):
             self.__add_stat(Stats.valid_reports())
             self._reportable_player_with_one_card = None
 
-    @non_ai_only
+    @non_ai_only()
     @discord.ui.button(label='Draw', style=discord.ButtonStyle.gray, emoji='🫴')
     async def draw(self, interaction: discord.Interaction, _button: discord.ui.Button):
         if not self.__can_perform_action(interaction):
@@ -548,7 +538,7 @@ class GameMenu(discord.ui.View):
 
         await self.__post_interaction()
 
-    @non_ai_only
+    @non_ai_only()
     @discord.ui.button(label='Place', style=discord.ButtonStyle.green, emoji='🫳')
     async def place(self, interaction: discord.Interaction, _button: discord.ui.Button):
         if not self.__can_perform_action(interaction):
@@ -590,7 +580,7 @@ class GameMenu(discord.ui.View):
         await self.__place_card(interaction, player, card)
         await self.__post_interaction()
 
-    @non_ai_only
+    @non_ai_only()
     @discord.ui.button(label='Show hand', style=discord.ButtonStyle.gray, emoji='✋')
     async def show(self, interaction: discord.Interaction, _button: discord.ui.Button):
         player = self._players.get(interaction.user.id)
@@ -598,7 +588,7 @@ class GameMenu(discord.ui.View):
             await interaction.response.defer()
         await interaction.response.send_message(self.get_hand_contents(player), ephemeral=True)
 
-    @non_ai_only
+    @non_ai_only()
     @discord.ui.button(label='MauMau', style=discord.ButtonStyle.blurple, emoji='‼️')
     async def maumau(self, interaction: discord.Interaction, _button: discord.ui.Button):
         player = self._players[interaction.user.id]
@@ -609,7 +599,7 @@ class GameMenu(discord.ui.View):
             self.__call_mau_mau(player)
         await interaction.response.defer()
 
-    @non_ai_only
+    @non_ai_only()
     @discord.ui.button(label='Report MauMau', style=discord.ButtonStyle.red, emoji='🚔')
     async def report_maumau(self, interaction: discord.Interaction, _button: discord.ui.Button):
         reporter = self._players.get(interaction.user.id)
@@ -625,13 +615,13 @@ class GameMenu(discord.ui.View):
         self.report_file_requested = True
         await interaction.response.send_message("Okay, at the end of the game I'll send a debug file")
 
-    @ai_only
+    @ai_only()
     @discord.ui.button(label='Speed up', style=discord.ButtonStyle.gray, emoji='🤖')
     async def speedup(self, interaction: discord.Interaction, _button: discord.ui.Button):
         self._ai_speed += 1
         await interaction.response.defer()
 
-    @non_ai_only
+    @non_ai_only()
     @discord.ui.button(label='Leave', style=discord.ButtonStyle.red, emoji='🚪')
     async def leave(self, interaction: discord.Interaction, _button: discord.ui.Button):
         player = self._players[interaction.user.id]
@@ -650,10 +640,14 @@ async def maumau(interaction: discord.Interaction, min_players: Optional[int] = 
     menu = GameMenu([Player(x, member=interaction.guild.get_member(x)) for x in user_ids], min_players)
     menu.followup = await interaction.followup.send(embed=menu.get_embed(), wait=True, view=menu)
     winner = await menu.start()
-    if not winner.is_ai():
+    if winner is None:
+        await interaction.followup.send('No one wins, no one loses.')
+    elif not winner.is_ai():
         stat, _ = GameStat.get_or_create(key='maumau_wins', user_id=winner.member.id)
         stat.value = str(int(stat.value) + 1)
-        await interaction.followup.send(f'Congrats <@{winner.member.id}>, you now have a total of {stat.value} wins')
+        winnings = Winnings(HumanStat.gold(5))
+        await interaction.followup.send(f'Congrats <@{winner.member.id}>, you now have a total of {stat.value} wins'
+                                        f'.\nYou won {winnings.format()}')
         stat.save()
 
     if menu.report_file_requested:
