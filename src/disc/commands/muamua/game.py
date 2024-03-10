@@ -1,6 +1,49 @@
 import random
 from enum import Enum
-from typing import List, TypeVar, Generic, Union
+from typing import List, TypeVar, Generic, Union, Optional
+
+
+def card_unicode_raw(rank, symbol):
+    symbol = symbol or ' '
+    spaces = ' ' if len(rank) == 1 else ''
+    lines = [f'╭─────╮',
+             f'│{rank}{spaces}   │',
+             f'│{symbol}   {symbol}│',
+             f'│   {spaces}{rank}│',
+             f'╰─────╯']
+    return '\n'.join(lines)
+
+
+class Ability:
+    def apply(self):
+        pass
+
+
+class Card2:
+    class Suit(Enum):
+        spades = "♠"
+        clubs = "♣"
+        hearts = "♥"
+        diamonds = "♦"
+
+    def __init__(self, value: int, suit: Optional[Suit]):
+        self._value = value
+        self._suit = suit
+
+    def is_ace(self) -> bool:
+        return self._value == 1
+
+    def is_jack(self) -> bool:
+        return self._value == 11
+
+    def is_queen(self) -> bool:
+        return self._value == 12
+
+    def is_king(self) -> bool:
+        return self._value == 13
+
+    def is_joker(self) -> bool:
+        return self._value == 14
 
 
 class Card:
@@ -12,12 +55,12 @@ class Card:
 
     class Rank:
         ace = "A"
-        jay = "J"
+        jack = "J"
         queen = "Q"
         king = "K"
         joker = "*"
 
-    _ranks = {1: Rank.ace, 11: Rank.jay, 12: Rank.queen, 13: Rank.king, 15: Rank.joker}
+    _ranks = {1: Rank.ace, 11: Rank.jack, 12: Rank.queen, 13: Rank.king, 14: Rank.joker}
 
     _ability_desc = {1: "Skip next persons turn",
                      11: "Choose new suit",
@@ -32,7 +75,7 @@ class Card:
         self.symbol = suit.value if suit else None
         self.ability_description = self._ability_desc.get(self.value, None)
         self.rank = self._ranks.get(self.value, str(self.value))
-        self.special = self.rank in (self.Rank.ace, '7', '9', self.Rank.jay, self.Rank.queen, self.Rank.joker)
+        self.special = self.rank in (self.Rank.ace, '7', '9', self.Rank.jack, self.Rank.queen, self.Rank.joker)
         self.stackable = self.rank in ('7', '9', self.Rank.joker)
 
     def can_place_on(self, card: 'Card', stacking: bool = False) -> bool:
@@ -41,7 +84,7 @@ class Card:
 
         if self.rank == self.Rank.joker or card.rank == self.Rank.joker:
             return True
-        if self.rank == self.Rank.jay:
+        if self.rank == self.Rank.jack:
             return True
         same_rank = card.rank == self.rank
         if card.suit == self.suit or same_rank:
@@ -61,6 +104,9 @@ class Card:
 
     def copy(self) -> 'Card':
         return Card(self.value, self.suit)
+
+    def get_unicode(self):
+        return card_unicode_raw(self.rank, self.symbol)
 
 
 class Deck:
@@ -85,7 +131,7 @@ class Deck:
             for i in range(1, 14):
                 cards.append(Card(i, suit))
 
-        cards.append(Card(15, None))
+        cards.append(Card(14, None))
         return cls('Standard 53', cards)
 
     def __mul__(self, other):

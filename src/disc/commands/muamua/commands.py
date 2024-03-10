@@ -12,7 +12,7 @@ from src import constants
 from src.config import config
 from src.disc.commands.base.stats import ComparingStat, CountableStat, Stat
 from src.disc.commands.base.view import BooleanChoice, wait_for_players, DataChoice
-from src.disc.commands.muamua.game import Cycler, Deck, Player, Card
+from src.disc.commands.muamua.game import Cycler, Deck, Player, Card, card_unicode_raw
 from src.models.game import GameStat
 from src.utils.stats import Winnings, HumanStat
 
@@ -173,21 +173,8 @@ class GameMenu(discord.ui.View):
             if hasattr(func, '__validation__') and not func.__validation__(item, self):
                 self.remove_item(item)
 
-    def card_unicode_raw(self, rank, symbol):
-        symbol = symbol or ' '
-        spaces = ' ' if len(rank) == 1 else ''
-        lines = [f'╭─────╮',
-                 f'│{rank}{spaces}   │',
-                 f'│{symbol}   {symbol}│',
-                 f'│   {spaces}{rank}│',
-                 f'╰─────╯']
-        return '\n'.join(lines)
-
-    def card_unicode(self, card: Card):
-        return self.card_unicode_raw(card.rank, card.symbol)
-
     def get_hand_contents(self, player: Player):
-        unicodes = list(map(self.card_unicode, player.hand))
+        unicodes = list(map(Card.get_unicode, player.hand))
         lines = [[] for _ in range(len(unicodes[0].splitlines()))]
         for unicode in unicodes:
             for i, line in enumerate(unicode.splitlines()):
@@ -223,9 +210,9 @@ class GameMenu(discord.ui.View):
 
     def get_embed(self):
         if self._overridden_suit is None:
-            unicode = self.card_unicode(self._table_card)
+            unicode = self._table_card.get_unicode()
         else:
-            unicode = self.card_unicode_raw(' ', self._overridden_suit.value)
+            unicode = card_unicode_raw(' ', self._overridden_suit.value)
         embed = discord.Embed(description='>>> ```\n' + unicode + '```')
 
         if len(self._log):
@@ -288,7 +275,7 @@ class GameMenu(discord.ui.View):
     async def __use_immediate_special_ability(self, interaction, rank: str, suit_callback):
         if rank == Card.Rank.ace:
             self._cycler.get_next().skip_for += 1
-        elif rank == Card.Rank.jay:
+        elif rank == Card.Rank.jack:
             player = self._cycler.current()
             self._overridden_suit = await suit_callback(interaction, player)
             self.__add_notification('Suit chosen: ' + self._overridden_suit.name, player)
@@ -383,10 +370,10 @@ class GameMenu(discord.ui.View):
                 player.hand.append(card)
                 self.__add_notification('Drew a card', player)
                 if card.can_place_on(self._table_card, self._stacking is not None):
-                    await self.__place_card(None, player, card, self.__choose_ai_suit)
+                    await self.__place_card(None, player, card)
         else:
             card = random.choice(filtered_hand)
-            await self.__place_card(None, player, card, self.__choose_ai_suit)
+            await self.__place_card(None, player, card)
             if len(player.hand) == 1:
                 if random.randint(0, 3) == 1:
                     self.__call_mau_mau(player)
@@ -397,9 +384,7 @@ class GameMenu(discord.ui.View):
     async def __end_game(self, winner: Player):
         self._game_over = True
         self._winner = winner
-        await self.__followup(content=f"Game ended, {winner} won",
-                              embed=self.get_embed(),
-                              view=self)
+        await self.__followup(content=f"Game ended, {winner} won", embed=self.get_embed(), view=self)
         self.stop()
 
     async def on_error(self, interaction, error: Exception, item) -> None:
@@ -456,10 +441,8 @@ class GameMenu(discord.ui.View):
             return [x for x in player.hand if x.suit == self._overridden_suit]
         return [x for x in player.hand if x.can_place_on(self._table_card, self._stacking is not None)]
 
-    async def __place_card(self, interaction, player: Player, card: Card, suit_callback=None):
+    async def __place_card(self, interaction, player: Player, card: Card):
         self.__add_notification('Placed ' + str(card), player)
-        if suit_callback is None:
-            suit_callback = self.__choose_suit
 
         if card.stackable:
             if self._stacking is None:
@@ -469,8 +452,9 @@ class GameMenu(discord.ui.View):
             self._stacking.count += 1
 
         if card.special:
-            await self.__use_immediate_special_ability(interaction, card.rank, suit_callback)
-        if card.rank != Card.Rank.jay:
+            callback = self.__choose_ai_suit if player.is_ai() else self.__choose_suit
+            await self.__use_immediate_special_ability(interaction, card.rank, callback)
+        if card.rank != Card.Rank.jack:
             self._overridden_suit = None
         self._deck.add_card_at_random_position(card)
         self._table_card = card
@@ -491,9 +475,6 @@ class GameMenu(discord.ui.View):
         self.__add_stat(Stats.maumau())
         self._reportable_player_with_one_card = None
         self.__add_notification('MAU MAU!!', player)
-
-    def __can_report_mau_mau(self, player: Player) -> bool:
-        return self._reportable_player_with_one_card != player
 
     def __report_player(self, player: Player, reporter: Player):
         if player is None:
