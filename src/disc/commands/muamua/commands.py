@@ -83,8 +83,8 @@ class Notification:
 
 class Stats:
     @classmethod
-    def longest_stack(cls, amount, rank) -> ComparingStat:
-        return ComparingStat('longest_stack', amount, rank, lambda x: f'Longest stack {x.additional}: {x.value}')
+    def longest_stack(cls, amount: int, rank: Rank) -> ComparingStat:
+        return ComparingStat('longest_stack', amount, rank, lambda x: f'Longest stack {x.additional.symbol()}: {x.value}')
 
     @classmethod
     def invalid_reports(cls) -> CountableStat:
@@ -222,8 +222,9 @@ class GameMenu(discord.ui.View):
 
         if len(self._log):
             embed.add_field(name='Log', value='\n'.join(self._get_log_contents()), inline=False)
+        game_ended = self._winner is not None
 
-        if self._winner is not None and len(self._stats) > 0:
+        if game_ended and len(self._stats) > 0:
             stats = []
             for stat in self._stats.values():
                 stats.append(stat.readable())
@@ -231,16 +232,17 @@ class GameMenu(discord.ui.View):
 
         for player in self._cycler.get_full_cycle():
             turn = player == self._cycler.current()
-            arrow = '⬅️' if turn and self._winner is not None else ''
+            arrow = '⬅️' if turn and not game_ended else ''
             embed.add_field(name=f"Player {player.display_name()} {arrow}",
                             value=f"{len(player.hand)} cards",
                             inline=False
                             )
 
-        if self._ai_speed > 0:
-            embed.set_footer(text=f'AI speed {self._ai_speed}')
-        if self._winner is not None and self._wait_time > 0:
-            embed.set_footer(text=f'\nWaiting {self._wait_time}s')
+        if not game_ended:
+            if self._ai_speed > 0:
+                embed.set_footer(text=f'AI speed {self._ai_speed}')
+            if self._wait_time > 0:
+                embed.set_footer(text=f'\nWaiting {self._wait_time}s')
         return embed
 
     def _can_perform_action(self, interaction: discord.Interaction):
@@ -250,12 +252,9 @@ class GameMenu(discord.ui.View):
         return player.identifier == self._cycler.current().identifier
 
     def _get_stacked_target(self, rank: Rank) -> Optional[Player]:
-        if rank == Rank.SEVEN or rank == Rank.JOKER:
-            return self._cycler.get_next()
-        elif rank == Rank.NINE:
-            if self._stacking is None:
-                return self._cycler.get_previous()
-            return self._cycler.get_next()
+        if rank == Rank.NINE and self._stacking is None:
+            return self._cycler.get_previous()
+        return self._cycler.get_next()
 
     def _use_stacked_special_ability(self) -> int:
         if self._stacking is None:
@@ -349,7 +348,7 @@ class GameMenu(discord.ui.View):
     def _ai_report_cycle(self):
         invalid_report = False
 
-        if random.randint(0, len(self._players) * 45) < 3:
+        if random.randint(0, len(self._players) * 65) < 3:
             invalid_report = True
         elif random.randint(0, 5) != 2:
             return
