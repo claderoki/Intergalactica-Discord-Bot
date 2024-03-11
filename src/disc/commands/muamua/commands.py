@@ -232,10 +232,14 @@ class GameMenu(discord.ui.View):
             embed.add_field(name='Post game stats', value='\n'.join(stats), inline=False)
 
         for player in self._cycler.get_full_cycle():
-            turn = player == self._cycler.current()
-            arrow = '⬅️' if turn and not game_ended else ''
-            embed.add_field(name=f"Player {player.display_name()} {arrow}",
-                            value=f"{len(player.hand)} cards",
+            emoji = '🔴'
+            if player == self._cycler.current():
+                emoji = '🟢'
+            elif player == self._cycler.get_next():
+                emoji = '🟠'
+
+            embed.add_field(name=f'Player {player.display_name()} {emoji}',
+                            value=f'{len(player.hand)} cards',
                             inline=False
                             )
 
