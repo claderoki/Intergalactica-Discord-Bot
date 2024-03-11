@@ -1,6 +1,6 @@
 import random
 from enum import Enum
-from typing import List, TypeVar, Generic, Union
+from typing import List, TypeVar, Generic, Union, Optional
 
 
 def card_unicode_raw(rank, symbol):
@@ -52,7 +52,6 @@ class Rank(Enum):
 
 
 class Card:
-
     _ability_desc = {
         Rank.JOKER: 'Next player 5 cards',
         Rank.ACE: "Skip next persons turn",
@@ -62,10 +61,9 @@ class Card:
         Rank.QUEEN: "Reverses order"
     }
 
-    def __init__(self, rank: Rank, suit):
+    def __init__(self, rank: Rank, suit: Optional[Suit]):
         self.rank = rank
         self.suit = suit
-        self._rank_symbol = self.rank.symbol()
 
         self._symbol = suit.value if suit else None
 
@@ -74,7 +72,8 @@ class Card:
         self.stackable = self.rank in (Rank.SEVEN, Rank.NINE, Rank.JOKER)
 
     def can_place_on(self, card: 'Card', stacking: bool = False) -> bool:
-        if stacking and card.stackable:
+        """card: card to place be placed on."""
+        if stacking:
             return card.rank == self.rank
 
         if self.rank == Rank.JOKER or card.rank == Rank.JOKER:
@@ -87,12 +86,12 @@ class Card:
         return False
 
     def __str__(self):
-        return f'{self._rank_symbol} {self._symbol or ""}'
+        return f'{self.rank.symbol()} {self._symbol or ""}'
 
     def snapshot_str(self):
         if not self.suit:
-            return self._rank_symbol
-        return f'{self._rank_symbol} {self.suit.name}'
+            return self.rank.symbol()
+        return f'{self.rank.symbol()} {self.suit.name}'
 
     def __repr__(self):
         return str(self)
@@ -101,7 +100,7 @@ class Card:
         return Card(self.rank, self.suit)
 
     def get_unicode(self):
-        return card_unicode_raw(self._rank_symbol, self._symbol)
+        return card_unicode_raw(self.rank.symbol(), self._symbol)
 
 
 class Deck:
