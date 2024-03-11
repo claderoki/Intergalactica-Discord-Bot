@@ -402,7 +402,7 @@ class GameMenu(discord.ui.View):
     async def _end_game(self, winner: Player):
         self._winner = winner
         self._add_notification('Wins the game!', winner)
-        await self._followup(content=f"Game ended, {winner} won", embed=self.get_embed(), view=self)
+        await self._followup(content=f"Game ended, {winner} won", embed=self.get_embed(), view=None)
         self.stop()
 
     async def on_error(self, interaction, error: Exception, item) -> None:

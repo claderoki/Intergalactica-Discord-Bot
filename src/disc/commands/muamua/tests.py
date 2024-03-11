@@ -32,7 +32,7 @@ class TestGameMenu(GameMenu):
         for i, player in enumerate(self._players.values()):
             player.short_identifier = string.ascii_uppercase[i]
 
-    async def draw(self, card: Optional[Card] = None, place_immediately=True):
+    async def draw_card(self, card: Optional[Card] = None, place_immediately=True):
         player = self._cycler.current()
         card = card or self._deck.take_card()
         player.hand.append(card)
@@ -46,7 +46,7 @@ class TestGameMenu(GameMenu):
             if card.rank == rank and card.suit == suit:
                 return card
 
-    async def place(self, rank: Rank, suit: Suit):
+    async def place_card(self, rank: Rank, suit: Suit):
         player = self._cycler.current()
         await self._place_card(None, player, self.get_card(rank, suit))
         await self._post_interaction()
@@ -76,10 +76,10 @@ async def test1():
         Card(Rank.JACK, Suit.HEARTS),
     ])
 
-    await menu.draw()  # P1
-    await menu.place(Rank.SEVEN, Suit.HEARTS)  # P2
+    await menu.draw_card()  # P1
+    await menu.place_card(Rank.SEVEN, Suit.HEARTS)  # P2
     try:
-        await menu.place(Rank.JACK, Suit.HEARTS)  # P2 (P1 skipped)
+        await menu.place_card(Rank.JACK, Suit.HEARTS)  # P2 (P1 skipped)
         print('failed')
     except GameOverException:
         print('success')
