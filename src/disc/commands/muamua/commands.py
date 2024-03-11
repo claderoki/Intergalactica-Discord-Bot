@@ -214,15 +214,18 @@ class GameMenu(discord.ui.View):
             value.insert(0, message)
         return value
 
-    def get_embed(self):
+    def _get_table_unicode(self):
         if self._overridden_suit is None:
-            unicode = self._table_card.get_unicode()
+            return self._table_card.get_unicode()
         else:
-            unicode = card_unicode_raw(' ', self._overridden_suit.value)
-        embed = discord.Embed(description='>>> ```\n' + unicode + '```')
+            return card_unicode_raw(' ', self._overridden_suit.value)
+
+    def get_embed(self):
+        embed = discord.Embed(description='>>> ```\n' + self._get_table_unicode() + '```')
 
         if len(self._log):
             embed.add_field(name='Log', value='\n'.join(self._get_log_contents()), inline=False)
+
         game_ended = self._winner is not None
 
         if game_ended and len(self._stats) > 0:
@@ -313,6 +316,7 @@ class GameMenu(discord.ui.View):
         if not self._stacking:
             return False
 
+        # TODO: check if check_hand can be removed.
         if not check_hand or not self._has_valid_hand(player):
             cards_given = self._use_stacked_special_ability()
             self._add_notification(f'+{cards_given} cards', self._stacking.target)
