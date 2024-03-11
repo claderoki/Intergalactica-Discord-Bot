@@ -1,6 +1,6 @@
 import random
 from enum import Enum
-from typing import List, TypeVar, Generic, Union, Optional
+from typing import List, TypeVar, Generic, Union
 
 
 def card_unicode_raw(rank, symbol):
@@ -14,77 +14,72 @@ def card_unicode_raw(rank, symbol):
     return '\n'.join(lines)
 
 
-class Ability:
-    def apply(self):
-        pass
+class Suit(Enum):
+    SPADES = '♠'
+    CLUBS = '♣'
+    HEARTS = '♥'
+    DIAMONDS = '♦'
 
 
-class Card2:
-    class Suit(Enum):
-        spades = "♠"
-        clubs = "♣"
-        hearts = "♥"
-        diamonds = "♦"
+class Rank(Enum):
+    JOKER = -1
+    ACE = 1
+    TWO = 2
+    THREE = 3
+    FOUR = 4
+    FIVE = 5
+    SIX = 6
+    SEVEN = 7
+    EIGHT = 8
+    NINE = 9
+    TEN = 10
+    JACK = 11
+    QUEEN = 12
+    KING = 13
 
-    def __init__(self, value: int, suit: Optional[Suit]):
-        self._value = value
-        self._suit = suit
-
-    def is_ace(self) -> bool:
-        return self._value == 1
-
-    def is_jack(self) -> bool:
-        return self._value == 11
-
-    def is_queen(self) -> bool:
-        return self._value == 12
-
-    def is_king(self) -> bool:
-        return self._value == 13
-
-    def is_joker(self) -> bool:
-        return self._value == 14
+    def symbol(self) -> str:
+        if self == self.JOKER:
+            return '*'
+        if self == self.ACE:
+            return 'A'
+        if self == self.JACK:
+            return 'J'
+        if self == self.QUEEN:
+            return 'Q'
+        if self == self.KING:
+            return 'K'
+        return str(self.value)
 
 
 class Card:
-    class Suit(Enum):
-        spades = "♠"
-        clubs = "♣"
-        hearts = "♥"
-        diamonds = "♦"
 
-    class Rank:
-        ace = "A"
-        jack = "J"
-        queen = "Q"
-        king = "K"
-        joker = "*"
+    _ability_desc = {
+        Rank.JOKER: 'Next player 5 cards',
+        Rank.ACE: "Skip next persons turn",
+        Rank.SEVEN: 'Next player 2 cards',
+        Rank.NINE: 'Previous player 1 card',
+        Rank.JACK: "Choose new suit",
+        Rank.QUEEN: "Reverses order"
+    }
 
-    _ranks = {1: Rank.ace, 11: Rank.jack, 12: Rank.queen, 13: Rank.king, 14: Rank.joker}
-
-    _ability_desc = {1: "Skip next persons turn",
-                     11: "Choose new suit",
-                     12: "Reverses order",
-                     7: 'Next player 2 cards',
-                     9: 'Previous player 1 card',
-                     15: 'Next player 5 cards'}
-
-    def __init__(self, value, suit):
-        self.value = value
+    def __init__(self, rank: Rank, suit):
+        self.rank = rank
         self.suit = suit
-        self.symbol = suit.value if suit else None
-        self.ability_description = self._ability_desc.get(self.value, None)
-        self.rank = self._ranks.get(self.value, str(self.value))
-        self.special = self.rank in (self.Rank.ace, '7', '9', self.Rank.jack, self.Rank.queen, self.Rank.joker)
-        self.stackable = self.rank in ('7', '9', self.Rank.joker)
+        self._rank_symbol = self.rank.symbol()
+
+        self._symbol = suit.value if suit else None
+
+        self.ability_description = self._ability_desc.get(self.rank)
+        self.special = self.ability_description is not None
+        self.stackable = self.rank in (Rank.SEVEN, Rank.NINE, Rank.JOKER)
 
     def can_place_on(self, card: 'Card', stacking: bool = False) -> bool:
         if stacking and card.stackable:
             return card.rank == self.rank
 
-        if self.rank == self.Rank.joker or card.rank == self.Rank.joker:
+        if self.rank == Rank.JOKER or card.rank == Rank.JOKER:
             return True
-        if self.rank == self.Rank.jack:
+        if self.rank == Rank.JACK:
             return True
         same_rank = card.rank == self.rank
         if card.suit == self.suit or same_rank:
@@ -92,21 +87,21 @@ class Card:
         return False
 
     def __str__(self):
-        return f'{self.rank} {self.symbol if self.symbol is not None else ""}'
+        return f'{self._rank_symbol} {self._symbol or ""}'
 
     def snapshot_str(self):
         if not self.suit:
-            return self.rank
-        return f'{self.rank} {self.suit.name}'
+            return self._rank_symbol
+        return f'{self._rank_symbol} {self.suit.name}'
 
     def __repr__(self):
         return str(self)
 
     def copy(self) -> 'Card':
-        return Card(self.value, self.suit)
+        return Card(self.rank, self.suit)
 
     def get_unicode(self):
-        return card_unicode_raw(self.rank, self.symbol)
+        return card_unicode_raw(self._rank_symbol, self._symbol)
 
 
 class Deck:
@@ -119,19 +114,19 @@ class Deck:
     @classmethod
     def standard52(cls):
         cards = []
-        for suit in Card.Suit:
+        for suit in Suit:
             for i in range(1, 14):
-                cards.append(Card(i, suit))
+                cards.append(Card(Rank(i), suit))
         return cls('Standard 52', cards)
 
     @classmethod
     def standard53(cls):
         cards = []
-        for suit in Card.Suit:
+        for suit in Suit:
             for i in range(1, 14):
-                cards.append(Card(i, suit))
+                cards.append(Card(Rank(i), suit))
 
-        cards.append(Card(14, None))
+        cards.append(Card(Rank.JOKER, None))
         return cls('Standard 53', cards)
 
     def __mul__(self, other):
@@ -158,12 +153,6 @@ class Deck:
     def add_card_at_random_position(self, card: Card):
         index = random.randint(0, len(self.cards))
         self.cards.insert(index, card)
-
-
-class MauTrack:
-    def __init__(self, time: float, cycles: int):
-        self.time = time
-        self.cycles = cycles
 
 
 class Player:
@@ -248,6 +237,18 @@ class Cycler(Generic[T]):
         self.cycles += 1
         return self.__get_previous_item(True)
 
-    # def full_cycle(self) -> List[T]:
-    #     self.cycles += 1
-    #     return self.__get_previous_item(True)
+    def get_full_cycle(self):
+        """
+        Gets the full cycle of the cycler, where the first item is the current item.
+        Does not modify self.cycles or changes the index.
+        """
+        current = self.current_index
+        if self.forwards:
+            initial = range(current, len(self.items))
+            second = range(0, current)
+            order = list(initial) + list(second)
+        else:
+            initial = range(current, -1, -1)
+            second = range(len(self.items) - 1, current, -1)
+            order = list(initial) + list(second)
+        return [self.items[x] for x in order]
