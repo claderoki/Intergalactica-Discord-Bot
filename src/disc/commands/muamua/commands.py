@@ -383,18 +383,18 @@ class GameMenu(discord.ui.View):
             await asyncio.sleep(random.uniform(0.5, 2.3))
         filtered_hand = self._get_valid_hand(player)
         if len(filtered_hand) == 0:
-            if not self._apply_stacked_cards(player):
-                card = self._deck.take_card()
-                player.hand.append(card)
-                self._add_notification('Drew a card', player)
-                if card.can_place_on(self._table_card, self._stacking is not None):
-                    await self._place_card(None, player, card)
+            if self._apply_stacked_cards(player):
+                return
+            card = self._deck.take_card()
+            player.hand.append(card)
+            self._add_notification('Drew a card', player)
+            if card.can_place_on(self._table_card, self._stacking is not None):
+                await self._place_card(None, player, card)
         else:
             card = random.choice(filtered_hand)
             await self._place_card(None, player, card)
-            if len(player.hand) == 1:
-                if random.randint(0, 3) == 1:
-                    self._call_mau_mau(player)
+            if len(player.hand) == 1 and random.randint(0, 3) == 1:
+                self._call_mau_mau(player)
 
     async def _followup(self, **kwargs):
         await self.followup.edit(**kwargs)

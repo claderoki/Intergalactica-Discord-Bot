@@ -120,13 +120,9 @@ class Deck:
 
     @classmethod
     def standard53(cls):
-        cards = []
-        for suit in Suit:
-            for i in range(1, 14):
-                cards.append(Card(Rank(i), suit))
-
-        cards.append(Card(Rank.JOKER, None))
-        return cls('Standard 53', cards)
+        deck = cls.standard52()
+        deck.cards.append(Card(Rank.JOKER, None))
+        return cls('Standard 53', deck.cards)
 
     def __mul__(self, other):
         if other != 1:
