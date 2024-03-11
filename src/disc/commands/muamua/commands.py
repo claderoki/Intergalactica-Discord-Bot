@@ -84,7 +84,8 @@ class Notification:
 class Stats:
     @classmethod
     def longest_stack(cls, amount: int, rank: Rank) -> ComparingStat:
-        return ComparingStat('longest_stack', amount, rank, lambda x: f'Longest stack {x.additional.symbol()}: {x.value}')
+        return ComparingStat('longest_stack', amount, rank,
+                             lambda x: f'Longest stack {x.additional.symbol()}: {x.value}')
 
     @classmethod
     def invalid_reports(cls) -> CountableStat:
@@ -487,13 +488,13 @@ class GameMenu(discord.ui.View):
         if player is None:
             c = self._settings.invalid_report_penalty
             self._add_notification(f'You waste the MauMau authorities time and resources with an invalid report.'
-                                    f' They let you off with a slap on the wrist this time... +{c} cards.', reporter)
+                                   f' They let you off with a slap on the wrist this time... +{c} cards.', reporter)
             reporter.hand.extend(self._deck.take_cards(self._settings.invalid_report_penalty))
             self._add_stat(Stats.invalid_reports())
         else:
             c = self._settings.valid_report_penalty
             self._add_notification(f'The MauMau authorities received an anonymous tip by {reporter} '
-                                    f'that someone forgot to call MauMau, +{c} cards.', player)
+                                   f'that someone forgot to call MauMau, +{c} cards.', player)
             player.hand.extend(self._deck.take_cards(self._settings.valid_report_penalty))
             self._add_stat(Stats.valid_reports())
             self._reportable_player_with_one_card = None
