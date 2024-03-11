@@ -237,6 +237,8 @@ class GameMenu(discord.ui.View):
                 emoji = '🟢'
             elif player == self._cycler.get_next():
                 emoji = '🟠'
+            if game_ended:
+                emoji = ''
 
             embed.add_field(name=f'Player {player.display_name()} {emoji}',
                             value=f'{len(player.hand)} cards',
