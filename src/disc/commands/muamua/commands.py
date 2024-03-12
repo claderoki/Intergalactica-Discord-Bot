@@ -463,7 +463,7 @@ class GameMenu(discord.ui.View):
 
     def _get_valid_hand(self, player: Player) -> List[Card]:
         if self._overridden_suit:
-            return [x for x in player.hand if x.suit == self._overridden_suit]
+            return [x for x in player.hand if x.suit == self._overridden_suit or x in (Rank.JOKER, Rank.JACK)]
         return [x for x in player.hand if x.can_place_on(self._table_card, self._stacking is not None)]
 
     async def _place_card(self, interaction, player: Player, card: Card):
