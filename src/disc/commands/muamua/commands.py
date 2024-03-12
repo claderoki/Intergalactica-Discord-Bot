@@ -296,7 +296,7 @@ class GameMenu(discord.ui.View):
             self._cycler.get_next().skip_for += 1
         elif rank == Rank.JACK:
             player = self._cycler.current()
-            self._overridden_suit: Suit = await suit_callback(interaction, player)
+            self._overridden_suit: Suit = await suit_callback(interaction, player) or random.choice(list(Suit))
             self._add_notification(f'Suit chosen: {self._overridden_suit.name}', player)
         elif rank == Rank.QUEEN:
             if len(self._players) == 2:
@@ -339,15 +339,15 @@ class GameMenu(discord.ui.View):
 
         return self._apply_stacked_cards(player)
 
-    async def _choose_suit(self, interaction, _: Player) -> Suit:
+    async def _choose_suit(self, interaction, _: Player) -> Optional[Suit]:
         view = DataChoice(list(Suit),
                           to_select=lambda x: discord.SelectOption(label=f'{x.name} ({x.value})', value=x.value))
 
         await interaction.followup.send(content="Choose a suit", ephemeral=True, wait=True, view=view)
         await view.wait()
-        return view.get_first_or_none() or random.choice(list(Suit))
+        return view.get_first_or_none()
 
-    async def _choose_ai_suit(self, _, player: Player) -> Suit:
+    async def _choose_ai_suit(self, _, player: Player) -> Optional[Suit]:
         best_suit = None
         highest = 0
         count = {}
@@ -358,7 +358,7 @@ class GameMenu(discord.ui.View):
                 best_suit = card.suit
                 highest = val
 
-        return best_suit or list(Suit)
+        return best_suit
 
     def _ai_report_cycle(self):
         invalid_report = False
