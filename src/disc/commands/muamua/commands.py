@@ -358,7 +358,7 @@ class GameMenu(discord.ui.View):
                 best_suit = card.suit
                 highest = val
 
-        return best_suit
+        return best_suit or list(Suit)
 
     def _ai_report_cycle(self):
         invalid_report = False
