@@ -316,7 +316,6 @@ class GameMenu(discord.ui.View):
         if not self._stacking:
             return False
 
-        # TODO: check if check_hand can be removed.
         if not check_hand or not self._has_valid_hand(player):
             cards_given = self._use_stacked_special_ability()
             self._add_notification(f'+{cards_given} cards', self._stacking.target)
