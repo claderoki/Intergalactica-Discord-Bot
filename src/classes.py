@@ -25,7 +25,9 @@ class Cache:
                 result = func(*args, **kwargs)
                 self.cache[hash] = result
                 return result
+
             return decorator
+
         return wrapper
 
 

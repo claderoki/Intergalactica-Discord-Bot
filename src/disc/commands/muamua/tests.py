@@ -1,7 +1,8 @@
 import string
+import unittest
 from typing import List, Optional
 
-from src.disc.commands import Rank, Suit, GameOverException
+from src.disc.commands import Rank, Suit, GameOverException, Cycler
 from src.disc.commands.muamua import Deck, Card, Player, GameMenu, GameSettings
 
 
@@ -52,34 +53,95 @@ class TestGameMenu(GameMenu):
         await self._post_interaction()
 
 
-async def test1():
-    deck = Deck('', [
-        Card(Rank.TWO, Suit.HEARTS),
-        Card(Rank.JOKER, Suit.DIAMONDS),
-        Card(Rank.NINE, Suit.SPADES),
-        Card(Rank.JACK, Suit.CLUBS),
-        Card(Rank.THREE, Suit.CLUBS),
-        Card(Rank.FIVE, Suit.DIAMONDS),
-    ])
+class MauMauTest(unittest.IsolatedAsyncioTestCase):
+    async def test1(self):
+        deck = Deck('', [
+            Card(Rank.TWO, Suit.HEARTS),
+            Card(Rank.JOKER, Suit.DIAMONDS),
+            Card(Rank.NINE, Suit.SPADES),
+            Card(Rank.JACK, Suit.CLUBS),
+            Card(Rank.THREE, Suit.CLUBS),
+            Card(Rank.FIVE, Suit.DIAMONDS),
+        ])
 
-    p1 = Player(1)
-    p2 = Player(2)
+        p1 = Player(1)
+        p2 = Player(2)
 
-    menu = TestGameMenu([p1, p2], deck, table_card=Card(Rank.TWO, Suit.HEARTS))
+        menu = TestGameMenu([p1, p2], deck, table_card=Card(Rank.TWO, Suit.HEARTS))
 
-    p1.hand.extend([
-        Card(Rank.FIVE, Suit.DIAMONDS),
-        Card(Rank.EIGHT, Suit.CLUBS),
-    ])
-    p2.hand.extend([
-        Card(Rank.SEVEN, Suit.HEARTS),
-        Card(Rank.JACK, Suit.HEARTS),
-    ])
+        p1.hand.extend([
+            Card(Rank.FIVE, Suit.DIAMONDS),
+            Card(Rank.EIGHT, Suit.CLUBS),
+        ])
+        p2.hand.extend([
+            Card(Rank.SEVEN, Suit.HEARTS),
+            Card(Rank.JACK, Suit.HEARTS),
+        ])
 
-    await menu.draw_card()  # P1
-    await menu.place_card(Rank.SEVEN, Suit.HEARTS)  # P2
-    try:
-        await menu.place_card(Rank.JACK, Suit.HEARTS)  # P2 (P1 skipped)
-        print('failed')
-    except GameOverException:
-        print('success')
+        await menu.draw_card()  # P1
+        await menu.place_card(Rank.SEVEN, Suit.HEARTS)  # P2
+        with self.assertRaises(GameOverException):
+            await menu.place_card(Rank.JACK, Suit.HEARTS)  # P2 (P1 skipped)
+
+
+def test_cycler():
+    cycler = Cycler(['A', 'B', 'C', 'D'])
+    cycler.next()
+    cycler.next()
+    assert cycler.current() == 'C'
+    cycler.remove(cycler.get_previous())
+    assert cycler.current() == 'C'
+
+    cycler = Cycler(['A', 'B', 'C', 'D'])
+    cycler.next()
+    assert cycler.current() == 'B'
+    cycler.remove(cycler.current())
+    assert cycler.current() == 'C'
+
+    cycler = Cycler(['A', 'B', 'C', 'D'])
+    cycler.next()
+    assert cycler.current() == 'B'
+    cycler.remove(cycler.current())
+    assert cycler.current() == 'C'
+
+    cycler = Cycler(['A', 'B', 'C', 'D'])
+    assert cycler.current() == 'A'
+    cycler.remove(cycler.get_next())
+    assert cycler.current() == 'A'
+    assert cycler.get_next() == 'C'
+
+    cycler = Cycler(['A', 'B', 'C', 'D'])
+    cycler.next()
+    cycler.reverse()
+    assert cycler.current() == 'B'
+    cycler.remove(cycler.current())
+    assert cycler.current() == 'A'
+    assert cycler.get_next() == 'D'
+
+    cycler = Cycler(['A', 'B', 'C', 'D'])
+    cycler.next()
+    cycler.next()
+    cycler.reverse()
+    assert cycler.current() == 'C'
+    cycler.remove(cycler.get_next())
+    assert cycler.current() == 'C', 'current is ' + cycler.current() + ' instead'
+    assert cycler.get_next() == 'A'
+
+    cycler = Cycler(['A', 'B', 'C', 'D'])
+    cycler.next()
+    cycler.next()
+    cycler.reverse()
+    assert cycler.current() == 'C'
+    cycler.remove(cycler.get_next())
+    assert cycler.current() == 'C', 'current is ' + cycler.current() + ' instead'
+    assert cycler.get_next() == 'A'
+
+    cycler = Cycler(['A', 'B', 'C', 'D'])
+    cycler.next()
+    cycler.reverse()
+    assert cycler.current() == 'B'
+    cycler.remove(cycler.current())
+    assert cycler.current() == 'A', 'current is ' + cycler.current() + ' instead'
+    assert cycler.get_next() == 'D'
+
+

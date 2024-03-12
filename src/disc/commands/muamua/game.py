@@ -191,46 +191,46 @@ class Cycler(Generic[T]):
     def set_current(self, item: T):
         self.current_index = self.items.index(item)
 
-    def __next_index(self):
+    def _next_index(self):
         if self.current_index >= len(self.items) - 1:
             return 0
         else:
             return self.current_index + 1
 
-    def __previous_index(self):
+    def _previous_index(self):
         if self.current_index <= 0:
             return len(self.items) - 1
         else:
             return self.current_index - 1
 
-    def __get_next_item(self, seek: bool) -> T:
-        index = self.__next_index() if self.forwards else self.__previous_index()
+    def _get_next_item(self, seek: bool) -> T:
+        index = self._next_index() if self.forwards else self._previous_index()
         if seek:
             self.current_index = index
         return self.items[index]
 
-    def __get_previous_item(self, seek: bool) -> T:
-        index = self.__previous_index() if self.forwards else self.__next_index()
+    def _get_previous_item(self, seek: bool) -> T:
+        index = self._previous_index() if self.forwards else self._next_index()
         if seek:
             self.current_index = index
         return self.items[index]
 
     def get_next(self) -> T:
-        return self.__get_next_item(False)
+        return self._get_next_item(False)
 
     def get_previous(self) -> T:
-        return self.__get_previous_item(False)
+        return self._get_previous_item(False)
 
     def current(self) -> T:
         return self.items[self.current_index]
 
     def next(self) -> T:
         self.cycles += 1
-        return self.__get_next_item(True)
+        return self._get_next_item(True)
 
     def previous(self) -> T:
         self.cycles += 1
-        return self.__get_previous_item(True)
+        return self._get_previous_item(True)
 
     def get_full_cycle(self):
         """
@@ -247,3 +247,19 @@ class Cycler(Generic[T]):
             second = range(len(self.items) - 1, current, -1)
             order = list(initial) + list(second)
         return [self.items[x] for x in order]
+
+    def remove(self, item: T):
+        if item not in self.items:
+            return
+
+        removed_index = self.items.index(item)
+        if self.forwards:
+            if removed_index < self.current_index:
+                self.current_index -= 1
+        else:
+            if removed_index >= self.current_index:
+                self.current_index = self._previous_index()
+            else:
+                self.current_index -= 1
+
+        self.items.remove(item)

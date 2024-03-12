@@ -110,6 +110,7 @@ class GameSettings:
 class GameMenu(discord.ui.View):
     def __init__(self, players: List[Player], min_players: int = 2, settings: Optional[GameSettings] = None):
         super(GameMenu, self).__init__()
+        self._children_copy = self.children.copy()
         self.timeout = 360
         self.followup: discord.WebhookMessage = None
         self.all_ai = False
@@ -192,10 +193,17 @@ class GameMenu(discord.ui.View):
                 self._table_card = card
                 break
 
-        for item in self.children:
+        self.refresh_items()
+
+    def refresh_items(self, clear_all: bool = False):
+        if clear_all:
+            self.clear_items()
+        for item in self._children_copy:
             func = item.callback.callback
             if hasattr(func, '__validation__') and not func.__validation__(item, self):
                 self.remove_item(item)
+            elif clear_all:
+                self.add_item(item)
 
     def get_hand_contents(self, player: Player):
         formatted = format_single_line(list(map(Card.get_unicode, player.hand)))
@@ -622,6 +630,11 @@ class GameMenu(discord.ui.View):
         self._ai_speed += 1
         await interaction.response.defer()
 
+    def _remove_player(self, player: Player):
+        self._cycler.remove(player)
+        del self._players[player.identifier]
+        self._add_notification('Left the game', player)
+
     @non_ai_only()
     @discord.ui.button(label='Leave', style=discord.ButtonStyle.red, emoji='🚪')
     async def leave(self, interaction: discord.Interaction, _button: discord.ui.Button):
@@ -630,16 +643,28 @@ class GameMenu(discord.ui.View):
             await interaction.response.defer()
             return
 
-        player.skip_for = 999
-        await interaction.response.send_message("Not yet implemented, permanently skipping for now.")
+        self._remove_player(player)
+
+        if len(self._players) == 1:
+            await self._end_game(self._cycler.current())
+            return
+
+        self.all_ai = all(x.is_ai() for x in self._players.values())
+        if self.all_ai:
+            self.refresh_items(clear_all=True)
+            await self.start_bot_fight()
+            await interaction.response.send_message("Removing you from the game caused the game to become a bot fight.")
+        else:
+            await interaction.response.send_message("I've removed you from the game.")
+            await self._update_ui()
 
 
-@config.tree.command(name="maumau",
-                     description="Play MauMau")
+@config.tree.command(name="maumau", description="Play MauMau")
 async def maumau(interaction: discord.Interaction, min_players: Optional[int] = 2):
     user_ids = await wait_for_players(interaction)
     menu = GameMenu([Player(x, member=interaction.guild.get_member(x)) for x in user_ids], min_players)
     menu.followup = await interaction.followup.send(embed=menu.get_embed(), wait=True, view=menu)
+
     winner = await menu.start()
     if winner is None:
         await interaction.followup.send('No one wins, no one loses.')
@@ -662,11 +687,3 @@ async def maumau_scoreboard(interaction: discord.Interaction):
     values.sort(key=lambda x: int(x.value), reverse=True)
     messages = [f'<@{x.user_id}>: {x.value}' for x in values]
     await interaction.response.send_message('\n'.join(messages))
-
-
-@config.tree.command(name="maumau_test",
-                     description="TEST")
-async def maumau_test(interaction: discord.Interaction):
-    await interaction.response.defer()
-    from src.disc.commands.muamua.tests import test1
-    await test1()
