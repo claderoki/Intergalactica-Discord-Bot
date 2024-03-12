@@ -256,11 +256,8 @@ class GameMenu(discord.ui.View):
                             inline=False
                             )
 
-        if not game_ended:
-            if self._ai_speed > 0:
-                embed.set_footer(text=f'AI speed {self._ai_speed}')
-            if self._wait_time > 0:
-                embed.set_footer(text=f'\nWaiting {self._wait_time}s')
+        if not game_ended and self._ai_speed > 0:
+            embed.set_footer(text=f'AI speed {self._ai_speed}')
         return embed
 
     def _can_perform_action(self, interaction: discord.Interaction):
@@ -442,7 +439,7 @@ class GameMenu(discord.ui.View):
         if not self.all_ai:
             await self._post_player(self._cycler.current())
 
-        while True:
+        while self._winner is None:
             skipped = False
             if await self._should_skip_player(self._cycler.current()):
                 await self._post_player(self._cycler.current())
@@ -618,6 +615,7 @@ class GameMenu(discord.ui.View):
 
         self._report_player(self._reportable_player_with_one_card, reporter)
         await self._update_ui()
+        await interaction.response.defer()
 
     @discord.ui.button(label='Bug report', style=discord.ButtonStyle.gray, emoji='🐛')
     async def bug_report(self, interaction: discord.Interaction, _button: discord.ui.Button):
@@ -647,13 +645,14 @@ class GameMenu(discord.ui.View):
 
         if len(self._players) == 1:
             await self._end_game(self._cycler.current())
+            await interaction.response.send_message(f'You forfeit the match, leaving {self._winner} as the winner')
             return
 
         self.all_ai = all(x.is_ai() for x in self._players.values())
         if self.all_ai:
             self.refresh_items(clear_all=True)
-            await self.start_bot_fight()
             await interaction.response.send_message("Removing you from the game caused the game to become a bot fight.")
+            await self.start_bot_fight()
         else:
             await interaction.response.send_message("I've removed you from the game.")
             await self._update_ui()
