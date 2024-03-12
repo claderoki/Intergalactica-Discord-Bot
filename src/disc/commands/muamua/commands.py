@@ -193,9 +193,9 @@ class GameMenu(discord.ui.View):
                 self._table_card = card
                 break
 
-        self.refresh_items()
+        self._refresh_items()
 
-    def refresh_items(self, clear_all: bool = False):
+    def _refresh_items(self, clear_all: bool = False):
         if clear_all:
             self.clear_items()
         for item in self._children_copy:
@@ -205,7 +205,7 @@ class GameMenu(discord.ui.View):
             elif clear_all:
                 self.add_item(item)
 
-    def get_hand_contents(self, player: Player):
+    def _get_hand_contents(self, player: Player):
         formatted = format_single_line(list(map(Card.get_unicode, player.hand)))
         return f'```\n{formatted}```'
 
@@ -229,7 +229,7 @@ class GameMenu(discord.ui.View):
             return card_unicode_raw(' ', self._overridden_suit.value)
 
     def get_embed(self):
-        embed = discord.Embed(description='>>> ```\n' + self._get_table_unicode() + '```')
+        embed = discord.Embed(description=f'>>> ```\n{self._get_table_unicode()}```')
 
         if len(self._log):
             embed.add_field(name='Log', value='\n'.join(self._get_log_contents()), inline=False)
@@ -297,7 +297,7 @@ class GameMenu(discord.ui.View):
         elif rank == Rank.JACK:
             player = self._cycler.current()
             self._overridden_suit = await suit_callback(interaction, player)
-            self._add_notification('Suit chosen: ' + self._overridden_suit.name, player)
+            self._add_notification(f'Suit chosen: {self._overridden_suit.name}', player)
         elif rank == Rank.QUEEN:
             if len(self._players) == 2:
                 self._cycler.get_next().skip_for += 1
@@ -463,15 +463,18 @@ class GameMenu(discord.ui.View):
             return [x for x in player.hand if x.suit == self._overridden_suit or x in (Rank.JOKER, Rank.JACK)]
         return [x for x in player.hand if x.can_place_on(self._table_card, self._stacking is not None)]
 
+    def _stack(self, rank: Rank):
+        if self._stacking is None:
+            self._stacking = Stacking(rank, self._get_stacked_target(rank))
+        else:
+            self._stacking.target = self._get_stacked_target(rank)
+        self._stacking.count += 1
+
     async def _place_card(self, interaction, player: Player, card: Card):
-        self._add_notification('Placed ' + str(card), player)
+        self._add_notification(f'Placed {card}', player)
 
         if card.stackable:
-            if self._stacking is None:
-                self._stacking = Stacking(card.rank, self._get_stacked_target(card.rank))
-            else:
-                self._stacking.target = self._get_stacked_target(card.rank)
-            self._stacking.count += 1
+            self._stack(card.rank)
 
         if card.special:
             callback = self._choose_ai_suit if player.is_ai() else self._choose_suit
@@ -539,7 +542,7 @@ class GameMenu(discord.ui.View):
             if view.value:
                 await self._place_card(interaction, player, card)
         if not responded:
-            await interaction.response.send_message(self.get_hand_contents(player), ephemeral=True)
+            await interaction.response.send_message(self._get_hand_contents(player), ephemeral=True)
 
         await self._post_interaction()
 
@@ -592,7 +595,8 @@ class GameMenu(discord.ui.View):
         player = self._players.get(interaction.user.id)
         if player is None:
             await interaction.response.defer()
-        await interaction.response.send_message(self.get_hand_contents(player), ephemeral=True)
+            return
+        await interaction.response.send_message(self._get_hand_contents(player), ephemeral=True)
 
     @non_ai_only()
     @discord.ui.button(label='MauMau', style=discord.ButtonStyle.blurple, emoji='‼️')
@@ -650,7 +654,7 @@ class GameMenu(discord.ui.View):
 
         self.all_ai = all(x.is_ai() for x in self._players.values())
         if self.all_ai:
-            self.refresh_items(clear_all=True)
+            self._refresh_items(clear_all=True)
             await interaction.response.send_message("Removing you from the game caused the game to become a bot fight.")
             await self.start_bot_fight()
         else:
