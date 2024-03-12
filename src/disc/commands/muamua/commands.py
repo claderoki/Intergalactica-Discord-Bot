@@ -296,7 +296,7 @@ class GameMenu(discord.ui.View):
             self._cycler.get_next().skip_for += 1
         elif rank == Rank.JACK:
             player = self._cycler.current()
-            self._overridden_suit = await suit_callback(interaction, player)
+            self._overridden_suit: Suit = await suit_callback(interaction, player)
             self._add_notification(f'Suit chosen: {self._overridden_suit.name}', player)
         elif rank == Rank.QUEEN:
             if len(self._players) == 2:
