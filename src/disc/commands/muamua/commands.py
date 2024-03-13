@@ -449,7 +449,7 @@ class GameMenu(discord.ui.View):
         if not self.all_ai:
             await self._post_player(self._cycler.current())
 
-        while self._winner is None and not self._ai_paused:
+        while self._winner is None:
             skipped = False
             if await self._should_skip_player(self._cycler.current()):
                 await self._post_player(self._cycler.current())
