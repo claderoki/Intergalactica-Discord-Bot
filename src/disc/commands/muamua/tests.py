@@ -173,8 +173,8 @@ async def te():
 
 
 class GameTestCodeGenerator(GameMenu):
-    def __init__(self):
-        super().__init__(players=[], settings=GameSettings(initial_cards=2))
+    def __init__(self, initial=2):
+        super().__init__(players=[], settings=GameSettings(initial_cards=initial))
         self.code = []
         self._ai_speed = 5
         self.used_deck = []

@@ -398,17 +398,16 @@ class GameMenu(discord.ui.View):
         if self._ai_speed == 0:
             await asyncio.sleep(random.uniform(0.5, 2.3))
         filtered_hand = self._get_valid_hand(player)
-        if len(filtered_hand) == 0:
-            if self._apply_stacked_cards(player):
-                return
-            card = self._draw_card(player)
-            if card.can_place_on(self._table_card, self._stacking is not None):
-                await self._place_card(None, player, card)
-        else:
+
+        if len(filtered_hand) > 0:
             card = random.choice(filtered_hand)
             await self._place_card(None, player, card)
             if len(player.hand) == 1 and random.randint(0, 3) == 1:
                 self._call_mau_mau(player)
+        else:
+            card = self._draw_card(player)
+            if self._can_place(card):
+                await self._place_card(None, player, card)
 
     async def _followup(self, **kwargs):
         await self.followup.edit(**kwargs)
@@ -468,10 +467,14 @@ class GameMenu(discord.ui.View):
             except GameOverException:
                 pass
 
+    def _can_place(self, card: Card) -> bool:
+        if self._overridden_suit is not None:
+            return card.suit == self._overridden_suit or card in (Rank.JOKER, Rank.JACK)
+        else:
+            return card.can_place_on(self._table_card, self._stacking is not None)
+
     def _get_valid_hand(self, player: Player) -> List[Card]:
-        if self._overridden_suit:
-            return [x for x in player.hand if x.suit == self._overridden_suit or x in (Rank.JOKER, Rank.JACK)]
-        return [x for x in player.hand if x.can_place_on(self._table_card, self._stacking is not None)]
+        return [x for x in player.hand if self._can_place(x)]
 
     def _stack(self, rank: Rank):
         if self._stacking is None:
@@ -616,6 +619,7 @@ class GameMenu(discord.ui.View):
         if self._reportable_player_with_one_card == player:
             self._call_mau_mau(player)
         await interaction.response.defer()
+        await self._update_ui()
 
     @non_ai_only()
     @discord.ui.button(label='Report MauMau', style=discord.ButtonStyle.red, emoji='🚔')
@@ -626,8 +630,8 @@ class GameMenu(discord.ui.View):
             return
 
         self._report_player(self._reportable_player_with_one_card, reporter)
-        await self._update_ui()
         await interaction.response.defer()
+        await self._update_ui()
 
     @discord.ui.button(label='Bug report', style=discord.ButtonStyle.gray, emoji='🐛')
     async def bug_report(self, interaction: discord.Interaction, _button: discord.ui.Button):
