@@ -151,26 +151,24 @@ class Deck:
 
 
 class Player:
-    __slots__ = ('identifier', 'hand', 'skip_for', 'member', 'last_mau', 'picking', 'short_identifier')
+    __slots__ = ('identifier', 'hand', 'skip_for', 'member', 'last_mau', 'picking', 'short_identifier', 'is_ai')
 
-    def __init__(self, identifier: Union[str, int], member=None):
+    def __init__(self, identifier: Union[str, int], member=None, is_ai: bool = False):
         self.identifier = identifier
         self.member = member
         self.hand: List[Card] = []
+        self.is_ai = is_ai
         self.short_identifier: str = None
         self.skip_for = 0
         self.picking = False
 
     def __str__(self):
-        if self.is_ai():
-            return self.short_identifier
+        if self.is_ai:
+            return self.identifier
         return f'<@{self.identifier}>'
 
     def display_name(self):
         return str(self) if self.member is None else self.member.display_name
-
-    def is_ai(self):
-        return 'AI' in str(self.identifier)
 
 
 T = TypeVar('T')

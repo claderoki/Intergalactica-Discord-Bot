@@ -175,8 +175,14 @@ class GameMenu(discord.ui.View):
 
     def _fill_with_ai(self, players: List[Player]):
         self.all_ai = len(players) == 0
-        for i in range(self._min_players - len(players)):
-            players.append(Player(f'AI{i + 1}'))
+        ai_to_add = self._min_players - len(players)
+
+        if ai_to_add > 0:
+            with open(f"{__file__.replace('commands.py', '')}names.txt") as f:
+                names = f.read().splitlines()
+
+            for i in range(ai_to_add):
+                players.append(Player(random.choice(names), is_ai=True))
 
     def _load(self):
         self._deck.shuffle()
@@ -373,7 +379,7 @@ class GameMenu(discord.ui.View):
 
         ai_players_remaining = []
         for player in self._players.values():
-            if player.is_ai() and player != self._reportable_player_with_one_card:
+            if player.is_ai and player != self._reportable_player_with_one_card:
                 ai_players_remaining.append(player)
 
         if len(ai_players_remaining) == 0:
@@ -382,6 +388,12 @@ class GameMenu(discord.ui.View):
         reporter = random.choice(ai_players_remaining)
         self._report_player(self._reportable_player_with_one_card, reporter)
 
+    def _draw_card(self, player: Player) -> Card:
+        card = self._deck.take_card()
+        player.hand.append(card)
+        self._add_notification('Drew a card', player)
+        return card
+
     async def _decide_ai_interaction(self, player: Player):
         if self._ai_speed == 0:
             await asyncio.sleep(random.uniform(0.5, 2.3))
@@ -389,9 +401,7 @@ class GameMenu(discord.ui.View):
         if len(filtered_hand) == 0:
             if self._apply_stacked_cards(player):
                 return
-            card = self._deck.take_card()
-            player.hand.append(card)
-            self._add_notification('Drew a card', player)
+            card = self._draw_card(player)
             if card.can_place_on(self._table_card, self._stacking is not None):
                 await self._place_card(None, player, card)
         else:
@@ -439,12 +449,12 @@ class GameMenu(discord.ui.View):
         if not self.all_ai:
             await self._post_player(self._cycler.current())
 
-        while self._winner is None:
+        while self._winner is None and not self._ai_paused:
             skipped = False
             if await self._should_skip_player(self._cycler.current()):
                 await self._post_player(self._cycler.current())
                 skipped = True
-            if self._cycler.current().is_ai():
+            if self._cycler.current().is_ai:
                 await self._decide_ai_interaction(self._cycler.current())
                 await self._post_player(self._cycler.current())
                 skipped = True
@@ -477,7 +487,7 @@ class GameMenu(discord.ui.View):
             self._stack(card.rank)
 
         if card.special:
-            callback = self._choose_ai_suit if player.is_ai() else self._choose_suit
+            callback = self._choose_ai_suit if player.is_ai else self._choose_suit
             await self._use_immediate_special_ability(interaction, card.rank, callback)
         if card.rank != Rank.JACK:
             self._overridden_suit = None
@@ -529,10 +539,8 @@ class GameMenu(discord.ui.View):
             return
 
         self._action_spent = True
-        card = self._deck.take_card()
-        player.hand.append(card)
+        card = self._draw_card(player)
         responded = False
-        self._add_notification('Drew a card', player)
         if card.can_place_on(self._table_card, self._stacking is not None):
             view = BooleanChoice(False)
             await interaction.response.send_message(f"You drew the {card} card. Place it right away?",
@@ -652,7 +660,7 @@ class GameMenu(discord.ui.View):
             await interaction.response.send_message(f'You forfeit the match, leaving {self._winner} as the winner')
             return
 
-        self.all_ai = all(x.is_ai() for x in self._players.values())
+        self.all_ai = all(x.is_ai for x in self._players.values())
         if self.all_ai:
             self._refresh_items(clear_all=True)
             await interaction.response.send_message("Removing you from the game caused the game to become a bot fight.")
@@ -671,7 +679,7 @@ async def maumau(interaction: discord.Interaction, min_players: Optional[int] = 
     winner = await menu.start()
     if winner is None:
         await interaction.followup.send('No one wins, no one loses.')
-    elif not winner.is_ai():
+    elif not winner.is_ai:
         stat, _ = GameStat.get_or_create(key='maumau_wins', user_id=winner.member.id)
         stat.value = str(int(stat.value) + 1)
         winnings = Winnings(HumanStat.gold(random.randint(5, 15)))

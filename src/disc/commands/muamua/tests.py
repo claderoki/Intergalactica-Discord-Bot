@@ -47,7 +47,7 @@ class TestGameMenu(GameMenu):
             if card.rank == rank and card.suit == suit:
                 return card
 
-    async def place_card(self, rank: Rank, suit: Suit):
+    async def place_card(self, rank: Rank, suit: Suit, suit_if_j: Suit = None):
         player = self._cycler.current()
         await self._place_card(None, player, self.get_card(rank, suit))
         await self._post_interaction()
@@ -82,6 +82,24 @@ class MauMauTest(unittest.IsolatedAsyncioTestCase):
         await menu.place_card(Rank.SEVEN, Suit.HEARTS)  # P2
         with self.assertRaises(GameOverException):
             await menu.place_card(Rank.JACK, Suit.HEARTS)  # P2 (P1 skipped)
+
+    async def test2(self):
+        deck = Deck('', [Card(Rank.TWO, Suit.DIAMONDS)])
+
+        p1 = Player(1)
+        p2 = Player(2)
+
+        menu = TestGameMenu([p1, p2], deck, table_card=Card(Rank.TWO, Suit.HEARTS))
+
+        p1.hand.extend([Card(Rank.SEVEN, Suit.HEARTS), Card(Rank.NINE, Suit.DIAMONDS)])
+        p2.hand.extend([Card(Rank.EIGHT, Suit.DIAMONDS), Card(Rank.TEN, Suit.DIAMONDS)])
+
+        await menu.place_card(Rank.SEVEN, Suit.HEARTS)
+        await menu.draw_card()
+        await menu.place_card(Rank.JACK, Suit.CLUBS)
+        await menu.place_card(Rank.TWO, Suit.DIAMONDS)
+        await menu.place_card(Rank.TEN, Suit.DIAMONDS)
+        await menu.place_card(Rank.NINE, Suit.DIAMONDS)
 
 
 def test_cycler():
@@ -145,3 +163,58 @@ def test_cycler():
     assert cycler.get_next() == 'D'
 
 
+async def te():
+    while True:
+        code = GameTestCodeGenerator()
+        await code.start_bot_fight()
+        if code._cycler.cycles < 10:
+            break
+    print('\n\n'.join(code.code))
+
+
+class GameTestCodeGenerator(GameMenu):
+    def __init__(self):
+        super().__init__(players=[], settings=GameSettings(initial_cards=2))
+        self.code = []
+        self._ai_speed = 5
+        self.used_deck = []
+
+        v = []
+        for i, p in enumerate(self._players.values()):
+            i += 1
+            self.code.append(f'p{i} = Player({i})')
+            v.append(f'p{i}')
+        self.code.append(
+            f'menu = TestGameMenu([{",".join(v)}], deck, table_card={self._card_constructor(self._table_card)})')
+
+        for i, p in enumerate(self._players.values()):
+            i += 1
+            self.code.append(f'p{i}.hand.extend({self._cards_list(p.hand)})')
+
+    async def _update_ui(self):
+        pass
+
+    async def _followup(self, **kwargs):
+        pass
+
+    def stop(self, **kwargs):
+        self.code.insert(0, f"deck = Deck('', {self._cards_list(self.used_deck)})")
+
+    def _card_params(self, card: Card):
+        return f'Rank.{card.rank.name}, Suit.{card.suit.name if card.suit else None}'
+
+    def _card_constructor(self, card: Card):
+        return f'Card({self._card_params(card)})'
+
+    def _cards_list(self, cards: List[Card]):
+        return '[' + (','.join([self._card_constructor(x) for x in cards])) + ']'
+
+    def _draw_card(self, player: Player) -> Card:
+        c = super()._draw_card(player)
+        self.code.append(f'await menu.draw_card()')
+        self.used_deck.append(c)
+        return c
+
+    async def _place_card(self, interaction, player: Player, card: Card):
+        await super()._place_card(interaction, player, card)
+        self.code.append(f'await menu.place_card({self._card_params(card)})')
