@@ -366,16 +366,17 @@ class GameMenu(discord.ui.View):
 
         return best_suit
 
-    def _ai_report_cycle(self):
-        invalid_report = False
+    def _ai_should_report(self) -> bool:
+        if self._reportable_player_with_one_card is not None:
+            return random.randint(0, 5) == 0
+        elif len(self._cycler.current().hand) == 2:
+            return random.random() < 0.05 / len(self._players)
+            # return random.randint(0, len(self._players) * 45) < 3
+        return False
 
-        if random.randint(0, len(self._players) * 65) < 3:
-            invalid_report = True
-        elif random.randint(0, 5) != 2:
-            return
-
-        if not invalid_report and self._reportable_player_with_one_card is None:
-            return
+    def _ai_report_cycle(self) -> bool:
+        if not self._ai_should_report():
+            return False
 
         ai_players_remaining = []
         for player in self._players.values():
@@ -383,10 +384,11 @@ class GameMenu(discord.ui.View):
                 ai_players_remaining.append(player)
 
         if len(ai_players_remaining) == 0:
-            return
+            return False
 
         reporter = random.choice(ai_players_remaining)
         self._report_player(self._reportable_player_with_one_card, reporter)
+        return True
 
     def _draw_card(self, player: Player) -> Card:
         card = self._deck.take_card()
@@ -433,8 +435,8 @@ class GameMenu(discord.ui.View):
         if len(player.hand) == 0:
             await self._end_game(player)
             raise GameOverException()
-        self._ai_report_cycle()
-        await self._update_ui()
+        if self._ai_report_cycle():
+            await self._update_ui()
 
         if self._wait_time > 0:
             await asyncio.sleep(self._wait_time)
@@ -514,7 +516,7 @@ class GameMenu(discord.ui.View):
         self._reportable_player_with_one_card = None
         self._add_notification('MAU MAU!!', player)
 
-    def _report_player(self, player: Player, reporter: Player):
+    def _report_player(self, player: Optional[Player], reporter: Player):
         if player is None:
             c = self._settings.invalid_report_penalty
             self._add_notification(f'You waste the MauMau authorities time and resources with an invalid report.'
