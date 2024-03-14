@@ -55,10 +55,16 @@ class GameOverException(Exception):
 
 
 class Stacking:
-    def __init__(self, rank: Rank, target: Optional[Player]):
+    def __init__(self, rank: Rank, target: Player, amount: int, initial_current: Player):
         self.rank = rank
         self.target = target
         self.count = 0
+        self.amount = amount
+        self.initial_current = initial_current
+
+    @property
+    def cards_to_take(self) -> int:
+        return self.amount * self.count
 
     def to_dict(self):
         return {
@@ -127,7 +133,6 @@ class GameMenu(discord.ui.View):
         self._reportable_player_with_one_card: Optional[Player] = None
         self._min_players = min_players
         self._overridden_suit: Optional[Suit] = None
-        self._first_to_place_nine = None
         self._add_start_card_value = None
         self._snapshots = {'rounds': []}
         self._winner: Optional[Player] = None
@@ -135,8 +140,8 @@ class GameMenu(discord.ui.View):
         self._fill_with_ai(players)
         self._cycler = Cycler(players)
         self._players: Dict[Union[str, int], Player] = {x.identifier: x for x in players}
-        self._deck_multiplier = max(2, int(len(players) / 3))
-        self._deck = Deck.standard53() * self._deck_multiplier
+        self._deck = Deck.standard53()
+        self._deck.infinite = True
         self._load()
         self._save_round_snapshot()
 
@@ -272,37 +277,30 @@ class GameMenu(discord.ui.View):
             return False
         return player.identifier == self._cycler.current().identifier
 
-    def _get_stacked_target(self, rank: Rank) -> Optional[Player]:
-        if rank == Rank.NINE and self._stacking is None:
-            return self._cycler.get_previous()
-        return self._cycler.get_next()
-
     def _use_stacked_special_ability(self) -> int:
         if self._stacking is None:
             return 0
 
-        cards_to_take = 0
-        if self._stacking.rank == Rank.SEVEN:
-            cards_to_take = 2 * self._stacking.count
-        elif self._stacking.rank == Rank.NINE:
-            cards_to_take = 1 * self._stacking.count
-            self._cycler.set_current(self._first_to_place_nine)
+        cards_to_take = self._stacking.cards_to_take
+        if self._stacking.rank == Rank.NINE:
+            self._cycler.set_current(self._stacking.initial_current)
             self._cycler.reverse()
-            self._first_to_place_nine = None
-        elif self._stacking.rank == Rank.JOKER:
-            cards_to_take = 5 * self._stacking.count
 
         if cards_to_take > 0:
             self._stacking.target.hand.extend(self._deck.take_cards(cards_to_take))
             self._add_stat(Stats.longest_stack(self._stacking.count, self._stacking.rank))
         return cards_to_take
 
-    async def _use_immediate_special_ability(self, interaction, rank: Rank, suit_callback):
+    async def _use_immediate_special_ability(self, interaction, rank: Rank):
         if rank == Rank.ACE:
             self._cycler.get_next().skip_for += 1
         elif rank == Rank.JACK:
             player = self._cycler.current()
-            self._overridden_suit: Suit = await suit_callback(interaction, player) or random.choice(list(Suit))
+            if player.is_ai:
+                suit = self._choose_ai_suit()
+            else:
+                suit = self._choose_suit(interaction)
+            self._overridden_suit: Suit = suit or random.choice(list(Suit))
             self._add_notification(f'Suit chosen: {self._overridden_suit.name}', player)
         elif rank == Rank.QUEEN:
             if len(self._players) == 2:
@@ -310,8 +308,7 @@ class GameMenu(discord.ui.View):
             else:
                 self._add_notification('Reversed direction', self._cycler.current())
                 self._cycler.reverse()
-        elif rank == Rank.NINE and self._stacking.count == 1:
-            self._first_to_place_nine = self._cycler.current()
+        elif rank == Rank.NINE and self._stacking is None:
             self._cycler.reverse()
 
     def _get_round(self):
@@ -345,7 +342,7 @@ class GameMenu(discord.ui.View):
 
         return self._apply_stacked_cards(player)
 
-    async def _choose_suit(self, interaction, _: Player) -> Optional[Suit]:
+    async def _choose_suit(self, interaction) -> Optional[Suit]:
         view = DataChoice(list(Suit),
                           to_select=lambda x: discord.SelectOption(label=f'{x.name} ({x.value})', value=x.value))
 
@@ -353,11 +350,11 @@ class GameMenu(discord.ui.View):
         await view.wait()
         return view.get_first_or_none()
 
-    async def _choose_ai_suit(self, _, player: Player) -> Optional[Suit]:
+    async def _choose_ai_suit(self) -> Optional[Suit]:
         best_suit = None
         highest = 0
         count = {}
-        for card in player.hand:
+        for card in self._cycler.current().hand:
             val = count.setdefault(card.suit, 0) + 1
             count[card.suit] = val
             if val > highest:
@@ -371,7 +368,6 @@ class GameMenu(discord.ui.View):
             return random.randint(0, 5) == 0
         elif len(self._cycler.current().hand) == 2:
             return random.random() < 0.05 / len(self._players)
-            # return random.randint(0, len(self._players) * 45) < 3
         return False
 
     def _ai_report_cycle(self) -> bool:
@@ -478,24 +474,34 @@ class GameMenu(discord.ui.View):
     def _get_valid_hand(self, player: Player) -> List[Card]:
         return [x for x in player.hand if self._can_place(x)]
 
+    def _get_stack_amount(self, rank: Rank):
+        amounts = {
+            Rank.SEVEN: 2,
+            Rank.NINE: 1,
+            Rank.JOKER: 5,
+        }
+        return amounts.get(rank)
+
     def _stack(self, rank: Rank):
         if self._stacking is None:
-            self._stacking = Stacking(rank, self._get_stacked_target(rank))
+            amount = self._get_stack_amount(rank)
+            self._stacking = Stacking(rank, self._cycler.get_next(), amount, self._cycler.current())
         else:
-            self._stacking.target = self._get_stacked_target(rank)
+            self._stacking.target = self._cycler.get_next()
         self._stacking.count += 1
 
     async def _place_card(self, interaction, player: Player, card: Card):
         self._add_notification(f'Placed {card}', player)
 
+        if card.special:
+            await self._use_immediate_special_ability(interaction, card.rank)
+
         if card.stackable:
             self._stack(card.rank)
 
-        if card.special:
-            callback = self._choose_ai_suit if player.is_ai else self._choose_suit
-            await self._use_immediate_special_ability(interaction, card.rank, callback)
         if card.rank != Rank.JACK:
             self._overridden_suit = None
+
         self._deck.add_card_at_random_position(card)
         self._table_card = card
         player.hand.remove(card)
@@ -687,7 +693,7 @@ async def maumau(interaction: discord.Interaction, min_players: Optional[int] = 
         await interaction.followup.send('No one wins, no one loses.')
     elif not winner.is_ai:
         stat, _ = GameStat.get_or_create(key='maumau_wins', user_id=winner.member.id)
-        stat.value = str(int(stat.value) + 1)
+        stat.value = str(int(stat.value or '1') + 1)
         winnings = Winnings(HumanStat.gold(random.randint(5, 15)))
         await interaction.followup.send(f'Congrats <@{winner.member.id}>, you now have a total of {stat.value} wins'
                                         f'.\nYou won {winnings.format()}')

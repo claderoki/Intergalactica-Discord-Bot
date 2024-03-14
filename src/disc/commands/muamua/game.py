@@ -104,11 +104,12 @@ class Card:
 
 
 class Deck:
-    __slots__ = ('cards', 'name')
+    __slots__ = ('cards', 'name', 'infinite')
 
     def __init__(self, name: str, cards: List[Card]):
         self.name = name
         self.cards = cards
+        self.infinite = False
 
     @classmethod
     def standard52(cls):
@@ -140,6 +141,8 @@ class Deck:
         random.shuffle(self.cards)
 
     def take_card(self):
+        if self.infinite and len(self.cards) == 0:
+            self.combine(self.copy())
         return self.cards.pop()
 
     def take_cards(self, amount: int) -> List[Card]:
