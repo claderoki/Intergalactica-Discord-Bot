@@ -299,7 +299,7 @@ class GameMenu(discord.ui.View):
             if player.is_ai:
                 suit = self._choose_ai_suit()
             else:
-                suit = self._choose_suit(interaction)
+                suit = await self._choose_suit(interaction)
             self._overridden_suit: Suit = suit or random.choice(list(Suit))
             self._add_notification(f'Suit chosen: {self._overridden_suit.name}', player)
         elif rank == Rank.QUEEN:
@@ -350,7 +350,7 @@ class GameMenu(discord.ui.View):
         await view.wait()
         return view.get_first_or_none()
 
-    async def _choose_ai_suit(self) -> Optional[Suit]:
+    def _choose_ai_suit(self) -> Optional[Suit]:
         best_suit = None
         highest = 0
         count = {}

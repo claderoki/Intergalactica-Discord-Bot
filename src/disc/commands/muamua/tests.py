@@ -2,7 +2,7 @@ import string
 import unittest
 from typing import List, Optional
 
-from src.disc.commands import Rank, Suit, GameOverException, Cycler
+from src.disc.commands import Rank, Suit, GameOverException, Cycler, ComparingStat
 from src.disc.commands.muamua import Deck, Card, Player, GameMenu, GameSettings
 
 
@@ -21,7 +21,7 @@ class TestGameMenu(GameMenu):
     def stop(self):
         pass
 
-    async def _choose_suit(self, _, player: Player) -> Suit:
+    async def _choose_suit(self, _) -> Suit:
         return Suit.HEARTS
 
     def _set_wait_time(self, time: int):
@@ -173,7 +173,7 @@ async def te():
 
 
 class GameTestCodeGenerator(GameMenu):
-    def __init__(self, initial=2):
+    def __init__(self, initial=4):
         super().__init__(players=[], settings=GameSettings(initial_cards=initial))
         self.code = []
         self._ai_speed = 5
@@ -218,3 +218,19 @@ class GameTestCodeGenerator(GameMenu):
     async def _place_card(self, interaction, player: Player, card: Card):
         await super()._place_card(interaction, player, card)
         self.code.append(f'await menu.place_card({self._card_params(card)})')
+
+
+async def generate():
+    for i in range(1000):
+        g = GameTestCodeGenerator()
+        await g.start()
+        s: ComparingStat = g._stats.get('longest_stack')
+        if s is None:
+            continue
+        rank = s.additional
+        amount = s.value
+        if rank == Rank.NINE and amount >= 2:
+            print('\n'.join(g.code))
+            return
+        if i % 100:
+            print('Still looking')
