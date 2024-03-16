@@ -104,12 +104,12 @@ class Card:
 
 
 class Deck:
-    __slots__ = ('cards', 'name', 'infinite')
+    __slots__ = ('cards', 'name', '_infinite')
 
     def __init__(self, name: str, cards: List[Card]):
         self.name = name
         self.cards = cards
-        self.infinite = False
+        self._infinite = False
 
     @classmethod
     def standard52(cls):
@@ -124,6 +124,11 @@ class Deck:
         deck = cls.standard52()
         deck.cards.append(Card(Rank.JOKER, None))
         return cls('Standard 53', deck.cards)
+
+    def infinite(self):
+        """Sets infinite to True, making it impossible to not have cards."""
+        self._infinite = True
+        return self
 
     def __mul__(self, other):
         if other != 1:
