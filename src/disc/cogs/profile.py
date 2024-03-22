@@ -2,6 +2,7 @@ import pycountry
 from discord.ext import commands, tasks
 
 import src.disc.helpers.pretty as pretty
+from src.config import config
 from src.disc.cogs.core import BaseCog
 from src.disc.errors.base import SendableException
 from src.disc.helpers.converters import EnumConverter

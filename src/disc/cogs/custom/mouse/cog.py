@@ -8,7 +8,6 @@ import praw
 from discord.ext import commands, tasks
 
 from src.config import config
-from src.disc.cogs.bumpreminders.helpers import DisboardBumpReminder
 from src.disc.cogs.custom.shared.cog import CustomCog
 from src.disc.cogs.custom.shared.helpers.praw_cache import PrawInstanceCache
 from src.disc.helpers.known_guilds import KnownGuild
@@ -84,7 +83,6 @@ class Mouse(CustomCog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        DisboardBumpReminder.cache(self.guild_id, 884021230498373662)
 
         praw_instance = praw.Reddit(
             client_id=config.environ["mouse_reddit_client_id"],

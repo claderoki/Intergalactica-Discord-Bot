@@ -11,6 +11,7 @@ from src.classes import Mode, Config
 from src.disc.errors.base import SendableException
 from src.disc.helpers.embed import Embed
 from src.disc.helpers.general import Translator
+from src.disc.helpers.known_guilds import KnownGuild
 from src.disc.helpers.waiters.base import Cancelled
 from src.wrappers.hue_bridge import HueBridgeCall
 from src.wrappers.openweathermap import OpenWeatherMapApi
@@ -123,26 +124,18 @@ class Locus(commands.Bot):
             "profile",
             "conversions.cog",
             "management",
-            "games",
-            "inactive",
             "reddit",
             "reminders.cog",
             "admin",
             "misc",
             "prank",
-            "milkyway.cog",
             "pigeon.cog",
             "custom.mouse.cog",
             "custom.c3po.cog",
             "custom.shared.cog",
             "birthdayreminders.cog",
-            "inactivechannels.cog",
             "welcoming.cog",
-            "groups",
         ]
-
-        if True:
-            cogs.append("intergalactica")
 
         for cog in cogs:
             await self.load_cog(cog)

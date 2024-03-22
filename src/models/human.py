@@ -192,11 +192,6 @@ class Human(BaseModel):
         elif show_all:
             values.append(f"{constants.GOLD_EMOJI} N/A")
 
-        if guild is not None:
-            profile = models.GuildRewardsProfile.get_or_none(guild_id=guild.id, user_id=self.user_id)
-            if profile is not None:
-                values.append(f"🍀 {profile.points}")
-
         if len(values) == 0:
             values.append("N/A")
 
