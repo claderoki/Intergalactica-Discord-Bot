@@ -6,7 +6,7 @@ from src.models.helpers import create
 
 @create()
 class Pet(BaseModel):
-    guild_id = peewee.BigIntegerField(null=False)
+    guild_id = GuildIdField(null=False)
     alive = peewee.BooleanField(null=False, default=True)
     name = peewee.TextField(null=False)
 
