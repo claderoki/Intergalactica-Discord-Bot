@@ -12,7 +12,7 @@ from src.disc.helpers.pretty import Row, Table, limit_str
 from src.disc.helpers.waiters import *
 from src.models import (Date, Earthling, Exploration, Fight, Human,
                         HumanItem, Item, LanguageMastery, Mail, Pigeon,
-                        PigeonRelationship, Reminder, Scenario, SystemMessage, database)
+                        PigeonRelationship, Reminder, SystemMessage, database)
 from src.utils.country import Country
 from src.utils.enums import Gender
 from .exploration_retrieval import ExplorationRetrieval, MailRetrieval
@@ -726,28 +726,6 @@ AND (pigeon1_id = {ctx.pigeon.id} OR pigeon2_id = {ctx.pigeon.id})
         embed = get_pigeon_tutorial_embed(ctx)
         paginator = Paginator.from_embed(ctx, embed, max_fields=10)
         await paginator.wait()
-
-    @pigeon.command(name="storytime")
-    @commands.cooldown(1, (45 * 60), type=commands.BucketType.user)
-    async def pigeon_storytime(self, ctx):
-        """Old."""
-        human = ctx.get_human()
-
-        scenario = Scenario.get_random(win=random.randint(0, 5) != 1)
-        money = scenario.random_value
-        embed = discord.Embed(color=ctx.guild_color)
-        embed.description = scenario.text
-        embed.set_thumbnail(
-            url="https://cdn.discordapp.com/attachments/705242963550404658/766680730457604126/pigeon_tiny.png")
-
-        if money > 0:
-            embed.description += f" You earn {GOLD_EMOJI} {abs(money)}"
-        elif money < 0:
-            embed.description += f" You lose {GOLD_EMOJI} {abs(money)}"
-
-        human.gold += money
-        human.save()
-        await ctx.send(embed=embed)
 
     @tasks.loop(seconds=30)
     async def date_ticker(self):

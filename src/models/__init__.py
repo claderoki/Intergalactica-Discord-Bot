@@ -5,8 +5,6 @@ from .human import Human, Item, HumanItem, ItemCategory
 from .intergalactica import Earthling, Reminder, TemporaryVoiceChannel, TemporaryTextChannel, TemporaryChannel
 from .settings import Translation, Locale, UserSetting
 from .ticket import Ticket, Reply
-from .poll import Poll, PollTemplate, Vote, Option
-from .scene import Scene, Scenario
 from .pigeon import Pigeon, PigeonRelationship, Fight, Exploration, Mail, LanguageMastery, SystemMessage, Date
 from .admin import Giveaway, DailyActivity, GameRole, GameRoleSettings
 from .prank import NicknamePrank, Prankster, EmojiPrank, RolePrank

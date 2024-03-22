@@ -8,7 +8,6 @@ import pycountry
 from dateutil.relativedelta import relativedelta
 
 from src.config import config
-import src.disc.cogs.switch as switch
 from src.utils.timezone import Timezone
 from src.utils.zodiac import ZodiacSign
 from .base import BaseModel, EnumField, CountryField
@@ -202,7 +201,7 @@ class Human(BaseModel):
             values.append("N/A")
 
         if not show_all:
-            classes = (switch.settings.FriendCodeSetting,)
+            classes = []
 
             for cls in classes:
                 model = cls.get_or_none(human=self)
