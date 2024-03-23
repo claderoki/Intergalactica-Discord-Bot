@@ -62,11 +62,7 @@ class Inactive(BaseCog):
             if earthling.guild is None or earthling.member is None:
                 continue
             if earthling.inactive:
-                if earthling.guild_id == KnownGuild.mouse:
-                    if 852955124967276556 not in [x.id for x in earthling.member.roles]:
-                        yield earthling
-                else:
-                    yield earthling
+                yield earthling
 
     @commands.has_guild_permissions(administrator=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -78,9 +74,8 @@ class Inactive(BaseCog):
 
         inactive_members = []
         for earthling in self.iter_inactives(ctx.guild):
-            if earthling.member.premium_since is None or ctx.guild.id == KnownGuild.intergalactica:
-                inactive_members.append(earthling.member)
-                lines.append(str(earthling.member))
+            inactive_members.append(earthling.member)
+            lines.append(str(earthling.member))
 
         if len(inactive_members) == 0:
             return await ctx.error("NO INACTIVES TO BE DESTROYED")

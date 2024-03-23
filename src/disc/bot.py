@@ -130,11 +130,9 @@ class Locus(commands.Bot):
             "misc",
             "prank",
             "pigeon.cog",
-            "custom.mouse.cog",
             "custom.c3po.cog",
             "custom.shared.cog",
             "birthdayreminders.cog",
-            "welcoming.cog",
         ]
 
         for cog in cogs:

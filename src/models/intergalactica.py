@@ -11,144 +11,6 @@ from .base import BaseModel, EnumField, EmojiField
 from .human import Human
 
 
-class MentionGroup(BaseModel):
-    name = peewee.CharField(null=False)
-    guild_id = peewee.BigIntegerField(null=False)
-
-    def join(self, user, is_owner=True):
-        return MentionMember.get_or_create(
-            user_id=user.id,
-            group=self,
-            is_owner=is_owner
-        )[1]
-
-    def leave(self, user):
-        query = MentionMember.delete()
-        query = query.where(MentionMember.user_id == user.id)
-        query = query.where(MentionMember.group == self)
-        return query.execute()
-
-    def is_member(self, user):
-        try:
-            MentionMember.get(user_id=user.id, group=self)
-        except MentionMember.DoesNotExist:
-            return False
-        else:
-            return True
-
-    @property
-    def mention_string(self):
-        mentions = []
-        for mention_member in self.mention_members:
-            if mention_member.member is not None:
-                mentions.append(mention_member.member.mention)
-        return ", ".join(mentions)
-
-    @classmethod
-    async def convert(cls, ctx, argument):
-        return cls.get(name=argument, guild_id=ctx.guild.id)
-
-    class Meta:
-        indexes = (
-            (("guild_id", "name"), True),
-        )
-
-
-class MentionMember(BaseModel):
-    user_id = peewee.BigIntegerField(null=False)
-    group = peewee.ForeignKeyField(MentionGroup, null=False, backref="mention_members")
-    is_owner = peewee.BooleanField(null=False, default=False)
-
-    @property
-    def guild(self):
-        return self.group.guild
-
-
-class TemporaryChannel(BaseModel):
-    class Status(Enum):
-        pending = 0
-        accepted = 1
-        denied = 2
-
-    class Type(Enum):
-        normal = 0
-        mini = 1
-
-    guild_id = peewee.BigIntegerField(null=True, default=None)
-    name = EmojiField(null=False)
-    topic = EmojiField(null=False)
-    channel_id = peewee.BigIntegerField(null=True)
-    user_id = peewee.BigIntegerField(null=False)
-    expiry_date = peewee.DateTimeField(null=True)
-    active = peewee.BooleanField(null=False, default=True)
-    status = EnumField(Status, null=False, default=Status.pending)
-    deny_reason = peewee.TextField(null=True)
-    pending_items = peewee.IntegerField(null=True)
-    type = EnumField(Type, null=False, default=Type.normal)
-
-    @property
-    def item_code(self):
-        if self.type == self.Type.normal:
-            return "milky_way"
-        elif self.type == self.Type.mini:
-            return "orions_belt"
-
-    @property
-    def alias_name(self):
-        if self.type == self.Type.normal:
-            return "milkyway"
-        elif self.type == self.Type.mini:
-            return "orion"
-
-    @property
-    def days(self):
-        if self.type == self.Type.normal:
-            return 7
-        elif self.type == self.Type.mini:
-            return 1
-
-    @property
-    def ticket_embed(self):
-        embed = discord.Embed(color=self.bot.get_dominant_color(None))
-        embed.set_author(icon_url=self.user.avatar_url, name=str(self.user))
-
-        embed.description = f"A temporary channel was requested.\nName: `{self.name}`\nTopic: `{self.topic}`"
-
-        footer = []
-        footer.append(f"Use '/{self.alias_name} deny {self.id} <reason>' to deny this request")
-        footer.append(f"Use '/{self.alias_name} accept {self.id}' to accept this request")
-        embed.set_footer(text="\n".join(footer))
-
-        return embed
-
-    def get_topic(self):
-        return f"{self.topic}\nexpires at {self.expiry_date} UTC"
-
-    async def update_channel_topic(self):
-        await self.channel.edit(topic=self.get_topic())
-
-    def set_expiry_date(self, delta):
-        if self.expiry_date is None:
-            self.expiry_date = datetime.datetime.utcnow()
-        self.expiry_date = self.expiry_date + delta
-
-    def get_category(self):
-        category_id = {KnownGuild.intergalactica: 764486536783462442, KnownGuild.cerberus: 842154624869859369,
-                       KnownGuild.mouse: 729908592911843338}[self.guild.id]
-        for category in self.guild.categories:
-            if category.id == category_id:
-                return category
-
-    async def create_channel(self):
-        channel = await self.guild.create_text_channel(
-            name=self.name,
-            topic=self.get_topic(),
-            category=self.get_category()
-        )
-        self.channel_id = channel.id
-        return channel
-
-
 class Reminder(BaseModel):
     channel_id = peewee.BigIntegerField(null=True)
     user_id = peewee.BigIntegerField(null=False)
@@ -173,9 +35,6 @@ class Earthling(BaseModel):
     @property
     def inactive(self):
         delta = datetime.timedelta(weeks=2)
-        if self.guild_id == KnownGuild.mouse:
-            delta = datetime.timedelta(weeks=4)
-
         last_active: datetime.datetime = self.last_active or self.member.joined_at
         last_active = last_active.replace(tzinfo=datetime.timezone.utc)
 
@@ -204,28 +63,6 @@ class Earthling(BaseModel):
             user_id=member.id,
             human=config.bot.get_human(user=member)
         )
-
-
-class TemporaryVoiceChannel(BaseModel):
-    guild_id = peewee.BigIntegerField(null=False)
-    channel_id = peewee.BigIntegerField(null=False)
-
-    def delete_instance(self, *args, **kwargs):
-        if self.channel is not None:
-            asyncio.gather(self.channel.delete(reason="Temporary VC channel removed."))
-
-        super().delete_instance(*args, **kwargs)
-
-
-class TemporaryTextChannel(BaseModel):
-    guild_id = peewee.BigIntegerField(null=False)
-    channel_id = peewee.BigIntegerField(null=False)
-    temp_vc = peewee.ForeignKeyField(TemporaryVoiceChannel, null=False)
-
-    def delete_instance(self, *args, **kwargs):
-        if self.channel is not None:
-            asyncio.gather(self.channel.delete(reason="Temporary VC channel removed."))
-        super().delete_instance(*args, **kwargs)
 
 
 class Advertisement(BaseModel):
