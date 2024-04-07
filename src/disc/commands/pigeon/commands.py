@@ -9,13 +9,13 @@ from discord import app_commands
 from src.disc.commands.base.cog import BaseGroupCog
 from src.disc.commands.base.decorators import extras
 from src.disc.commands.base.probabilities import Probabilities, Probability
-from src.disc.commands.base.validation import does_not_have_pigeon, has_status, has_gold, has_pigeon, food_less_than, \
-    cleanliness_less_than, happiness_less_than, health_less_than
+from src.disc.commands.base.validation import has_gold
 from src.disc.commands.pigeon.helpers import PigeonHelper
 from src.disc.commands.pigeon.ui import SpaceActionView
+from src.disc.commands.pigeon.validation import has_pigeon, has_status, food_less_than, cleanliness_less_than, \
+    does_not_have_pigeon, health_less_than, happiness_less_than
 from src.disc.helpers.pretty import prettify_dict
 from src.models import Pigeon, Item
-from src.models.base import PercentageField
 from src.models.pigeon import ExplorationPlanetLocation, SpaceExploration
 from src.utils.stats import Winnings, HumanStat, PigeonStat
 

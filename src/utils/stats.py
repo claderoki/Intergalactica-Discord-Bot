@@ -97,3 +97,9 @@ class Winnings:
                 else:
                     stats[stat.name] = stat.copy()
         return Winnings(*stats.values())
+
+    def __len__(self):
+        return len(self._stats)
+
+    def __iter__(self):
+        return iter(self._stats)

@@ -1,4 +1,5 @@
 import json
+import typing
 from enum import Enum
 
 import emoji
@@ -136,6 +137,10 @@ class BaseModel(UnititializedModel):
         self._guild = None
         self._user = None
         self._channel = None
+
+    @classmethod
+    def get_or_create(cls, **kwargs) -> typing.Tuple[typing.Self, bool]:
+        return super().get_or_create(**kwargs)
 
     @property
     def guild(self) -> discord.Guild:

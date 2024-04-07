@@ -139,6 +139,7 @@ class Locus(commands.Bot):
             await self.load_cog(cog)
 
         await self.load_extension("src.disc.commands.pigeon.commands")
+        await self.load_extension("src.disc.commands.pet.commands")
 
     @staticmethod
     def get_id(obj):
