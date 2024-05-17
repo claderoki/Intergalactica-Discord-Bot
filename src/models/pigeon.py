@@ -201,7 +201,6 @@ class Pigeon(BaseModel):
             PigeonStat.cleanliness(self.cleanliness),
             PigeonStat.happiness(self.happiness),
             PigeonStat.experience(self.experience),
-            PigeonStat.gold_modifier(self.gold_modifier),
         ]
 
 

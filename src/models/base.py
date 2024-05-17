@@ -139,7 +139,7 @@ class BaseModel(UnititializedModel):
         self._channel = None
 
     @classmethod
-    def get_or_create(cls, **kwargs) -> typing.Tuple[typing.Self, bool]:
+    def get_or_create(cls, **kwargs) -> typing.Tuple[typing.Any, bool]:
         return super().get_or_create(**kwargs)
 
     @property

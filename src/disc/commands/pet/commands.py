@@ -6,17 +6,17 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.disc.commands.base.cog import BaseGroupCog
-from src.models.pet import Pet, Mob, PetCaretaker, Vampiric, MushroomExpert, PetPerk, Perk
+from src.models.pet import Pet, Mob, PetCaretaker, Vampiric, MushroomExpert, PetPerk
 from src.utils.stats import Stat, Winnings
 
 
 class PetCaretakerStat(Stat):
     @classmethod
-    def trust(cls, amount: int) -> typing.Self:
+    def trust(cls, amount: int):
         return cls('trust', amount, emoji='💩')
 
     @classmethod
-    def points(cls, amount: int) -> typing.Self:
+    def points(cls, amount: int):
         return cls('points', amount, emoji='🌾')
 
 

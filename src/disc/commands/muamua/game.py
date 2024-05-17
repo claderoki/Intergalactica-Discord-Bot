@@ -104,12 +104,13 @@ class Card:
 
 
 class Deck:
-    __slots__ = ('cards', 'name', '_infinite')
+    __slots__ = ('cards', 'name', '_infinite', '_constructor')
 
-    def __init__(self, name: str, cards: List[Card]):
+    def __init__(self, name: str, cards: List[Card], constructor):
         self.name = name
         self.cards = cards
         self._infinite = False
+        self._constructor = constructor
 
     @classmethod
     def standard52(cls):
@@ -117,13 +118,20 @@ class Deck:
         for suit in Suit:
             for i in range(1, 14):
                 cards.append(Card(Rank(i), suit))
-        return cls('Standard 52', cards)
+        return cls('Standard 52', cards, cls.standard52)
 
     @classmethod
     def standard53(cls):
         deck = cls.standard52()
         deck.cards.append(Card(Rank.JOKER, None))
-        return cls('Standard 53', deck.cards)
+        return cls('Standard 53', deck.cards, cls.standard53)
+
+    @classmethod
+    def standard54(cls):
+        deck = cls.standard52()
+        deck.cards.append(Card(Rank.JOKER, Suit.HEARTS))
+        deck.cards.append(Card(Rank.JOKER, Suit.DIAMONDS))
+        return cls('Standard 54', deck.cards, cls.standard54)
 
     def infinite(self):
         """Sets infinite to True, making it impossible to not have cards."""
@@ -137,7 +145,7 @@ class Deck:
         return self
 
     def copy(self) -> 'Deck':
-        return Deck(self.name, [x.copy() for x in self.cards])
+        return Deck(self.name, [x.copy() for x in self.cards], self._constructor)
 
     def combine(self, deck: 'Deck'):
         self.cards.extend(deck.cards)
@@ -147,7 +155,8 @@ class Deck:
 
     def take_card(self):
         if self.infinite and len(self.cards) == 0:
-            self.combine(self.copy())
+            self.combine(self._constructor())
+            self.shuffle()
         return self.cards.pop()
 
     def take_cards(self, amount: int) -> List[Card]:

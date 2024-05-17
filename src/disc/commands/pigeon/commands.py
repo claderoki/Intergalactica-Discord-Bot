@@ -1,6 +1,7 @@
 import datetime
 import random
-from typing import List
+from abc import ABC
+from typing import Optional
 
 import discord
 from discord.ext import commands
@@ -9,15 +10,99 @@ from discord import app_commands
 from src.disc.commands.base.cog import BaseGroupCog
 from src.disc.commands.base.decorators import extras
 from src.disc.commands.base.probabilities import Probabilities, Probability
-from src.disc.commands.base.validation import has_gold
+from src.disc.commands.base.validation import has_gold, Invertable, Validation
 from src.disc.commands.pigeon.helpers import PigeonHelper
 from src.disc.commands.pigeon.ui import SpaceActionView
-from src.disc.commands.pigeon.validation import has_pigeon, has_status, food_less_than, cleanliness_less_than, \
-    does_not_have_pigeon, health_less_than, happiness_less_than
 from src.disc.helpers.pretty import prettify_dict
 from src.models import Pigeon, Item
 from src.models.pigeon import ExplorationPlanetLocation, SpaceExploration
 from src.utils.stats import Winnings, HumanStat, PigeonStat
+
+
+class PigeonValidation(Validation[Pigeon], ABC):
+    def get_target_type(self):
+        return Pigeon
+
+    def find_target(self, user_id: int) -> Optional[Pigeon]:
+        from src.disc.commands.pigeon.helpers import PigeonHelper
+        return PigeonHelper().get_pigeon(user_id)
+
+
+class HasPigeon(PigeonValidation, Invertable):
+    def _validate(self, target: Pigeon) -> bool:
+        return target is not None
+
+    def failure_message_self(self) -> str:
+        return 'You do not have a pigeon.'
+
+    def failure_message_other(self) -> str:
+        return 'The other person does not have a pigeon.'
+
+    def failure_message_self_inverted(self) -> str:
+        return 'You already have a pigeon.'
+
+    def failure_message_other_inverted(self) -> str:
+        return 'The other person already has a pigeon.'
+
+
+class HasStatus(PigeonValidation):
+    def __init__(self, status: Pigeon.Status):
+        super().__init__()
+        self.status = status
+
+    def _validate(self, target: Pigeon) -> bool:
+        return target.status == self.status
+
+    def failure_message_self(self) -> str:
+        return f'Your pigeon needs to be {self.status} to perform this action.'
+
+    def failure_message_other(self) -> str:
+        return f'The other persons pigeon needs to be {self.status} to perform this action.'
+
+
+class StatLessThan(PigeonValidation):
+    def __init__(self, name: str, value: int):
+        super().__init__()
+        self.name = name
+        self.value = value
+
+    def _validate(self, target: Pigeon) -> bool:
+        value = getattr(target, self.name)
+        return value < self.value
+
+    def failure_message_self(self) -> str:
+        return f'Your pigeon needs to have under {self.value} {self.name} for this action'
+
+    def failure_message_other(self) -> str:
+        return f'The other persons pigeon needs to have under {self.value} {self.name} for this action'
+
+
+def food_less_than(value: int):
+    return StatLessThan('food', value).wrap()
+
+
+def cleanliness_less_than(value: int):
+    return StatLessThan('cleanliness', value).wrap()
+
+
+def health_less_than(value: int):
+    return StatLessThan('health', value).wrap()
+
+
+def happiness_less_than(value: int):
+    return StatLessThan('happiness', value).wrap()
+
+
+def has_status(status: Pigeon.Status):
+    return HasStatus(status).wrap()
+
+
+def has_pigeon():
+    return HasPigeon().wrap()
+
+
+def does_not_have_pigeon():
+    return HasPigeon().invert().wrap()
 
 
 class StatUpdate(Probability):
@@ -149,7 +234,12 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
     @app_commands.command(name="space", description="Get your pigeon back from space")
     async def space(self, interaction: discord.Interaction):
         targets = await self.validate(interaction)
-        exploration: SpaceExploration = SpaceExploration.get(pigeon=targets.get_pigeon(), finished=False)
+        exploration: SpaceExploration = SpaceExploration.get_or_none(pigeon=targets.get_pigeon(), finished=False)
+        if exploration is None:
+            targets.get_pigeon().status = Pigeon.Status.idle
+            targets.get_pigeon().save()
+            await interaction.response.send_message('Weird')
+            return
 
         if exploration.arrival_date > datetime.datetime.utcnow():
             await interaction.response.send_message('Still traveling, dumbass')
