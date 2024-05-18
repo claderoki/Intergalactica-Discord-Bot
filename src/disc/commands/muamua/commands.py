@@ -709,13 +709,3 @@ async def maumau_scoreboard(interaction: discord.Interaction):
     values.sort(key=lambda x: int(x.value), reverse=True)
     messages = [f'<@{x.user_id}>: {x.value}' for x in values]
     await interaction.response.send_message('\n'.join(messages))
-
-# @config.tree.command(name="change_profile_image")
-# async def change_pic(interaction: discord.Interaction):
-#     bot: discord.Client = config.bot
-#     guild = interaction.guild
-#     guild.
-#     member = interaction.guild.self_role
-#     member.edit()
-#
-#     await interaction.response.send_message('\n'.join(messages))
