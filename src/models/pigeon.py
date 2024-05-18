@@ -428,7 +428,7 @@ class ToWinnings:
             PigeonStat.food(self.food)
         ]
         if self.item is not None:
-            stats.append(HumanStat.item(self.item.id))
+            stats.append(HumanStat.item(self.item))
         return Winnings(*[x for x in stats if x.amount])
 
 

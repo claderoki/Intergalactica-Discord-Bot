@@ -254,18 +254,18 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         r = await interaction.original_response()
         menu.refresh = lambda: r.edit(embed=embed, view=menu)
         await menu.wait()
-
-    @has_pigeon()
-    @app_commands.command(name="test", description="test")
-    async def test(self, interaction: discord.Interaction):
-        targets = await self.validate(interaction)
-
-        winnings = Winnings(HumanStat.gold(10), HumanStat.item(Item.get(id=82)))
-
-        embed = discord.Embed()
-        embed.title = 'Title'
-        embed.description = winnings.format()
-        await interaction.response.send_message(embed=embed)
+    #
+    # @has_pigeon()
+    # @app_commands.command(name="test", description="test")
+    # async def test(self, interaction: discord.Interaction):
+    #     targets = await self.validate(interaction)
+    #
+    #     winnings = Winnings(HumanStat.gold(10), HumanStat.item(Item.get(id=82)))
+    #
+    #     embed = discord.Embed()
+    #     embed.title = 'Title'
+    #     embed.description = winnings.format()
+    #     await interaction.response.send_message(embed=embed)
 
     # @app_commands.command(name="manage", description="Manage")
     # async def manage(self, interaction: discord.Interaction):

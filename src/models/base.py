@@ -299,6 +299,10 @@ class GuildIdField(DiscordSnowflakeField):
     pass
 
 
+class MessageIdField(DiscordSnowflakeField):
+    pass
+
+
 class UserIdField(DiscordSnowflakeField):
     pass
 

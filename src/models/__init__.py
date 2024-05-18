@@ -10,6 +10,7 @@ from .reddit import Subreddit
 from .intergalactica import Advertisement, AdvertisementSubreddit
 from .conversation import Conversant, Conversation, Participant
 from .conversions import Currency, Measurement, StoredUnit
+from .crossroad import StarboardMapping
 
 from .helpers import tables_to_create, tables_to_drop
 from .game import GameStat
