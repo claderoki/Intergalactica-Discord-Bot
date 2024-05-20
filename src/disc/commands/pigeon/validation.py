@@ -47,10 +47,11 @@ class HasStatus(PigeonValidation):
 
 
 class StatLessThan(PigeonValidation):
-    def __init__(self, name: str, value: int):
+    def __init__(self, name: str, value: int, self_override: str):
         super().__init__()
         self.name = name
         self.value = value
+        self.failure_message_self_override = self_override
 
     def _validate(self, target: Pigeon) -> bool:
         value = getattr(target, self.name)
@@ -64,19 +65,19 @@ class StatLessThan(PigeonValidation):
 
 
 def food_less_than(value: int):
-    return StatLessThan('food', value).wrap()
+    return StatLessThan('food', value,'Your pigeon is already full.').wrap()
 
 
 def cleanliness_less_than(value: int):
-    return StatLessThan('cleanliness', value).wrap()
+    return StatLessThan('cleanliness', value, 'Your pigeon is already clean.').wrap()
 
 
 def health_less_than(value: int):
-    return StatLessThan('health', value).wrap()
+    return StatLessThan('health', value, 'Your pigeon is already fully healed.').wrap()
 
 
 def happiness_less_than(value: int):
-    return StatLessThan('happiness', value).wrap()
+    return StatLessThan('happiness', value, 'Your pigeon is already happy.').wrap()
 
 
 def has_status(status: Pigeon.Status):

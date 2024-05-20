@@ -252,17 +252,20 @@ class Locus(commands.Bot):
             await self.owner.send(f"```\nCommand '{ctx.command}' Error: '{exception}'```")
             raise error
 
+    async def _sync_to_guild(self, guild_id: int):
+        self.tree.copy_global_to(guild=discord.Object(id=guild_id))
+        await self.tree.sync(guild=discord.Object(id=guild_id))
+
     async def setup_hook(self):
         import src.disc.commands
         await self.load_all_cogs()
 
-        self.tree.copy_global_to(guild=discord.Object(id=1163169122868269187))
-        await self.tree.sync(guild=discord.Object(id=1163169122868269187))
+        await self._sync_to_guild(1163169122868269187)
         if self.production:
             await self.tree.sync()
         else:
-            self.tree.copy_global_to(guild=discord.Object(id=761624318291476482))
-            await self.tree.sync(guild=discord.Object(id=761624318291476482))
+            await self._sync_to_guild(761624318291476482)
+            await self._sync_to_guild(1013158959315701930)
 
     def log(self, message: str):
         if self.owner is not None:

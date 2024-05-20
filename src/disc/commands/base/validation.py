@@ -30,10 +30,25 @@ class Invertable(ABC):
 class Validation(ABC, Generic[T]):
     def __init__(self):
         super().__init__()
+        self.failure_message_self_override: Optional[str] = None
+        self.failure_message_other_override: Optional[str] = None
 
     @abc.abstractmethod
     def _validate(self, target: T) -> bool:
         pass
+
+    def get_message(self, other: bool):
+        func = 'failure_message_'
+        func += 'other' if other else 'self'
+        if isinstance(self, Invertable) and self.inverted:
+            func += '_inverted'
+
+        override = getattr(self, f'{func}_override', None)
+        if override:
+            return override
+        if hasattr(self, f'{func}_override'):
+            pass
+        error = getattr(self, func)()
 
     @abc.abstractmethod
     def failure_message_self(self) -> str:

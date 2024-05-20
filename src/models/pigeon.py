@@ -70,8 +70,13 @@ class TravelActivity(Activity):
         return duration
 
 
+class Gendered:
+    def get_gender(self) -> Gender:
+        pass
+
+
 @create()
-class Pigeon(BaseModel):
+class Pigeon(BaseModel, Gendered):
     emojis = {
         "name": "📛",
         "gold": constants.GOLD_EMOJI,
@@ -111,6 +116,9 @@ class Pigeon(BaseModel):
     jailed_until = peewee.DateTimeField(null=True)
     pooped_on_count = peewee.IntegerField(null=False, default=0)
     poop_victim_count = peewee.IntegerField(null=False, default=0)
+
+    def get_gender(self) -> Gender:
+        return self.gender
 
     @property
     def is_jailed(self):
@@ -482,6 +490,5 @@ class SpaceExplorationScenarioWinnings(BaseModel, ToWinnings):
 
     @classmethod
     def for_exploration(cls, exploration_id: int) -> peewee.Query:
-        return SpaceExplorationScenarioWinnings.select()\
+        return SpaceExplorationScenarioWinnings.select() \
             .where(SpaceExplorationScenarioWinnings.exploration == exploration_id)
-
