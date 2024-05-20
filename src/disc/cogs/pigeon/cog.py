@@ -16,6 +16,7 @@ from src.models import (Date, Earthling, Exploration, Fight, Human,
 from src.utils.country import Country
 from src.utils.enums import Gender
 from .exploration_retrieval import ExplorationRetrieval, MailRetrieval
+from ...helpers.known_guilds import KnownGuild
 
 
 class ItemWaiter(StrWaiter):
@@ -117,6 +118,9 @@ class PigeonCog(BaseCog, name="Pigeon"):
         return embed
 
     def get_pigeon_channel(self, guild):
+        if guild.id == KnownGuild.crossroads:
+            return guild.get_channel(1241342425193123850)
+
         for channel in guild.text_channels:
             if 'bot-spam' in channel.name.lower():
                 return channel
@@ -456,7 +460,8 @@ ORDER BY score DESC;
                 embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to explore!"
                 embed.set_footer(text="Check back at",
                                  icon_url="https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
-                embed.timestamp = activity.end_date
+                ts: datetime.datetime = activity.end_date
+                embed.timestamp = ts.replace(tzinfo=datetime.timezone.utc)
                 return asyncio.gather(ctx.send(embed=embed))
         elif isinstance(activity, Mail):
             if activity.end_date_passed:
