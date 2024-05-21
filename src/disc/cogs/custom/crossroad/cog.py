@@ -114,7 +114,6 @@ class Crossroad(CustomCog):
     async def on_ready(self):
         for mapping in StarboardMapping.select().where(StarboardMapping.guild_id == self.guild_id):
             self._mapping[mapping.user_message_id] = mapping.bot_message_id
-        print('Mapping', self._mapping)
 
 
 async def setup(bot):
