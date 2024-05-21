@@ -126,6 +126,7 @@ class Locus(commands.Bot):
             "management",
             "reddit",
             "reminders.cog",
+            "games",
             "admin",
             "misc",
             "prank",
