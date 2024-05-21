@@ -9,7 +9,7 @@ from src.models.pigeon import ExplorationPlanetLocation
 
 
 class PigeonHelper:
-    @config.cache(category='pigeon')
+    # @config.cache(category='pigeon')
     def get_pigeon(self, user_id: int) -> Optional[Pigeon]:
         return get_active_pigeon(user_id)
 
@@ -23,8 +23,8 @@ class PigeonHelper:
                 return location
 
 
-class HumanHelper:
-    @config.cache(category='human')
-    def get_human(self, user_id: int) -> Optional[int]:
-        human, _ = Human.get_or_create(user_id=user_id)
-        return human
+# class HumanHelper:
+#     @config.cache(category='human')
+#     def get_human(self, user_id: int) -> Optional[int]:
+#         human, _ = Human.get_or_create(user_id=user_id)
+#         return human
