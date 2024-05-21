@@ -89,7 +89,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
-    @food_less_than(100)
+    @food_less_than(100, 'Your pigeon is already full.')
     @probabilities(
         StatUpdate(20, 20, 'You feed your pigeon some regular seeds.', 1),
         StatUpdate(25, 20, 'You feed your pigeon some premium seeds.', 0.1),
@@ -102,7 +102,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
-    @cleanliness_less_than(100)
+    @cleanliness_less_than(100, 'Your pigeon is already clean.')
     @probabilities(
         StatUpdate(20, 20, 'You give your pigeon a regular bath.', 1),
         StatUpdate(25, 20, 'You give your pigeon a premium bath.', 0.1),
@@ -115,7 +115,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
-    @happiness_less_than(100)
+    @happiness_less_than(100, 'Your pigeon is already really happy.')
     @app_commands.command(name="play", description="Play with your pigeon.")
     async def play(self, interaction: discord.Interaction):
         await self.__update_stat(interaction, PigeonStat.happiness(20), 20,
@@ -123,7 +123,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
-    @health_less_than(100)
+    @health_less_than(100, 'Your pigeon is already very healthy.')
     @app_commands.command(name="heal", description="Heal your pigeon.")
     async def heal(self, interaction: discord.Interaction):
         await self.__update_stat(interaction, PigeonStat.health(20), 20, 'You heal your pigeon!')

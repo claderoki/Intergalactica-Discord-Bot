@@ -96,6 +96,11 @@ class Pigeon(BaseModel, Gendered):
         space_exploring = "🗺️"
         jailed = ""
 
+        def get_verb(self):
+            if self == self.space_exploring:
+                return 'exploring space'
+            return self.name
+
     class Condition(Enum):
         active = 1
         ran_away = 2

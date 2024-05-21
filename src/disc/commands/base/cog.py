@@ -43,11 +43,7 @@ class BaseGroupCog(commands.GroupCog):
             if type not in targets:
                 targets[type] = validation.find_target(user_id)
             if not validation.validate(targets[type]):
-                func = 'failure_message_'
-                func += 'other' if other else 'self'
-                if isinstance(validation, Invertable) and validation.inverted:
-                    func += '_inverted'
-                errors.append(getattr(validation, func)())
+                errors.append(validation.get_message(other=other))
                 return CheckResult(targets, errors)
 
         return CheckResult(targets, errors)

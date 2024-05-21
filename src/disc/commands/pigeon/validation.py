@@ -40,14 +40,14 @@ class HasStatus(PigeonValidation):
         return target.status == self.status
 
     def failure_message_self(self) -> str:
-        return f'Your pigeon needs to be {self.status} to perform this action.'
+        return f'Your pigeon needs to be {self.status.get_verb()} to perform this action.'
 
     def failure_message_other(self) -> str:
-        return f'The other persons pigeon needs to be {self.status} to perform this action.'
+        return f'The other persons pigeon needs to be {self.status.get_verb()} to perform this action.'
 
 
 class StatLessThan(PigeonValidation):
-    def __init__(self, name: str, value: int, self_override: str):
+    def __init__(self, name: str, value: int, self_override: str = None):
         super().__init__()
         self.name = name
         self.value = value
@@ -64,20 +64,20 @@ class StatLessThan(PigeonValidation):
         return f'The other persons pigeon needs to have under {self.value} {self.name} for this action'
 
 
-def food_less_than(value: int):
-    return StatLessThan('food', value,'Your pigeon is already full.').wrap()
+def food_less_than(value: int, override: str = None):
+    return StatLessThan('food', value, override).wrap()
 
 
-def cleanliness_less_than(value: int):
-    return StatLessThan('cleanliness', value, 'Your pigeon is already clean.').wrap()
+def cleanliness_less_than(value: int, override: str = None):
+    return StatLessThan('cleanliness', value, override).wrap()
 
 
-def health_less_than(value: int):
-    return StatLessThan('health', value, 'Your pigeon is already fully healed.').wrap()
+def health_less_than(value: int, override: str = None):
+    return StatLessThan('health', value, override).wrap()
 
 
-def happiness_less_than(value: int):
-    return StatLessThan('happiness', value, 'Your pigeon is already happy.').wrap()
+def happiness_less_than(value: int, override: str = None):
+    return StatLessThan('happiness', value, override).wrap()
 
 
 def has_status(status: Pigeon.Status):

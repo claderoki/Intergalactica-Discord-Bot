@@ -46,9 +46,7 @@ class Validation(ABC, Generic[T]):
         override = getattr(self, f'{func}_override', None)
         if override:
             return override
-        if hasattr(self, f'{func}_override'):
-            pass
-        error = getattr(self, func)()
+        return getattr(self, func)()
 
     @abc.abstractmethod
     def failure_message_self(self) -> str:
