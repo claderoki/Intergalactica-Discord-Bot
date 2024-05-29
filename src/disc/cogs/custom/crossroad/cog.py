@@ -1,6 +1,7 @@
 import asyncio
 
 import discord
+from discord import Attachment
 from discord.ext import commands
 
 from src.disc.cogs.custom.shared.cog import CustomCog
@@ -9,7 +10,7 @@ from src.models.crossroad import StarboardMapping
 
 
 class KnownChannel:
-    starboard = 1115301555504160790 # 1014293774119215154 # 1115301555504160790
+    starboard = 1115301555504160790  # 1014293774119215154
 
 
 class MessageLink(discord.ui.View):
@@ -38,7 +39,7 @@ class Crossroad(CustomCog):
             return
         if payload.channel_id == KnownChannel.starboard:
             return
-        # wait 5 mins or until in progress is removed.
+
         if payload.message_id in self._in_progress:
             for _ in range(5):
                 await asyncio.sleep(60)
@@ -55,6 +56,13 @@ class Crossroad(CustomCog):
             raise e
         finally:
             self._in_progress.remove(payload.message_id)
+
+    def is_image(self, attachment: Attachment):
+        if attachment.content_type == 'image/jpeg':
+            return True
+        if attachment.content_type == 'image/png':
+            return True
+        return False
 
     async def _process(self, payload: discord.RawReactionActionEvent):
         guild = self.bot.get_guild(self.guild_id)
@@ -92,8 +100,13 @@ class Crossroad(CustomCog):
                 description.append(f'> {reference.content}')
                 description.append('')
 
-            description.append(message.content) # probably include images too
+            description.append(message.content)
             embed = discord.Embed(description='\n'.join(description))
+
+            for attachment in message.attachments:
+                if self.is_image(attachment):
+                    embed.set_image(url=attachment.url)
+                    break
             embed.set_author(name=str(message.author.name), icon_url=message.author.display_avatar)
             embed.set_footer(text=f'#{from_channel.name} | {message.created_at.strftime("%Y-%m-%d %H:%M")}')
 
