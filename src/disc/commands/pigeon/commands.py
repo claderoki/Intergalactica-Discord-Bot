@@ -1,11 +1,13 @@
 import datetime
 import random
-from typing import Callable, List, Union
+import re
+from typing import Callable, List, Union, Any
 
 import discord
 from discord.app_commands import guild_only
 from discord.ext import commands
-from discord import app_commands
+from discord import app_commands, Colour
+from discord.types.embed import EmbedType
 
 from src.disc.commands.base.cog import BaseGroupCog
 from src.disc.commands.base.decorators import extras
@@ -26,21 +28,55 @@ class CustomPlaceholder:
         self.placeholder = placeholder
         self._value = getter
 
-    def get_value(self):
+    def _get_value(self):
         if callable(self._value):
             return self._value()
         return self._value
 
+    def get_value(self, placeholder: str) -> str:
+        value = self._get_value()
+        # Adjust capitalization based on the placeholder pattern
+        if placeholder.isupper():
+            return value.upper()
+        elif placeholder[1].isupper():
+            return value.capitalize()
+        return value
 
-def pigeon_placeholders(pigeon: Pigeon, pigeon2: Optional[Pigeon] = None) -> List[CustomPlaceholder]:
-    return [
-        CustomPlaceholder('[his]', pigeon.gender.get_posessive_pronoun()),
-        CustomPlaceholder('[him]', pigeon.gender.get_pronoun()),
-        CustomPlaceholder('[her]', pigeon2.gender.get_posessive_pronoun()),
-        CustomPlaceholder('[she]', pigeon2.gender.get_pronoun()),
-        CustomPlaceholder('[jonas]', pigeon.name),
-        CustomPlaceholder('[martha]', pigeon2.name),
+
+def pigeon_placeholders(pigeon: 'Pigeon', pigeon2: Optional['Pigeon'] = None) -> List[CustomPlaceholder]:
+    pronouns = pigeon.get_pronouns()
+    placeholders = [
+        CustomPlaceholder('[name]', pigeon.name),
+        CustomPlaceholder('[they]', pronouns.subject),
+        CustomPlaceholder('[them]', pronouns.object),
+        CustomPlaceholder('[their]', pronouns.possessive_adjective),
+        CustomPlaceholder('[theirs]', pronouns.possessive_pronoun),
+        CustomPlaceholder('[themselves]', pronouns.reflexive),
     ]
+
+    if pigeon2:
+        pronouns = pigeon2.get_pronouns()
+        placeholders.extend([
+            CustomPlaceholder('[name2]', pigeon2.name),
+            CustomPlaceholder('[they2]', pronouns.subject),
+            CustomPlaceholder('[them2]', pronouns.object),
+            CustomPlaceholder('[their2]', pronouns.possessive_adjective),
+            CustomPlaceholder('[theirs2]', pronouns.possessive_pronoun),
+            CustomPlaceholder('[themselves2]', pronouns.reflexive),
+        ])
+
+    return placeholders
+
+
+def format_placeholders(placeholders: List[CustomPlaceholder], text: str):
+    if not placeholders:
+        return text
+    for placeholder in placeholders:
+        pattern = re.compile(re.escape(placeholder.placeholder), re.IGNORECASE)
+        matches = pattern.findall(text)
+        for match in matches:
+            text = text.replace(match, placeholder.get_value(match), 1)
+    return text
 
 
 class MessageBuilder:
@@ -54,11 +90,21 @@ class MessageBuilder:
             self.lines.append(line)
 
     def format(self, custom_placeholders: List[CustomPlaceholder] = None) -> str:
-        lines = '\n'.join(self.lines)
-        if custom_placeholders:
-            for placeholder in custom_placeholders:
-                lines = lines.replace(placeholder.placeholder, placeholder.get_value())
-        return lines
+        return format_placeholders(custom_placeholders, '\n'.join(self.lines))
+
+
+class C3POEmbed(discord.Embed):
+    def __init__(self, *, colour: Optional[Union[int, Colour]] = None, color: Optional[Union[int, Colour]] = None,
+                 title: Optional[Any] = None, type: EmbedType = 'rich', url: Optional[Any] = None,
+                 description: Optional[Any] = None, timestamp: Optional[datetime.datetime] = None,
+                 placeholders: List[CustomPlaceholder] = None):
+        self._placeholders = placeholders
+        super().__init__(colour=colour, color=color, title=title, type=type, url=url,
+                         description=self._format_placeholders(description),
+                         timestamp=timestamp)
+
+    def _format_placeholders(self, text: str) -> str:
+        return format_placeholders(self._placeholders, text)
 
 
 class StatUpdate(Probability):
@@ -75,6 +121,10 @@ def probabilities(*updates: StatUpdate):
     return extras('probabilities', Probabilities(list(updates)))
 
 
+def quick_message(message: str, pigeon: Pigeon):
+    return MessageBuilder(message).format(pigeon_placeholders(pigeon))
+
+
 class Pigeon2(BaseGroupCog, name="pigeon"):
     def __init__(self, bot: commands.Bot) -> None:
         super().__init__()
@@ -85,7 +135,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         targets = await self.validate(interaction)
         winnings = Winnings(stat, HumanStat.gold(-cost))
         targets.get_pigeon().update_winnings(winnings)
-        await interaction.response.send_message(message + '\n' + winnings.format())
+        await interaction.response.send_message(quick_message(message, targets.get_pigeon()) + '\n' + winnings.format())
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
@@ -102,9 +152,10 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
-    @cleanliness_less_than(100, 'Your pigeon is already clean.')
+    # @cleanliness_less_than(100, 'Your pigeon is already clean.')
     @probabilities(
-        StatUpdate(20, 20, 'You give your pigeon a regular bath.', 1),
+        StatUpdate(20, 20, 'You give [name] a good wash. '
+                           '[They] rubs [their] head on your hand as a sign of gratitude', 1),
         StatUpdate(25, 20, 'You give your pigeon a premium bath.', 0.1),
         StatUpdate(100, 10, 'Your pigeon gets a great deal on some very good soap.', 0.01),
     )
@@ -182,7 +233,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
 
         pigeon.status = Pigeon.Status.space_exploring
         pigeon.save()
-        await interaction.response.send_message('OK, your pigeon is on its way.')
+        await interaction.response.send_message(quick_message('Okay. Your pigeon is on [their] way.', pigeon))
 
     @has_pigeon()
     @has_status(Pigeon.Status.space_exploring)
@@ -190,21 +241,26 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
     @app_commands.command(name="space", description="Get your pigeon back from space")
     async def space(self, interaction: discord.Interaction):
         targets = await self.validate(interaction)
-        exploration: SpaceExploration = SpaceExploration.get_or_none(pigeon=targets.get_pigeon(), finished=False)
+        pigeon = targets.get_pigeon()
+
+        exploration: SpaceExploration = SpaceExploration.get_or_none(pigeon=pigeon, finished=False)
         if exploration is None:
-            targets.get_pigeon().status = Pigeon.Status.idle
-            targets.get_pigeon().save()
+            pigeon.status = Pigeon.Status.idle
+            pigeon.save()
             await interaction.response.send_message('Weird')
             return
 
         if exploration.arrival_date > datetime.datetime.utcnow():
-            await interaction.response.send_message('Your pigeon is still on its way.')
+            await interaction.response.send_message(quick_message('Your pigeon is still on [their] way.', pigeon))
             return
 
         location = self.helper.find_location(exploration.location.id)
 
         menu = SpaceActionView(interaction.user, list(location.actions), exploration)
-        desc = [f'You arrive at {location.planet.name} ({location.name}).', 'What action would you like to perform?']
+        desc = [f'Your pigeon arrives at {location.planet.name} ({location.name}).',
+                quick_message('What action would you like for [them] to perform?', pigeon)
+                ]
+
         embed = discord.Embed(description='\n\n'.join(desc))
         await interaction.response.send_message(embed=embed, view=menu)
         r = await interaction.original_response()
@@ -230,8 +286,8 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
 
         embed = discord.Embed()
         message = MessageBuilder()
-        message.add_line('Your pigeon successfully poops on [martha] and to finish it off, [jonas] '
-                         'wipes [his] butt clean on [her] fur.')
+        message.add_line('Your pigeon successfully poops on [name2] and to finish it off, [name] '
+                         'wipes [their] butt clean on [their2] fur.')
         message.add_line()
 
         message.add_line(pigeon.name)
@@ -250,27 +306,6 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
 
         embed.set_footer(text=f"-{price} relations")
         await interaction.response.send_message(embed=embed)
-
-    # @has_pigeon()
-    # @app_commands.command(name="test", description="test")
-    # async def test(self, interaction: discord.Interaction):
-    #     targets = await self.validate(interaction)
-    #
-    #     winnings = Winnings(HumanStat.gold(10), HumanStat.item(Item.get(id=82)))
-    #
-    #     embed = discord.Embed()
-    #     embed.title = 'Title'
-    #     embed.description = winnings.format()
-    #     await interaction.response.send_message(embed=embed)
-
-    # @app_commands.command(name="manage", description="Manage")
-    # async def manage(self, interaction: discord.Interaction):
-    #     process_scenarios()
-    # model = ExplorationActionScenario()
-    # model.action = 2
-    # await edit_view(interaction, model, forms_to_view(model, guess_for_fields([ExplorationActionScenario.text])))
-    # model.save()
-    # await interaction.followup.send(content='Saved')
 
 
 async def setup(bot: commands.Bot) -> None:

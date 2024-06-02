@@ -8,7 +8,7 @@ import discord
 import peewee
 from dateutil.relativedelta import relativedelta
 
-from src.utils.enums import Gender
+from src.utils.enums import Gender, Pronouns
 from .base import BaseModel, EnumField, EmojiField, PercentageField, CountryField, LanguageField, \
     LongTextField, BaseModelSelect
 from .helpers import create
@@ -124,6 +124,13 @@ class Pigeon(BaseModel, Gendered):
 
     def get_gender(self) -> Gender:
         return self.gender
+
+    def get_pronouns(self) -> Pronouns:
+        if self.gender == Gender.male:
+            return Pronouns.male()
+        if self.gender == Gender.female:
+            return Pronouns.female()
+        return Pronouns.animal()
 
     @property
     def is_jailed(self):

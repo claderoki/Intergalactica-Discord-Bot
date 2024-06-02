@@ -118,7 +118,6 @@ class Games(BaseCog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def hangman(self, ctx, timeout: int = 30):
         cost = 5
-        # ctx.raise_if_not_enough_gold(cost)
         players = []
 
         task = asyncio.create_task(get_word_details())
