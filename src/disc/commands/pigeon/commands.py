@@ -13,7 +13,6 @@ from src.disc.commands.base.cog import BaseGroupCog
 from src.disc.commands.base.decorators import extras
 from src.disc.commands.base.probabilities import Probabilities, Probability
 from src.disc.commands.base.validation import has_gold
-from src.utils.enums import Gender
 from .validation import *
 from src.disc.commands.pigeon.helpers import PigeonHelper
 from src.disc.commands.pigeon.ui import SpaceActionView
@@ -99,7 +98,7 @@ class C3POEmbed(discord.Embed):
                  description: Optional[Any] = None, timestamp: Optional[datetime.datetime] = None,
                  placeholders: List[CustomPlaceholder] = None):
         self._placeholders = placeholders
-        super().__init__(colour=colour, color=color, title=title, type=type, url=url,
+        super().__init__(colour=colour, color=color or discord.Color.from_rgb(242, 180, 37), title=title, type=type, url=url,
                          description=self._format_placeholders(description),
                          timestamp=timestamp)
 
@@ -152,7 +151,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
 
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
-    # @cleanliness_less_than(100, 'Your pigeon is already clean.')
+    @cleanliness_less_than(100, 'Your pigeon is already clean.')
     @probabilities(
         StatUpdate(20, 20, 'You give [name] a good wash. '
                            '[They] rubs [their] head on your hand as a sign of gratitude', 1),
@@ -208,18 +207,10 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         embed = discord.Embed(description=f'```\n{lines}```')
         await interaction.response.send_message(embed=embed)
 
-    @has_pigeon()
-    @has_status(Pigeon.Status.idle)
-    @commands.max_concurrency(1, commands.BucketType.user)
-    @app_commands.command(name="explore", description="Send your pigeon to space")
-    async def explore(self, interaction: discord.Interaction):
-        targets = await self.validate(interaction)
-        pigeon = targets.get_pigeon()
-
+    async def space_explore(self, interaction: discord.Interaction, pigeon: Pigeon):
         location: ExplorationPlanetLocation = random.choice(list(self.helper.get_all_locations()))
-        id = location.id
         image_url = location.image_url or location.planet.image_url
-        arrival_date = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        arrival_date = datetime.datetime.utcnow() + datetime.timedelta(minutes=random.randint(60, 120))
 
         SpaceExploration.create(
             location=id,
@@ -233,7 +224,21 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
 
         pigeon.status = Pigeon.Status.space_exploring
         pigeon.save()
-        await interaction.response.send_message(quick_message('Okay. Your pigeon is on [their] way.', pigeon))
+        embed = C3POEmbed(description=f'Okay. Your pigeon is on [their] way to '
+                                      f'{location.name} ({location.planet.name}).',
+                          placeholders=pigeon_placeholders(pigeon))
+        embed.set_thumbnail(url=image_url)
+        await interaction.response.send_message(embed=embed)
+
+    @has_pigeon()
+    @has_status(Pigeon.Status.idle)
+    @commands.max_concurrency(1, commands.BucketType.user)
+    @app_commands.command(name="explore", description="Send your pigeon to space")
+    async def explore(self, interaction: discord.Interaction):
+        targets = await self.validate(interaction)
+        pigeon = targets.get_pigeon()
+        await self.space_explore(interaction, pigeon)
+        # TODO: add earth scenario
 
     @has_pigeon()
     @has_status(Pigeon.Status.space_exploring)

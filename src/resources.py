@@ -15,7 +15,8 @@ def process_scenarios():
     #     table.drop_table()
     #     table.create_table()
 
-    with open('resources/scenarios/scenarios.yml', 'r') as file:
+    with open('resources/scenarios/scenarios.yml', 'r', encoding='utf8') as file:
+        print(file)
         scenarios = yaml.safe_load(file)
         for raw_planet in scenarios['planets']:
             planet = ExplorationPlanet.get_or_none(name=raw_planet['name']) or ExplorationPlanet()

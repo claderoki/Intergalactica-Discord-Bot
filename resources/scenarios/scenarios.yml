@@ -4,7 +4,7 @@ planets:
   - name: Earth
     image_url: https://cdn.discordapp.com/attachments/744172199770062899/850905995394809926/Earth2.png
     locations:
-      - name: Tallahassee
+      - name: Heerlen
         image_url: Nothing...
         actions:
           - name: Search trash
@@ -78,15 +78,15 @@ planets:
           - name: Date
             emoji: 😍
             scenarios:
-              - text: Your pigeon starts its mating call in the most unlikeliest of places, succeeding, it finds an alien lifeform resembling Earth's pigeon and they hit it off.
+              - text: Your pigeon starts its mating call in the most unlikeliest of places, succeeding, it finds an alien life form resembling Earth's pigeon and they hit it off.
                 stats: 60,10,0,0,0
               - text: Your pigeon sees an attractive looking alien. It asks the alien out on a date but gets rejected... At least it won't have to pay for the date
                 stats: 50,0,-5,0,0
               - text: Your pigeon falls in love with one of the researched alien lifeforms. They start dating!
                 stats: 70,20,10,0,0
-              - text: Your pigeon falls in love with an alien lifeform. While leaning in for a kiss your pigeon gets bit.
+              - text: Your pigeon falls in love with an alien life form. While leaning in for a kiss your pigeon gets bit.
                 stats: 0,-10,-5,-5,0
-              - text: Your pigeon asks an alien lifeform out on a date, the lifefom accepts and they have a date. Realizing they don't have very much in common they both amicably decide to end things. It hurts a bit, but you accept that this is for the best.
+              - text: Your pigeon asks an alien life form out on a date, the life form accepts and they have a date. Realizing they don't have very much in common they both amicably decide to end things. It hurts a bit, but you accept that this is for the best.
                 stats: 40,-1,-1,0,20
           - name: Search for gemstones
             emoji: 💎
@@ -108,7 +108,7 @@ planets:
               stats: 60,0,0,0,0
             - text: You attempt to study the local wildlife. You see a tiny little space worm; you approach it slowly. As you get close it sprays poison onto your face.
               stats: -10,-15,-15,-15,0
-            - text: You attempt to study the local wildlife. You find a little furball on the ground, unsure whether it is alive or not you peck at it gently; after a while, it opens its eye in fear. You feel superior and respected so you decide to let it go.
+            - text: You attempt to study the local wildlife. You find a little fur ball on the ground, unsure whether it is alive or not you peck at it gently; after a while, it opens its eye in fear. You feel superior and respected so you decide to let it go.
               stats: 45,5,10,0,0
             - text: You attempt to study the local wildlife. You start digging a hole in the ground and after a while you find a bunch of friendly alien worms!
               stats: 60,0,20,-4,0
