@@ -1,4 +1,5 @@
 import datetime
+import enum
 import random
 import re
 from typing import Callable, List, Union, Any
@@ -13,13 +14,15 @@ from src.disc.commands.base.cog import BaseGroupCog
 from src.disc.commands.base.decorators import extras
 from src.disc.commands.base.probabilities import Probabilities, Probability
 from src.disc.commands.base.validation import has_gold
+from src.utils.country import Country
 from .validation import *
 from src.disc.commands.pigeon.helpers import PigeonHelper
 from src.disc.commands.pigeon.ui import SpaceActionView
 from src.disc.helpers.pretty import prettify_dict
 from src.models import Pigeon
-from src.models.pigeon import ExplorationPlanetLocation, SpaceExploration, PigeonRelationship, Gendered
+from src.models.pigeon import ExplorationPlanetLocation, SpaceExploration, PigeonRelationship, Gendered, Exploration
 from src.utils.stats import Winnings, HumanStat, PigeonStat
+from ...cogs.pigeon.exploration_retrieval import ExplorationRetrieval
 
 
 class CustomPlaceholder:
@@ -230,24 +233,72 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         embed.set_thumbnail(url=image_url)
         await interaction.response.send_message(embed=embed)
 
+    async def earth_explore(self, interaction, pigeon):
+        human = pigeon.human
+
+        residence = human.country or Country.random()
+        destination = Country.random()
+
+        exploration = Exploration(residence=residence, destination=destination, pigeon=pigeon)
+        exploration.end_date = exploration.start_date + datetime.timedelta(minutes=exploration.calculate_duration())
+        pigeon.status = Pigeon.Status.exploring
+        pigeon.save()
+        exploration.save()
+
+        embed = C3POEmbed()
+        embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/705242963550404658/766680730457604126/pigeon_tiny.png")
+        embed.description = "Okay. Your pigeon is now off to explore a random location!"
+        await interaction.response.send_message(embed=embed)
+
+    class ExplorationType(enum.Enum):
+        space = 1
+        earth = 2
+
     @has_pigeon()
     @has_status(Pigeon.Status.idle)
     @commands.max_concurrency(1, commands.BucketType.user)
     @app_commands.command(name="explore", description="Send your pigeon to space")
-    async def explore(self, interaction: discord.Interaction):
+    async def explore(self, interaction: discord.Interaction, type: ExplorationType):
         targets = await self.validate(interaction)
         pigeon = targets.get_pigeon()
-        await self.space_explore(interaction, pigeon)
-        # TODO: add earth scenario
+        if type == self.ExplorationType.space:
+            await self.space_explore(interaction, pigeon)
+        elif type == self.ExplorationType.earth:
+            await self.earth_explore(interaction, pigeon)
 
     @has_pigeon()
-    @has_status(Pigeon.Status.space_exploring)
+    @status_in(Pigeon.Status.space_exploring, Pigeon.Status.exploring, Pigeon.Status.mailing)
     @commands.max_concurrency(1, commands.BucketType.user)
-    @app_commands.command(name="space", description="Get your pigeon back from space")
-    async def space(self, interaction: discord.Interaction):
+    @app_commands.command(name="retrieve", description="Retrieve your pigeon from its current activity")
+    async def retrieve(self, interaction: discord.Interaction):
         targets = await self.validate(interaction)
         pigeon = targets.get_pigeon()
 
+        if pigeon.status == Pigeon.Status.space_exploring:
+            await self.retrieve_from_space(interaction, pigeon)
+        elif pigeon.status == Pigeon.Status.exploring:
+            await self.retrieve_from_earth(interaction, pigeon)
+        elif pigeon.status == Pigeon.Status.mailing:
+            pass
+
+    async def retrieve_from_earth(self, interaction, pigeon):
+        activity = pigeon.current_activity
+        if isinstance(activity, Exploration):
+            if activity.end_date_passed:
+                retrieval = ExplorationRetrieval(activity)
+                embed = retrieval.embed
+                retrieval.commit()
+                await interaction.response.send_message(embed=embed)
+            else:
+                embed = C3POEmbed()
+                embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to explore!"
+                embed.set_footer(text="Check back at",
+                                 icon_url="https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
+                ts: datetime.datetime = activity.end_date
+                embed.timestamp = ts.replace(tzinfo=datetime.timezone.utc)
+                await interaction.response.send_message(embed=embed)
+
+    async def retrieve_from_space(self, interaction, pigeon):
         exploration: SpaceExploration = SpaceExploration.get_or_none(pigeon=pigeon, finished=False)
         if exploration is None:
             pigeon.status = Pigeon.Status.idle
@@ -271,6 +322,15 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         r = await interaction.original_response()
         menu.refresh = lambda: r.edit(embed=embed, view=menu)
         await menu.wait()
+
+    @has_pigeon()
+    @has_status(Pigeon.Status.space_exploring)
+    @commands.max_concurrency(1, commands.BucketType.user)
+    @app_commands.command(name="space", description="Get your pigeon back from space")
+    async def space(self, interaction: discord.Interaction):
+        targets = await self.validate(interaction)
+        pigeon = targets.get_pigeon()
+        await self.retrieve_from_space(interaction, pigeon)
 
     @has_pigeon()
     @guild_only()

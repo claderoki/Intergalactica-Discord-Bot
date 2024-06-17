@@ -46,6 +46,24 @@ class HasStatus(PigeonValidation):
         return f'The other persons pigeon needs to be {self.status.get_verb()} to perform this action.'
 
 
+class HasStatusInList(PigeonValidation):
+    def __init__(self, *statuses: Pigeon.Status):
+        super().__init__()
+        self.statuses = statuses
+
+    def _validate(self, target: Pigeon) -> bool:
+        return target.status in self.statuses
+
+    def _format(self):
+        return ' | '.join([x.get_verb() for x in self.statuses])
+
+    def failure_message_self(self) -> str:
+        return f'Your pigeon needs to be {self._format()} to perform this action.'
+
+    def failure_message_other(self) -> str:
+        return f'The other persons pigeon needs to be {self._format()} to perform this action.'
+
+
 class StatLessThan(PigeonValidation):
     def __init__(self, name: str, value: int, self_override: str = None):
         super().__init__()
@@ -84,10 +102,13 @@ def has_status(status: Pigeon.Status):
     return HasStatus(status).wrap()
 
 
+def status_in(*statuses: Pigeon.Status):
+    return HasStatus(status).wrap()
+
+
 def has_pigeon():
     return HasPigeon().wrap()
 
 
 def does_not_have_pigeon():
     return HasPigeon().invert().wrap()
-
