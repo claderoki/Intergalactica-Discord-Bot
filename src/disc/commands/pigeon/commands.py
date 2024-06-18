@@ -19,10 +19,10 @@ from .validation import *
 from src.disc.commands.pigeon.helpers import PigeonHelper
 from src.disc.commands.pigeon.ui import SpaceActionView
 from src.disc.helpers.pretty import prettify_dict
-from src.models import Pigeon
+from src.models import Pigeon, Reminder
 from src.models.pigeon import ExplorationPlanetLocation, SpaceExploration, PigeonRelationship, Gendered, Exploration
 from src.utils.stats import Winnings, HumanStat, PigeonStat
-from ...cogs.pigeon.exploration_retrieval import ExplorationRetrieval
+from ...cogs.pigeon.exploration_retrieval import ExplorationRetrieval, MailRetrieval
 
 
 class CustomPlaceholder:
@@ -246,7 +246,9 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         exploration.save()
 
         embed = C3POEmbed()
-        embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/705242963550404658/766680730457604126/pigeon_tiny.png")
+        embed.set_thumbnail(
+            url="https://cdn.discordapp.com/attachments/705242963550404658/766680730457604126/pigeon_tiny.png"
+        )
         embed.description = "Okay. Your pigeon is now off to explore a random location!"
         await interaction.response.send_message(embed=embed)
 
@@ -279,7 +281,29 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         elif pigeon.status == Pigeon.Status.exploring:
             await self.retrieve_from_earth(interaction, pigeon)
         elif pigeon.status == Pigeon.Status.mailing:
-            pass
+            await self.retrieve_from_mail(interaction, pigeon)
+
+    async def retrieve_from_mail(self, interaction, pigeon):
+        activity = pigeon.current_activity
+        if activity.end_date_passed:
+            retrieval = MailRetrieval(activity)
+            embed = retrieval.embed
+            retrieval.commit()
+
+            Reminder.create(
+                user_id=activity.recipient.user_id,
+                channel_id=None,
+                message=self.bot.translate("pigeon_inbox_unread_mail"),
+                due_date=datetime.datetime.utcnow()
+            )
+            await interaction.response.send_message(embed=embed)
+        else:
+            embed = C3POEmbed()
+            embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to send a message!"
+            embed.set_footer(text="Check back at",
+                             icon_url="https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
+            embed.timestamp = activity.end_date.replace(tzinfo=datetime.timezone.utc)
+            await interaction.response.send_message(embed=embed)
 
     async def retrieve_from_earth(self, interaction, pigeon):
         activity = pigeon.current_activity
@@ -294,8 +318,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
                 embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to explore!"
                 embed.set_footer(text="Check back at",
                                  icon_url="https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
-                ts: datetime.datetime = activity.end_date
-                embed.timestamp = ts.replace(tzinfo=datetime.timezone.utc)
+                embed.timestamp = activity.end_date.replace(tzinfo=datetime.timezone.utc)
                 await interaction.response.send_message(embed=embed)
 
     async def retrieve_from_space(self, interaction, pigeon):
