@@ -93,7 +93,7 @@ class Pigeon(BaseModel, Gendered):
         exploring = "🗺️"
         fighting = "⚔️"
         dating = "❤️"
-        space_exploring = "🗺️"
+        space_exploring = "🚀"
         jailed = ""
 
         def get_verb(self):

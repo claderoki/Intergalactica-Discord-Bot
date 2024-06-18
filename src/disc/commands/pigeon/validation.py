@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Optional
+from typing import Optional, List
 
 from src.disc.commands.base.validation import Validation, Invertable
 from src.models import Pigeon
@@ -47,7 +47,7 @@ class HasStatus(PigeonValidation):
 
 
 class HasStatusInList(PigeonValidation):
-    def __init__(self, *statuses: Pigeon.Status):
+    def __init__(self, statuses: List[Pigeon.Status]):
         super().__init__()
         self.statuses = statuses
 
@@ -103,7 +103,7 @@ def has_status(status: Pigeon.Status):
 
 
 def status_in(*statuses: Pigeon.Status):
-    return HasStatus(status).wrap()
+    return HasStatusInList(list(statuses)).wrap()
 
 
 def has_pigeon():

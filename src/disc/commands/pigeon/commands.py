@@ -22,6 +22,7 @@ from src.disc.helpers.pretty import prettify_dict
 from src.models import Pigeon, Reminder
 from src.models.pigeon import ExplorationPlanetLocation, SpaceExploration, PigeonRelationship, Gendered, Exploration
 from src.utils.stats import Winnings, HumanStat, PigeonStat
+from ..base.view import ReminderMenu
 from ...cogs.pigeon.exploration_retrieval import ExplorationRetrieval, MailRetrieval
 
 
@@ -231,7 +232,8 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
                                       f'{location.name} ({location.planet.name}).',
                           placeholders=pigeon_placeholders(pigeon))
         embed.set_thumbnail(url=image_url)
-        await interaction.response.send_message(embed=embed)
+        menu = ReminderMenu(arrival_date, 'Your pigeon is back')
+        await interaction.response.send_message(embed=embed, view=menu)
 
     async def earth_explore(self, interaction, pigeon):
         human = pigeon.human
@@ -249,8 +251,9 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         embed.set_thumbnail(
             url="https://cdn.discordapp.com/attachments/705242963550404658/766680730457604126/pigeon_tiny.png"
         )
-        embed.description = "Okay. Your pigeon is now off to explore a random location!"
-        await interaction.response.send_message(embed=embed)
+        embed.description = 'Okay. Your pigeon is now off to explore a random location!'
+        menu = ReminderMenu(exploration.end_date, 'Your pigeon is back')
+        await interaction.response.send_message(embed=embed, view=menu)
 
     class ExplorationType(enum.Enum):
         space = 1
@@ -275,7 +278,6 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
     async def retrieve(self, interaction: discord.Interaction):
         targets = await self.validate(interaction)
         pigeon = targets.get_pigeon()
-
         if pigeon.status == Pigeon.Status.space_exploring:
             await self.retrieve_from_space(interaction, pigeon)
         elif pigeon.status == Pigeon.Status.exploring:

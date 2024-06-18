@@ -1,10 +1,30 @@
+import datetime
 from typing import List, Optional, Type, Dict, Set, TypeVar, Generic, Callable
 
 import discord
 import peewee
 from discord import SelectOption, TextStyle
 
+from src.models import Reminder
 from src.models.base import LongTextField
+
+
+class ReminderMenu(discord.ui.View):
+    def __init__(self, when: datetime.datetime, message: str):
+        super(ReminderMenu, self).__init__()
+        self.when = when
+        self.message = message
+
+    @discord.ui.button(label='Remind me', style=discord.ButtonStyle.red)
+    async def remind_me(self, interaction: discord.Interaction, _button: discord.ui.Button):
+        Reminder.create(
+            user_id=interaction.user.id,
+            channel_id=None,
+            message=self.message,
+            due_date=self.when
+        )
+        await interaction.response.edit_message(content='Yeah okay', view=self)
+
 
 
 async def edit_view(interaction: discord.Interaction, model: peewee.Model, view: discord.ui.View = None):

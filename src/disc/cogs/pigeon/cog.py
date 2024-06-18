@@ -486,6 +486,7 @@ ORDER BY score DESC;
     @pigeon.command(name="mail", aliases=["message", "send", "letter"])
     @commands.max_concurrency(1, per=commands.BucketType.user)
     async def pigeon_mail(self, ctx, user: discord.User):
+
         """Sending someone a letter."""
         if user.id == ctx.author.id:
             raise SendableException(ctx.translate("cannot_send_to_self"))
