@@ -25,6 +25,15 @@ from src.utils.stats import Winnings, HumanStat, PigeonStat
 from ..base.view import ReminderMenu
 from ...cogs.pigeon.exploration_retrieval import ExplorationRetrieval, MailRetrieval
 
+class PigeonResources:
+    @staticmethod
+    def tiny_pigeon_png():
+        return 'https://cdn.discordapp.com/attachments/705242963550404658/766680730457604126/pigeon_tiny.png'
+
+    @staticmethod
+    def flying_pigeon_gif():
+        return 'https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif'
+
 
 class CustomPlaceholder:
     def __init__(self, placeholder: str, getter: Union[Callable[[], str], str]):
@@ -232,7 +241,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
                                       f'{location.name} ({location.planet.name}).',
                           placeholders=pigeon_placeholders(pigeon))
         embed.set_thumbnail(url=image_url)
-        menu = ReminderMenu(arrival_date, 'Your pigeon is back')
+        menu = ReminderMenu(interaction.user.id, arrival_date, 'Your pigeon is back')
         await interaction.response.send_message(embed=embed, view=menu)
 
     async def earth_explore(self, interaction, pigeon):
@@ -248,11 +257,9 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         exploration.save()
 
         embed = C3POEmbed()
-        embed.set_thumbnail(
-            url="https://cdn.discordapp.com/attachments/705242963550404658/766680730457604126/pigeon_tiny.png"
-        )
+        embed.set_thumbnail(url=PigeonResources.tiny_pigeon_png())
         embed.description = 'Okay. Your pigeon is now off to explore a random location!'
-        menu = ReminderMenu(exploration.end_date, 'Your pigeon is back')
+        menu = ReminderMenu(interaction.user.id, exploration.end_date, 'Your pigeon is back')
         await interaction.response.send_message(embed=embed, view=menu)
 
     class ExplorationType(enum.Enum):
@@ -292,9 +299,8 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
             embed = retrieval.embed
             retrieval.commit()
 
-            Reminder.create(
+            Reminder.dm(
                 user_id=activity.recipient.user_id,
-                channel_id=None,
                 message=self.bot.translate("pigeon_inbox_unread_mail"),
                 due_date=datetime.datetime.utcnow()
             )
@@ -303,7 +309,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
             embed = C3POEmbed()
             embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to send a message!"
             embed.set_footer(text="Check back at",
-                             icon_url="https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
+                             icon_url=PigeonResources.flying_pigeon_gif())
             embed.timestamp = activity.end_date.replace(tzinfo=datetime.timezone.utc)
             await interaction.response.send_message(embed=embed)
 
@@ -318,8 +324,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
             else:
                 embed = C3POEmbed()
                 embed.description = f"**{pigeon.name}** is still on {pigeon.gender.get_posessive_pronoun()} way to explore!"
-                embed.set_footer(text="Check back at",
-                                 icon_url="https://www.animatedimages.org/data/media/678/animated-pigeon-image-0045.gif")
+                embed.set_footer(text="Check back at", icon_url=PigeonResources.flying_pigeon_gif())
                 embed.timestamp = activity.end_date.replace(tzinfo=datetime.timezone.utc)
                 await interaction.response.send_message(embed=embed)
 

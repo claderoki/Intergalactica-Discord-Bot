@@ -20,7 +20,7 @@ class CurrenciesField(peewee.TextField):
     def db_value(self, value):
         if value:
             return ";".join(set(x.alpha_3 for x in value if x is not None))
-        return None
+        return ''
 
     def python_value(self, value):
         if value:
@@ -292,6 +292,8 @@ class Item(BaseModel):
 
     @classmethod
     def get_random(cls):
+        if isinstance(cls._meta.database, peewee.SqliteDatabase):
+            return cls.select().rand().get_or_none()
         query = """
             SELECT results.* FROM (
             SELECT {table_name}.*, @running_total AS previous_total, @running_total := @running_total + {chance_column_name} AS running_total, until.rand

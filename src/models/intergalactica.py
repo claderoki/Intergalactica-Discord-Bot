@@ -8,9 +8,11 @@ import peewee
 from src.config import config
 from src.disc.helpers.known_guilds import KnownGuild
 from .base import BaseModel, EnumField, EmojiField
+from .helpers import create
 from .human import Human
 
 
+@create()
 class Reminder(BaseModel):
     channel_id = peewee.BigIntegerField(null=True)
     user_id = peewee.BigIntegerField(null=False)
@@ -18,6 +20,14 @@ class Reminder(BaseModel):
     message = peewee.TextField(null=False)
     sent = peewee.BooleanField(null=False, default=True)
 
+    @classmethod
+    def dm(cls, user_id: int, message: str, due_date: datetime.datetime):
+        Reminder.create(
+            user_id=user_id,
+            channel_id=None,
+            message=message,
+            due_date=due_date
+        )
 
 class Earthling(BaseModel):
     user_id = peewee.BigIntegerField(null=False)

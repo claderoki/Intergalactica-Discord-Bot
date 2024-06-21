@@ -1,4 +1,5 @@
 import argparse
+import os.path
 
 import peewee
 
@@ -30,7 +31,8 @@ def init_environ() -> EnvironmentalVariables:
 
 def create_database(environ: EnvironmentalVariables, database_name: str) -> peewee.Database:
     if args.sqlite == '1':
-        return peewee.SqliteDatabase(f'data/{database_name}.sqlite')
+        db = peewee.SqliteDatabase(f'data/{database_name}.sqlite')
+        return db
     return peewee.MySQLDatabase(
         database_name,
         user=environ["mysql_user"],
@@ -49,5 +51,10 @@ config.config = Config(
     PATH,
     environ,
 )
+if not os.path.exists('data/_data_created'):
+    config.config.create_test = True
+    with open('data/_data_created', 'w') as f:
+        f.write('1')
+
 bot = Locus(config.config)
 Locus.instance.run(environ.discord_token)

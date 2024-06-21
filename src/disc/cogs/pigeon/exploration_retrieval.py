@@ -78,10 +78,15 @@ class ExplorationRetrieval(ActivityRetrieval):
         text = f"`{pigeon.name}` soared through the skies for **{self.exploration.duration_in_minutes}** minutes"
 
         unit = ConversionCog.unit_mapping.get_unit("km")
-        result = ConversionCog.base_measurement_to_conversion_result(unit, kms)
+        conversions = []
+        try:
+            result = ConversionCog.base_measurement_to_conversion_result(unit, kms)
+            conversions = result.to
+        except:
+            pass
 
-        text += f" over a distance of **{result.base.get_value_string()}** {result.base.unit.symbol}"
-        for to in result.to:
+        text += f" over a distance of **{kms}** kms"
+        for to in conversions:
             text += f" / **{int(float(to.get_value_string()))}** {to.unit.symbol}"
 
         text += f" until {pigeon.gender.get_pronoun()} finally reached **{self.exploration.destination.name()}**"
@@ -101,13 +106,13 @@ class ExplorationRetrieval(ActivityRetrieval):
 
         if self.Bonus.item in self.bonuses:
             self.item = Item.get_random()
-
-            embed.set_thumbnail(url=self.item.image_url)
-            lines = []
-            lines.append(f"On the way {pigeon.gender.get_pronoun()} also found **{self.item.name}**")
-            if self.item.usable:
-                lines.append(f"*{self.item.description}*")
-            bonus_messages[self.Bonus.item] = "\n".join(lines)
+            if self.item is not None:
+                embed.set_thumbnail(url=self.item.image_url)
+                lines = []
+                lines.append(f"On the way {pigeon.gender.get_pronoun()} also found **{self.item.name}**")
+                if self.item.usable:
+                    lines.append(f"*{self.item.description}*")
+                bonus_messages[self.Bonus.item] = "\n".join(lines)
         if self.Bonus.tenth in self.bonuses:
             bonus_messages[
                 self.Bonus.tenth] = f"Since this is your **{self.exploration.pigeon.explorations.count()}th** exploration, you get a bonus!"

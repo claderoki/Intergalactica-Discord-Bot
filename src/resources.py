@@ -4,6 +4,9 @@ from src.config import config
 from src.models.pigeon import ExplorationPlanet, ExplorationPlanetLocation, ExplorationAction, ExplorationActionScenario
 
 
+def process_items():
+    pass
+
 def process_scenarios():
     import yaml
     if not isinstance(config.settings.base_database, peewee.SqliteDatabase):
@@ -16,7 +19,6 @@ def process_scenarios():
     #     table.create_table()
 
     with open('resources/scenarios/scenarios.yml', 'r', encoding='utf8') as file:
-        print(file)
         scenarios = yaml.safe_load(file)
         for raw_planet in scenarios['planets']:
             planet = ExplorationPlanet.get_or_none(name=raw_planet['name']) or ExplorationPlanet()

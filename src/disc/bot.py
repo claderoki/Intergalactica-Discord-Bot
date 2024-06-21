@@ -3,6 +3,7 @@ import datetime
 import os
 
 import discord
+import peewee
 import praw
 from dateutil.relativedelta import relativedelta
 from discord.ext import commands
@@ -257,6 +258,12 @@ class Locus(commands.Bot):
         self.tree.copy_global_to(guild=discord.Object(id=guild_id))
         await self.tree.sync(guild=discord.Object(id=guild_id))
 
+    def init_sqlite_db(self):
+        if not isinstance(self.config.settings.base_database, peewee.SqliteDatabase):
+            raise Exception('Wtf')
+        from src.resources import process_scenarios
+        process_scenarios()
+
     async def setup_hook(self):
         import src.disc.commands
         await self.load_all_cogs()
@@ -267,6 +274,9 @@ class Locus(commands.Bot):
         else:
             await self._sync_to_guild(761624318291476482)
             await self._sync_to_guild(1013158959315701930)
+
+        if self.config.create_test:
+            self.init_sqlite_db()
 
     def log(self, message: str):
         if self.owner is not None:

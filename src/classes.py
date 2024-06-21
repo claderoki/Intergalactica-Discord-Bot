@@ -57,6 +57,7 @@ class Config:
         self.settings = settings
         self.path = path
         self.environ = environ
+        self.create_test = False
 
     @property
     def bot(self):

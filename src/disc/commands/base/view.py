@@ -10,10 +10,14 @@ from src.models.base import LongTextField
 
 
 class ReminderMenu(discord.ui.View):
-    def __init__(self, when: datetime.datetime, message: str):
+    def __init__(self, user_id: int, when: datetime.datetime, message: str):
         super(ReminderMenu, self).__init__()
+        self.user_id = user_id
         self.when = when
         self.message = message
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        return interaction.user.id == self.user_id
 
     @discord.ui.button(label='Remind me', style=discord.ButtonStyle.red)
     async def remind_me(self, interaction: discord.Interaction, _button: discord.ui.Button):
@@ -23,7 +27,7 @@ class ReminderMenu(discord.ui.View):
             message=self.message,
             due_date=self.when
         )
-        await interaction.response.edit_message(content='Yeah okay', view=self)
+        await interaction.response.send_message(content='All right, I\'ll be sure to remind you.', view=self)
 
 
 
