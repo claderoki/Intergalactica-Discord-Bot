@@ -30,7 +30,7 @@ def init_environ() -> EnvironmentalVariables:
 
 
 def create_database(environ: EnvironmentalVariables, database_name: str) -> peewee.Database:
-    if args.sqlite == '1':
+    if sqlite:
         db = peewee.SqliteDatabase(f'data/{database_name}.sqlite')
         return db
     return peewee.MySQLDatabase(
@@ -51,7 +51,7 @@ config.config = Config(
     PATH,
     environ,
 )
-if not os.path.exists('data/_data_created'):
+if sqlite and not os.path.exists('data/_data_created'):
     config.config.create_test = True
     with open('data/_data_created', 'w') as f:
         f.write('1')
