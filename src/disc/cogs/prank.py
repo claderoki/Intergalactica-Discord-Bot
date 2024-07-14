@@ -8,6 +8,7 @@ from discord.ext import commands, tasks
 import src.disc.helpers.pretty as pretty
 from src.disc.cogs.core import BaseCog
 from src.disc.errors.base import SendableException
+from src.disc.helpers.general import RedditHelper
 from src.disc.helpers.waiters import StrWaiter, BoolWaiter, Skipped
 from src.models import Prankster, NicknamePrank, HumanItem, Item, EmojiPrank, RolePrank, database
 from src.wrappers.zalgo import Zalgo
@@ -24,7 +25,7 @@ class Prank(BaseCog):
         self.start_task(self.prank_poller, check=self.bot.production)
 
     def get_random_words(self, zalgo=True, nick=True):
-        generator = self.bot.get_random_reddit_words(
+        generator = RedditHelper.get_random_words(
             nsfw=False,
             max_words=10,
             max_length=5
