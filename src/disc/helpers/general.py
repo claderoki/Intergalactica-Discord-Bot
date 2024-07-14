@@ -4,10 +4,12 @@ from typing import List
 from src.config import config
 import discord
 
+
 class RedditHelper:
     @classmethod
-    def get_random_words(cls, nsfw: bool = False, max_words: int = 10, min_length: int = 4, max_length: int = 10) -> List[str]:
-        reddit = config.bot.reddit
+    def get_random_words(cls, bot, nsfw: bool = False, max_words: int = 10, min_length: int = 4, max_length: int = 10) -> \
+    List[str]:
+        reddit = bot.reddit
 
         word_count = 0
         while word_count < max_words:

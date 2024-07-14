@@ -26,6 +26,7 @@ class Prank(BaseCog):
 
     def get_random_words(self, zalgo=True, nick=True):
         generator = RedditHelper.get_random_words(
+            bot=self.bot,
             nsfw=False,
             max_words=10,
             max_length=5

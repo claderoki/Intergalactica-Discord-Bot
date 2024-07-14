@@ -30,7 +30,6 @@ class ReminderMenu(discord.ui.View):
         await interaction.response.send_message(content='All right, I\'ll be sure to remind you.', view=self)
 
 
-
 async def edit_view(interaction: discord.Interaction, model: peewee.Model, view: discord.ui.View = None):
     view = view or guess_view(model)
     if isinstance(view, discord.ui.Modal):
