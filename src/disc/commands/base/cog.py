@@ -1,6 +1,7 @@
 from typing import List
 
 import discord
+import peewee
 from discord.app_commands import CommandInvokeError
 from discord.ext import commands
 
@@ -47,6 +48,19 @@ class BaseGroupCog(commands.GroupCog):
                 return CheckResult(targets, errors)
 
         return CheckResult(targets, errors)
+
+    @staticmethod
+    def start_task(task, check: callable = lambda: True):
+        if callable(check):
+            check = check()
+
+        if check:
+            task.add_exception_type(peewee.OperationalError)
+            task.add_exception_type(peewee.InterfaceError)
+            try:
+                task.start()
+            except RuntimeError:
+                pass
 
     def probability(self, interaction: discord.Interaction):
         return interaction.command.extras['probabilities'].choice()

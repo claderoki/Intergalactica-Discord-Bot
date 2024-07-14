@@ -7,6 +7,7 @@ from src.models.pigeon import ExplorationPlanet, ExplorationPlanetLocation, Expl
 def process_items():
     pass
 
+
 def process_scenarios():
     import yaml
     if not isinstance(config.settings.base_database, peewee.SqliteDatabase):
@@ -26,13 +27,15 @@ def process_scenarios():
             planet.name = raw_planet['name']
             planet.save()
             for raw_location in raw_planet['locations']:
-                location = ExplorationPlanetLocation.get_or_none(name=raw_location['name'], planet=planet) or ExplorationPlanetLocation()
+                location = ExplorationPlanetLocation.get_or_none(name=raw_location['name'],
+                                                                 planet=planet) or ExplorationPlanetLocation()
                 location.image_url = raw_location.get('image_url')
                 location.name = raw_location['name']
                 location.planet = planet
                 location.save()
                 for raw_action in raw_location['actions']:
-                    action = ExplorationAction.get_or_none(name=raw_action['name'], location=location) or ExplorationAction()
+                    action = ExplorationAction.get_or_none(name=raw_action['name'],
+                                                           location=location) or ExplorationAction()
                     action.name = raw_action['name']
                     action.symbol = raw_action['emoji']
                     action.location = location
