@@ -39,15 +39,19 @@ class RegexHelper:
             self._regex = self._build()
         return self._regex
 
+    def _index_or_none(self, content, index):
+        try:
+            return content[index]
+        except IndexError:
+            return None
+
     def match(self, content) -> Tuple[str, float]:
         for match in re.finditer(self.regex, content):
-            try:
-                char_after_end = content[match.end()]
-            except IndexError:
-                char_after_end = None
-
-            if char_after_end is not None and char_after_end != ' ':
-                print('Skipping due to match ending with', char_after_end)
+            char_after_end = self._index_or_none(content, match.end()) or ' '
+            char_before_start = self._index_or_none(content, match.start() - 1) or ' '
+            allowed = (' ', '°')
+            if char_after_end not in allowed or char_before_start not in allowed:
+                print(f'Skipping due to start={char_after_end}, end={char_before_start}')
                 continue
             groups = [x for x in match.regs if x not in ((-1, -1), (match.start(), match.end()))]
             match = [content[x[0]:x[1]] for x in groups]
