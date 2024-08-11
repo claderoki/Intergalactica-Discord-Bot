@@ -139,8 +139,7 @@ def quick_message(message: str, pigeon: Pigeon):
 
 class Pigeon2(BaseGroupCog, name="pigeon"):
     def __init__(self, bot: commands.Bot) -> None:
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
         self.helper = PigeonHelper()
 
     async def __update_stat(self, interaction: discord.Interaction, stat: PigeonStat, cost: int, message: str):

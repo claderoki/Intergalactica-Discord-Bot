@@ -256,8 +256,7 @@ class Task:
 
 class AI(BaseGroupCog, name="ai"):
     def __init__(self, bot: commands.Bot) -> None:
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
         self._image_settings: Dict[int, StableDiffusionSettings] = {}
         self._tasks: Dict[int, Task] = {}
         self._channels_context: Dict[int, Context] = {}

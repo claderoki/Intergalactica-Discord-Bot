@@ -40,18 +40,20 @@ class RegexHelper:
         return self._regex
 
     def _index_or_none(self, content, index):
+        if index < 0:
+            return None
         try:
             return content[index]
         except IndexError:
             return None
 
     def match(self, content) -> Tuple[str, float]:
+        i = 0
         for match in re.finditer(self.regex, content):
             char_after_end = self._index_or_none(content, match.end()) or ' '
             char_before_start = self._index_or_none(content, match.start() - 1) or ' '
             allowed = (' ', '°')
             if char_after_end not in allowed or char_before_start not in allowed:
-                print(f'Skipping due to start={char_after_end}, end={char_before_start}')
                 continue
             groups = [x for x in match.regs if x not in ((-1, -1), (match.start(), match.end()))]
             match = [content[x[0]:x[1]] for x in groups]
@@ -63,6 +65,7 @@ class RegexHelper:
                 unit = match[0]
                 value = float(match[1])
             yield unit, value
+            i += 1
 
 
 class UnitMapping:
@@ -141,16 +144,20 @@ def get_other_measurements():
     return other_measurements
 
 
-async def get_context_currency_codes(message):
+class CurrencyContext:
+    def __init__(self):
+        self.data = {}
+
+
+async def fetch_context_currency_codes(message):
     query = Human.select(Human.country, Human.currencies)
     query = query.where((Human.country != None) | (Human.currencies.is_null(False)))
 
-    ids = set((message.author.id,))
-    if not isinstance(message.channel, discord.DMChannel):
-        if message.guild is not None:
-            async for msg in message.channel.history(limit=20):
-                if not msg.author.bot:
-                    ids.add(msg.author.id)
+    ids = {message.author.id}
+    if not isinstance(message.channel, discord.DMChannel) and message.guild is not None:
+        async for msg in message.channel.history(limit=20):
+            if not msg.author.bot:
+                ids.add(msg.author.id)
 
     query = query.where(Human.user_id.in_(ids))
 

@@ -31,6 +31,9 @@ class ValidationFailed(Exception):
 
 
 class BaseGroupCog(commands.GroupCog):
+    def __init__(self, bot):
+        self.bot = bot
+
     def check(self,
               user_id: int,
               other: bool = False,

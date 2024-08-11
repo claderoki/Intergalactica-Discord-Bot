@@ -90,8 +90,7 @@ class Fight:
 
 class PetCog(BaseGroupCog, name='pet'):
     def __init__(self, bot: commands.Bot) -> None:
-        super().__init__()
-        self.bot = bot
+        super().__init__(bot)
 
     def _get_pet(self, user_id: int, guild_id: int):
         pet, _ = Pet.get_or_create(name='Cherry', guild_id=guild_id)

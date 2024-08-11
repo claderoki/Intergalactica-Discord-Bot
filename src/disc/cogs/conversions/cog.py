@@ -1,12 +1,15 @@
 import discord
+import pycountry
+from discord import app_commands
 from discord.ext import tasks, commands
 
 from src.config import config
 from src.disc.cogs.core import BaseCog
-from src.models import Currency, Measurement, StoredUnit
+from src.models import Currency, Measurement, StoredUnit, Human
 from src.wrappers.fixerio import Api as FixerioApi
-from .helper import RegexHelper, RegexType, UnitMapping, get_other_measurements, get_context_currency_codes
+from .helper import RegexHelper, RegexType, UnitMapping, get_other_measurements, fetch_context_currency_codes
 from .models import Unit, UnitType, Conversion, ConversionResult
+from ...commands import BaseGroupCog
 
 other_measurements = get_other_measurements()
 unit_mapping = UnitMapping()
@@ -58,18 +61,21 @@ def get_linked_measurements(base: Conversion):
         return ()
 
 
-async def get_linked_codes(base: Conversion, message: discord.Message):
+async def get_linked_codes(base: Conversion, message: discord.Message, cache: dict):
     if base.unit.type == UnitType.measurement:
         return get_linked_measurements(base)
     else:
-        return await get_context_currency_codes(message)
+        if message.id not in cache:
+            cache[message.id] = await fetch_context_currency_codes(message)
+        return cache[message.id]
 
 
 async def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, message: discord.Message,
                                     squared: bool = False) -> ConversionResult:
     base = Conversion(Unit.from_stored_unit(base_stored_unit), value, squared=squared)
     to = []
-    for code in await get_linked_codes(base, message):
+    _context_cache = {}
+    for code in await get_linked_codes(base, message, _context_cache):
         code = code.lower()
         if code == base_stored_unit.code.lower():
             continue
@@ -99,7 +105,7 @@ def add_conversion_result_to_embed(embed: discord.Embed, conversion_result: Conv
     embed.add_field(**kwargs)
 
 
-class ConversionCog(BaseCog, name="Conversion"):
+class ConversionCog(BaseGroupCog, name="currency"):
     unit_mapping = unit_mapping
 
     @classmethod
@@ -110,22 +116,38 @@ class ConversionCog(BaseCog, name="Conversion"):
     async def on_ready(self):
         self.start_task(self.currency_rate_updater, check=self.bot.production)
 
-    @commands.command()
-    async def conversions(self, ctx):
-        embed = discord.Embed(color=self.bot.get_dominant_color())
-        embed.add_field(
-            name="Currencies",
-            value="""Currencies can be converted the following ways:
-by writing either **€50** or **50EUR** in the chat.
-(*note: some symbols that are used for too many currencies are excluded, like the dollar symbol*)
+    @commands.max_concurrency(1, commands.BucketType.user)
+    @app_commands.command(name='add', description='add a currency you\'d like to enable converting.')
+    async def currency_add(self, interaction: discord.Interaction, currency_code: str):
+        currency = pycountry.currencies.get(alpha_3=currency_code.upper())
+        if not currency:
+            await interaction.response.send_message('This currency does not exist.')
+            return
 
-Whatever you write in chat will be converted to currencies based on the conversation:
-All the users that wrote something for the last 20 messages are collected and their currencies are used to convert to.
-(note: you will have to have a country set `/profile setup country` or have some currencies added `currency add usd`)
-""",
-            inline=False
-        )
-        await ctx.send(embed=embed)
+        human = self.bot.get_human(user=interaction.user)
+        before = len(human.currencies)
+        human.currencies.add(currency)
+        if len(human.currencies) == before:
+            await interaction.response.send_message('This currency is already added')
+            return
+        human.save(only=[Human.currencies])
+        flattened = ", ".join(set(x.alpha_3 for x in human.currencies if x is not None))
+        await interaction.response.send_message('This currency has been added, current currencies = ' + flattened)
+
+    @commands.max_concurrency(1, commands.BucketType.user)
+    @app_commands.command(name='remove')
+    async def currency_remove(self, interaction: discord.Interaction, currency_code: str):
+        human = self.bot.get_human(user=interaction.user)
+        currency = pycountry.currencies.get(alpha_3=currency_code.upper())
+        if currency in human.currencies:
+            human.currencies.remove(currency)
+            human.save(only=[Human.currencies])
+            flattened = ", ".join(set(x.alpha_3 for x in human.currencies if x is not None))
+            await interaction.response.send_message('This currency has been removed, current currencies = ' + flattened)
+        else:
+            await interaction.response.send_message('This currency isn\'t set for you.')
+
+        human.currencies.remove(currency_code)
 
     @commands.Cog.listener()
     async def on_message(self, message):
