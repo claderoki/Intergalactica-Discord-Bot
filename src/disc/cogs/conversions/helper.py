@@ -31,7 +31,7 @@ class RegexHelper:
             format = "([+-]?\d+(\.\d+)*)({values})(?!\w)"
         regex = format.format(values="|".join(self.values))
         self.values = None
-        return regex
+        return re.compile(regex)
 
     @property
     def regex(self):
@@ -40,16 +40,25 @@ class RegexHelper:
         return self._regex
 
     def match(self, content) -> Tuple[str, float]:
-        matches = re.findall(self.regex, content)
-        if matches:
-            for match in matches:
-                if self.type == RegexType.measurement:
-                    value = float(match[0])
-                    unit = match[-1]
-                elif self.type == RegexType.currency:
-                    unit = match[0]
-                    value = float(match[1])
-                yield unit, value
+        for match in re.finditer(self.regex, content):
+            try:
+                char_after_end = content[match.end()]
+            except IndexError:
+                char_after_end = None
+
+            if char_after_end is not None and char_after_end != ' ':
+                print('Skipping due to match ending with', char_after_end)
+                continue
+            groups = [x for x in match.regs if x not in ((-1, -1), (match.start(), match.end()))]
+            match = [content[x[0]:x[1]] for x in groups]
+
+            if self.type == RegexType.measurement:
+                value = float(match[0])
+                unit = match[-1]
+            elif self.type == RegexType.currency:
+                unit = match[0]
+                value = float(match[1])
+            yield unit, value
 
 
 class UnitMapping:
@@ -130,7 +139,7 @@ def get_other_measurements():
 
 async def get_context_currency_codes(message):
     query = Human.select(Human.country, Human.currencies)
-    query = query.where((Human.country != None) | (Human.currencies != None))
+    query = query.where((Human.country != None) | (Human.currencies.is_null(False)))
 
     ids = set((message.author.id,))
     if not isinstance(message.channel, discord.DMChannel):
@@ -152,6 +161,11 @@ async def get_context_currency_codes(message):
 
 def should_exclude(value):
     return "." in value or "$" in value
+
+
+def test():
+    pass
+
 
 # from measurement.measures import Mass
 

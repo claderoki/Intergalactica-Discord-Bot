@@ -14,13 +14,16 @@ from .base import BaseModel, EnumField, CountryField
 import src.models as models
 from .helpers import create
 from .. import constants
+from src.config import config
 
 
 class CurrenciesField(peewee.TextField):
     def db_value(self, value):
         if value:
             return ";".join(set(x.alpha_3 for x in value if x is not None))
-        return ''
+        if isinstance(config.settings.base_database, peewee.SqliteDatabase):
+            return ''
+        return None
 
     def python_value(self, value):
         if value:
@@ -38,7 +41,7 @@ class Human(BaseModel):
     city = peewee.TextField(null=True)
     country = CountryField(null=True, column_name="country_code")
     tester = peewee.BooleanField(null=False, default=False)
-    currencies = CurrenciesField(null=False, default=lambda: set())
+    currencies = CurrenciesField(null=True, default=lambda: set())
 
     class Meta:
         indexes = (
