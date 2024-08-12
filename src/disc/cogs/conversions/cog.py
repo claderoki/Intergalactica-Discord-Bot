@@ -198,6 +198,7 @@ class ConversionCog(BaseGroupCog, name="currency"):
                 yield value
 
     @commands.max_concurrency(1, commands.BucketType.user)
+    @commands.has_guild_permissions(administrator=True)
     @app_commands.command(name='duplicates',
                           description='Configure behaviour for when currencies share the same symbol (such as $ or £).')
     async def duplicate_behaviour(self, interaction: discord.Interaction, symbol: str):
@@ -206,7 +207,12 @@ class ConversionCog(BaseGroupCog, name="currency"):
             await interaction.response.send_message('This currency isn\'t set for you.')
             return
         if len(currencies) <= 1:
-            await interaction.response.send_message('?')
+            await interaction.response.send_message('When a person writes something such as £50. By default these are '
+                                                    'ignored because many other currencies use this symbol.'
+                                                    'This command will allow admins to (server wide) map symbols such '
+                                                    f'as £ to specific currencies. In your case, the {symbol} '
+                                                    'is only used for one currency which makes this kind of '
+                                                    'pointless.')
             return
 
         selected = (EnabledCurrencySymbols.select(EnabledCurrencySymbols.currency_id)
