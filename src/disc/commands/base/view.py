@@ -1,10 +1,12 @@
 import datetime
+import typing
 from typing import List, Optional, Type, Dict, Set, TypeVar, Generic, Callable
 
 import discord
 import peewee
 from discord import SelectOption, TextStyle
 
+from src.classes import Labeled
 from src.models import Reminder
 from src.models.base import LongTextField
 
@@ -238,6 +240,31 @@ class DataSelect(discord.ui.Select, Generic[T]):
         await interaction.response.defer()
         self.selected = [self.data[x] for x in self.values]
         self.view.stop()
+
+
+def _create_callback_for(component: discord.ui.Item, callback: Callable[[discord.ui.Item, discord.Interaction], typing.Awaitable]):
+    def wrapper(interaction: discord.Interaction):
+        return callback(component, interaction)
+    return wrapper
+
+
+async def dropdown(interaction: discord.Interaction, labeleds: List[Labeled], selected_keys: List[str] = None):
+    selected_keys = selected_keys or []
+    view = discord.ui.View()
+    values = {x.get_key(): x for x in labeleds}
+    select = discord.ui.Select(min_values=0, max_values=len(values))
+    for key, label in values.items():
+        select.add_option(label=label.get_label(), value=key, default=key in selected_keys)
+
+    async def _callback(component: discord.ui.Select, interaction: discord.Interaction):
+        await interaction.response.defer()
+        component.view.stop()
+
+    select.callback = _create_callback_for(select, _callback)
+    view.add_item(select)
+    await interaction.response.send_message(view=view)
+    await view.wait()
+    return [values[int(x)] for x in select.values]
 
 
 class DataChoice(discord.ui.View, Generic[T]):

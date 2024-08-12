@@ -1,15 +1,19 @@
+import typing
+
 import discord
 import pycountry
 from discord import app_commands
 from discord.ext import tasks, commands
 
 from src.config import config
-from src.disc.cogs.core import BaseCog
 from src.models import Currency, Measurement, StoredUnit, Human
+from src.models.conversions import EnabledCurrencySymbols
 from src.wrappers.fixerio import Api as FixerioApi
-from .helper import RegexHelper, RegexType, UnitMapping, get_other_measurements, fetch_context_currency_codes
+from .helper import RegexHelper, RegexType, UnitMapping, get_other_measurements, fetch_context_currency_codes, \
+    CurrencyCache
 from .models import Unit, UnitType, Conversion, ConversionResult
 from ...commands import BaseGroupCog
+from ...commands.base.view import dropdown
 
 other_measurements = get_other_measurements()
 unit_mapping = UnitMapping()
@@ -17,24 +21,46 @@ measurement_regex = RegexHelper(RegexType.measurement)
 currency_regex = RegexHelper(RegexType.currency)
 
 
-def add_stored_unit_to_regexes(stored_unit: StoredUnit):
+def add_stored_unit_to_regexes(stored_unit: StoredUnit, add_to_currency: bool = True):
     measurement_regex.add_value(stored_unit.code.lower())
     if isinstance(stored_unit, Currency):
-        symbol = stored_unit.symbol.lower()
-        if not stored_unit.should_exclude_symbol:
-            currency_regex.add_value(symbol)
+        if add_to_currency:
+            currency_regex.add_value(stored_unit.symbol.lower())
     elif isinstance(stored_unit, Measurement) and stored_unit.squareable:
         measurement_regex.add_value(f"sq{stored_unit.code.lower()}")
 
 
+def _load_duplicates(currencies):
+    dupl = {}
+    for c in currencies:
+        dupl.setdefault(c.symbol.lower(), set()).add(c)
+    CurrencyCache.symbols_with_duplicates = [k for k, v in dupl.items() if len(v) > 1]
+
+
 def add_all_to_mapping():
-    for cls in (Currency, Measurement):
-        for stored_unit in cls:
-            unit_mapping.add(stored_unit)
-            add_stored_unit_to_regexes(stored_unit)
+    unit_mapping.clear()
+    for measurement in Measurement:
+        unit_mapping.add(measurement)
+        add_stored_unit_to_regexes(measurement)
+
+    currencies = list(Currency)
+    _load_duplicates(currencies)
+    configured = [x.symbol.lower() for x in EnabledCurrencySymbols.select(EnabledCurrencySymbols.symbol).distinct(True)]
+
+    for currency in currencies:
+        unit_mapping.add(currency)
+        add_to_currency = not currency.should_exclude_symbol
+        if currency.symbol.lower() in CurrencyCache.symbols_with_duplicates and currency.symbol.lower() in configured:
+            add_to_currency = True
+        add_stored_unit_to_regexes(currency, add_to_currency=add_to_currency)
 
 
-add_all_to_mapping()
+def load_configs() -> dict:
+    c = {}
+    for currency_symbol in EnabledCurrencySymbols:
+        currency_symbol: EnabledCurrencySymbols
+        c.setdefault(currency_symbol.guild_id, set()).add((currency_symbol.symbol, currency_symbol.currency.code))
+    return c
 
 
 def base_measurement_to_conversion_result(base_stored_unit: StoredUnit, value: float) -> ConversionResult:
@@ -107,13 +133,25 @@ def add_conversion_result_to_embed(embed: discord.Embed, conversion_result: Conv
 
 class ConversionCog(BaseGroupCog, name="currency"):
     unit_mapping = unit_mapping
+    symbol_config = {}
+
+    def __init__(self, bot):
+        super().__init__(bot)
+        self._rebuilding = None
 
     @classmethod
     def base_measurement_to_conversion_result(cls, base_stored_unit: StoredUnit, value: float) -> ConversionResult:
         return base_measurement_to_conversion_result(base_stored_unit=base_stored_unit, value=value)
 
+    def rebuild(self):
+        self._rebuilding = True
+        add_all_to_mapping()
+        self.symbol_config: typing.Dict[int, typing.List[typing.Tuple[str, str]]] = load_configs()
+        self._rebuilding = False
+
     @commands.Cog.listener()
     async def on_ready(self):
+        self.rebuild()
         self.start_task(self.currency_rate_updater, check=self.bot.production)
 
     @commands.max_concurrency(1, commands.BucketType.user)
@@ -149,26 +187,86 @@ class ConversionCog(BaseGroupCog, name="currency"):
 
         human.currencies.remove(currency_code)
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if not self.bot.production:
+    def _currencies_iter(self):
+        for key in unit_mapping.values:
+            value = unit_mapping.values[key]
+            if isinstance(value, list):
+                for v in value:
+                    if isinstance(v, Currency):
+                        yield v
+            elif isinstance(value, Currency):
+                yield value
+
+    @commands.max_concurrency(1, commands.BucketType.user)
+    @app_commands.command(name='duplicates',
+                          description='Configure behaviour for when currencies share the same symbol (such as $ or £).')
+    async def duplicate_behaviour(self, interaction: discord.Interaction, symbol: str):
+        currencies = list(set(x for x in self._currencies_iter() if x.symbol == symbol))
+        if currencies is None:
+            await interaction.response.send_message('This currency isn\'t set for you.')
             return
+        if len(currencies) <= 1:
+            await interaction.response.send_message('?')
+            return
+
+        selected = (EnabledCurrencySymbols.select(EnabledCurrencySymbols.currency_id)
+                    .where(EnabledCurrencySymbols.guild_id == interaction.guild_id)
+                    .where(EnabledCurrencySymbols.symbol == symbol))
+        selected = [x.currency_id for x in selected]
+
+        items = await dropdown(interaction, currencies, selected)
+
+        EnabledCurrencySymbols.delete() \
+            .where(EnabledCurrencySymbols.guild_id == interaction.guild_id) \
+            .where(EnabledCurrencySymbols.symbol == symbol) \
+            .execute()
+
+        for item in items:
+            EnabledCurrencySymbols.create(guild_id=interaction.guild_id, symbol=symbol, currency=item)
+            currency_regex.add_value(symbol)
+        if len(items) > 0:
+            await interaction.followup.send(f'Okay. When someone sends a convertable message such as {symbol}50, All '
+                                            f'of the selected currencies will be converted from.')
+        else:
+            await interaction.followup.send('Okay. Cleared. ')
+        self.rebuild()
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        # if not self.bot.production:
+        #     return
 
         if message.author.bot or "http" in message.content:
             return
 
-        conversion_results = []
-        for regex in (measurement_regex, currency_regex):
-            for unit_value, value in regex.match(message.content.lower()):
-                squared = False
-                if "sq" in unit_value:
-                    unit_value = unit_value.replace("sq", "")
-                    squared = True
+        if self._rebuilding:
+            print('rebuilding...')
+            return
 
-                units = unit_mapping.get_units(unit_value)
-                for unit in units:
-                    conversion_result = await base_to_conversion_result(unit, value, message, squared=squared)
-                    conversion_results.append(conversion_result)
+        guild_id = message.guild.id if message.guild else None
+        _config = self.symbol_config.get(guild_id)
+
+        conversion_results = []
+
+        for unit_value, value in measurement_regex.match(message.content.lower()):
+            squared = False
+            if "sq" in unit_value:
+                unit_value = unit_value.replace("sq", "")
+                squared = True
+            for unit in unit_mapping.get_units(unit_value):
+                conversion_result = await base_to_conversion_result(unit, value, message, squared=squared)
+                conversion_results.append(conversion_result)
+
+        for unit_value, value in currency_regex.match(message.content.lower()):
+            filter = None
+            is_duplicate_symbol = unit_value in CurrencyCache.symbols_with_duplicates
+            if is_duplicate_symbol:
+                allowed_codes = [x[1].lower() for x in _config if x[0] == unit_value]
+                filter = lambda stored_unit: stored_unit.code.lower() in allowed_codes
+
+            for unit in unit_mapping.get_units(unit_value, filter=filter):
+                conversion_result = await base_to_conversion_result(unit, value, message, squared=False)
+                conversion_results.append(conversion_result)
 
         embed = discord.Embed(color=self.bot.get_dominant_color())
         if len(conversion_results) > 0:

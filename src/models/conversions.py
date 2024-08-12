@@ -3,11 +3,12 @@ from enum import Enum
 
 import peewee
 
-from .base import BaseModel, EnumField
+from .base import BaseModel, EnumField, GuildIdField
 from .helpers import create
+from ..classes import Labeled
 
 
-class StoredUnit(BaseModel):
+class StoredUnit(BaseModel, Labeled):
     rate = peewee.DoubleField(null=False)
     name = peewee.TextField(null=False)
     is_base = peewee.BooleanField(null=False, default=False)
@@ -24,11 +25,17 @@ class StoredUnit(BaseModel):
         else:
             return (to.rate * value) / self.rate
 
+    def get_key(self):
+        return self.id
+
+    def get_label(self):
+        return self.name
+
     @property
     def should_exclude_symbol(self):
-        if "$" in self.symbol:
+        if "$" in self.symbol and self.symbol != '$':
             return True
-        if "£" in self.symbol:
+        if "£" in self.symbol and self.symbol != '£':
             return True
         if "." in self.symbol:
             return True
@@ -52,3 +59,10 @@ class MeasurementSubType(Enum):
 class Measurement(StoredUnit):
     subtype = EnumField(MeasurementSubType, null=False)
     squareable = peewee.BooleanField(null=False, default=False)
+
+
+@create()
+class EnabledCurrencySymbols(BaseModel):
+    symbol = peewee.TextField(null=False)
+    currency = peewee.ForeignKeyField(Currency, null=False)
+    guild_id = GuildIdField(null=False)

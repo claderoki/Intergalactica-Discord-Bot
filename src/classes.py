@@ -1,5 +1,6 @@
 from __future__ import annotations
 import enum
+from abc import ABC, abstractmethod
 
 import peewee
 from discord import app_commands
@@ -67,3 +68,11 @@ class Config:
     def bot(self, bot: commands.Bot):
         self._bot = bot
         self.tree = bot.tree if bot else None
+
+
+class Labeled:
+    def get_key(self):
+        pass
+
+    def get_label(self):
+        pass

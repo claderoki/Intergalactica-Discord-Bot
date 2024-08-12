@@ -13,6 +13,10 @@ class RegexType(Enum):
     measurement = 2
 
 
+class CurrencyCache:
+    symbols_with_duplicates = []
+
+
 class RegexHelper:
     __slots__ = ("type", "values", "_regex")
 
@@ -22,6 +26,9 @@ class RegexHelper:
         self._regex = None
 
     def add_value(self, value):
+        if self.values is None:
+            self.values = set()
+            self._regex = None
         self.values.add(value)
 
     def _build(self):
@@ -29,7 +36,7 @@ class RegexHelper:
             format = "({values})(\d+(\.\d+)*)(?!\w)"
         elif self.type == RegexType.measurement:
             format = "([+-]?\d+(\.\d+)*)({values})(?!\w)"
-        regex = format.format(values="|".join(self.values))
+        regex = format.format(values="|".join([x.replace('$', '\\$') for x in self.values]))
         self.values = None
         return re.compile(regex)
 
@@ -69,13 +76,16 @@ class RegexHelper:
 
 
 class UnitMapping:
-    __slots__ = ("values")
+    __slots__ = ("values",)
 
     def __init__(self):
         self.values = {}
 
     def __iter__(self):
         yield from self.values
+
+    def clear(self):
+        self.values.clear()
 
     def _add_value(self, value: str, stored_unit: StoredUnit):
         value = value.lower()
@@ -84,7 +94,7 @@ class UnitMapping:
             if existing == stored_unit:
                 return
 
-            if isinstance(existing, list):
+            if isinstance(existing, list) and stored_unit not in existing:
                 existing.append(stored_unit)
             else:
                 self.values[value] = [existing, stored_unit]
@@ -96,12 +106,21 @@ class UnitMapping:
         if units is not None and len(units) > 0:
             return units[0]
 
-    def get_units(self, value, type: UnitType = None):
+    def get_units(self, value, type: UnitType = None, filter=None):
         try:
             unit = self.values[value.lower()]
         except KeyError:
             return None
-        all_units = unit if isinstance(unit, list) else [unit]
+        if filter is None:
+            filter = lambda x: True
+
+        all_units = []
+        if isinstance(unit, list):
+            all_units.extend(unit)
+        else:
+            all_units.append(unit)
+        all_units = [x for x in all_units if filter(x)]
+
         if type is None:
             return all_units
 
@@ -170,13 +189,8 @@ async def fetch_context_currency_codes(message):
     return currencies
 
 
-def should_exclude(value):
-    return "." in value or "$" in value
-
-
 def test():
     pass
-
 
 # from measurement.measures import Mass
 
