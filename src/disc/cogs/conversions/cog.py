@@ -244,7 +244,7 @@ class ConversionCog(BaseGroupCog, name="currency"):
             return
 
         guild_id = message.guild.id if message.guild else None
-        _config = self.symbol_config.get(guild_id)
+        _config = self.symbol_config.get(guild_id) or []
 
         conversion_results = []
 
