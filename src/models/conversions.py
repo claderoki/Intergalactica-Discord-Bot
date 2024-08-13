@@ -62,7 +62,11 @@ class Measurement(StoredUnit):
 
 
 @create()
-class EnabledCurrencySymbols(BaseModel):
-    symbol = peewee.TextField(null=False)
+class ServerCurrency(BaseModel):
     currency = peewee.ForeignKeyField(Currency, null=False)
     guild_id = GuildIdField(null=False)
+
+    class Meta:
+        indexes = (
+            (('currency_id', 'guild_id'), True),
+        )

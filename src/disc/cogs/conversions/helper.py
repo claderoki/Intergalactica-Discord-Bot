@@ -5,6 +5,7 @@ from typing import Tuple, Set
 import discord
 
 from src.models import Human, Currency, Measurement
+from src.models.conversions import ServerCurrency
 from .models import StoredUnit, UnitType
 
 
@@ -172,15 +173,22 @@ async def fetch_context_currency_codes(message) -> Set[str]:
     query = Human.select(Human.country, Human.currencies)
     query = query.where((Human.country != None) | (Human.currencies.is_null(False)))
 
+    currencies = set()
+
     ids = {message.author.id}
     if not isinstance(message.channel, discord.DMChannel) and message.guild is not None:
+        serverwide = (Currency.select(Currency.code)
+                      .where(ServerCurrency.guild_id == message.guild.id)
+                      .join(ServerCurrency))
+        for server_currency in serverwide:
+            currencies.add(server_currency.code)
+
         async for msg in message.channel.history(limit=20):
             if not msg.author.bot:
                 ids.add(msg.author.id)
 
     query = query.where(Human.user_id.in_(ids))
 
-    currencies = set()
     for human in query:
         for currency in human.all_currencies:
             if currency is not None:

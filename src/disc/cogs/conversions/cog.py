@@ -1,13 +1,14 @@
 import typing
 
 import discord
+import peewee
 import pycountry
 from discord import app_commands
 from discord.ext import tasks, commands
 
 from src.config import config
 from src.models import Currency, Measurement, StoredUnit, Human
-from src.models.conversions import EnabledCurrencySymbols
+from src.models.conversions import ServerCurrency
 from src.wrappers.fixerio import Api as FixerioApi
 from .helper import RegexHelper, RegexType, UnitMapping, get_other_measurements, fetch_context_currency_codes, \
     CurrencyCache
@@ -54,13 +55,6 @@ def add_all_to_mapping():
         #     add_to_currency = True
         add_stored_unit_to_regexes(currency, add_to_currency=add_to_currency)
 
-
-def load_configs() -> dict:
-    c = {}
-    for currency_symbol in EnabledCurrencySymbols:
-        currency_symbol: EnabledCurrencySymbols
-        c.setdefault(currency_symbol.guild_id, set()).add((currency_symbol.symbol, currency_symbol.currency.code))
-    return c
 
 
 def base_measurement_to_conversion_result(base_stored_unit: StoredUnit, value: float) -> ConversionResult:
@@ -134,7 +128,6 @@ def add_conversion_result_to_embed(embed: discord.Embed, conversion_result: Conv
 
 class ConversionCog(BaseGroupCog, name="currency"):
     unit_mapping = unit_mapping
-    symbol_config = {}
 
     def __init__(self, bot):
         super().__init__(bot)
@@ -147,7 +140,6 @@ class ConversionCog(BaseGroupCog, name="currency"):
     def rebuild(self):
         self._rebuilding = True
         add_all_to_mapping()
-        self.symbol_config: typing.Dict[int, typing.List[typing.Tuple[str, str]]] = load_configs()
         self._rebuilding = False
 
     @commands.Cog.listener()
@@ -156,7 +148,7 @@ class ConversionCog(BaseGroupCog, name="currency"):
         self.start_task(self.currency_rate_updater, check=self.bot.production)
 
     @commands.max_concurrency(1, commands.BucketType.user)
-    @app_commands.command(name='add', description='add a currency you\'d like to enable converting.')
+    @app_commands.command(name='add', description='Add a currency you\'d like to enable converting.')
     async def currency_add(self, interaction: discord.Interaction, currency_code: str):
         currency = pycountry.currencies.get(alpha_3=currency_code.upper())
         if not currency:
@@ -188,55 +180,46 @@ class ConversionCog(BaseGroupCog, name="currency"):
 
         human.currencies.remove(currency_code)
 
-    def _currencies_iter(self):
-        for key in unit_mapping.values:
-            value = unit_mapping.values[key]
-            if isinstance(value, list):
-                for v in value:
-                    if isinstance(v, Currency):
-                        yield v
-            elif isinstance(value, Currency):
-                yield value
+    @commands.max_concurrency(1, commands.BucketType.user)
+    @commands.guild_only()
+    @commands.has_guild_permissions(administrator=True)
+    @app_commands.command(name='server_add',
+                          description='Add a currency you\'d like to enable converting server-wide.')
+    async def server_add(self, interaction: discord.Interaction, currency_code: str):
+        currency_code = currency_code.upper()
+        currency = Currency.get_or_none(code=currency_code)
+        if currency is None:
+            await interaction.response.send_message('This currency doesn\'t exist.')
+            return
+        try:
+            ServerCurrency.create(currency=currency, guild_id=interaction.guild_id)
+        except peewee.IntegrityError:
+            await interaction.response.send_message('This currency is already added to this server.')
+            return
+        current = [x.code for x in Currency.select(Currency.code).join(ServerCurrency).where(ServerCurrency.guild_id == interaction.guild_id)]
+        await interaction.response.send_message('OK, current (server wide) currencies: ' + ', '.join(current))
 
     @commands.max_concurrency(1, commands.BucketType.user)
+    @commands.guild_only()
     @commands.has_guild_permissions(administrator=True)
-    @app_commands.command(name='server',
-                          description='Configure behaviour for when currencies share the same symbol (such as $ or £).')
-    async def duplicate_behaviour(self, interaction: discord.Interaction, symbol: str):
-        currencies = list(set(x for x in self._currencies_iter() if x.symbol == symbol))
-        if currencies is None:
-            await interaction.response.send_message('This currency isn\'t set for you.')
-            return
-        if len(currencies) <= 1:
-            await interaction.response.send_message('When a person writes something such as £50. By default these are '
-                                                    'ignored because many other currencies use this symbol.'
-                                                    'This command will allow admins to (server wide) map symbols such '
-                                                    f'as £ to specific currencies. In your case, the {symbol} '
-                                                    'is only used for one currency which makes this kind of '
-                                                    'pointless.')
+    @app_commands.command(name='server_remove',
+                          description='Remove a currency from the server-wide currency list.')
+    async def server_remove(self, interaction: discord.Interaction, currency_code: str):
+        currency_code = currency_code.upper()
+        currency = Currency.get_or_none(code=currency_code)
+        if currency is None:
+            await interaction.response.send_message('This currency doesn\'t exist.')
             return
 
-        selected = (EnabledCurrencySymbols.select(EnabledCurrencySymbols.currency_id)
-                    .where(EnabledCurrencySymbols.guild_id == interaction.guild_id)
-                    .where(EnabledCurrencySymbols.symbol == symbol))
-        selected = [x.currency_id for x in selected]
-
-        items = await dropdown(interaction, currencies, selected)
-
-        EnabledCurrencySymbols.delete() \
-            .where(EnabledCurrencySymbols.guild_id == interaction.guild_id) \
-            .where(EnabledCurrencySymbols.symbol == symbol) \
+        delete_count = ServerCurrency.delete() \
+            .where(ServerCurrency.guild_id == interaction.guild_id) \
+            .where(ServerCurrency.currency == currency) \
             .execute()
-
-        for item in items:
-            EnabledCurrencySymbols.create(guild_id=interaction.guild_id, symbol=symbol, currency=item)
-            currency_regex.add_value(symbol)
-        if len(items) > 0:
-            await interaction.followup.send(f'Okay. When someone sends a convertable message such as {symbol}50, All '
-                                            f'of the selected currencies will be converted from.')
-        else:
-            await interaction.followup.send('Okay. Cleared. ')
-        self.rebuild()
+        if delete_count == 0:
+            await interaction.response.send_message('This currency was not added to this server.')
+            return
+        current = [x.code for x in Currency.select(Currency.code).join(ServerCurrency).where(ServerCurrency.guild_id == interaction.guild_id)]
+        await interaction.response.send_message('OK, current (server wide) currencies: ' + ', '.join(current))
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
