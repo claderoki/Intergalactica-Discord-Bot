@@ -1,6 +1,6 @@
 import re
 from enum import Enum
-from typing import Tuple
+from typing import Tuple, Set
 
 import discord
 
@@ -168,7 +168,7 @@ class CurrencyContext:
         self.data = {}
 
 
-async def fetch_context_currency_codes(message):
+async def fetch_context_currency_codes(message) -> Set[str]:
     query = Human.select(Human.country, Human.currencies)
     query = query.where((Human.country != None) | (Human.currencies.is_null(False)))
 

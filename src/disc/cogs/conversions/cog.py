@@ -45,13 +45,13 @@ def add_all_to_mapping():
 
     currencies = list(Currency)
     _load_duplicates(currencies)
-    configured = [x.symbol.lower() for x in EnabledCurrencySymbols.select(EnabledCurrencySymbols.symbol).distinct(True)]
+    # configured = [x.symbol.lower() for x in EnabledCurrencySymbols.select(EnabledCurrencySymbols.symbol).distinct(True)]
 
     for currency in currencies:
         unit_mapping.add(currency)
         add_to_currency = not currency.should_exclude_symbol
-        if currency.symbol.lower() in CurrencyCache.symbols_with_duplicates and currency.symbol.lower() in configured:
-            add_to_currency = True
+        # if currency.symbol.lower() in CurrencyCache.symbols_with_duplicates and currency.symbol.lower() in configured:
+        #     add_to_currency = True
         add_stored_unit_to_regexes(currency, add_to_currency=add_to_currency)
 
 
@@ -97,11 +97,12 @@ async def get_linked_codes(base: Conversion, message: discord.Message, cache: di
 
 
 async def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, message: discord.Message,
+                                    context_cache: dict = None,
                                     squared: bool = False) -> ConversionResult:
     base = Conversion(Unit.from_stored_unit(base_stored_unit), value, squared=squared)
     to = []
-    _context_cache = {}
-    for code in await get_linked_codes(base, message, _context_cache):
+    context_cache = context_cache or {}
+    for code in await get_linked_codes(base, message, context_cache):
         code = code.lower()
         if code == base_stored_unit.code.lower():
             continue
@@ -199,7 +200,7 @@ class ConversionCog(BaseGroupCog, name="currency"):
 
     @commands.max_concurrency(1, commands.BucketType.user)
     @commands.has_guild_permissions(administrator=True)
-    @app_commands.command(name='duplicates',
+    @app_commands.command(name='server',
                           description='Configure behaviour for when currencies share the same symbol (such as $ or £).')
     async def duplicate_behaviour(self, interaction: discord.Interaction, symbol: str):
         currencies = list(set(x for x in self._currencies_iter() if x.symbol == symbol))
@@ -249,9 +250,6 @@ class ConversionCog(BaseGroupCog, name="currency"):
             print('rebuilding...')
             return
 
-        guild_id = message.guild.id if message.guild else None
-        _config = self.symbol_config.get(guild_id) or []
-
         conversion_results = []
 
         for unit_value, value in measurement_regex.match(message.content.lower()):
@@ -265,13 +263,15 @@ class ConversionCog(BaseGroupCog, name="currency"):
 
         for unit_value, value in currency_regex.match(message.content.lower()):
             filter = None
+            cache = None
             is_duplicate_symbol = unit_value in CurrencyCache.symbols_with_duplicates
             if is_duplicate_symbol:
-                allowed_codes = [x[1].lower() for x in _config if x[0] == unit_value]
+                allowed_codes = list(map(str.lower, await fetch_context_currency_codes(message)))
+                cache = {message.id: allowed_codes}
                 filter = lambda stored_unit: stored_unit.code.lower() in allowed_codes
 
             for unit in unit_mapping.get_units(unit_value, filter=filter):
-                conversion_result = await base_to_conversion_result(unit, value, message, squared=False)
+                conversion_result = await base_to_conversion_result(unit, value, message, context_cache=cache, squared=False)
                 conversion_results.append(conversion_result)
 
         embed = discord.Embed(color=self.bot.get_dominant_color())
