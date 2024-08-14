@@ -10,11 +10,9 @@ from src.config import config
 from src.models import Currency, Measurement, StoredUnit, Human
 from src.models.conversions import ServerCurrency
 from src.wrappers.fixerio import Api as FixerioApi
-from .helper import RegexHelper, RegexType, UnitMapping, get_other_measurements, fetch_context_currency_codes, \
-    CurrencyCache
+from .helper import RegexHelper, RegexType, UnitMapping, get_other_measurements, fetch_context_currency_codes, CurrencyCache
 from .models import Unit, UnitType, Conversion, ConversionResult
 from ...commands import BaseGroupCog
-from ...commands.base.view import dropdown
 
 other_measurements = get_other_measurements()
 unit_mapping = UnitMapping()
@@ -46,15 +44,9 @@ def add_all_to_mapping():
 
     currencies = list(Currency)
     _load_duplicates(currencies)
-    # configured = [x.symbol.lower() for x in EnabledCurrencySymbols.select(EnabledCurrencySymbols.symbol).distinct(True)]
-
     for currency in currencies:
         unit_mapping.add(currency)
-        add_to_currency = not currency.should_exclude_symbol
-        # if currency.symbol.lower() in CurrencyCache.symbols_with_duplicates and currency.symbol.lower() in configured:
-        #     add_to_currency = True
-        add_stored_unit_to_regexes(currency, add_to_currency=add_to_currency)
-
+        add_stored_unit_to_regexes(currency, add_to_currency=not currency.should_exclude_symbol)
 
 
 def base_measurement_to_conversion_result(base_stored_unit: StoredUnit, value: float) -> ConversionResult:
@@ -247,11 +239,10 @@ class ConversionCog(BaseGroupCog, name="currency"):
         for unit_value, value in currency_regex.match(message.content.lower()):
             filter = None
             cache = None
-            is_duplicate_symbol = unit_value in CurrencyCache.symbols_with_duplicates
-            if is_duplicate_symbol:
+            if unit_value in CurrencyCache.symbols_with_duplicates:
                 allowed_codes = list(map(str.lower, await fetch_context_currency_codes(message)))
                 cache = {message.id: allowed_codes}
-                filter = lambda stored_unit: stored_unit.code.lower() in allowed_codes
+                filter = lambda u: u.code.lower() in allowed_codes
 
             for unit in unit_mapping.get_units(unit_value, filter=filter):
                 conversion_result = await base_to_conversion_result(unit, value, message, context_cache=cache, squared=False)
