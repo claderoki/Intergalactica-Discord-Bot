@@ -19,11 +19,12 @@ class CurrencyCache:
 
 
 class RegexHelper:
-    __slots__ = ("type", "values", "_regex")
+    __slots__ = ("type", "values", "_regex", 'abbreviation_check')
 
-    def __init__(self, type: RegexType):
+    def __init__(self, type: RegexType, abbreviation_check: bool = False):
         self.type = type
         self.values = set()
+        self.abbreviation_check = abbreviation_check
         self._regex = None
 
     def add_value(self, value):
@@ -32,13 +33,16 @@ class RegexHelper:
             self._regex = None
         self.values.add(value)
 
-    def _build(self):
+    def rebuild(self, raw: str):
+        self._regex = self._build()
+
+    def _build(self, raw: str = None):
         if self.type == RegexType.currency:
             format = "({values})(\d+(\.\d+)*)(?!\w)"
         elif self.type == RegexType.measurement:
             format = "([+-]?\d+(\.\d+)*)({values})(?!\w)"
         regex = format.format(values="|".join([x.replace('$', '\\$') for x in self.values]))
-        self.values = None
+        # self.values = None
         return re.compile(regex)
 
     @property
@@ -55,14 +59,31 @@ class RegexHelper:
         except IndexError:
             return None
 
+    _NUMERICAL_ABBREVIATIONS = ('k', 'm')
+
+    def _get_abbreviation(self, after_end: str):
+        if after_end in self._NUMERICAL_ABBREVIATIONS:
+            return after_end
+
     def match(self, content) -> Tuple[str, float]:
         i = 0
         for match in re.finditer(self.regex, content):
             char_after_end = self._index_or_none(content, match.end()) or ' '
             char_before_start = self._index_or_none(content, match.start() - 1) or ' '
             allowed = (' ', '°')
-            if char_after_end not in allowed or char_before_start not in allowed:
+
+            end_valid = char_after_end in allowed
+            start_valid = char_before_start in allowed
+
+            abbreviation = None
+            if self.abbreviation_check:
+                abbreviation = self._get_abbreviation(char_after_end)
+                if abbreviation:
+                    end_valid = True
+
+            if not end_valid or not start_valid:
                 continue
+
             groups = [x for x in match.regs if x not in ((-1, -1), (match.start(), match.end()))]
             match = [content[x[0]:x[1]] for x in groups]
 
@@ -72,6 +93,11 @@ class RegexHelper:
             elif self.type == RegexType.currency:
                 unit = match[0]
                 value = float(match[1])
+
+            if abbreviation == 'k':
+                value = value * 1000
+            elif abbreviation == 'm':
+                value = value * 1000000
             yield unit, value
             i += 1
 

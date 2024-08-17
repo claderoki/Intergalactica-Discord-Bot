@@ -17,7 +17,7 @@ from ...commands import BaseGroupCog
 other_measurements = get_other_measurements()
 unit_mapping = UnitMapping()
 measurement_regex = RegexHelper(RegexType.measurement)
-currency_regex = RegexHelper(RegexType.currency)
+currency_regex = RegexHelper(RegexType.currency, True)
 
 
 def add_stored_unit_to_regexes(stored_unit: StoredUnit, add_to_currency: bool = True):
@@ -57,10 +57,8 @@ def base_measurement_to_conversion_result(base_stored_unit: StoredUnit, value: f
         if code == base_stored_unit.code.lower():
             continue
         stored_unit = unit_mapping.get_unit(code, type=base.unit.type)
-
         if stored_unit is None:
             continue
-
         converted = base_stored_unit.to(stored_unit, value)
         to.append(Conversion(Unit.from_stored_unit(stored_unit), converted))
     return ConversionResult(base, to)
@@ -106,8 +104,7 @@ async def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, 
 
 
 def add_conversion_result_to_embed(embed: discord.Embed, conversion_result: ConversionResult):
-    kwargs = {}
-    kwargs["name"] = conversion_result.base.get_clean_string()
+    kwargs = {"name": conversion_result.base.get_clean_string()}
     lines = []
     for to in conversion_result.to:
         lines.append(to.get_clean_string())
