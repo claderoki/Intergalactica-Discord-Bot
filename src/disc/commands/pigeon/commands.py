@@ -207,8 +207,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         pigeon = targets.get_pigeon()
 
         data = {}
-        emojis = ['']
-        data['name'] = pigeon.name
+        emojis = []
 
         for stat in pigeon.get_stats():
             data[stat.name] = str(stat.amount)
@@ -217,7 +216,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         emojis.append(pigeon.status.value)
         data['status'] = pigeon.status.name
         lines = prettify_dict(data, emojis=emojis)
-        embed = discord.Embed(description=f'```\n{lines}```')
+        embed = discord.Embed(title=f'{pigeon.name}\'s profile', description=f'```\n{lines}```')
         await interaction.response.send_message(embed=embed)
 
     async def space_explore(self, interaction: discord.Interaction, pigeon: Pigeon):
