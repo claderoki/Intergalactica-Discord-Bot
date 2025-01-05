@@ -208,13 +208,13 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
 
         data = {}
         emojis = ['']
+        data['name'] = pigeon.name
 
         for stat in pigeon.get_stats():
             data[stat.name] = str(stat.amount)
             emojis.append(stat.emoji)
 
         emojis.append(pigeon.status.value)
-        data['name'] = pigeon.name
         data['status'] = pigeon.status.name
         lines = prettify_dict(data, emojis=emojis)
         embed = discord.Embed(description=f'```\n{lines}```')
