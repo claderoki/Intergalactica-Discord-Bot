@@ -207,7 +207,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         pigeon = targets.get_pigeon()
 
         data = {}
-        emojis = []
+        emojis = ['']
 
         for stat in pigeon.get_stats():
             data[stat.name] = str(stat.amount)
