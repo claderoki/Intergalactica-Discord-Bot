@@ -309,6 +309,10 @@ class UserIdField(DiscordSnowflakeField):
     pass
 
 
+class ChannelIdField(DiscordSnowflakeField):
+    pass
+
+
 class RoleIdField(DiscordSnowflakeField):
     pass
 
