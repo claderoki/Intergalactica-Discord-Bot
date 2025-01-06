@@ -120,6 +120,10 @@ class PigeonCog(BaseCog, name="Pigeon"):
     def get_pigeon_channel(self, guild):
         if guild.id == KnownGuild.crossroads:
             return guild.get_channel(1241342425193123850)
+        if guild.id == 1323756438237216818:
+            return guild.get_channel(1325541166833467525)
+        if guild.id == 1261105778106830960:
+            return guild.get_channel(1321889387126067353)
 
         for channel in guild.text_channels:
             if 'bot-spam' in channel.name.lower():
