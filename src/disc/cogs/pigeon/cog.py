@@ -111,7 +111,7 @@ class PigeonCog(BaseCog, name="Pigeon"):
         super().__init__(bot)
         self.message_counts = {}
 
-    def get_base_embed(self, guild):
+    def get_base_embed(self, guild) -> discord.Embed:
         embed = discord.Embed(color=self.bot.get_dominant_color(guild))
         embed.set_thumbnail(
             url="https://cdn.discordapp.com/attachments/705242963550404658/766680730457604126/pigeon_tiny.png")
@@ -565,7 +565,7 @@ ORDER BY score DESC;
             embed = self.get_base_embed(ctx.guild)
             embed.set_author(
                 name=f"You've got mail from {mail.sender.human.user}!",
-                icon_url=mail.sender.human.user.avatar_url
+                # icon_url=str(mail.sender.human.user.display_avatar)
             )
 
             if mail.message is not None:
