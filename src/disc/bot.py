@@ -134,6 +134,7 @@ class Locus(commands.Bot):
             "pigeon.cog",
             "custom.c3po.cog",
             "custom.crossroad.cog",
+            "custom.pub.cog",
             "custom.shared.cog",
             "birthdayreminders.cog",
         ]

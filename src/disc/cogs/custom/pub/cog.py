@@ -10,7 +10,7 @@ from src.models.crossroad import StarboardMapping
 
 
 class KnownChannel:
-    starboard = 1115301555504160790
+    starboard = 1394335056259973350
 
 
 class MessageLink(discord.ui.View):
@@ -19,8 +19,8 @@ class MessageLink(discord.ui.View):
         self.add_item(discord.ui.Button(label='Go to Message', url=url, style=discord.ButtonStyle.link))
 
 
-class Crossroad(CustomCog):
-    guild_id = KnownGuild.crossroads
+class Pub(CustomCog):
+    guild_id = KnownGuild.pub
 
     _threshold = 1
     _mapping = {}
@@ -30,7 +30,7 @@ class Crossroad(CustomCog):
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         if self.bot.production and self.guild_id == KnownGuild.proboscis:
             return
-        if not self.bot.production and self.guild_id == KnownGuild.crossroads:
+        if not self.bot.production and self.guild_id == KnownGuild.pub:
             return
 
         if payload.guild_id != self.guild_id:
@@ -130,4 +130,4 @@ class Crossroad(CustomCog):
 
 
 async def setup(bot):
-    await bot.add_cog(Crossroad(bot))
+    await bot.add_cog(Pub(bot))
