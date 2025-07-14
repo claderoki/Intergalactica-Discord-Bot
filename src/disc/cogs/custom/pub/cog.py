@@ -28,12 +28,9 @@ class Pub(CustomCog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        print('entered listener')
         if payload.guild_id != self.guild_id:
-            print('payload.guild_id != self.guild_id')
             return
         if str(payload.emoji) != '⭐':
-            print('str(payload.emoji) != ')
             return
         if payload.channel_id == KnownChannel.starboard:
             return
