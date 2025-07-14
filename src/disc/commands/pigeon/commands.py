@@ -216,7 +216,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         emojis.append(pigeon.status.value)
         data['status'] = pigeon.status.name
         lines = prettify_dict(data, emojis=emojis)
-        embed = discord.Embed(description=f'```\n{lines}```')
+        embed = discord.Embed(title=f'{pigeon.name}\'s profile', description=f'```\n{lines}```')
         await interaction.response.send_message(embed=embed)
 
     async def space_explore(self, interaction: discord.Interaction, pigeon: Pigeon):
@@ -225,7 +225,7 @@ class Pigeon2(BaseGroupCog, name="pigeon"):
         arrival_date = datetime.datetime.utcnow() + datetime.timedelta(minutes=random.randint(60, 120))
 
         SpaceExploration.create(
-            location=id,
+            location=location.id,
             start_date=datetime.datetime.utcnow(),
             arrival_date=arrival_date,
             end_date=None,

@@ -10,16 +10,14 @@ from src.config import config
 from src.models import Currency, Measurement, StoredUnit, Human
 from src.models.conversions import ServerCurrency
 from src.wrappers.fixerio import Api as FixerioApi
-from .helper import RegexHelper, RegexType, UnitMapping, get_other_measurements, fetch_context_currency_codes, \
-    CurrencyCache
+from .helper import RegexHelper, RegexType, UnitMapping, get_other_measurements, fetch_context_currency_codes, CurrencyCache
 from .models import Unit, UnitType, Conversion, ConversionResult
 from ...commands import BaseGroupCog
-from ...commands.base.view import dropdown
 
 other_measurements = get_other_measurements()
 unit_mapping = UnitMapping()
 measurement_regex = RegexHelper(RegexType.measurement)
-currency_regex = RegexHelper(RegexType.currency)
+currency_regex = RegexHelper(RegexType.currency, True)
 
 
 def add_stored_unit_to_regexes(stored_unit: StoredUnit, add_to_currency: bool = True):
@@ -46,15 +44,9 @@ def add_all_to_mapping():
 
     currencies = list(Currency)
     _load_duplicates(currencies)
-    # configured = [x.symbol.lower() for x in EnabledCurrencySymbols.select(EnabledCurrencySymbols.symbol).distinct(True)]
-
     for currency in currencies:
         unit_mapping.add(currency)
-        add_to_currency = not currency.should_exclude_symbol
-        # if currency.symbol.lower() in CurrencyCache.symbols_with_duplicates and currency.symbol.lower() in configured:
-        #     add_to_currency = True
-        add_stored_unit_to_regexes(currency, add_to_currency=add_to_currency)
-
+        add_stored_unit_to_regexes(currency, add_to_currency=not currency.should_exclude_symbol)
 
 
 def base_measurement_to_conversion_result(base_stored_unit: StoredUnit, value: float) -> ConversionResult:
@@ -65,10 +57,8 @@ def base_measurement_to_conversion_result(base_stored_unit: StoredUnit, value: f
         if code == base_stored_unit.code.lower():
             continue
         stored_unit = unit_mapping.get_unit(code, type=base.unit.type)
-
         if stored_unit is None:
             continue
-
         converted = base_stored_unit.to(stored_unit, value)
         to.append(Conversion(Unit.from_stored_unit(stored_unit), converted))
     return ConversionResult(base, to)
@@ -114,8 +104,7 @@ async def base_to_conversion_result(base_stored_unit: StoredUnit, value: float, 
 
 
 def add_conversion_result_to_embed(embed: discord.Embed, conversion_result: ConversionResult):
-    kwargs = {}
-    kwargs["name"] = conversion_result.base.get_clean_string()
+    kwargs = {"name": conversion_result.base.get_clean_string()}
     lines = []
     for to in conversion_result.to:
         lines.append(to.get_clean_string())
@@ -247,11 +236,10 @@ class ConversionCog(BaseGroupCog, name="currency"):
         for unit_value, value in currency_regex.match(message.content.lower()):
             filter = None
             cache = None
-            is_duplicate_symbol = unit_value in CurrencyCache.symbols_with_duplicates
-            if is_duplicate_symbol:
+            if unit_value in CurrencyCache.symbols_with_duplicates:
                 allowed_codes = list(map(str.lower, await fetch_context_currency_codes(message)))
                 cache = {message.id: allowed_codes}
-                filter = lambda stored_unit: stored_unit.code.lower() in allowed_codes
+                filter = lambda u: u.code.lower() in allowed_codes
 
             for unit in unit_mapping.get_units(unit_value, filter=filter):
                 conversion_result = await base_to_conversion_result(unit, value, message, context_cache=cache, squared=False)

@@ -5,7 +5,7 @@ import peewee
 from discord.app_commands import CommandInvokeError
 from discord.ext import commands
 
-from src.disc.commands.base.validation import Validation, Invertable
+from src.disc.commands.base.validation import Validation
 from src.models import Human, Pigeon
 
 

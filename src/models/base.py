@@ -26,11 +26,13 @@ class BaseModelSelect(peewee.ModelSelect):
             rand = peewee.fn.Random()
         else:
             rand = peewee.fn.Rand()
-
         return self.order_by(rand)
 
+    def where(self, *expressions) -> 'BaseModelSelect':
+        return super().where(*expressions)
 
-class UnititializedModel(peewee.Model):
+
+class UninitialisedModel(peewee.Model):
     @classmethod
     def select(cls, *fields) -> BaseModelSelect:
         is_default = not fields
@@ -130,7 +132,7 @@ class UnititializedModel(peewee.Model):
         return cls.get(id=int(argument))
 
 
-class BaseModel(UnititializedModel):
+class BaseModel(UninitialisedModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._member = None
@@ -304,6 +306,10 @@ class MessageIdField(DiscordSnowflakeField):
 
 
 class UserIdField(DiscordSnowflakeField):
+    pass
+
+
+class ChannelIdField(DiscordSnowflakeField):
     pass
 
 

@@ -11,7 +11,6 @@ from src.utils.environmental_variables import EnvironmentalVariables
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', default=Mode.development.name, choices=[x.name for x in list(Mode)])
 parser.add_argument('--sqlite', default='0', choices=['0', '1'])
-
 args = parser.parse_args()
 mode = Mode[args.mode]
 sqlite = args.sqlite == '1'

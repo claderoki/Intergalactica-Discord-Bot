@@ -1,10 +1,10 @@
 import peewee
 
 from src.config import config
-from src.models.base import UnititializedModel
+from src.models.base import UninitialisedModel
 
 
-class SqliteBaseModel(UnititializedModel):
+class SqliteBaseModel(UninitialisedModel):
     class Meta:
         legacy_table_names = False
         only_save_dirty = True

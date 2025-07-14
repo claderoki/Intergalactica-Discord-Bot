@@ -11,10 +11,10 @@ from .intergalactica import Advertisement, AdvertisementSubreddit
 from .conversation import Conversant, Conversation, Participant
 from .conversions import Currency, Measurement, StoredUnit
 from .crossroad import StarboardMapping
-
 from .helpers import tables_to_create, tables_to_drop
 from .game import GameStat
 from .pet import Pet
+from .calamity import Calamity
 
 database: peewee.Database = BaseModel._meta.database
 with database.connection_context():
