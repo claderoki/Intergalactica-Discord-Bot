@@ -52,7 +52,7 @@ class Pub(CustomCog):
         try:
             await self._process(payload)
         except Exception as e:
-            print('Crossroad::on_raw_reaction_add', e)
+            print('Pub::on_raw_reaction_add', e)
             raise e
         finally:
             self._in_progress.remove(payload.message_id)
