@@ -19,13 +19,14 @@ class CurrencyCache:
 
 
 class RegexHelper:
-    __slots__ = ("type", "values", "_regex", 'abbreviation_check')
+    __slots__ = ("type", "values", "_regex", 'abbreviation_check', '_built_with_no_values')
 
     def __init__(self, type: RegexType, abbreviation_check: bool = False):
         self.type = type
         self.values = set()
         self.abbreviation_check = abbreviation_check
         self._regex = None
+        self._built_with_no_values = True
 
     def add_value(self, value):
         if self.values is None:
@@ -47,7 +48,9 @@ class RegexHelper:
 
     @property
     def regex(self):
-        if self._regex is None:
+        if self._regex is None or self._built_with_no_values:
+            if len(self.values) == 0:
+                self._built_with_no_values = True
             self._regex = self._build()
         return self._regex
 
@@ -98,7 +101,8 @@ class RegexHelper:
                 value = value * 1000
             elif abbreviation == 'm':
                 value = value * 1000000
-            yield unit, value
+            if unit is not None and value is not None:
+                yield unit, value
             i += 1
 
 
@@ -136,8 +140,8 @@ class UnitMapping:
     def get_units(self, value, type: UnitType = None, filter=None):
         try:
             unit = self.values[value.lower()]
-        except KeyError:
-            return None
+        except KeyError as e:
+            return []
         if filter is None:
             filter = lambda x: True
 
